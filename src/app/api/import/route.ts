@@ -64,6 +64,17 @@ export async function POST(request: NextRequest) {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
+    // Fetch internal public.usuarios ID
+    const { data: usuario, error: usuarioError } = await supabase
+        .from('usuarios')
+        .select('id')
+        .eq('auth_id', user.id)
+        .single()
+
+    if (usuarioError || !usuario) {
+        return NextResponse.json({ error: 'Usuário não encontrado na base de dados (sincronização pendente)' }, { status: 403 })
+    }
+
     const formData = await request.formData()
     const file = formData.get('file') as File
     const listaNome = formData.get('nome') as string || file.name
@@ -85,7 +96,7 @@ export async function POST(request: NextRequest) {
             fornecedor,
             arquivo_original: file.name,
             total_registros: rows.length,
-            importado_por: user.id
+            importado_por: usuario.id
         })
         .select()
         .single()

@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { Users, TrendingUp, Calendar, DollarSign, ArrowUpRight, Clock, CheckCircle2, XCircle } from 'lucide-react'
+import RecentLeads from '@/components/recent-leads'
 
 export default async function DashboardPage() {
     const supabase = await createClient()
@@ -16,15 +17,6 @@ export default async function DashboardPage() {
         .limit(8)
 
     const s = stats || {}
-
-    const statusConfig: Record<string, { label: string; color: string; bg: string }> = {
-        new: { label: 'Novo', color: 'var(--accent)', bg: 'var(--accent-glow)' },
-        contacted: { label: 'Contatado', color: 'var(--yellow)', bg: 'var(--yellow-bg)' },
-        awaiting: { label: 'Aguardando', color: 'var(--orange)', bg: 'var(--orange-bg)' },
-        scheduled: { label: 'Agendado', color: 'var(--purple)', bg: 'var(--purple-bg)' },
-        converted: { label: 'Convertido', color: 'var(--green)', bg: 'var(--green-bg)' },
-        lost: { label: 'Perdido', color: 'var(--red)', bg: 'var(--red-bg)' },
-    }
 
     function fmt(v: number) {
         return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(v || 0)
@@ -140,60 +132,7 @@ export default async function DashboardPage() {
                     <h3 style={{ fontFamily: 'Syne, sans-serif', fontSize: '14px', fontWeight: '600', color: 'var(--text-secondary)' }}>Leads Recentes</h3>
                     <a href="/leads" style={{ fontSize: '12px', color: 'var(--accent)', textDecoration: 'none' }}>Ver todos →</a>
                 </div>
-                {!recentLeads || recentLeads.length === 0 ? (
-                    <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)', fontSize: '13px' }}>
-                        Nenhum lead importado ainda.<br />
-                        <a href="/leads" style={{ color: 'var(--accent)', textDecoration: 'none', marginTop: '8px', display: 'inline-block' }}>Importar primeira lista →</a>
-                    </div>
-                ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                        {recentLeads.map(lead => {
-                            const sc = statusConfig[lead.status] || statusConfig.new
-                            return (
-                                <div key={lead.id} style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    padding: '10px 12px',
-                                    borderRadius: '8px',
-                                    transition: 'background 0.15s',
-                                    cursor: 'pointer',
-                                    gap: '12px'
-                                }}
-                                    onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'var(--bg-hover)'}
-                                    onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
-                                >
-                                    {/* Score badge */}
-                                    <div style={{
-                                        width: '36px', height: '36px', borderRadius: '10px',
-                                        background: lead.score >= 70 ? 'var(--green-bg)' : lead.score >= 40 ? 'var(--yellow-bg)' : 'var(--red-bg)',
-                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                        fontSize: '12px', fontWeight: '700', fontFamily: 'Syne, sans-serif',
-                                        color: lead.score >= 70 ? 'var(--green)' : lead.score >= 40 ? 'var(--yellow)' : 'var(--red)',
-                                        flexShrink: 0
-                                    }}>{lead.score}</div>
-
-                                    {/* Name */}
-                                    <div style={{ flex: 1 }}>
-                                        <div style={{ fontSize: '13px', fontWeight: '500', color: 'var(--text-primary)' }}>{lead.nome}</div>
-                                        <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-                                            {lead.ganho_potencial ? fmt(lead.ganho_potencial) : '—'}
-                                        </div>
-                                    </div>
-
-                                    {/* Status */}
-                                    <div style={{
-                                        padding: '3px 10px',
-                                        borderRadius: '20px',
-                                        background: sc.bg,
-                                        color: sc.color,
-                                        fontSize: '11px',
-                                        fontWeight: '500'
-                                    }}>{sc.label}</div>
-                                </div>
-                            )
-                        })}
-                    </div>
-                )}
+                <RecentLeads leads={recentLeads || []} />
             </div>
         </div>
     )
