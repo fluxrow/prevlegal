@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { DollarSign, User, ChevronDown } from 'lucide-react'
+import LeadDrawer from './lead-drawer'
 
 type Lead = {
   id: string
@@ -40,9 +41,11 @@ function fmt(v: number) {
 function LeadCard({
   lead,
   onStatusChange,
+  onOpen,
 }: {
   lead: Lead
   onStatusChange: (id: string, status: string) => void
+  onOpen: (id: string) => void
 }) {
   const [dragging, setDragging] = useState(false)
   const [showMenu, setShowMenu] = useState(false)
@@ -58,6 +61,7 @@ function LeadCard({
         setDragging(true)
       }}
       onDragEnd={() => setDragging(false)}
+      onClick={() => onOpen(lead.id)}
       style={{
         background: dragging ? 'var(--bg-hover)' : 'var(--bg-surface)',
         border: '1px solid var(--border)',
@@ -120,7 +124,7 @@ function LeadCard({
       {/* Mover para */}
       <div style={{ position: 'relative' }}>
         <button
-          onClick={() => setShowMenu(!showMenu)}
+          onClick={(e) => { e.stopPropagation(); setShowMenu(!showMenu); }}
           style={{
             display: 'flex', alignItems: 'center', gap: '4px',
             background: 'transparent', border: '1px solid var(--border)',
@@ -146,7 +150,8 @@ function LeadCard({
             {COLUMNS.filter(c => c.id !== lead.status).map(col => (
               <button
                 key={col.id}
-                onClick={() => {
+                onClick={(e) => {
+                  e.stopPropagation()
                   onStatusChange(lead.id, col.id)
                   setShowMenu(false)
                 }}
@@ -173,11 +178,13 @@ function KanbanColumn({
   leads,
   onDrop,
   onStatusChange,
+  onOpen,
 }: {
   column: Column
   leads: Lead[]
   onDrop: (leadId: string, newStatus: string) => void
   onStatusChange: (id: string, status: string) => void
+  onOpen: (id: string) => void
 }) {
   const [dragOver, setDragOver] = useState(false)
   const total = leads.reduce((sum, l) => sum + (l.ganho_potencial || 0), 0)
@@ -230,7 +237,7 @@ function KanbanColumn({
       {/* Cards */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1 }}>
         {leads.map(lead => (
-          <LeadCard key={lead.id} lead={lead} onStatusChange={onStatusChange} />
+          <LeadCard key={lead.id} lead={lead} onStatusChange={onStatusChange} onOpen={onOpen} />
         ))}
         {leads.length === 0 && (
           <div style={{
@@ -250,6 +257,7 @@ function KanbanColumn({
 export default function KanbanBoard({ initialLeads }: { initialLeads: Lead[] }) {
   const [leads, setLeads] = useState<Lead[]>(initialLeads)
   const [updating, setUpdating] = useState<string | null>(null)
+  const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null)
 
   async function handleStatusChange(leadId: string, newStatus: string) {
     const prevLeads = leads
@@ -295,9 +303,15 @@ export default function KanbanBoard({ initialLeads }: { initialLeads: Lead[] }) 
             leads={leads.filter(l => l.status === col.id)}
             onDrop={handleStatusChange}
             onStatusChange={handleStatusChange}
+            onOpen={setSelectedLeadId}
           />
         ))}
       </div>
+      <LeadDrawer
+        leadId={selectedLeadId}
+        onClose={() => setSelectedLeadId(null)}
+        onStatusChange={handleStatusChange}
+      />
     </div>
   )
 }
