@@ -46,9 +46,9 @@ async function sendWhatsApp(to: string, message: string): Promise<{ sid: string 
   return { sid: data.sid }
 }
 
-export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const campanhaId = params.id
+    const { id: campanhaId } = await params
 
     // Buscar campanha
     const { data: campanha, error: campErr } = await adminClient
