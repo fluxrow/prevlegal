@@ -27,7 +27,7 @@ export async function GET() {
     )
 
     return NextResponse.json({ listas: listasComTotal })
-  } catch (err) {
+  } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 })
   }
 }
