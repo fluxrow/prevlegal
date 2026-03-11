@@ -2,9 +2,8 @@
 
 import { useState, useEffect, useRef } from 'react'
 import {
-  X, User, FileText, Calendar, DollarSign,
-  Building2, CreditCard, AlertCircle, MessageSquarePlus,
-  Loader2, ChevronDown, Hash, Phone
+  X, User, FileText, CreditCard, Hash,
+  MessageSquarePlus, Loader2, ChevronDown, AlertCircle
 } from 'lucide-react'
 
 type Lead = {
@@ -28,8 +27,6 @@ type Lead = {
   forma_pagamento: string | null
   der: string | null
   nit: string | null
-  created_at: string
-  updated_at: string
 }
 
 type Anotacao = {
@@ -51,14 +48,10 @@ const STATUS_OPTIONS = [
 function fmt(v: number) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v)
 }
-
 function fmtDate(s: string | null) {
   if (!s) return '—'
-  try {
-    return new Date(s).toLocaleDateString('pt-BR')
-  } catch { return s }
+  try { return new Date(s).toLocaleDateString('pt-BR') } catch { return s }
 }
-
 function calcIdade(dataNasc: string | null): string {
   if (!dataNasc) return '—'
   try {
@@ -69,6 +62,29 @@ function calcIdade(dataNasc: string | null): string {
     if (m < 0 || (m === 0 && hoje.getDate() < nasc.getDate())) idade--
     return `${idade} anos`
   } catch { return '—' }
+}
+
+function Section({ title, icon: Icon, children }: { title: string; icon: React.ElementType; children: React.ReactNode }) {
+  return (
+    <div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '10px' }}>
+        <Icon size={13} color="var(--accent)" strokeWidth={2} />
+        <span style={{ fontSize: '11px', fontWeight: '600', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.8px', fontFamily: 'Syne, sans-serif' }}>{title}</span>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>{children}</div>
+    </div>
+  )
+}
+
+function Row({ label, value, mono }: { label: string; value: string | null | undefined; mono?: boolean }) {
+  return (
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
+      <span style={{ fontSize: '12px', color: 'var(--text-muted)', flexShrink: 0 }}>{label}</span>
+      <span style={{ fontSize: '12px', color: value ? 'var(--text-primary)' : 'var(--text-muted)', textAlign: 'right', fontStyle: value ? 'normal' : 'italic', fontFamily: mono ? 'monospace' : undefined }}>
+        {value || '—'}
+      </span>
+    </div>
+  )
 }
 
 export default function LeadDrawer({
@@ -86,17 +102,13 @@ export default function LeadDrawer({
   const [novaAnotacao, setNovaAnotacao] = useState('')
   const [salvando, setSalvando] = useState(false)
   const [showStatus, setShowStatus] = useState(false)
-  const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   useEffect(() => {
     if (!leadId) { setLead(null); return }
     setLoading(true)
     fetch(`/api/leads/${leadId}`)
       .then(r => r.json())
-      .then(data => {
-        setLead(data.lead)
-        setAnotacoes(data.anotacoes || [])
-      })
+      .then(data => { setLead(data.lead); setAnotacoes(data.anotacoes || []) })
       .finally(() => setLoading(false))
   }, [leadId])
 
@@ -109,10 +121,7 @@ export default function LeadDrawer({
       body: JSON.stringify({ texto: novaAnotacao.trim() })
     })
     const data = await res.json()
-    if (data.success) {
-      setAnotacoes(prev => [data.anotacao, ...prev])
-      setNovaAnotacao('')
-    }
+    if (data.success) { setAnotacoes(prev => [data.anotacao, ...prev]); setNovaAnotacao('') }
     setSalvando(false)
   }
 
@@ -131,28 +140,12 @@ export default function LeadDrawer({
   }
 
   const statusAtual = STATUS_OPTIONS.find(s => s.id === lead?.status)
-
   if (!leadId) return null
 
   return (
     <>
-      {/* Overlay */}
-      <div
-        onClick={onClose}
-        style={{
-          position: 'fixed', inset: 0, background: '#00000060',
-          zIndex: 200, backdropFilter: 'blur(2px)'
-        }}
-      />
-
-      {/* Drawer */}
-      <div style={{
-        position: 'fixed', top: 0, right: 0, bottom: 0,
-        width: '480px', background: 'var(--bg-card)',
-        borderLeft: '1px solid var(--border)',
-        zIndex: 201, overflowY: 'auto',
-        display: 'flex', flexDirection: 'column',
-      }}>
+      <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: '#00000060', zIndex: 200, backdropFilter: 'blur(2px)' }} />
+      <div style={{ position: 'fixed', top: 0, right: 0, bottom: 0, width: '480px', background: 'var(--bg-card)', borderLeft: '1px solid var(--border)', zIndex: 201, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
         {loading ? (
           <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <Loader2 size={28} color="var(--accent)" style={{ animation: 'spin 1s linear infinite' }} />
@@ -160,53 +153,21 @@ export default function LeadDrawer({
         ) : lead ? (
           <>
             {/* Header */}
-            <div style={{
-              padding: '20px 24px', borderBottom: '1px solid var(--border)',
-              position: 'sticky', top: 0, background: 'var(--bg-card)', zIndex: 10
-            }}>
+            <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border)', position: 'sticky', top: 0, background: 'var(--bg-card)', zIndex: 10 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{
-                    fontSize: '16px', fontWeight: '700', fontFamily: 'Syne, sans-serif',
-                    color: 'var(--text-primary)', marginBottom: '4px',
-                    whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
-                  }}>{lead.nome}</div>
-                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+                  <div style={{ fontSize: '16px', fontWeight: '700', fontFamily: 'Syne, sans-serif', color: 'var(--text-primary)', marginBottom: '6px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{lead.nome}</div>
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                     <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>NB {lead.nb}</span>
-                    {/* Status badge clicável */}
                     <div style={{ position: 'relative' }}>
-                      <button
-                        onClick={() => setShowStatus(!showStatus)}
-                        style={{
-                          display: 'flex', alignItems: 'center', gap: '4px',
-                          background: `${statusAtual?.color}20`,
-                          border: `1px solid ${statusAtual?.color}40`,
-                          borderRadius: '20px', padding: '2px 10px',
-                          color: statusAtual?.color, fontSize: '11px',
-                          fontWeight: '600', cursor: 'pointer',
-                          fontFamily: 'Syne, sans-serif'
-                        }}
-                      >
-                        {statusAtual?.label}
-                        <ChevronDown size={10} />
+                      <button onClick={() => setShowStatus(!showStatus)} style={{ display: 'flex', alignItems: 'center', gap: '4px', background: `${statusAtual?.color}20`, border: `1px solid ${statusAtual?.color}40`, borderRadius: '20px', padding: '2px 10px', color: statusAtual?.color, fontSize: '11px', fontWeight: '600', cursor: 'pointer', fontFamily: 'Syne, sans-serif' }}>
+                        {statusAtual?.label}<ChevronDown size={10} />
                       </button>
                       {showStatus && (
-                        <div style={{
-                          position: 'absolute', top: '100%', left: 0,
-                          background: 'var(--bg-surface)', border: '1px solid var(--border)',
-                          borderRadius: '8px', zIndex: 20, marginTop: '4px',
-                          boxShadow: '0 8px 24px #00000040', minWidth: '140px'
-                        }}>
+                        <div style={{ position: 'absolute', top: '100%', left: 0, background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: '8px', zIndex: 20, marginTop: '4px', boxShadow: '0 8px 24px #00000040', minWidth: '140px' }}>
                           {STATUS_OPTIONS.filter(s => s.id !== lead.status).map(s => (
-                            <button
-                              key={s.id}
-                              onClick={() => mudarStatus(s.id)}
-                              style={{
-                                display: 'block', width: '100%', textAlign: 'left',
-                                padding: '8px 14px', background: 'transparent',
-                                border: 'none', color: s.color, fontSize: '12px',
-                                cursor: 'pointer', fontFamily: 'DM Sans, sans-serif'
-                              }}
+                            <button key={s.id} onClick={() => mudarStatus(s.id)}
+                              style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 14px', background: 'transparent', border: 'none', color: s.color, fontSize: '12px', cursor: 'pointer', fontFamily: 'DM Sans, sans-serif' }}
                               onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'var(--bg-hover)'}
                               onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
                             >{s.label}</button>
@@ -216,26 +177,18 @@ export default function LeadDrawer({
                     </div>
                   </div>
                 </div>
-                <button
-                  onClick={onClose}
-                  style={{
-                    background: 'transparent', border: 'none',
-                    color: 'var(--text-muted)', cursor: 'pointer', padding: '4px', marginLeft: '12px'
-                  }}
-                ><X size={18} /></button>
+                <button onClick={onClose} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px', marginLeft: '12px' }}>
+                  <X size={18} />
+                </button>
               </div>
-
-              {/* Score + Ganho potencial */}
-              <div style={{ display: 'flex', gap: '12px', marginTop: '14px' }}>
-                <div style={{
-                  flex: 1, background: 'var(--bg-surface)', borderRadius: '8px',
-                  padding: '10px 14px', textAlign: 'center'
-                }}>
+              {/* Score + Ganho */}
+              <div style={{ display: 'flex', gap: '10px', marginTop: '14px' }}>
+                <div style={{ width: '72px', background: 'var(--bg-surface)', borderRadius: '8px', padding: '10px', textAlign: 'center' }}>
                   <div style={{ fontSize: '22px', fontWeight: '800', fontFamily: 'Syne, sans-serif', color: lead.score >= 80 ? '#2dd4a0' : '#f5c842' }}>{lead.score}</div>
                   <div style={{ fontSize: '10px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Score</div>
                 </div>
                 {lead.ganho_potencial && (
-                  <div style={{ flex: 3, background: 'var(--bg-surface)', borderRadius: '8px', padding: '10px 14px' }}>
+                  <div style={{ flex: 1, background: 'var(--bg-surface)', borderRadius: '8px', padding: '10px 14px' }}>
                     <div style={{ fontSize: '18px', fontWeight: '700', fontFamily: 'Syne, sans-serif', color: '#2dd4a0' }}>{fmt(lead.ganho_potencial)}</div>
                     <div style={{ fontSize: '10px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Ganho potencial</div>
                   </div>
@@ -245,17 +198,13 @@ export default function LeadDrawer({
 
             {/* Body */}
             <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-
-              {/* Dados pessoais */}
               <Section title="Dados Pessoais" icon={User}>
-                <Row label="CPF" value={lead.cpf} />
+                <Row label="CPF" value={lead.cpf} mono />
                 <Row label="Nascimento" value={fmtDate(lead.data_nascimento)} />
                 <Row label="Idade" value={calcIdade(lead.data_nascimento)} />
                 <Row label="Sexo" value={lead.sexo} />
                 <Row label="Categoria" value={lead.categoria_profissional} />
               </Section>
-
-              {/* Benefício */}
               <Section title="Benefício" icon={FileText}>
                 <Row label="NB" value={lead.nb} mono />
                 <Row label="Tipo" value={lead.tipo_beneficio} />
@@ -264,131 +213,53 @@ export default function LeadDrawer({
                 <Row label="APS" value={lead.aps} />
                 <Row label="Isenção IR" value={lead.isencao_ir} />
               </Section>
-
-              {/* Pagamento */}
               <Section title="Pagamento" icon={CreditCard}>
                 <Row label="Banco" value={lead.banco} />
                 <Row label="Forma" value={lead.forma_pagamento} />
-                <Row label="Valor RMA" value={lead.ganho_potencial ? fmt(lead.ganho_potencial / 13) : null} />
                 {lead.bloqueado && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 10px', background: '#ff575720', borderRadius: '6px' }}>
-                    <AlertCircle size={13} color="#ff5757" />
-                    <span style={{ fontSize: '12px', color: '#ff5757' }}>Benefício bloqueado</span>
+                    <AlertCircle size={13} color="#ff5757" /><span style={{ fontSize: '12px', color: '#ff5757' }}>Benefício bloqueado</span>
                   </div>
                 )}
               </Section>
-
-              {/* Pensionista */}
               {lead.pensionista && lead.pensionista !== 'SEM PENSIONISTA' && (
                 <Section title="Pensionista" icon={Hash}>
                   <div style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: '1.5' }}>{lead.pensionista}</div>
                 </Section>
               )}
-
-              {/* Anotações */}
               <Section title={`Anotações (${anotacoes.length})`} icon={MessageSquarePlus}>
-                {/* Input */}
-                <div style={{ marginBottom: '12px' }}>
-                  <textarea
-                    ref={textareaRef}
-                    value={novaAnotacao}
-                    onChange={e => setNovaAnotacao(e.target.value)}
-                    onKeyDown={e => {
-                      if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) salvarAnotacao()
-                    }}
-                    placeholder="Adicionar anotação... (Cmd+Enter para salvar)"
-                    rows={3}
-                    style={{
-                      width: '100%', padding: '10px 12px',
-                      background: 'var(--bg-surface)', border: '1px solid var(--border)',
-                      borderRadius: '8px', color: 'var(--text-primary)', fontSize: '13px',
-                      resize: 'none', outline: 'none', fontFamily: 'DM Sans, sans-serif',
-                      boxSizing: 'border-box'
-                    }}
+                <div style={{ marginBottom: '10px' }}>
+                  <textarea value={novaAnotacao} onChange={e => setNovaAnotacao(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) salvarAnotacao() }}
+                    placeholder="Adicionar anotação... (Cmd+Enter para salvar)" rows={3}
+                    style={{ width: '100%', padding: '10px 12px', background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: '8px', color: 'var(--text-primary)', fontSize: '13px', resize: 'none', outline: 'none', fontFamily: 'DM Sans, sans-serif', boxSizing: 'border-box' }}
                     onFocus={e => (e.target.style.borderColor = 'var(--accent)')}
                     onBlur={e => (e.target.style.borderColor = 'var(--border)')}
                   />
-                  <button
-                    onClick={salvarAnotacao}
-                    disabled={!novaAnotacao.trim() || salvando}
-                    style={{
-                      marginTop: '6px', padding: '7px 16px',
-                      background: novaAnotacao.trim() ? 'var(--accent)' : 'var(--bg-surface)',
-                      border: '1px solid var(--border)', borderRadius: '7px',
-                      color: novaAnotacao.trim() ? '#fff' : 'var(--text-muted)',
-                      fontSize: '12px', cursor: novaAnotacao.trim() ? 'pointer' : 'not-allowed',
-                      fontFamily: 'Syne, sans-serif', fontWeight: '600',
-                      display: 'flex', alignItems: 'center', gap: '6px'
-                    }}
-                  >
+                  <button onClick={salvarAnotacao} disabled={!novaAnotacao.trim() || salvando}
+                    style={{ marginTop: '6px', padding: '7px 16px', background: novaAnotacao.trim() ? 'var(--accent)' : 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: '7px', color: novaAnotacao.trim() ? '#fff' : 'var(--text-muted)', fontSize: '12px', cursor: novaAnotacao.trim() ? 'pointer' : 'not-allowed', fontFamily: 'Syne, sans-serif', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '6px' }}>
                     {salvando ? <Loader2 size={12} style={{ animation: 'spin 1s linear infinite' }} /> : null}
                     Salvar anotação
                   </button>
                 </div>
-
-                {/* Lista de anotações */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  {anotacoes.length === 0 ? (
-                    <div style={{ fontSize: '12px', color: 'var(--text-muted)', textAlign: 'center', padding: '16px' }}>
-                      Nenhuma anotação ainda
-                    </div>
-                  ) : anotacoes.map(a => (
-                    <div key={a.id} style={{
-                      padding: '10px 12px', background: 'var(--bg-surface)',
-                      borderRadius: '8px', borderLeft: '2px solid var(--accent)'
-                    }}>
-                      <div style={{ fontSize: '13px', color: 'var(--text-primary)', marginBottom: '4px', lineHeight: '1.5' }}>
-                        {a.texto}
+                  {anotacoes.length === 0
+                    ? <div style={{ fontSize: '12px', color: 'var(--text-muted)', textAlign: 'center', padding: '16px' }}>Nenhuma anotação ainda</div>
+                    : anotacoes.map(a => (
+                      <div key={a.id} style={{ padding: '10px 12px', background: 'var(--bg-surface)', borderRadius: '8px', borderLeft: '2px solid var(--accent)' }}>
+                        <div style={{ fontSize: '13px', color: 'var(--text-primary)', marginBottom: '4px', lineHeight: '1.5' }}>{a.texto}</div>
+                        <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>{new Date(a.created_at).toLocaleString('pt-BR')}</div>
                       </div>
-                      <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>
-                        {new Date(a.created_at).toLocaleString('pt-BR')}
-                      </div>
-                    </div>
-                  ))}
+                    ))
+                  }
                 </div>
               </Section>
             </div>
           </>
         ) : (
-          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', fontSize: '13px' }}>
-            Lead não encontrado
-          </div>
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', fontSize: '13px' }}>Lead não encontrado</div>
         )}
       </div>
     </>
-  )
-}
-
-// Componentes auxiliares
-function Section({ title, icon: Icon, children }: { title: string, icon: React.ElementType, children: React.ReactNode }) {
-  return (
-    <div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '10px' }}>
-        <Icon size={13} color="var(--accent)" strokeWidth={2} />
-        <span style={{ fontSize: '11px', fontWeight: '600', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.8px', fontFamily: 'Syne, sans-serif' }}>
-          {title}
-        </span>
-      </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-        {children}
-      </div>
-    </div>
-  )
-}
-
-function Row({ label, value, mono }: { label: string, value: string | null | undefined, mono?: boolean }) {
-  if (!value || value === '—') return (
-    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-      <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{label}</span>
-      <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontStyle: 'italic' }}>—</span>
-    </div>
-  )
-  return (
-    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
-      <span style={{ fontSize: '12px', color: 'var(--text-muted)', flexShrink: 0 }}>{label}</span>
-      <span style={{ fontSize: '12px', color: 'var(--text-primary)', textAlign: 'right', fontFamily: mono ? 'monospace' : undefined }}>
-        {value}
-      </span>
-    </div>
   )
 }
