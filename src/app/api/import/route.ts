@@ -64,15 +64,19 @@ export async function POST(request: NextRequest) {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    // Fetch internal public.usuarios ID
+    // Fetch internal public.usuarios ID e role
     const { data: usuario, error: usuarioError } = await supabase
         .from('usuarios')
-        .select('id')
+        .select('id, role')
         .eq('auth_id', user.id)
         .single()
 
     if (usuarioError || !usuario) {
         return NextResponse.json({ error: 'Usuário não encontrado na base de dados (sincronização pendente)' }, { status: 403 })
+    }
+
+    if (usuario.role !== 'admin') {
+        return NextResponse.json({ error: 'Apenas administradores podem importar listas' }, { status: 403 })
     }
 
     const formData = await request.formData()
