@@ -4,13 +4,14 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import {
-    LayoutDashboard, Users, Megaphone, Bot,
+    LayoutDashboard, Users, List, Megaphone, Bot,
     BarChart3, Settings, LogOut, Scale
 } from 'lucide-react'
 
 const nav = [
     { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { href: '/leads', icon: Users, label: 'Leads' },
+    { href: '/listas', icon: List, label: 'Listas' },
     { href: '/campanhas', icon: Megaphone, label: 'Campanhas' },
     { href: '/agente', icon: Bot, label: 'Agente IA' },
     { href: '/relatorios', icon: BarChart3, label: 'Relatórios' },
