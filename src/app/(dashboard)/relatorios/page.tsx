@@ -163,7 +163,7 @@ export default function RelatoriosPage() {
                   <CartesianGrid strokeDasharray="3 3" stroke="#ffffff08" horizontal={false} />
                   <XAxis type="number" tick={AXIS_TICK} axisLine={false} tickLine={false} tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} />
                   <YAxis type="category" dataKey="banco" tick={AXIS_TICK} axisLine={false} tickLine={false} width={100} />
-                  <Tooltip contentStyle={TOOLTIP_STYLE} formatter={(v: number) => [fmt(v), 'Potencial']} />
+                  <Tooltip contentStyle={TOOLTIP_STYLE} formatter={(v: unknown) => [fmt(typeof v === 'number' ? v : 0), 'Potencial'] as [string, string]} />
                   <Bar dataKey="ganho" fill="#4f7aff" radius={[0, 6, 6, 0]} />
                 </BarChart>
               </ResponsiveContainer>
@@ -270,7 +270,7 @@ export default function RelatoriosPage() {
                 <CartesianGrid strokeDasharray="3 3" stroke="#ffffff08" />
                 <XAxis dataKey="mes" tick={AXIS_TICK} axisLine={false} tickLine={false} />
                 <YAxis tick={AXIS_TICK} axisLine={false} tickLine={false} tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} />
-                <Tooltip contentStyle={TOOLTIP_STYLE} formatter={(v: number) => [fmt(v), 'Potencial']} />
+                <Tooltip contentStyle={TOOLTIP_STYLE} formatter={(v: unknown) => [fmt(typeof v === 'number' ? v : 0), 'Potencial'] as [string, string]} />
                 <Bar dataKey="potencial" name="Potencial" fill="#f5c842" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
