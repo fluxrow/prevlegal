@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Sidebar from '@/components/sidebar'
+import NotificacoesBell from '@/components/notificacoes-bell'
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
     const supabase = await createClient()
@@ -10,9 +11,23 @@ export default async function DashboardLayout({ children }: { children: React.Re
     return (
         <div style={{ display: 'flex', minHeight: '100vh' }}>
             <Sidebar />
-            <main style={{ flex: 1, overflow: 'auto', background: 'var(--bg)' }}>
-                {children}
-            </main>
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                <header style={{
+                    height: '52px',
+                    background: 'var(--bg-surface)',
+                    borderBottom: '1px solid var(--border)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'flex-end',
+                    padding: '0 20px',
+                    flexShrink: 0,
+                }}>
+                    <NotificacoesBell />
+                </header>
+                <main style={{ flex: 1, overflow: 'auto', background: 'var(--bg)' }}>
+                    {children}
+                </main>
+            </div>
         </div>
     )
 }

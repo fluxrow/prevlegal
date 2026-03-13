@@ -69,14 +69,20 @@ export async function POST(request: NextRequest) {
   }
 
   // 5b. Upsert conversa (thread por telefone)
+  let conversaId: string | null = null
+  let conversaStatus: string = 'agente'
+
   if (mensagemInserida) {
     const { data: conversaExistente } = await supabase
       .from('conversas')
-      .select('id, nao_lidas')
+      .select('id, nao_lidas, status')
       .eq('telefone', from)
       .maybeSingle()
 
     if (conversaExistente) {
+      conversaId = conversaExistente.id
+      conversaStatus = conversaExistente.status || 'agente'
+
       await supabase.from('conversas').update({
         ultima_mensagem: body_msg,
         ultima_mensagem_at: new Date().toISOString(),
@@ -101,9 +107,49 @@ export async function POST(request: NextRequest) {
         .single()
 
       if (novaConversa) {
+        conversaId = novaConversa.id
         await supabase.from('mensagens_inbound')
           .update({ conversa_id: novaConversa.id })
           .eq('id', mensagemInserida.id)
+      }
+    }
+  }
+
+  // 5c. Criar notificação de nova mensagem
+  if (conversaId) {
+    const nomeRemetente = lead?.nome || telefoneNormalizado
+    await supabase.from('notificacoes').insert({
+      tipo: 'mensagem',
+      titulo: `Nova mensagem de ${nomeRemetente}`,
+      descricao: body_msg.slice(0, 100),
+      link: '/caixa-de-entrada',
+      metadata: { conversa_id: conversaId, telefone: from },
+    })
+
+    // 5d. Detectar gatilhos de escalada
+    const { data: config } = await supabase
+      .from('configuracoes')
+      .select('agente_gatilhos_escalada')
+      .limit(1)
+      .maybeSingle()
+
+    if (config?.agente_gatilhos_escalada) {
+      const gatilhos = config.agente_gatilhos_escalada
+        .split('\n')
+        .map((g: string) => g.trim().toLowerCase())
+        .filter(Boolean)
+
+      const msgLower = body_msg.toLowerCase()
+      const gatilhoAtivado = gatilhos.find((g: string) => msgLower.includes(g))
+
+      if (gatilhoAtivado) {
+        await supabase.from('notificacoes').insert({
+          tipo: 'escalada',
+          titulo: `⚠️ Escalada detectada — ${nomeRemetente}`,
+          descricao: `Gatilho: "${gatilhoAtivado}" — Mensagem: ${body_msg.slice(0, 80)}`,
+          link: '/caixa-de-entrada',
+          metadata: { conversa_id: conversaId, telefone: from, gatilho: gatilhoAtivado },
+        })
       }
     }
   }
