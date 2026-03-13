@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import {
     LayoutDashboard, Users, List, Megaphone, Bot,
-    BarChart3, Settings, LogOut, Scale, CalendarDays, Inbox
+    BarChart3, Settings, LogOut, Scale, CalendarDays, Inbox, UserCircle
 } from 'lucide-react'
 
 const nav = [
@@ -18,6 +18,7 @@ const nav = [
     { href: '/agente', icon: Bot, label: 'Agente IA' },
     { href: '/relatorios', icon: BarChart3, label: 'Relatórios' },
     { href: '/configuracoes', icon: Settings, label: 'Configurações' },
+    { href: '/perfil', icon: UserCircle, label: 'Perfil' },
 ]
 
 export default function Sidebar() {
