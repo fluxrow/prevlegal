@@ -16,6 +16,10 @@ interface Config {
   agente_foco: string
   agente_frases_proibidas: string
   agente_objeccoes: string
+  agente_fluxo_qualificacao: string
+  agente_exemplos_dialogo: string
+  agente_gatilhos_escalada: string
+  agente_fallback: string
 }
 
 interface Documento {
@@ -50,19 +54,24 @@ const TIPO_DOC_OPTIONS = [
 ]
 
 function gerarPromptFinal(config: Config, docs: Documento[]): string {
+  const partes: string[] = []
+
+  if (config.agente_prompt_sistema) partes.push(config.agente_prompt_sistema)
+  if (config.agente_fluxo_qualificacao) partes.push(`\n--- FLUXO DE QUALIFICAÇÃO ---\nSiga estas etapas em ordem:\n${config.agente_fluxo_qualificacao}`)
+  if (config.agente_exemplos_dialogo) partes.push(`\n--- EXEMPLOS DE DIÁLOGO ---\n${config.agente_exemplos_dialogo}`)
+  if (config.agente_gatilhos_escalada) partes.push(`\n--- GATILHOS DE ESCALADA ---\nQuando o lead escrever algo como abaixo, encerre a conversa com uma mensagem de que a advogada entrará em contato em breve:\n${config.agente_gatilhos_escalada}`)
+  if (config.agente_frases_proibidas) partes.push(`\n--- FRASES ABSOLUTAMENTE PROIBIDAS ---\nJamais use:\n${config.agente_frases_proibidas}`)
+  if (config.agente_objeccoes) partes.push(`\n--- COMO LIDAR COM OBJEÇÕES ---\n${config.agente_objeccoes}`)
+  if (config.agente_fallback) partes.push(`\n--- RESPOSTA DE FALLBACK ---\nQuando não entender a mensagem, responda: "${config.agente_fallback}"`)
+
   const docsAtivos = docs.filter(d => d.ativo)
-  const docsPart = docsAtivos.length > 0
-    ? `\n\n--- BASE DE CONHECIMENTO ---\n` + docsAtivos.map(d =>
-        `[${d.tipo.toUpperCase()}] ${d.nome}:\n${d.conteudo}`
-      ).join('\n\n')
-    : ''
-  const frasesProibidas = config.agente_frases_proibidas
-    ? `\n\nFRASES PROIBIDAS — nunca use:\n${config.agente_frases_proibidas}`
-    : ''
-  const objeccoes = config.agente_objeccoes
-    ? `\n\nCOMO LIDAR COM OBJEÇÕES:\n${config.agente_objeccoes}`
-    : ''
-  return `${config.agente_prompt_sistema}${docsPart}${frasesProibidas}${objeccoes}`
+  if (docsAtivos.length > 0) {
+    partes.push(`\n--- BASE DE CONHECIMENTO ---\n` + docsAtivos.map(d =>
+      `[${d.tipo.toUpperCase()}] ${d.nome}:\n${d.conteudo}`
+    ).join('\n\n'))
+  }
+
+  return partes.join('\n') || '(prompt vazio — configure as seções acima)'
 }
 
 export default function AgentePage() {
@@ -81,6 +90,10 @@ export default function AgentePage() {
     agente_foco: 'agendamento',
     agente_frases_proibidas: '',
     agente_objeccoes: '',
+    agente_fluxo_qualificacao: '',
+    agente_exemplos_dialogo: '',
+    agente_gatilhos_escalada: '',
+    agente_fallback: '',
   })
   const [docs, setDocs] = useState<Documento[]>([])
   const [saving, setSaving] = useState(false)
@@ -248,33 +261,103 @@ export default function AgentePage() {
       {/* TAB: Instruções */}
       {activeTab === 'instrucoes' && (
         <div>
+          {/* Botão template */}
+          <div style={{ marginBottom: '20px', padding: '16px', background: '#4f7aff15', border: '1px solid #4f7aff40', borderRadius: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <p style={{ fontSize: '13px', fontWeight: '600', color: 'var(--accent)', fontFamily: 'DM Sans, sans-serif', margin: '0 0 2px' }}>✨ Template PrevLegal</p>
+              <p style={{ fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'DM Sans, sans-serif', margin: 0 }}>Preenche automaticamente com um prompt otimizado para advocacia previdenciária</p>
+            </div>
+            <button onClick={() => setConfig(p => ({
+              ...p,
+              agente_prompt_sistema: `Você é ${p.agente_nome || 'Ana'}, assistente virtual do escritório de advocacia previdenciária. Seu objetivo é qualificar leads e agendar consultas gratuitas para revisão de benefício do INSS.\n\nCONTEXTO DO LEAD:\nNome: {nome} | Benefício: {nb} | Banco: {banco} | Valor atual: R$ {valor} | Ganho potencial: R$ {ganho}\n\nREGRAS ABSOLUTAS:\n- Nunca prometa valores, percentuais ou resultados garantidos\n- Nunca mencione honorários ou custos\n- Respostas curtas (máximo 3 linhas no WhatsApp)\n- Nunca use markdown, listas, asteriscos ou emojis em excesso\n- Use linguagem simples e acessível para idosos`,
+              agente_fluxo_qualificacao: `1. APRESENTAÇÃO: Se apresente pelo nome e explique brevemente o motivo do contato (possível revisão do benefício)\n2. VERIFICAÇÃO DE INTERESSE: Pergunte se a pessoa tem interesse em saber mais sobre a revisão\n3. SE INTERESSADO: Explique que é uma consulta gratuita e sem compromisso\n4. COLETA DE DISPONIBILIDADE: Pergunte qual o melhor dia e horário para uma consulta rápida\n5. CONFIRMAÇÃO: Confirme os dados e informe que a advogada entrará em contato`,
+              agente_exemplos_dialogo: `✅ BOM EXEMPLO:\nLead: "Quanto eu vou receber?"\nAgente: "Olá {nome}! Cada caso é diferente, mas com base no seu benefício, pode haver uma diferença significativa. Para saber o valor exato, precisamos de uma análise. Posso agendar uma consulta gratuita?"\n\n✅ BOM EXEMPLO:\nLead: "Não tenho interesse"\nAgente: "Tudo bem, {nome}! Obrigada pelo seu tempo. Se mudar de ideia, pode nos contatar a qualquer momento. Tenha um ótimo dia!"\n\n❌ MAU EXEMPLO:\nAgente: "Você vai receber R$ 500 de aumento!" (nunca prometa valores)\n\n❌ MAU EXEMPLO:\nAgente: "Você precisa pagar R$ 100 para a consulta" (nunca mencione custos)`,
+              agente_gatilhos_escalada: `- "quero falar com a advogada"\n- "quero falar com um humano"\n- "me liga"\n- "quero agendar agora"\n- "sim, tenho interesse"\n- "pode marcar"\n- qualquer mensagem com raiva ou reclamação grave`,
+              agente_fallback: `Desculpe, não consegui entender sua mensagem. Posso te ajudar a agendar uma consulta gratuita para revisar seu benefício do INSS. Você tem interesse?`,
+            }))}
+              style={{ padding: '9px 18px', background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: '600', fontFamily: 'DM Sans, sans-serif', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+              Usar Template
+            </button>
+          </div>
+
+          {/* Prompt base */}
           <div style={cardStyle}>
-            <h2 style={{ fontFamily: 'Syne, sans-serif', fontSize: '15px', fontWeight: '600', color: 'var(--text-primary)', marginTop: 0, marginBottom: '6px' }}>Prompt Base</h2>
-            <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '16px', fontFamily: 'DM Sans, sans-serif' }}>
-              Instruções principais do agente. Use {'{nome}'}, {'{nb}'}, {'{banco}'}, {'{valor}'}, {'{ganho}'} como variáveis do lead.
+            <h2 style={{ fontFamily: 'Syne, sans-serif', fontSize: '15px', fontWeight: '600', color: 'var(--text-primary)', marginTop: 0, marginBottom: '4px' }}>Prompt Base</h2>
+            <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '14px', fontFamily: 'DM Sans, sans-serif' }}>
+              Instruções principais. Variáveis disponíveis: <code style={{ background: 'var(--bg-hover)', padding: '1px 6px', borderRadius: '4px', fontSize: '11px' }}>{'{nome}'}</code> <code style={{ background: 'var(--bg-hover)', padding: '1px 6px', borderRadius: '4px', fontSize: '11px' }}>{'{nb}'}</code> <code style={{ background: 'var(--bg-hover)', padding: '1px 6px', borderRadius: '4px', fontSize: '11px' }}>{'{banco}'}</code> <code style={{ background: 'var(--bg-hover)', padding: '1px 6px', borderRadius: '4px', fontSize: '11px' }}>{'{valor}'}</code> <code style={{ background: 'var(--bg-hover)', padding: '1px 6px', borderRadius: '4px', fontSize: '11px' }}>{'{ganho}'}</code>
             </p>
-            <textarea style={{ ...inputStyle, minHeight: '200px', resize: 'vertical' }}
+            <textarea style={{ ...inputStyle, minHeight: '180px', resize: 'vertical' }}
               value={config.agente_prompt_sistema}
               onChange={e => setConfig(p => ({ ...p, agente_prompt_sistema: e.target.value }))}
               placeholder="Você é Ana, assistente do escritório..." />
           </div>
 
+          {/* Fluxo de qualificação */}
           <div style={cardStyle}>
-            <h2 style={{ fontFamily: 'Syne, sans-serif', fontSize: '15px', fontWeight: '600', color: 'var(--text-primary)', marginTop: 0, marginBottom: '6px' }}>Frases Proibidas</h2>
-            <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '16px', fontFamily: 'DM Sans, sans-serif' }}>Uma por linha. O agente nunca usará essas frases.</p>
-            <textarea style={{ ...inputStyle, minHeight: '120px', resize: 'vertical' }}
-              value={config.agente_frases_proibidas}
-              onChange={e => setConfig(p => ({ ...p, agente_frases_proibidas: e.target.value }))}
-              placeholder={'Garantimos o resultado\nVocê vai receber X reais\nIsso é certeza'} />
+            <h2 style={{ fontFamily: 'Syne, sans-serif', fontSize: '15px', fontWeight: '600', color: 'var(--text-primary)', marginTop: 0, marginBottom: '4px' }}>🎯 Fluxo de Qualificação</h2>
+            <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '14px', fontFamily: 'DM Sans, sans-serif' }}>
+              Defina as etapas em ordem que o agente deve seguir para qualificar e converter o lead. Seja específico: etapa 1, etapa 2...
+            </p>
+            <textarea style={{ ...inputStyle, minHeight: '140px', resize: 'vertical' }}
+              value={config.agente_fluxo_qualificacao}
+              onChange={e => setConfig(p => ({ ...p, agente_fluxo_qualificacao: e.target.value }))}
+              placeholder={'1. Apresentação e motivo do contato\n2. Verificar interesse\n3. Explicar consulta gratuita\n4. Coletar disponibilidade\n5. Confirmar agendamento'} />
           </div>
 
+          {/* Exemplos de diálogo */}
           <div style={cardStyle}>
-            <h2 style={{ fontFamily: 'Syne, sans-serif', fontSize: '15px', fontWeight: '600', color: 'var(--text-primary)', marginTop: 0, marginBottom: '6px' }}>Como Lidar com Objeções</h2>
-            <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '16px', fontFamily: 'DM Sans, sans-serif' }}>Instrua o agente sobre respostas a objeções comuns.</p>
+            <h2 style={{ fontFamily: 'Syne, sans-serif', fontSize: '15px', fontWeight: '600', color: 'var(--text-primary)', marginTop: 0, marginBottom: '4px' }}>💬 Exemplos de Diálogo</h2>
+            <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '14px', fontFamily: 'DM Sans, sans-serif' }}>
+              Cole exemplos reais de boas e más respostas. Isso é o que mais melhora a qualidade do agente — mostre o que fazer e o que NÃO fazer.
+            </p>
+            <textarea style={{ ...inputStyle, minHeight: '180px', resize: 'vertical' }}
+              value={config.agente_exemplos_dialogo}
+              onChange={e => setConfig(p => ({ ...p, agente_exemplos_dialogo: e.target.value }))}
+              placeholder={'✅ BOM: Lead pergunta valor → Agente explica que depende da análise e propõe consulta\n❌ RUIM: Agente promete valor específico antes de analisar o caso'} />
+          </div>
+
+          {/* Gatilhos de escalada */}
+          <div style={cardStyle}>
+            <h2 style={{ fontFamily: 'Syne, sans-serif', fontSize: '15px', fontWeight: '600', color: 'var(--text-primary)', marginTop: 0, marginBottom: '4px' }}>⚡ Gatilhos de Escalada para Humano</h2>
+            <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '14px', fontFamily: 'DM Sans, sans-serif' }}>
+              Uma frase ou situação por linha. Quando o lead escrever algo assim, o agente para e notifica a advogada para assumir.
+            </p>
+            <textarea style={{ ...inputStyle, minHeight: '120px', resize: 'vertical' }}
+              value={config.agente_gatilhos_escalada}
+              onChange={e => setConfig(p => ({ ...p, agente_gatilhos_escalada: e.target.value }))}
+              placeholder={'quero falar com a advogada\nquero agendar agora\nsim, tenho interesse\nme liga'} />
+          </div>
+
+          {/* Frases proibidas */}
+          <div style={cardStyle}>
+            <h2 style={{ fontFamily: 'Syne, sans-serif', fontSize: '15px', fontWeight: '600', color: 'var(--text-primary)', marginTop: 0, marginBottom: '4px' }}>🚫 Frases Proibidas</h2>
+            <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '14px', fontFamily: 'DM Sans, sans-serif' }}>Uma por linha. O agente nunca usará essas frases — importante para compliance com a OAB.</p>
+            <textarea style={{ ...inputStyle, minHeight: '100px', resize: 'vertical' }}
+              value={config.agente_frases_proibidas}
+              onChange={e => setConfig(p => ({ ...p, agente_frases_proibidas: e.target.value }))}
+              placeholder={'Garantimos o resultado\nVocê vai receber X reais\nIsso é certeza absoluta'} />
+          </div>
+
+          {/* Fallback */}
+          <div style={cardStyle}>
+            <h2 style={{ fontFamily: 'Syne, sans-serif', fontSize: '15px', fontWeight: '600', color: 'var(--text-primary)', marginTop: 0, marginBottom: '4px' }}>🔄 Resposta de Fallback</h2>
+            <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '14px', fontFamily: 'DM Sans, sans-serif' }}>
+              O que o agente responde quando não entende a mensagem ou ela está fora do escopo.
+            </p>
+            <textarea style={{ ...inputStyle, minHeight: '80px', resize: 'vertical' }}
+              value={config.agente_fallback}
+              onChange={e => setConfig(p => ({ ...p, agente_fallback: e.target.value }))}
+              placeholder="Desculpe, não entendi. Posso ajudar com informações sobre revisão do seu benefício do INSS. Tem interesse em saber mais?" />
+          </div>
+
+          {/* Objeções */}
+          <div style={cardStyle}>
+            <h2 style={{ fontFamily: 'Syne, sans-serif', fontSize: '15px', fontWeight: '600', color: 'var(--text-primary)', marginTop: 0, marginBottom: '4px' }}>🛡️ Como Lidar com Objeções</h2>
+            <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '14px', fontFamily: 'DM Sans, sans-serif' }}>Instrua o agente sobre como responder às objeções mais comuns dos leads.</p>
             <textarea style={{ ...inputStyle, minHeight: '120px', resize: 'vertical' }}
               value={config.agente_objeccoes}
               onChange={e => setConfig(p => ({ ...p, agente_objeccoes: e.target.value }))}
-              placeholder={"Se disser 'não tenho interesse': agradeça e encerre educadamente\nSe disser 'já tentei e não deu': explique que cada caso é único"} />
+              placeholder={"'Não tenho interesse' → Agradeça e encerre educadamente\n'Já tentei antes' → Explique que cada caso é analisado individualmente\n'É golpe?' → Confirme a seriedade do escritório e ofereça mais informações"} />
           </div>
         </div>
       )}

@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
     // 2. Buscar configurações do agente
     const { data: config } = await supabase
       .from('configuracoes')
-      .select('agente_ativo, agente_nome, agente_prompt_sistema, agente_modelo, agente_max_tokens, agente_resposta_automatica, agente_horario_inicio, agente_horario_fim, agente_apenas_dias_uteis')
+      .select('agente_ativo, agente_nome, agente_prompt_sistema, agente_modelo, agente_max_tokens, agente_resposta_automatica, agente_horario_inicio, agente_horario_fim, agente_apenas_dias_uteis, agente_fluxo_qualificacao, agente_exemplos_dialogo, agente_gatilhos_escalada, agente_frases_proibidas, agente_objeccoes, agente_fallback')
       .limit(1)
       .single()
 
@@ -112,7 +112,15 @@ export async function POST(request: NextRequest) {
 
     // 5. Montar system prompt com dados do lead
     const promptBase = config.agente_prompt_sistema || PROMPT_PADRAO
-    const systemPrompt = promptBase
+    const partes = [promptBase]
+    if (config.agente_fluxo_qualificacao) partes.push(`\nFLUXO DE QUALIFICAÇÃO:\n${config.agente_fluxo_qualificacao}`)
+    if (config.agente_exemplos_dialogo) partes.push(`\nEXEMPLOS DE DIÁLOGO:\n${config.agente_exemplos_dialogo}`)
+    if (config.agente_gatilhos_escalada) partes.push(`\nGATILHOS DE ESCALADA — quando ocorrerem, encerre e informe que a advogada entrará em contato:\n${config.agente_gatilhos_escalada}`)
+    if (config.agente_frases_proibidas) partes.push(`\nFRASES ABSOLUTAMENTE PROIBIDAS:\n${config.agente_frases_proibidas}`)
+    if (config.agente_objeccoes) partes.push(`\nCOMO LIDAR COM OBJEÇÕES:\n${config.agente_objeccoes}`)
+    if (config.agente_fallback) partes.push(`\nFALLBACK — quando não entender a mensagem, responda: "${config.agente_fallback}"`)
+
+    const systemPrompt = partes.join('\n')
       .replace('{nome}', lead?.nome || 'Beneficiário')
       .replace('{nb}', lead?.nb || 'N/A')
       .replace('{banco}', lead?.banco || 'N/A')
