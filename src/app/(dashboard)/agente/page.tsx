@@ -1,27 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { Bot, Save, MessageSquare, Sparkles, Send, AlertTriangle, CheckCircle, Clock } from 'lucide-react'
-
-const PROMPT_PADRAO = `Você é Ana, assistente virtual de um escritório de advocacia previdenciária especializado em revisão de benefícios do INSS.
-
-Seu objetivo é qualificar leads e agendar consultas gratuitas.
-
-CONTEXTO DO LEAD:
-Nome: {nome}
-Benefício (NB): {nb}
-Banco pagador: {banco}
-Valor atual: R$ {valor}
-Ganho potencial com revisão: R$ {ganho}
-
-INSTRUÇÕES:
-- Seja cordial, direta e profissional
-- Use linguagem simples, acessível para idosos
-- Nunca prometa valores ou resultados garantidos
-- Foque em agendar uma consulta gratuita
-- Se o lead demonstrar interesse, peça disponibilidade de horário
-- Se recusar, agradeça e encerre educadamente
-- Respostas curtas (máximo 3 linhas no WhatsApp)
-- Nunca use markdown, listas ou asteriscos`
+import { Bot, Save, Plus, Trash2, Eye, CheckCircle, BookOpen, Settings } from 'lucide-react'
 
 interface Config {
   agente_ativo: boolean
@@ -33,292 +12,378 @@ interface Config {
   agente_horario_inicio: string
   agente_horario_fim: string
   agente_apenas_dias_uteis: boolean
+  agente_tom: string
+  agente_foco: string
+  agente_frases_proibidas: string
+  agente_objeccoes: string
 }
 
-interface MensagemInbound {
+interface Documento {
   id: string
-  mensagem: string
-  telefone_remetente: string
-  leads: { nome: string; nb: string } | null
-  respondido_por_agente: boolean
-  resposta_agente: string | null
+  nome: string
+  descricao: string
+  conteudo: string
+  tipo: string
+  ativo: boolean
   created_at: string
 }
 
+const TOM_OPTIONS = [
+  { value: 'profissional', label: 'Profissional e formal' },
+  { value: 'amigavel', label: 'Amigável e acessível' },
+  { value: 'direto', label: 'Direto e objetivo' },
+  { value: 'empatico', label: 'Empático e acolhedor' },
+]
+
+const FOCO_OPTIONS = [
+  { value: 'agendamento', label: 'Agendar consulta gratuita' },
+  { value: 'qualificacao', label: 'Qualificar o lead' },
+  { value: 'informacao', label: 'Informar sobre o benefício' },
+]
+
+const TIPO_DOC_OPTIONS = [
+  { value: 'instrucao', label: '📋 Instrução geral' },
+  { value: 'script', label: '💬 Script de abordagem' },
+  { value: 'objecoes', label: '🛡️ Objeções e respostas' },
+  { value: 'legislacao', label: '⚖️ Legislação / referência' },
+  { value: 'faq', label: '❓ FAQ' },
+]
+
+function gerarPromptFinal(config: Config, docs: Documento[]): string {
+  const docsAtivos = docs.filter(d => d.ativo)
+  const docsPart = docsAtivos.length > 0
+    ? `\n\n--- BASE DE CONHECIMENTO ---\n` + docsAtivos.map(d =>
+        `[${d.tipo.toUpperCase()}] ${d.nome}:\n${d.conteudo}`
+      ).join('\n\n')
+    : ''
+  const frasesProibidas = config.agente_frases_proibidas
+    ? `\n\nFRASES PROIBIDAS — nunca use:\n${config.agente_frases_proibidas}`
+    : ''
+  const objeccoes = config.agente_objeccoes
+    ? `\n\nCOMO LIDAR COM OBJEÇÕES:\n${config.agente_objeccoes}`
+    : ''
+  return `${config.agente_prompt_sistema}${docsPart}${frasesProibidas}${objeccoes}`
+}
+
 export default function AgentePage() {
+  const [activeTab, setActiveTab] = useState<'identidade' | 'instrucoes' | 'conhecimento' | 'preview'>('identidade')
   const [config, setConfig] = useState<Config>({
     agente_ativo: false,
     agente_nome: 'Ana',
-    agente_prompt_sistema: PROMPT_PADRAO,
+    agente_prompt_sistema: '',
     agente_modelo: 'claude-sonnet-4-20250514',
     agente_max_tokens: 500,
-    agente_resposta_automatica: false,
+    agente_resposta_automatica: true,
     agente_horario_inicio: '08:00',
-    agente_horario_fim: '18:00',
+    agente_horario_fim: '20:00',
     agente_apenas_dias_uteis: true,
+    agente_tom: 'profissional',
+    agente_foco: 'agendamento',
+    agente_frases_proibidas: '',
+    agente_objeccoes: '',
   })
+  const [docs, setDocs] = useState<Documento[]>([])
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
-  const [mensagens, setMensagens] = useState<MensagemInbound[]>([])
-  const [respondendo, setRespondendo] = useState<string | null>(null)
-  const [respostas, setRespostas] = useState<Record<string, string>>({})
-  const [loadingConfig, setLoadingConfig] = useState(true)
+  const [showDocForm, setShowDocForm] = useState(false)
+  const [docForm, setDocForm] = useState({ nome: '', descricao: '', conteudo: '', tipo: 'instrucao' })
+  const [savingDoc, setSavingDoc] = useState(false)
 
   useEffect(() => {
     fetchConfig()
-    fetchMensagens()
+    fetchDocs()
   }, [])
 
   async function fetchConfig() {
-    setLoadingConfig(true)
-    const res = await fetch('/api/agente/config')
+    const res = await fetch('/api/configuracoes')
     if (res.ok) {
       const data = await res.json()
-      if (data && !data.error) {
-        setConfig(prev => ({
-          ...prev,
-          ...data,
-          agente_prompt_sistema: data.agente_prompt_sistema || PROMPT_PADRAO,
-        }))
-      }
-    }
-    setLoadingConfig(false)
-  }
-
-  async function fetchMensagens() {
-    const res = await fetch('/api/mensagens-inbound')
-    if (res.ok) {
-      const data = await res.json()
-      setMensagens(data.mensagens || [])
+      if (data) setConfig(prev => ({ ...prev, ...data }))
     }
   }
 
-  async function salvar() {
+  async function fetchDocs() {
+    const res = await fetch('/api/agente/documentos')
+    if (res.ok) setDocs(await res.json())
+  }
+
+  async function salvarConfig() {
     setSaving(true)
-    const res = await fetch('/api/agente/config', {
+    await fetch('/api/configuracoes', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(config)
+    })
+    setSaving(false)
+    setSaved(true)
+    setTimeout(() => setSaved(false), 2500)
+  }
+
+  async function adicionarDoc() {
+    if (!docForm.nome || !docForm.conteudo) return
+    setSavingDoc(true)
+    const res = await fetch('/api/agente/documentos', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(config),
+      body: JSON.stringify(docForm)
     })
-    if (res.ok) { setSaved(true); setTimeout(() => setSaved(false), 3000) }
-    setSaving(false)
-  }
-
-  async function responderComIA(mensagemId: string) {
-    setRespondendo(mensagemId)
-    try {
-      const res = await fetch('/api/agente/responder', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mensagem_id: mensagemId }),
-      })
-      const data = await res.json()
-      if (data.success) {
-        setRespostas(prev => ({ ...prev, [mensagemId]: data.resposta }))
-        await fetchMensagens()
-      } else {
-        setRespostas(prev => ({ ...prev, [mensagemId]: '❌ ' + data.error }))
-      }
-    } catch {
-      setRespostas(prev => ({ ...prev, [mensagemId]: '❌ Erro ao conectar' }))
+    if (res.ok) {
+      await fetchDocs()
+      setDocForm({ nome: '', descricao: '', conteudo: '', tipo: 'instrucao' })
+      setShowDocForm(false)
     }
-    setRespondendo(null)
+    setSavingDoc(false)
   }
 
-  const inputStyle = {
-    width: '100%', padding: '8px 12px', borderRadius: '8px',
-    border: '1px solid var(--border)', background: 'var(--bg-hover)',
-    color: 'var(--text-primary)', fontSize: '13px', boxSizing: 'border-box' as const,
+  async function deletarDoc(id: string) {
+    await fetch(`/api/agente/documentos?id=${id}`, { method: 'DELETE' })
+    setDocs(prev => prev.filter(d => d.id !== id))
   }
-  const labelStyle = { fontSize: '12px', color: 'var(--text-secondary)', display: 'block' as const, marginBottom: '6px' }
 
-  if (loadingConfig) return <div style={{ padding: '32px', color: 'var(--text-muted)', fontSize: '14px' }}>Carregando...</div>
+  function toggleDoc(id: string, ativo: boolean) {
+    setDocs(prev => prev.map(d => d.id === id ? { ...d, ativo } : d))
+  }
+
+  const inputStyle: React.CSSProperties = {
+    width: '100%', background: 'var(--bg-surface)', border: '1px solid var(--border)',
+    borderRadius: '8px', padding: '10px 14px', color: 'var(--text-primary)',
+    fontSize: '14px', fontFamily: 'DM Sans, sans-serif', boxSizing: 'border-box'
+  }
+  const labelStyle: React.CSSProperties = {
+    display: 'block', fontSize: '12px', color: 'var(--text-secondary)',
+    marginBottom: '6px', fontFamily: 'DM Sans, sans-serif'
+  }
+  const cardStyle: React.CSSProperties = {
+    background: 'var(--bg-card)', border: '1px solid var(--border)',
+    borderRadius: '12px', padding: '24px', marginBottom: '16px'
+  }
+
+  const TABS = [
+    { id: 'identidade', label: 'Identidade', icon: <Bot size={14} /> },
+    { id: 'instrucoes', label: 'Instruções', icon: <Settings size={14} /> },
+    { id: 'conhecimento', label: 'Base de Conhecimento', icon: <BookOpen size={14} /> },
+    { id: 'preview', label: 'Preview do Prompt', icon: <Eye size={14} /> },
+  ]
 
   return (
-    <div style={{ padding: '32px', maxWidth: '860px' }}>
+    <div style={{ padding: '32px', maxWidth: '900px' }}>
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '28px' }}>
+      <div style={{ marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div>
-          <h1 style={{ fontSize: '22px', fontWeight: '700', color: 'var(--text-primary)', margin: 0 }}>Agente IA</h1>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '13px', marginTop: '4px' }}>
-            Configure e monitore o assistente virtual que responde leads no WhatsApp
-          </p>
+          <h1 style={{ fontFamily: 'Syne, sans-serif', fontSize: '24px', fontWeight: '700', color: 'var(--text-primary)', letterSpacing: '-0.5px', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <Bot size={22} color="var(--accent)" /> Agente IA
+          </h1>
+          <p style={{ color: 'var(--text-muted)', fontSize: '13px' }}>Configure o treinamento e comportamento do agente</p>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <span style={{
-            fontSize: '12px', fontWeight: '500', padding: '4px 10px', borderRadius: '99px',
-            color: config.agente_ativo ? '#22c55e' : '#94a3b8',
-            background: config.agente_ativo ? '#22c55e20' : '#94a3b820',
-          }}>
-            {config.agente_ativo ? '● Ativo' : '○ Inativo'}
-          </span>
-        </div>
-      </div>
-
-      {/* Configurações */}
-      <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: '12px', padding: '24px', marginBottom: '24px' }}>
-        <h2 style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text-primary)', marginTop: 0, marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <Bot size={16} /> Configurações do Agente
-        </h2>
-
-        {/* Toggles principais */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: 'var(--bg-hover)', borderRadius: '10px' }}>
-            <div>
-              <div style={{ fontSize: '13px', fontWeight: '500', color: 'var(--text-primary)' }}>Agente ativo</div>
-              <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Processa mensagens recebidas</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+            <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontFamily: 'DM Sans, sans-serif' }}>Agente ativo</span>
+            <div onClick={() => setConfig(p => ({ ...p, agente_ativo: !p.agente_ativo }))}
+              style={{ width: '40px', height: '22px', borderRadius: '11px', background: config.agente_ativo ? '#22c55e' : 'var(--bg-hover)', cursor: 'pointer', position: 'relative', transition: 'background 0.2s' }}>
+              <div style={{ position: 'absolute', top: '3px', left: config.agente_ativo ? '21px' : '3px', width: '16px', height: '16px', borderRadius: '50%', background: '#fff', transition: 'left 0.2s' }} />
             </div>
-            <input type="checkbox" checked={config.agente_ativo}
-              onChange={e => setConfig(p => ({ ...p, agente_ativo: e.target.checked }))}
-              style={{ width: '16px', height: '16px', cursor: 'pointer' }} />
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: config.agente_resposta_automatica ? '#f59e0b10' : 'var(--bg-hover)', border: config.agente_resposta_automatica ? '1px solid #f59e0b30' : '1px solid transparent', borderRadius: '10px' }}>
-            <div>
-              <div style={{ fontSize: '13px', fontWeight: '500', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                Resposta automática {config.agente_resposta_automatica && <AlertTriangle size={12} color="#f59e0b" />}
+          </label>
+          <button onClick={salvarConfig} disabled={saving}
+            style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '9px 18px', background: saved ? '#22c55e' : 'var(--accent)', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: '600', fontFamily: 'DM Sans, sans-serif', cursor: saving ? 'not-allowed' : 'pointer', transition: 'background 0.2s' }}>
+            {saved ? <><CheckCircle size={14} /> Salvo!</> : saving ? 'Salvando...' : <><Save size={14} /> Salvar</>}
+          </button>
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div style={{ display: 'flex', gap: '4px', marginBottom: '24px', background: 'var(--bg-card)', borderRadius: '10px', padding: '4px', width: 'fit-content', border: '1px solid var(--border)' }}>
+        {TABS.map(tab => (
+          <button key={tab.id} onClick={() => setActiveTab(tab.id as typeof activeTab)}
+            style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', borderRadius: '7px', border: 'none', cursor: 'pointer', fontSize: '13px', fontWeight: '500', fontFamily: 'DM Sans, sans-serif', background: activeTab === tab.id ? 'var(--accent)' : 'transparent', color: activeTab === tab.id ? '#fff' : 'var(--text-secondary)', transition: 'all 0.15s', whiteSpace: 'nowrap' }}>
+            {tab.icon} {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* TAB: Identidade */}
+      {activeTab === 'identidade' && (
+        <div>
+          <div style={cardStyle}>
+            <h2 style={{ fontFamily: 'Syne, sans-serif', fontSize: '15px', fontWeight: '600', color: 'var(--text-primary)', marginTop: 0, marginBottom: '20px' }}>Identidade do Agente</h2>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+              <div>
+                <label style={labelStyle}>Nome do agente</label>
+                <input style={inputStyle} value={config.agente_nome} onChange={e => setConfig(p => ({ ...p, agente_nome: e.target.value }))} placeholder="Ex: Ana" />
               </div>
-              <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Envia sem aprovação humana</div>
+              <div>
+                <label style={labelStyle}>Tom de voz</label>
+                <select style={inputStyle} value={config.agente_tom} onChange={e => setConfig(p => ({ ...p, agente_tom: e.target.value }))}>
+                  {TOM_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                </select>
+              </div>
             </div>
-            <input type="checkbox" checked={config.agente_resposta_automatica}
-              onChange={e => setConfig(p => ({ ...p, agente_resposta_automatica: e.target.checked }))}
-              style={{ width: '16px', height: '16px', cursor: 'pointer' }} />
+            <div>
+              <label style={labelStyle}>Objetivo principal</label>
+              <select style={inputStyle} value={config.agente_foco} onChange={e => setConfig(p => ({ ...p, agente_foco: e.target.value }))}>
+                {FOCO_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+              </select>
+            </div>
           </div>
-        </div>
 
-        {config.agente_resposta_automatica && (
-          <div style={{ marginBottom: '16px', padding: '10px 14px', borderRadius: '8px', background: '#f59e0b10', border: '1px solid #f59e0b30', fontSize: '12px', color: '#f59e0b' }}>
-            ⚠️ Quando ativo, o agente responde leads automaticamente sem aprovação humana. Use com cautela.
-          </div>
-        )}
-
-        {/* Nome e modelo */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
-          <div>
-            <label style={labelStyle}>Nome do agente</label>
-            <input value={config.agente_nome} onChange={e => setConfig(p => ({ ...p, agente_nome: e.target.value }))} style={inputStyle} />
-          </div>
-          <div>
-            <label style={labelStyle}>Modelo</label>
-            <select value={config.agente_modelo} onChange={e => setConfig(p => ({ ...p, agente_modelo: e.target.value }))} style={inputStyle}>
-              <option value="claude-sonnet-4-20250514">Claude Sonnet 4</option>
-            </select>
-          </div>
-        </div>
-
-        {/* Max tokens */}
-        <div style={{ marginBottom: '16px' }}>
-          <label style={labelStyle}>Máximo de tokens na resposta: <strong style={{ color: 'var(--text-primary)' }}>{config.agente_max_tokens}</strong></label>
-          <input type="range" min={100} max={1000} step={50} value={config.agente_max_tokens}
-            onChange={e => setConfig(p => ({ ...p, agente_max_tokens: Number(e.target.value) }))}
-            style={{ width: '100%', accentColor: 'var(--accent)' }} />
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'var(--text-muted)' }}>
-            <span>100</span><span>1000</span>
-          </div>
-        </div>
-
-        {/* Horário */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px', marginBottom: '16px' }}>
-          <div>
-            <label style={labelStyle}>Horário início</label>
-            <input type="time" value={config.agente_horario_inicio} onChange={e => setConfig(p => ({ ...p, agente_horario_inicio: e.target.value }))} style={inputStyle} />
-          </div>
-          <div>
-            <label style={labelStyle}>Horário fim</label>
-            <input type="time" value={config.agente_horario_fim} onChange={e => setConfig(p => ({ ...p, agente_horario_fim: e.target.value }))} style={inputStyle} />
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', paddingTop: '20px' }}>
-            <input type="checkbox" id="dias_uteis" checked={config.agente_apenas_dias_uteis}
-              onChange={e => setConfig(p => ({ ...p, agente_apenas_dias_uteis: e.target.checked }))} />
-            <label htmlFor="dias_uteis" style={{ fontSize: '13px', color: 'var(--text-secondary)', cursor: 'pointer' }}>Apenas dias úteis</label>
-          </div>
-        </div>
-
-        {/* Prompt */}
-        <div style={{ marginBottom: '20px' }}>
-          <label style={labelStyle}>Prompt do sistema — use {'{nome}'}, {'{nb}'}, {'{banco}'}, {'{valor}'}, {'{ganho}'}</label>
-          <textarea value={config.agente_prompt_sistema} onChange={e => setConfig(p => ({ ...p, agente_prompt_sistema: e.target.value }))}
-            rows={10} style={{ ...inputStyle, resize: 'vertical', fontFamily: 'monospace', fontSize: '12px', lineHeight: '1.5' }} />
-        </div>
-
-        <button onClick={salvar} disabled={saving} style={{
-          display: 'flex', alignItems: 'center', gap: '7px', padding: '9px 20px',
-          borderRadius: '8px', background: saved ? '#22c55e' : 'var(--accent)', color: '#fff',
-          border: 'none', fontSize: '13px', fontWeight: '500', cursor: saving ? 'not-allowed' : 'pointer',
-          opacity: saving ? 0.7 : 1, transition: 'background 0.2s',
-        }}>
-          {saved ? <CheckCircle size={14} /> : <Save size={14} />}
-          {saving ? 'Salvando...' : saved ? 'Salvo!' : 'Salvar configurações'}
-        </button>
-      </div>
-
-      {/* Caixa de entrada */}
-      <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: '12px', padding: '24px' }}>
-        <h2 style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text-primary)', marginTop: 0, marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <MessageSquare size={16} /> Caixa de Entrada
-          <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '400' }}>Mensagens recebidas dos leads</span>
-        </h2>
-
-        {mensagens.length === 0 && (
-          <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--text-muted)', fontSize: '13px' }}>
-            <MessageSquare size={28} style={{ marginBottom: '10px', opacity: 0.3 }} />
-            <p>Nenhuma mensagem recebida ainda</p>
-          </div>
-        )}
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          {mensagens.map(msg => {
-            const isRespondendo = respondendo === msg.id
-            const respostaGerada = respostas[msg.id]
-            return (
-              <div key={msg.id} style={{
-                border: '1px solid var(--border)', borderRadius: '10px', padding: '16px',
-                background: msg.respondido_por_agente ? '#22c55e05' : 'var(--bg-hover)',
-              }}>
-                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '10px' }}>
-                  <div>
-                    <div style={{ fontSize: '13px', fontWeight: '500', color: 'var(--text-primary)' }}>
-                      {msg.leads?.nome || msg.telefone_remetente.replace('whatsapp:', '')}
-                    </div>
-                    <div style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <Clock size={10} /> {new Date(msg.created_at).toLocaleString('pt-BR')}
-                      {msg.respondido_por_agente && (
-                        <span style={{ color: '#22c55e', display: 'flex', alignItems: 'center', gap: '3px' }}>
-                          <CheckCircle size={10} /> IA respondeu
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  {!msg.respondido_por_agente && (
-                    <button onClick={() => responderComIA(msg.id)} disabled={isRespondendo} style={{
-                      display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px',
-                      borderRadius: '8px', background: isRespondendo ? 'var(--bg-hover)' : 'var(--accent-glow)',
-                      color: isRespondendo ? 'var(--text-muted)' : 'var(--accent)',
-                      border: '1px solid var(--border)', fontSize: '12px', fontWeight: '500',
-                      cursor: isRespondendo ? 'not-allowed' : 'pointer',
-                    }}>
-                      <Sparkles size={12} />
-                      {isRespondendo ? 'Gerando...' : 'Responder com IA'}
-                    </button>
-                  )}
-                </div>
-
-                {/* Mensagem do lead */}
-                <div style={{ padding: '10px 12px', borderRadius: '8px', background: 'var(--bg-surface)', fontSize: '13px', color: 'var(--text-secondary)', marginBottom: (respostaGerada || msg.resposta_agente) ? '10px' : 0 }}>
-                  💬 {msg.mensagem}
-                </div>
-
-                {/* Resposta gerada */}
-                {(respostaGerada || msg.resposta_agente) && (
-                  <div style={{ padding: '10px 12px', borderRadius: '8px', background: '#4f7aff10', border: '1px solid #4f7aff20', fontSize: '13px', color: 'var(--text-primary)' }}>
-                    <div style={{ fontSize: '11px', color: 'var(--accent)', marginBottom: '4px', fontWeight: '500' }}>🤖 Resposta da Ana:</div>
-                    {respostaGerada || msg.resposta_agente}
-                  </div>
-                )}
+          <div style={cardStyle}>
+            <h2 style={{ fontFamily: 'Syne, sans-serif', fontSize: '15px', fontWeight: '600', color: 'var(--text-primary)', marginTop: 0, marginBottom: '20px' }}>Horário de Atendimento</h2>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+              <div>
+                <label style={labelStyle}>Início</label>
+                <input type="time" style={inputStyle} value={config.agente_horario_inicio} onChange={e => setConfig(p => ({ ...p, agente_horario_inicio: e.target.value }))} />
               </div>
-            )
-          })}
+              <div>
+                <label style={labelStyle}>Fim</label>
+                <input type="time" style={inputStyle} value={config.agente_horario_fim} onChange={e => setConfig(p => ({ ...p, agente_horario_fim: e.target.value }))} />
+              </div>
+            </div>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
+              <input type="checkbox" checked={config.agente_apenas_dias_uteis} onChange={e => setConfig(p => ({ ...p, agente_apenas_dias_uteis: e.target.checked }))} />
+              <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontFamily: 'DM Sans, sans-serif' }}>Apenas dias úteis (Seg–Sex)</span>
+            </label>
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* TAB: Instruções */}
+      {activeTab === 'instrucoes' && (
+        <div>
+          <div style={cardStyle}>
+            <h2 style={{ fontFamily: 'Syne, sans-serif', fontSize: '15px', fontWeight: '600', color: 'var(--text-primary)', marginTop: 0, marginBottom: '6px' }}>Prompt Base</h2>
+            <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '16px', fontFamily: 'DM Sans, sans-serif' }}>
+              Instruções principais do agente. Use {'{nome}'}, {'{nb}'}, {'{banco}'}, {'{valor}'}, {'{ganho}'} como variáveis do lead.
+            </p>
+            <textarea style={{ ...inputStyle, minHeight: '200px', resize: 'vertical' }}
+              value={config.agente_prompt_sistema}
+              onChange={e => setConfig(p => ({ ...p, agente_prompt_sistema: e.target.value }))}
+              placeholder="Você é Ana, assistente do escritório..." />
+          </div>
+
+          <div style={cardStyle}>
+            <h2 style={{ fontFamily: 'Syne, sans-serif', fontSize: '15px', fontWeight: '600', color: 'var(--text-primary)', marginTop: 0, marginBottom: '6px' }}>Frases Proibidas</h2>
+            <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '16px', fontFamily: 'DM Sans, sans-serif' }}>Uma por linha. O agente nunca usará essas frases.</p>
+            <textarea style={{ ...inputStyle, minHeight: '120px', resize: 'vertical' }}
+              value={config.agente_frases_proibidas}
+              onChange={e => setConfig(p => ({ ...p, agente_frases_proibidas: e.target.value }))}
+              placeholder={'Garantimos o resultado\nVocê vai receber X reais\nIsso é certeza'} />
+          </div>
+
+          <div style={cardStyle}>
+            <h2 style={{ fontFamily: 'Syne, sans-serif', fontSize: '15px', fontWeight: '600', color: 'var(--text-primary)', marginTop: 0, marginBottom: '6px' }}>Como Lidar com Objeções</h2>
+            <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '16px', fontFamily: 'DM Sans, sans-serif' }}>Instrua o agente sobre respostas a objeções comuns.</p>
+            <textarea style={{ ...inputStyle, minHeight: '120px', resize: 'vertical' }}
+              value={config.agente_objeccoes}
+              onChange={e => setConfig(p => ({ ...p, agente_objeccoes: e.target.value }))}
+              placeholder={"Se disser 'não tenho interesse': agradeça e encerre educadamente\nSe disser 'já tentei e não deu': explique que cada caso é único"} />
+          </div>
+        </div>
+      )}
+
+      {/* TAB: Base de Conhecimento */}
+      {activeTab === 'conhecimento' && (
+        <div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <p style={{ fontSize: '13px', color: 'var(--text-secondary)', fontFamily: 'DM Sans, sans-serif', margin: 0 }}>
+              {docs.filter(d => d.ativo).length} documento(s) ativo(s) — injetados no contexto do agente
+            </p>
+            <button onClick={() => setShowDocForm(true)}
+              style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '9px 16px', background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: '600', fontFamily: 'DM Sans, sans-serif', cursor: 'pointer' }}>
+              <Plus size={14} /> Adicionar Documento
+            </button>
+          </div>
+
+          {showDocForm && (
+            <div style={{ ...cardStyle, border: '1px solid var(--accent)' }}>
+              <h3 style={{ fontFamily: 'Syne, sans-serif', fontSize: '14px', fontWeight: '600', color: 'var(--text-primary)', marginTop: 0, marginBottom: '16px' }}>Novo Documento</h3>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+                <div>
+                  <label style={labelStyle}>Nome</label>
+                  <input style={inputStyle} value={docForm.nome} onChange={e => setDocForm(p => ({ ...p, nome: e.target.value }))} placeholder="Ex: Script de abordagem inicial" />
+                </div>
+                <div>
+                  <label style={labelStyle}>Tipo</label>
+                  <select style={inputStyle} value={docForm.tipo} onChange={e => setDocForm(p => ({ ...p, tipo: e.target.value }))}>
+                    {TIPO_DOC_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div style={{ marginBottom: '12px' }}>
+                <label style={labelStyle}>Descrição (opcional)</label>
+                <input style={inputStyle} value={docForm.descricao} onChange={e => setDocForm(p => ({ ...p, descricao: e.target.value }))} placeholder="Breve descrição do conteúdo" />
+              </div>
+              <div style={{ marginBottom: '16px' }}>
+                <label style={labelStyle}>Conteúdo</label>
+                <textarea style={{ ...inputStyle, minHeight: '160px', resize: 'vertical' }}
+                  value={docForm.conteudo} onChange={e => setDocForm(p => ({ ...p, conteudo: e.target.value }))}
+                  placeholder="Cole aqui o conteúdo do documento..." />
+              </div>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button onClick={adicionarDoc} disabled={savingDoc}
+                  style={{ padding: '9px 18px', background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: '600', fontFamily: 'DM Sans, sans-serif', cursor: 'pointer' }}>
+                  {savingDoc ? 'Salvando...' : 'Salvar Documento'}
+                </button>
+                <button onClick={() => setShowDocForm(false)}
+                  style={{ padding: '9px 18px', background: 'var(--bg-hover)', color: 'var(--text-secondary)', border: 'none', borderRadius: '8px', fontSize: '13px', fontFamily: 'DM Sans, sans-serif', cursor: 'pointer' }}>
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          )}
+
+          {docs.length === 0 && !showDocForm && (
+            <div style={{ ...cardStyle, textAlign: 'center', padding: '48px' }}>
+              <BookOpen size={32} color="var(--text-muted)" style={{ marginBottom: '12px' }} />
+              <p style={{ color: 'var(--text-muted)', fontSize: '14px', fontFamily: 'DM Sans, sans-serif', margin: '0 0 4px' }}>Nenhum documento ainda</p>
+              <p style={{ color: 'var(--text-muted)', fontSize: '12px', fontFamily: 'DM Sans, sans-serif', margin: 0 }}>Adicione scripts, manuais, FAQ ou legislação para treinar o agente</p>
+            </div>
+          )}
+
+          {docs.map(doc => (
+            <div key={doc.id} style={{ ...cardStyle, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                  <span style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text-primary)', fontFamily: 'DM Sans, sans-serif' }}>{doc.nome}</span>
+                  <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '20px', background: 'rgba(79,122,255,0.12)', color: 'var(--accent)' }}>
+                    {TIPO_DOC_OPTIONS.find(t => t.value === doc.tipo)?.label || doc.tipo}
+                  </span>
+                </div>
+                {doc.descricao && <p style={{ fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'DM Sans, sans-serif', margin: '0 0 8px' }}>{doc.descricao}</p>}
+                <p style={{ fontSize: '12px', color: 'var(--text-secondary)', fontFamily: 'DM Sans, sans-serif', margin: 0 }}>
+                  {doc.conteudo.substring(0, 120)}{doc.conteudo.length > 120 ? '...' : ''}
+                </p>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginLeft: '16px' }}>
+                <div onClick={() => toggleDoc(doc.id, !doc.ativo)}
+                  style={{ width: '36px', height: '20px', borderRadius: '10px', background: doc.ativo ? '#22c55e' : 'var(--bg-hover)', cursor: 'pointer', position: 'relative', flexShrink: 0 }}>
+                  <div style={{ position: 'absolute', top: '2px', left: doc.ativo ? '18px' : '2px', width: '16px', height: '16px', borderRadius: '50%', background: '#fff', transition: 'left 0.15s' }} />
+                </div>
+                <button onClick={() => deletarDoc(doc.id)}
+                  style={{ padding: '6px', background: 'transparent', border: '1px solid var(--border)', borderRadius: '6px', cursor: 'pointer', color: '#ef4444' }}>
+                  <Trash2 size={13} />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* TAB: Preview */}
+      {activeTab === 'preview' && (
+        <div style={cardStyle}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div>
+              <h2 style={{ fontFamily: 'Syne, sans-serif', fontSize: '15px', fontWeight: '600', color: 'var(--text-primary)', marginTop: 0, marginBottom: '4px' }}>System Prompt Final</h2>
+              <p style={{ fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'DM Sans, sans-serif', margin: 0 }}>Exatamente o que será enviado ao Claude como contexto</p>
+            </div>
+            <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'DM Sans, sans-serif' }}>
+              {gerarPromptFinal(config, docs).length} caracteres
+            </span>
+          </div>
+          <pre style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: '8px', padding: '16px', fontSize: '12px', color: 'var(--text-secondary)', fontFamily: 'monospace', whiteSpace: 'pre-wrap', wordBreak: 'break-word', maxHeight: '500px', overflowY: 'auto', margin: 0 }}>
+            {gerarPromptFinal(config, docs) || '(prompt vazio — configure as abas Identidade e Instruções)'}
+          </pre>
+        </div>
+      )}
     </div>
   )
 }
