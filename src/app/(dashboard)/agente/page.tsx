@@ -1,6 +1,29 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { Bot, Save, Plus, Trash2, Eye, CheckCircle, BookOpen, Settings } from 'lucide-react'
+import { useOnboarding } from '@/hooks/useOnboarding'
+import OnboardingTooltip from '@/components/onboarding-tooltip'
+
+const TOUR_AGENTE = [
+  {
+    target: '[data-tour="agente-toggle"]',
+    title: 'Ativar/Desativar agente',
+    description: 'Controle se o agente responde automaticamente às mensagens recebidas no WhatsApp.',
+    position: 'bottom' as const,
+  },
+  {
+    target: '[data-tour="agente-tabs"]',
+    title: 'Configuração do Agente',
+    description: 'Configure identidade, instruções de comportamento, base de conhecimento e visualize o prompt final gerado.',
+    position: 'bottom' as const,
+  },
+  {
+    target: '[data-tour="agente-preview"]',
+    title: 'Preview do prompt',
+    description: 'Veja exatamente o que o agente recebe como instrução — combinando todas as configurações em um único prompt.',
+    position: 'bottom' as const,
+  },
+]
 
 interface Config {
   agente_ativo: boolean
@@ -75,6 +98,7 @@ function gerarPromptFinal(config: Config, docs: Documento[]): string {
 }
 
 export default function AgentePage() {
+  const { active: tourActive, step: tourStep, next: tourNext, finish: tourFinish } = useOnboarding('agente')
   const [activeTab, setActiveTab] = useState<'identidade' | 'instrucoes' | 'conhecimento' | 'preview'>('identidade')
   const [config, setConfig] = useState<Config>({
     agente_ativo: false,
@@ -188,7 +212,7 @@ export default function AgentePage() {
           </h1>
           <p style={{ color: 'var(--text-muted)', fontSize: '13px' }}>Configure o treinamento e comportamento do agente</p>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <div data-tour="agente-toggle" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
             <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontFamily: 'DM Sans, sans-serif' }}>Agente ativo</span>
             <div onClick={() => setConfig(p => ({ ...p, agente_ativo: !p.agente_ativo }))}
@@ -204,9 +228,10 @@ export default function AgentePage() {
       </div>
 
       {/* Tabs */}
-      <div style={{ display: 'flex', gap: '4px', marginBottom: '24px', background: 'var(--bg-card)', borderRadius: '10px', padding: '4px', width: 'fit-content', border: '1px solid var(--border)' }}>
+      <div data-tour="agente-tabs" style={{ display: 'flex', gap: '4px', marginBottom: '24px', background: 'var(--bg-card)', borderRadius: '10px', padding: '4px', width: 'fit-content', border: '1px solid var(--border)' }}>
         {TABS.map(tab => (
           <button key={tab.id} onClick={() => setActiveTab(tab.id as typeof activeTab)}
+            data-tour={tab.id === 'preview' ? 'agente-preview' : undefined}
             style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', borderRadius: '7px', border: 'none', cursor: 'pointer', fontSize: '13px', fontWeight: '500', fontFamily: 'DM Sans, sans-serif', background: activeTab === tab.id ? 'var(--accent)' : 'transparent', color: activeTab === tab.id ? '#fff' : 'var(--text-secondary)', transition: 'all 0.15s', whiteSpace: 'nowrap' }}>
             {tab.icon} {tab.label}
           </button>
@@ -448,6 +473,21 @@ export default function AgentePage() {
             </div>
           ))}
         </div>
+      )}
+
+      {tourActive && tourStep < TOUR_AGENTE.length && (
+        <OnboardingTooltip
+          key={tourStep}
+          targetSelector={TOUR_AGENTE[tourStep].target}
+          title={TOUR_AGENTE[tourStep].title}
+          description={TOUR_AGENTE[tourStep].description}
+          position={TOUR_AGENTE[tourStep].position}
+          step={tourStep}
+          totalSteps={TOUR_AGENTE.length}
+          onNext={tourNext}
+          onSkip={tourFinish}
+          isLast={tourStep === TOUR_AGENTE.length - 1}
+        />
       )}
 
       {/* TAB: Preview */}

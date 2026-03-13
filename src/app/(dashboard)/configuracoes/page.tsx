@@ -1,6 +1,7 @@
 import { requireAdmin } from '@/lib/auth/get-user-role'
 import { redirect } from 'next/navigation'
 import UsuariosManager from '@/components/usuarios-manager'
+import OnboardingResetSection from '@/components/onboarding-reset-section'
 
 export default async function ConfiguracoesPage() {
   const user = await requireAdmin()
@@ -15,6 +16,7 @@ export default async function ConfiguracoesPage() {
         <p style={{ color: 'var(--text-muted)', fontSize: '13px' }}>Gerencie os usuários do escritório</p>
       </div>
       <UsuariosManager />
+      <OnboardingResetSection />
     </div>
   )
 }

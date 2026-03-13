@@ -1,6 +1,29 @@
 'use client'
 import { useEffect, useState, useRef } from 'react'
 import { MessageSquare, User, Bot, UserCheck, RotateCcw, Send } from 'lucide-react'
+import { useOnboarding } from '@/hooks/useOnboarding'
+import OnboardingTooltip from '@/components/onboarding-tooltip'
+
+const TOUR_INBOX = [
+  {
+    target: '[data-tour="inbox-filtros"]',
+    title: 'Filtros de conversa',
+    description: 'Filtre entre todas as conversas, as gerenciadas pelo agente IA ou as assumidas por um humano.',
+    position: 'bottom' as const,
+  },
+  {
+    target: '[data-tour="inbox-lista"]',
+    title: 'Lista de conversas',
+    description: 'Cada card mostra o lead, última mensagem e tempo. Badge azul indica mensagens não lidas.',
+    position: 'right' as const,
+  },
+  {
+    target: '[data-tour="inbox-painel"]',
+    title: 'Painel da conversa',
+    description: 'Selecione uma conversa para ver o histórico completo. Você pode assumir o atendimento a qualquer momento.',
+    position: 'left' as const,
+  },
+]
 
 interface Conversa {
   id: string
@@ -39,6 +62,7 @@ function formatTime(dt: string) {
 }
 
 export default function CaixaDeEntradaPage() {
+  const { active: tourActive, step: tourStep, next: tourNext, finish: tourFinish } = useOnboarding('caixa-de-entrada')
   const [conversas, setConversas] = useState<Conversa[]>([])
   const [conversaSelecionada, setConversaSelecionada] = useState<Conversa | null>(null)
   const [mensagens, setMensagens] = useState<Mensagem[]>([])
@@ -132,7 +156,7 @@ export default function CaixaDeEntradaPage() {
           <h1 style={{ fontFamily: 'Syne, sans-serif', fontSize: '18px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '12px', marginTop: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
             <MessageSquare size={18} color="var(--accent)" /> Caixa de Entrada
           </h1>
-          <div style={{ display: 'flex', gap: '4px' }}>
+          <div data-tour="inbox-filtros" style={{ display: 'flex', gap: '4px' }}>
             {(['todas', 'agente', 'humano'] as const).map(f => (
               <button key={f} onClick={() => setFiltro(f)}
                 style={{ flex: 1, padding: '6px 8px', borderRadius: '6px', border: 'none', cursor: 'pointer', fontSize: '12px', fontWeight: '500', fontFamily: 'DM Sans, sans-serif', background: filtro === f ? 'var(--accent)' : 'var(--bg-hover)', color: filtro === f ? '#fff' : 'var(--text-secondary)' }}>
@@ -142,7 +166,7 @@ export default function CaixaDeEntradaPage() {
           </div>
         </div>
 
-        <div style={{ flex: 1, overflowY: 'auto' }}>
+        <div data-tour="inbox-lista" style={{ flex: 1, overflowY: 'auto' }}>
           {loading && <p style={{ padding: '20px', color: 'var(--text-muted)', fontSize: '13px', fontFamily: 'DM Sans, sans-serif', textAlign: 'center' }}>Carregando...</p>}
           {!loading && conversasFiltradas.length === 0 && (
             <div style={{ padding: '40px 20px', textAlign: 'center' }}>
@@ -188,12 +212,12 @@ export default function CaixaDeEntradaPage() {
 
       {/* Painel da conversa */}
       {!conversaSelecionada ? (
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '12px' }}>
+        <div data-tour="inbox-painel" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '12px' }}>
           <MessageSquare size={40} color="var(--text-muted)" />
           <p style={{ color: 'var(--text-muted)', fontSize: '14px', fontFamily: 'DM Sans, sans-serif' }}>Selecione uma conversa</p>
         </div>
       ) : (
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        <div data-tour="inbox-painel" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
 
           {/* Header */}
           <div style={{ padding: '16px 24px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-surface)' }}>
@@ -294,6 +318,21 @@ export default function CaixaDeEntradaPage() {
             </div>
           )}
         </div>
+      )}
+
+      {tourActive && tourStep < TOUR_INBOX.length && (
+        <OnboardingTooltip
+          key={tourStep}
+          targetSelector={TOUR_INBOX[tourStep].target}
+          title={TOUR_INBOX[tourStep].title}
+          description={TOUR_INBOX[tourStep].description}
+          position={TOUR_INBOX[tourStep].position}
+          step={tourStep}
+          totalSteps={TOUR_INBOX.length}
+          onNext={tourNext}
+          onSkip={tourFinish}
+          isLast={tourStep === TOUR_INBOX.length - 1}
+        />
       )}
     </div>
   )

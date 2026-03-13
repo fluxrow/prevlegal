@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import KanbanBoard from '@/components/kanban-board'
+import LeadsOnboardingTour from '@/components/leads-onboarding-tour'
 import { Users, DollarSign, TrendingUp } from 'lucide-react'
 
 export default async function LeadsPage() {
@@ -38,7 +39,7 @@ export default async function LeadsPage() {
             Arraste os cards para mover entre etapas
           </p>
         </div>
-        <a href="/leads/import" style={{
+        <a data-tour="leads-import" href="/leads/import" style={{
           display: 'flex', alignItems: 'center', gap: '6px',
           padding: '8px 16px', background: 'var(--accent)',
           color: '#fff', borderRadius: '8px', textDecoration: 'none',
@@ -47,7 +48,7 @@ export default async function LeadsPage() {
       </div>
 
       {/* Mini stats */}
-      <div style={{ display: 'flex', gap: '12px', marginBottom: '24px' }}>
+      <div data-tour="leads-stats" style={{ display: 'flex', gap: '12px', marginBottom: '24px' }}>
         {[
           { icon: Users, label: `${total} leads`, color: 'var(--accent)' },
           { icon: DollarSign, label: fmt(potencial), color: 'var(--green)' },
@@ -66,7 +67,11 @@ export default async function LeadsPage() {
       </div>
 
       {/* Kanban */}
-      <KanbanBoard initialLeads={leads || []} />
+      <div data-tour="leads-kanban">
+        <KanbanBoard initialLeads={leads || []} />
+      </div>
+
+      <LeadsOnboardingTour />
     </div>
   )
 }
