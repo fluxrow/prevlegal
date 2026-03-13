@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
     .maybeSingle()
 
   // 5. Salvar mensagem inbound
-  const { error: insertError } = await supabase
+  const { data: mensagemInserida, error: insertError } = await supabase
     .from('mensagens_inbound')
     .insert({
       lead_id: lead?.id || null,
@@ -61,9 +61,51 @@ export async function POST(request: NextRequest) {
       mensagem: body_msg,
       twilio_message_sid: messageSid,
     })
+    .select('id')
+    .single()
 
   if (insertError) {
     console.error('Erro ao salvar mensagem inbound:', insertError)
+  }
+
+  // 5b. Upsert conversa (thread por telefone)
+  if (mensagemInserida) {
+    const { data: conversaExistente } = await supabase
+      .from('conversas')
+      .select('id, nao_lidas')
+      .eq('telefone', from)
+      .maybeSingle()
+
+    if (conversaExistente) {
+      await supabase.from('conversas').update({
+        ultima_mensagem: body_msg,
+        ultima_mensagem_at: new Date().toISOString(),
+        nao_lidas: (conversaExistente.nao_lidas || 0) + 1,
+      }).eq('id', conversaExistente.id)
+
+      await supabase.from('mensagens_inbound')
+        .update({ conversa_id: conversaExistente.id })
+        .eq('id', mensagemInserida.id)
+    } else {
+      const { data: novaConversa } = await supabase
+        .from('conversas')
+        .insert({
+          telefone: from,
+          lead_id: lead?.id || null,
+          status: 'agente',
+          ultima_mensagem: body_msg,
+          ultima_mensagem_at: new Date().toISOString(),
+          nao_lidas: 1,
+        })
+        .select('id')
+        .single()
+
+      if (novaConversa) {
+        await supabase.from('mensagens_inbound')
+          .update({ conversa_id: novaConversa.id })
+          .eq('id', mensagemInserida.id)
+      }
+    }
   }
 
   // 6. Se lead encontrado, atualizar status da mensagem na campanha e status do lead
