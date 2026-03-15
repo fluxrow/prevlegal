@@ -42,3 +42,4 @@ next-env.d.ts
 
 # Backup manual de credenciais local
 project-credentials.txt
+.env*.local
