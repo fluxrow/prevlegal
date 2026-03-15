@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { ArrowLeft, User, FileText, CreditCard, MessageSquare, Upload, Trash2, File, ExternalLink } from 'lucide-react'
 import CalculadoraPrev from '@/components/calculadora-prev'
+import GeradorDocumentosIA from '@/components/gerador-documentos-ia'
 
 interface Lead {
   id: string
@@ -404,6 +405,11 @@ export default function LeadDetailPage() {
 
       {/* Calculadora Previdenciária */}
       <CalculadoraPrev leadId={id} />
+
+      {/* Gerador de Documentos IA */}
+      <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: '14px', padding: '24px', marginTop: '24px' }}>
+        <GeradorDocumentosIA leadId={id} leadNome={lead.nome} />
+      </div>
     </div>
   )
 }
