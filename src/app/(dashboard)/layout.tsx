@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Sidebar from '@/components/sidebar'
 import NotificacoesBell from '@/components/notificacoes-bell'
+import BuscaGlobal from '@/components/busca-global'
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
     const supabase = await createClient()
@@ -22,7 +23,10 @@ export default async function DashboardLayout({ children }: { children: React.Re
                     padding: '0 20px',
                     flexShrink: 0,
                 }}>
-                    <NotificacoesBell />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <BuscaGlobal />
+                        <NotificacoesBell />
+                    </div>
                 </header>
                 <main style={{ flex: 1, overflow: 'auto', background: 'var(--bg)' }}>
                     {children}
