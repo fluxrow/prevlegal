@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { ArrowLeft, User, FileText, CreditCard, MessageSquare, Upload, Trash2, File, ExternalLink } from 'lucide-react'
+import CalculadoraPrev from '@/components/calculadora-prev'
 
 interface Lead {
   id: string
@@ -400,6 +401,9 @@ export default function LeadDetailPage() {
           </div>
         </div>
       )}
+
+      {/* Calculadora Previdenciária */}
+      <CalculadoraPrev leadId={id} />
     </div>
   )
 }
