@@ -42,7 +42,7 @@ export default function BuscaGlobal() {
   const [selecionado, setSelecionado] = useState(0)
   const inputRef = useRef<HTMLInputElement>(null)
   const router = useRouter()
-  const debounceRef = useRef<ReturnType<typeof setTimeout>>()
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 
   // Atalho ⌘K / Ctrl+K
   useEffect(() => {
