@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import KanbanBoard from '@/components/kanban-board'
 import LeadsOnboardingTour from '@/components/leads-onboarding-tour'
+import LeadsNovoLeadButton from '@/components/leads-novo-lead-button'
 import { Users, DollarSign, TrendingUp } from 'lucide-react'
 
 export default async function LeadsPage() {
@@ -11,7 +12,7 @@ export default async function LeadsPage() {
 
   const { data: leads } = await supabase
     .from('leads')
-    .select('id, nome, nb, status, score, ganho_potencial, tipo_beneficio, banco')
+    .select('id, nome, nb, status, score, ganho_potencial, tipo_beneficio, banco, origem')
     .eq('lgpd_optout', false)
     .order('score', { ascending: false })
 
@@ -39,12 +40,16 @@ export default async function LeadsPage() {
             Arraste os cards para mover entre etapas
           </p>
         </div>
-        <a data-tour="leads-import" href="/leads/import" style={{
-          display: 'flex', alignItems: 'center', gap: '6px',
-          padding: '8px 16px', background: 'var(--accent)',
-          color: '#fff', borderRadius: '8px', textDecoration: 'none',
-          fontSize: '13px', fontWeight: '600', fontFamily: 'Syne, sans-serif'
-        }}>+ Importar lista</a>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <LeadsNovoLeadButton />
+          <a data-tour="leads-import" href="/leads/import" style={{
+            display: 'flex', alignItems: 'center', gap: '6px',
+            padding: '8px 16px', background: 'var(--bg-surface)',
+            color: 'var(--text-secondary)', borderRadius: '8px', textDecoration: 'none',
+            fontSize: '13px', fontWeight: '600', fontFamily: 'Syne, sans-serif',
+            border: '1px solid var(--border)',
+          }}>+ Importar lista</a>
+        </div>
       </div>
 
       {/* Mini stats */}

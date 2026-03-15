@@ -13,6 +13,7 @@ type Lead = {
   ganho_potencial: number | null
   tipo_beneficio: string | null
   banco: string | null
+  origem?: string | null
 }
 
 type Column = {
@@ -97,6 +98,16 @@ function LeadCard({
           <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '1px' }}>
             NB {lead.nb}
           </div>
+          {lead.origem === 'manual' && (
+            <span style={{
+              fontSize: '9px', fontWeight: '700', background: 'rgba(167,139,250,0.12)',
+              color: 'var(--purple)', border: '1px solid rgba(167,139,250,0.25)',
+              borderRadius: '20px', padding: '1px 7px', textTransform: 'uppercase',
+              letterSpacing: '0.04em', display: 'inline-block', marginTop: '3px',
+            }}>
+              Manual
+            </span>
+          )}
         </div>
       </div>
 
