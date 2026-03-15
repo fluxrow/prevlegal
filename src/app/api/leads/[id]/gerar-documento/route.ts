@@ -24,10 +24,18 @@ export async function POST(
     .single()
   if (!lead) return NextResponse.json({ error: 'Lead não encontrado' }, { status: 404 })
 
-  // Busca perfil do advogado (configuracoes)
+  // Busca perfil do advogado logado na tabela advogados
+  const { data: usuarioLogado } = await supabase
+    .from('usuarios')
+    .select('id')
+    .eq('auth_id', user.id)
+    .limit(1)
+    .single()
+
   const { data: config } = await supabase
-    .from('configuracoes')
-    .select('advogado_nome, advogado_email, oab_numero, oab_estado, escritorio_nome, escritorio_endereco, escritorio_cidade, escritorio_estado, assinatura_texto, assinatura_rodape')
+    .from('advogados')
+    .select('nome, email, oab_numero, oab_estado, escritorio_nome, escritorio_endereco, escritorio_cidade, escritorio_estado, assinatura_texto, assinatura_rodape')
+    .eq('usuario_id', usuarioLogado?.id)
     .limit(1)
     .single()
 
@@ -46,7 +54,7 @@ export async function POST(
     leadBanco: lead.banco,
     leadValorRma: lead.valor_rma,
     leadGanhoPotencial: lead.ganho_potencial,
-    advogadoNome: config?.advogado_nome || '',
+    advogadoNome: config?.nome || '',
     advogadoOabNumero: config?.oab_numero || '',
     advogadoOabEstado: config?.oab_estado || '',
     escritorioNome: config?.escritorio_nome,
@@ -64,7 +72,7 @@ export async function POST(
       : undefined,
     melhorRegra: calc?.regra_aplicavel ?? undefined,
     dataAtual: new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' }),
-    cidadeAtual: config?.escritorio_cidade,
+    cidadeAtual: config?.escritorio_cidade ?? undefined,
   }
 
   const prompt = buildPrompt(tipo, dados)

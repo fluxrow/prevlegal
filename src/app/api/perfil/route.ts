@@ -1,55 +1,64 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
-
-const CAMPOS_PERFIL = [
-  'advogado_nome', 'advogado_email', 'advogado_telefone', 'advogado_cpf',
-  'advogado_foto_url',
-  'oab_numero', 'oab_estado', 'oab_tipo', 'oab_situacao',
-  'escritorio_nome', 'escritorio_cnpj', 'escritorio_endereco',
-  'escritorio_cidade', 'escritorio_estado', 'escritorio_cep',
-  'escritorio_telefone', 'escritorio_email', 'escritorio_logo_url',
-  'assinatura_texto', 'assinatura_rodape',
-]
+import { createClient } from '@/lib/supabase/server'
+import { NextResponse } from 'next/server'
 
 export async function GET() {
-  const { data } = await supabase
-    .from('configuracoes')
-    .select(CAMPOS_PERFIL.join(', '))
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const { data: usuario } = await supabase
+    .from('usuarios')
+    .select('id, nome, email, role')
+    .eq('auth_id', user.id)
+    .limit(1)
+    .single()
+  if (!usuario) return NextResponse.json({ error: 'Usuário não encontrado' }, { status: 404 })
+
+  const { data: perfil } = await supabase
+    .from('advogados')
+    .select('*')
+    .eq('usuario_id', usuario.id)
     .limit(1)
     .single()
 
-  return NextResponse.json({ perfil: data || {} })
+  return NextResponse.json({ perfil: perfil || {}, usuario })
 }
 
-export async function PUT(request: NextRequest) {
-  const body = await request.json()
+export async function PUT(request: Request) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const update: Record<string, string> = {}
-  CAMPOS_PERFIL.forEach(c => { if (body[c] !== undefined) update[c] = body[c] })
-
-  const { data: existing } = await supabase
-    .from('configuracoes')
+  const { data: usuario } = await supabase
+    .from('usuarios')
     .select('id')
+    .eq('auth_id', user.id)
     .limit(1)
     .single()
+  if (!usuario) return NextResponse.json({ error: 'Usuário não encontrado' }, { status: 404 })
 
-  if (existing) {
-    const { error } = await supabase
-      .from('configuracoes')
-      .update(update)
-      .eq('id', existing.id)
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  } else {
-    const { error } = await supabase
-      .from('configuracoes')
-      .insert({ nome_escritorio: 'Meu Escritório', ...update })
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  const body = await request.json()
+  const campos = [
+    'nome', 'email', 'telefone', 'cpf', 'oab_numero', 'oab_estado',
+    'oab_tipo', 'oab_situacao', 'escritorio_nome', 'escritorio_cnpj',
+    'escritorio_endereco', 'escritorio_cidade', 'escritorio_estado',
+    'escritorio_cep', 'escritorio_telefone', 'escritorio_email',
+    'assinatura_texto', 'assinatura_rodape',
+  ]
+  const update: Record<string, string> = { updated_at: new Date().toISOString() }
+  campos.forEach(c => { if (body[c] !== undefined) update[c] = body[c] })
+
+  const { data, error } = await supabase
+    .from('advogados')
+    .upsert({ usuario_id: usuario.id, ...update }, { onConflict: 'usuario_id' })
+    .select()
+    .single()
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  if (body.nome) {
+    await supabase.from('usuarios').update({ nome: body.nome }).eq('id', usuario.id)
   }
 
-  return NextResponse.json({ ok: true })
+  return NextResponse.json({ perfil: data })
 }
