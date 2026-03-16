@@ -5,11 +5,11 @@ import { User, Building2, FileText, Camera, Save, CheckCircle, AlertCircle, Uplo
 const ESTADOS = ['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO']
 
 interface Perfil {
-  advogado_nome?: string
-  advogado_email?: string
-  advogado_telefone?: string
-  advogado_cpf?: string
-  advogado_foto_url?: string
+  nome?: string
+  email?: string
+  telefone?: string
+  cpf?: string
+  foto_url?: string
   oab_numero?: string
   oab_estado?: string
   oab_tipo?: string
@@ -42,7 +42,17 @@ export default function PerfilPage() {
   useEffect(() => {
     fetch('/api/perfil')
       .then(r => r.json())
-      .then(d => { setPerfil(d.perfil || {}); setLoading(false) })
+      .then(d => {
+        const perfilData = d.perfil || {}
+        if (!perfilData.nome && d.usuario?.nome) {
+          perfilData.nome = d.usuario.nome
+        }
+        if (!perfilData.email && d.usuario?.email) {
+          perfilData.email = d.usuario.email
+        }
+        setPerfil(perfilData)
+        setLoading(false)
+      })
   }, [])
 
   function set(field: keyof Perfil, value: string) {
@@ -75,7 +85,7 @@ export default function PerfilPage() {
     const res = await fetch('/api/perfil/upload', { method: 'POST', body: fd })
     const json = await res.json()
     if (json.url) {
-      setPerfil(p => ({ ...p, [tipo === 'foto' ? 'advogado_foto_url' : 'escritorio_logo_url']: json.url }))
+      setPerfil(p => ({ ...p, [tipo === 'foto' ? 'foto_url' : 'escritorio_logo_url']: json.url }))
       showToast('ok', tipo === 'foto' ? 'Foto atualizada' : 'Logo atualizada')
     } else {
       showToast('erro', 'Erro no upload')
@@ -197,8 +207,8 @@ export default function PerfilPage() {
         <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '20px' }}>
           <div style={{ position: 'relative', flexShrink: 0 }}>
             <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: 'var(--bg)', border: '2px solid var(--border)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              {perfil.advogado_foto_url
-                ? <img src={perfil.advogado_foto_url} alt="Foto" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              {perfil.foto_url
+                ? <img src={perfil.foto_url} alt="Foto" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 : <User size={28} color="var(--text-muted)" />}
             </div>
             <button
@@ -219,10 +229,10 @@ export default function PerfilPage() {
           </div>
         </div>
         <Grid>
-          <Field label="Nome completo *" field="advogado_nome" col="1 / -1" placeholder="Dr. João Silva" />
-          <Field label="Email profissional" field="advogado_email" type="email" placeholder="joao@escritorio.com.br" />
-          <Field label="Telefone" field="advogado_telefone" placeholder="(41) 99999-9999" />
-          <Field label="CPF" field="advogado_cpf" placeholder="000.000.000-00" />
+          <Field label="Nome completo *" field="nome" col="1 / -1" placeholder="Dr. João Silva" />
+          <Field label="Email profissional" field="email" type="email" placeholder="joao@escritorio.com.br" />
+          <Field label="Telefone" field="telefone" placeholder="(41) 99999-9999" />
+          <Field label="CPF" field="cpf" placeholder="000.000.000-00" />
         </Grid>
       </Section>
 
@@ -256,14 +266,14 @@ export default function PerfilPage() {
           />
         </Grid>
 
-        {(perfil.advogado_nome || perfil.oab_numero) && (
+        {(perfil.nome || perfil.oab_numero) && (
           <div style={{ marginTop: '16px', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: '10px', padding: '14px 16px', display: 'flex', alignItems: 'center', gap: '12px' }}>
             <div style={{ width: '38px', height: '38px', background: 'var(--accent)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
               <FileText size={16} color="#fff" />
             </div>
             <div>
               <p style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text-primary)', margin: '0 0 2px', fontFamily: 'DM Sans, sans-serif' }}>
-                {perfil.advogado_nome || 'Advogado'}
+                {perfil.nome || 'Advogado'}
               </p>
               <p style={{ fontSize: '11px', color: 'var(--text-muted)', margin: 0, fontFamily: 'DM Sans, sans-serif' }}>
                 OAB/{perfil.oab_estado || '??'} {perfil.oab_numero || '000000'} — {perfil.oab_situacao === 'ativo' ? '✅ Ativo' : perfil.oab_situacao || 'Situação'}
@@ -320,7 +330,7 @@ export default function PerfilPage() {
           <input
             value={perfil.assinatura_texto || ''}
             onChange={e => set('assinatura_texto', e.target.value)}
-            placeholder={`Dr. ${perfil.advogado_nome || 'Nome'} — OAB/${perfil.oab_estado || 'XX'} ${perfil.oab_numero || '000000'}`}
+            placeholder={`Dr. ${perfil.nome || 'Nome'} — OAB/${perfil.oab_estado || 'XX'} ${perfil.oab_numero || '000000'}`}
             style={inputSt}
           />
         </div>
