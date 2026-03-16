@@ -313,7 +313,7 @@ export function calcularPrev(dados: DadosCalculo): ResultadoCalculo {
     { meses: pedagio50R.faltaMeses, regra: 'Pedágio 50%', idadeMeses: 0 },
     { meses: pontosR.faltaMeses, regra: 'Pontos', idadeMeses: 0 },
     { meses: idadeProgR.faltaTcMeses + idadeProgR.faltaIdadeMeses, regra: 'Idade Progressiva', idadeMeses: idadeProgR.faltaIdadeMeses },
-    { meses: permR.faltaContribMeses + permR.faltaIdadeMeses, regra: 'Permanente', idadeMeses: permR.faltaIdadeMeses },
+    { meses: permR.faltaTcMeses + permR.faltaIdadeMeses, regra: 'Permanente', idadeMeses: permR.faltaIdadeMeses },
   ].filter(r => r.meses > 0).sort((a, b) => a.meses - b.meses)
 
   if (!regraAplicavel && faltasReg.length > 0) {
