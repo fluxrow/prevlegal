@@ -16,6 +16,7 @@ import {
   CalendarDays,
   Inbox,
   UserCircle,
+  DollarSign,
 } from "lucide-react";
 
 const nav = [
@@ -26,6 +27,7 @@ const nav = [
   { href: "/caixa-de-entrada", icon: Inbox, label: "Caixa de Entrada" },
   { href: "/agendamentos", icon: CalendarDays, label: "Agendamentos" },
   { href: "/agente", icon: Bot, label: "Agente IA" },
+  { href: "/financeiro", icon: DollarSign, label: "Financeiro" },
   { href: "/relatorios", icon: BarChart3, label: "Relatórios" },
   { href: "/configuracoes", icon: Settings, label: "Configurações" },
   { href: "/perfil", icon: UserCircle, label: "Perfil" },
