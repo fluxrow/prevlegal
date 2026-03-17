@@ -6,6 +6,7 @@ import { ArrowLeft, User, FileText, CreditCard, MessageSquare, Upload, Trash2, F
 import CalculadoraPrev from '@/components/calculadora-prev'
 import GeradorDocumentosIA from '@/components/gerador-documentos-ia'
 import PortalLead from '@/components/portal-lead'
+import ContratoLead from '@/components/contrato-lead'
 
 interface Lead {
   id: string
@@ -415,6 +416,10 @@ export default function LeadDetailPage() {
       {/* Portal do Cliente */}
       <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '14px', padding: '24px', marginBottom: '20px', marginTop: '24px' }}>
         <PortalLead leadId={id} />
+      </div>
+
+      <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '14px', padding: '24px', marginBottom: '20px' }}>
+        <ContratoLead leadId={id} />
       </div>
     </div>
   )
