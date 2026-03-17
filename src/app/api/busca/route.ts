@@ -12,7 +12,7 @@ export async function GET(request: Request) {
 
   const termo = `%${q}%`
 
-  const [{ data: leads }, { data: documentos }, { data: conversasAlt }] = await Promise.all([
+  const [{ data: leads }, { data: documentos }, { data: conversas }] = await Promise.all([
     supabase
       .from('leads')
       .select('id, nome, cpf, telefone, nb, status, origem')
@@ -27,7 +27,7 @@ export async function GET(request: Request) {
 
     supabase
       .from('conversas')
-      .select('id, lead_id, status, updated_at, leads!inner(id, nome, telefone)')
+      .select('id, lead_id, status, ultima_mensagem_em, leads!inner(id, nome, telefone)')
       .ilike('leads.nome', termo)
       .limit(4),
   ])
@@ -41,10 +41,10 @@ export async function GET(request: Request) {
       badge: l.status,
       href: `/leads/${l.id}`,
     })),
-    ...(conversasAlt || []).map(c => ({
+    ...(conversas || []).map(c => ({
       tipo: 'conversa' as const,
       id: c.id,
-      titulo: `Conversa — ${(c.leads as { nome?: string } | null)?.nome || 'Lead'}`,
+      titulo: `Conversa — ${(c.leads as any)?.nome || 'Lead'}`,
       subtitulo: c.status === 'agente' ? 'Com agente IA' : c.status === 'humano' ? 'Com advogado' : 'Encerrada',
       badge: c.status,
       href: `/caixa-de-entrada`,
@@ -53,7 +53,7 @@ export async function GET(request: Request) {
       tipo: 'documento' as const,
       id: d.id,
       titulo: d.nome,
-      subtitulo: `Lead: ${(d.leads as { nome?: string } | null)?.nome || ''}`,
+      subtitulo: `Lead: ${(d.leads as any)?.nome || ''}`,
       badge: d.gerado_por_ia ? 'IA' : d.tipo,
       href: `/leads/${d.lead_id}`,
     })),
