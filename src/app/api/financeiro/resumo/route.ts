@@ -25,7 +25,7 @@ export async function GET() {
     atrasadasRes,
     vencendoHojeRes,
   ] = await Promise.all([
-    supabase.from('contratos').select('id, lead_id, valor_total, status'),
+    supabase.from('contratos').select('id, lead_id, valor_total, status, honorario_sucumbencia, sucumbencia_status'),
     supabase.from('parcelas').select('valor').eq('status', 'pago').gte('data_pagamento', inicioMes).lte('data_pagamento', fimMes),
     supabase.from('parcelas').select('id, valor, data_vencimento, contrato_id').in('status', ['pendente', 'atrasado']).lt('data_vencimento', hoje),
     supabase.from('parcelas').select('id, valor, contrato_id, data_vencimento').eq('status', 'pendente').eq('data_vencimento', hoje),
@@ -99,16 +99,25 @@ export async function GET() {
   const totalContratos = contratos.reduce((acc, contrato) => acc + Number(contrato.valor_total), 0)
   const totalRecebidoMes = (recebidoMesRes.data || []).reduce((acc, parcela) => acc + Number(parcela.valor), 0)
   const totalAtrasado = atrasadas.reduce((acc, parcela) => acc + Number(parcela.valor), 0)
+  const totalSucumbenciaPendente = contratos
+    .filter((contrato) => contrato.sucumbencia_status === 'pendente')
+    .reduce((acc, contrato) => acc + Number(contrato.honorario_sucumbencia || 0), 0)
+  const totalSucumbenciaRecebida = contratos
+    .filter((contrato) => contrato.sucumbencia_status === 'recebido')
+    .reduce((acc, contrato) => acc + Number(contrato.honorario_sucumbencia || 0), 0)
 
   return NextResponse.json({
     resumo: {
       totalContratos,
+      totalHonorariosContratuais: totalContratos,
       totalAtivos: contratos.filter((contrato) => contrato.status === 'ativo').length,
       totalQuitados: contratos.filter((contrato) => contrato.status === 'quitado').length,
       totalInadimplentes: contratos.filter((contrato) => contrato.status === 'inadimplente').length,
       recebidoMes: totalRecebidoMes,
       atrasado: totalAtrasado,
       qtdAtrasadas: atrasadas.length,
+      totalSucumbenciaPendente,
+      totalSucumbenciaRecebida,
       vencendoHoje: vencendoHojeComLead,
     },
   })

@@ -40,6 +40,12 @@ export async function POST(request: Request) {
   const percentualExito = body.percentual_exito === null || body.percentual_exito === undefined || body.percentual_exito === ''
     ? null
     : normalizarNumero(body.percentual_exito)
+  const percentualSucumbencia = body.percentual_sucumbencia === null || body.percentual_sucumbencia === undefined || body.percentual_sucumbencia === ''
+    ? null
+    : normalizarNumero(body.percentual_sucumbencia)
+  const honorarioSucumbencia = body.honorario_sucumbencia === null || body.honorario_sucumbencia === undefined || body.honorario_sucumbencia === ''
+    ? null
+    : normalizarNumero(body.honorario_sucumbencia)
 
   if (!leadId || valorTotal <= 0) {
     return NextResponse.json({ error: 'lead_id e valor_total são obrigatórios' }, { status: 400 })
@@ -56,6 +62,11 @@ export async function POST(request: Request) {
       num_parcelas: numParcelas,
       tipo_cobranca: tipoCobranca,
       percentual_exito: percentualExito,
+      percentual_sucumbencia: percentualSucumbencia,
+      honorario_sucumbencia: honorarioSucumbencia,
+      sucumbencia_status: body.sucumbencia_status || 'pendente',
+      sucumbencia_data: body.sucumbencia_data || null,
+      sucumbencia_observacoes: body.sucumbencia_observacoes || null,
       data_assinatura: body.data_assinatura || null,
       observacoes: body.observacoes || null,
     })

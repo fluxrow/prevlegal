@@ -14,6 +14,11 @@ interface Contrato {
   num_parcelas: number
   tipo_cobranca: string
   percentual_exito: number | null
+  percentual_sucumbencia: number | null
+  honorario_sucumbencia: number | null
+  sucumbencia_status: string | null
+  sucumbencia_data: string | null
+  sucumbencia_observacoes: string | null
   status: string
   descricao: string | null
   parcelas: {
@@ -31,6 +36,11 @@ const FORM0 = {
   num_parcelas: '1',
   tipo_cobranca: 'exito',
   percentual_exito: '30',
+  percentual_sucumbencia: '',
+  honorario_sucumbencia: '',
+  sucumbencia_status: 'pendente',
+  sucumbencia_data: '',
+  sucumbencia_observacoes: '',
   descricao: '',
   data_assinatura: '',
 }
@@ -75,6 +85,10 @@ export default function ContratoLead({ leadId }: Props) {
         valor_entrada: parseFloat(form.valor_entrada || '0'),
         num_parcelas: parseInt(form.num_parcelas, 10),
         percentual_exito: form.percentual_exito ? parseFloat(form.percentual_exito) : null,
+        percentual_sucumbencia: form.percentual_sucumbencia ? parseFloat(form.percentual_sucumbencia) : null,
+        honorario_sucumbencia: form.honorario_sucumbencia ? parseFloat(form.honorario_sucumbencia) : null,
+        sucumbencia_data: form.sucumbencia_data || null,
+        sucumbencia_observacoes: form.sucumbencia_observacoes || null,
       }),
     })
 
@@ -179,6 +193,42 @@ export default function ContratoLead({ leadId }: Props) {
               <input type="date" value={form.data_assinatura} onChange={(e) => setForm((current) => ({ ...current, data_assinatura: e.target.value }))} style={inputStyle} />
             </div>
           </div>
+          <div style={{ background: 'rgba(79,122,255,0.08)', border: '1px solid rgba(79,122,255,0.16)', borderRadius: '10px', padding: '12px 14px', marginBottom: '12px' }}>
+            <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.55 }}>
+              {'\uD83D\uDCA1'} Honorários de sucumbência são definidos pelo juiz na sentença e pagos pela parte vencida. São independentes dos honorários contratuais e geralmente representam um valor adicional significativo.
+            </p>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+            <div>
+              <label style={labelStyle}>Percentual de sucumbência (definido na sentença)</label>
+              <input type="number" value={form.percentual_sucumbencia} onChange={(e) => setForm((current) => ({ ...current, percentual_sucumbencia: e.target.value }))} placeholder="10" style={inputStyle} />
+            </div>
+            <div>
+              <label style={labelStyle}>Valor de sucumbência (a definir após sentença)</label>
+              <input type="number" value={form.honorario_sucumbencia} onChange={(e) => setForm((current) => ({ ...current, honorario_sucumbencia: e.target.value }))} placeholder="0,00" style={inputStyle} />
+            </div>
+            <div>
+              <label style={labelStyle}>Status da sucumbência</label>
+              <select value={form.sucumbencia_status} onChange={(e) => setForm((current) => ({ ...current, sucumbencia_status: e.target.value }))} style={inputStyle}>
+                <option value="pendente">Pendente</option>
+                <option value="recebido">Recebido</option>
+                <option value="renunciado">Renunciado</option>
+              </select>
+            </div>
+            <div>
+              <label style={labelStyle}>Data do recebimento</label>
+              <input type="date" value={form.sucumbencia_data} onChange={(e) => setForm((current) => ({ ...current, sucumbencia_data: e.target.value }))} style={inputStyle} />
+            </div>
+            <div style={{ gridColumn: '1 / -1' }}>
+              <label style={labelStyle}>Observações sobre sucumbência</label>
+              <textarea
+                value={form.sucumbencia_observacoes}
+                onChange={(e) => setForm((current) => ({ ...current, sucumbencia_observacoes: e.target.value }))}
+                placeholder="Ex.: valor estimado na sentença, prazo de recebimento, acordo ou renúncia"
+                style={{ ...inputStyle, minHeight: '88px', resize: 'vertical' }}
+              />
+            </div>
+          </div>
           <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
             <button onClick={() => { setShowForm(false); setForm(FORM0) }} style={{ fontSize: '12px', color: 'var(--text-muted)', background: 'none', border: '1px solid var(--border)', borderRadius: '8px', padding: '8px 14px', cursor: 'pointer', fontFamily: 'DM Sans, sans-serif' }}>
               Cancelar
@@ -208,9 +258,26 @@ export default function ContratoLead({ leadId }: Props) {
           <div key={contrato.id} style={{ background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: '10px', marginBottom: '8px', overflow: 'hidden' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 14px', cursor: 'pointer' }} onClick={() => setExpandido(aberto ? null : contrato.id)}>
               <div style={{ flex: 1 }}>
-                <p style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text-primary)', margin: '0 0 2px' }}>
+                <p style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text-primary)', margin: '0 0 6px' }}>
                   {moeda(contrato.valor_total)} — {contrato.num_parcelas}x parcela{contrato.num_parcelas !== 1 ? 's' : ''}
                 </p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', marginBottom: '4px' }}>
+                  {contrato.sucumbencia_status === 'pendente' && (
+                    <span style={{ fontSize: '10px', color: '#f5c842', background: 'rgba(245,200,66,0.12)', border: '1px solid rgba(245,200,66,0.22)', borderRadius: '20px', padding: '2px 8px', fontWeight: '700' }}>
+                      Sucumbência pendente
+                    </span>
+                  )}
+                  {contrato.sucumbencia_status === 'recebido' && (
+                    <span style={{ fontSize: '10px', color: 'var(--green)', background: 'rgba(45,212,160,0.12)', border: '1px solid rgba(45,212,160,0.22)', borderRadius: '20px', padding: '2px 8px', fontWeight: '700' }}>
+                      Sucumbência recebida
+                    </span>
+                  )}
+                  {contrato.sucumbencia_status === 'renunciado' && (
+                    <span style={{ fontSize: '10px', color: 'var(--text-muted)', background: 'rgba(107,114,128,0.12)', border: '1px solid rgba(107,114,128,0.2)', borderRadius: '20px', padding: '2px 8px', fontWeight: '700' }}>
+                      Sucumbência renunciada
+                    </span>
+                  )}
+                </div>
                 <p style={{ fontSize: '11px', color: 'var(--text-muted)', margin: 0 }}>
                   {moeda(totalPago)} recebido · {contrato.descricao || 'Honorários'}
                 </p>
@@ -219,6 +286,24 @@ export default function ContratoLead({ leadId }: Props) {
             </div>
             {aberto && (
               <div style={{ borderTop: '1px solid var(--border)', padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <div style={{ background: 'var(--bg-card)', borderRadius: '8px', padding: '10px 12px', marginBottom: '4px' }}>
+                  <p style={{ fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 6px' }}>
+                    Honorários de sucumbência
+                  </p>
+                  <p style={{ fontSize: '12px', color: 'var(--text-primary)', margin: '0 0 2px' }}>
+                    Valor: {contrato.honorario_sucumbencia ? moeda(contrato.honorario_sucumbencia) : 'A definir'}
+                    {contrato.percentual_sucumbencia !== null && ` · ${contrato.percentual_sucumbencia}%`}
+                  </p>
+                  <p style={{ fontSize: '11px', color: 'var(--text-muted)', margin: '0 0 2px' }}>
+                    Status: {contrato.sucumbencia_status || 'pendente'}
+                    {contrato.sucumbencia_data && ` · Recebido em ${fmtData(contrato.sucumbencia_data)}`}
+                  </p>
+                  {contrato.sucumbencia_observacoes && (
+                    <p style={{ fontSize: '11px', color: 'var(--text-muted)', margin: 0 }}>
+                      {contrato.sucumbencia_observacoes}
+                    </p>
+                  )}
+                </div>
                 {contrato.parcelas?.sort((a, b) => a.numero - b.numero).map((parcela) => (
                   <div key={parcela.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--bg-card)', borderRadius: '7px', padding: '8px 10px' }}>
                     <span style={{ fontSize: '11px', fontWeight: '700', color: parcela.status === 'pago' ? 'var(--green)' : parcela.status === 'atrasado' ? 'var(--red)' : 'var(--yellow)', minWidth: '20px' }}>

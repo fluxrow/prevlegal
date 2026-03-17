@@ -5,12 +5,15 @@ import { AlertCircle, Check, CheckCircle, ChevronDown, ChevronUp, Clock, DollarS
 
 interface Resumo {
   totalContratos: number
+  totalHonorariosContratuais: number
   totalAtivos: number
   totalQuitados: number
   totalInadimplentes: number
   recebidoMes: number
   atrasado: number
   qtdAtrasadas: number
+  totalSucumbenciaPendente: number
+  totalSucumbenciaRecebida: number
   vencendoHoje: { id: string; valor: number; lead_nome: string }[]
 }
 
@@ -33,6 +36,11 @@ interface Contrato {
   num_parcelas: number
   tipo_cobranca: string
   percentual_exito: number | null
+  percentual_sucumbencia: number | null
+  honorario_sucumbencia: number | null
+  sucumbencia_status: string | null
+  sucumbencia_data: string | null
+  sucumbencia_observacoes: string | null
   status: string
   data_assinatura: string | null
   created_at: string
@@ -113,9 +121,10 @@ export default function FinanceiroPage() {
 
   const contratosFiltrados = contratos.filter((contrato) => filtro === 'todos' || contrato.status === filtro)
   const kpis = resumo ? [
-    { label: 'Total em contratos', value: moeda(resumo.totalContratos), cor: '#4f7aff', icon: <DollarSign size={16} /> },
+    { label: 'Total em contratos', value: moeda(resumo.totalHonorariosContratuais || resumo.totalContratos), cor: '#4f7aff', icon: <DollarSign size={16} /> },
     { label: 'Recebido este mês', value: moeda(resumo.recebidoMes), cor: '#2dd4a0', icon: <TrendingUp size={16} /> },
     { label: 'Em aberto (atrasado)', value: moeda(resumo.atrasado), cor: '#ff5757', icon: <AlertCircle size={16} /> },
+    { label: 'Sucumbência pendente', value: moeda(resumo.totalSucumbenciaPendente), cor: '#f5c842', icon: <Clock size={16} /> },
     { label: 'Contratos ativos', value: resumo.totalAtivos, cor: '#a78bfa', icon: <CheckCircle size={16} /> },
   ] : []
 
@@ -133,7 +142,7 @@ export default function FinanceiroPage() {
       </div>
 
       {resumo && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '14px', marginBottom: '28px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '14px', marginBottom: '20px' }}>
           {kpis.map((kpi) => (
             <div key={kpi.label} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '12px', padding: '16px 18px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '7px', marginBottom: '8px' }}>
@@ -145,6 +154,27 @@ export default function FinanceiroPage() {
               </p>
             </div>
           ))}
+        </div>
+      )}
+
+      {resumo && (
+        <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '12px', padding: '18px 20px', marginBottom: '24px' }}>
+          <p style={{ fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 14px' }}>
+            Resumo financeiro
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', alignItems: 'center' }}>
+              <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Honorários contratuais</span>
+              <strong style={{ fontSize: '14px', color: 'var(--text-primary)' }}>{moeda(resumo.totalHonorariosContratuais || resumo.totalContratos)}</strong>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', alignItems: 'center' }}>
+              <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Honorários de sucumbência</span>
+              <strong style={{ fontSize: '14px', color: 'var(--text-primary)' }}>{moeda((resumo.totalSucumbenciaPendente || 0) + (resumo.totalSucumbenciaRecebida || 0))}</strong>
+            </div>
+          </div>
+          <p style={{ fontSize: '11px', color: 'var(--text-muted)', margin: '12px 0 0' }}>
+            Pendente: {moeda(resumo.totalSucumbenciaPendente)} · Recebida: {moeda(resumo.totalSucumbenciaRecebida)}
+          </p>
         </div>
       )}
 
@@ -217,6 +247,11 @@ export default function FinanceiroPage() {
                     <span style={{ fontSize: '10px', fontWeight: '700', background: `${statusContrato.cor}18`, color: statusContrato.cor, border: `1px solid ${statusContrato.cor}30`, borderRadius: '20px', padding: '2px 8px' }}>
                       {statusContrato.label}
                     </span>
+                    {contrato.sucumbencia_status === 'pendente' && (
+                      <span style={{ fontSize: '10px', fontWeight: '700', background: 'rgba(245,200,66,0.12)', color: '#f5c842', border: '1px solid rgba(245,200,66,0.24)', borderRadius: '20px', padding: '2px 8px' }}>
+                        Sucumbência pendente
+                      </span>
+                    )}
                     {(contrato.tipo_cobranca === 'exito' || contrato.tipo_cobranca === 'misto') && contrato.percentual_exito !== null && (
                       <span style={{ fontSize: '10px', color: 'var(--purple)', background: 'rgba(167,139,250,0.1)', border: '1px solid rgba(167,139,250,0.2)', borderRadius: '20px', padding: '2px 8px' }}>
                         Êxito {contrato.percentual_exito}%
@@ -242,6 +277,24 @@ export default function FinanceiroPage() {
 
               {aberto && (
                 <div style={{ borderTop: '1px solid var(--border)', padding: '16px 20px' }}>
+                  <div style={{ background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: '10px', padding: '12px 14px', marginBottom: '14px' }}>
+                    <p style={{ fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 8px' }}>
+                      Honorários de sucumbência
+                    </p>
+                    <p style={{ fontSize: '13px', color: 'var(--text-primary)', margin: '0 0 4px' }}>
+                      {contrato.honorario_sucumbencia ? moeda(contrato.honorario_sucumbencia) : 'A definir'}
+                      {contrato.percentual_sucumbencia !== null && ` · ${contrato.percentual_sucumbencia}%`}
+                    </p>
+                    <p style={{ fontSize: '11px', color: 'var(--text-muted)', margin: '0 0 2px' }}>
+                      Status: {contrato.sucumbencia_status || 'pendente'}
+                      {contrato.sucumbencia_data && ` · ${fmtData(contrato.sucumbencia_data)}`}
+                    </p>
+                    {contrato.sucumbencia_observacoes && (
+                      <p style={{ fontSize: '11px', color: 'var(--text-muted)', margin: 0 }}>
+                        {contrato.sucumbencia_observacoes}
+                      </p>
+                    )}
+                  </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', gap: '12px', flexWrap: 'wrap' }}>
                     <p style={{ fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', margin: 0 }}>
                       Parcelas
