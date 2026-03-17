@@ -7,6 +7,7 @@ import {
   PieChart, Pie, Legend, Cell,
 } from 'recharts'
 import RelatoriosOnboardingTour from '@/components/relatorios-onboarding-tour'
+import RelatoriosROITab from '@/components/relatorios-roi-tab'
 
 interface RelatorioData {
   kpis: {
@@ -72,7 +73,7 @@ function KpiCard({ label, value, sub, color }: { label: string; value: string | 
   )
 }
 
-const TABS = ['Visão Geral', 'Funil', 'Campanhas', 'Listas']
+const TABS = ['Visão Geral', 'Funil', 'Campanhas', 'Listas', '📈 ROI por Campanha']
 const TOOLTIP_STYLE = { background: '#161920', border: '1px solid #ffffff0f', borderRadius: '8px', color: '#f0f2f5' }
 const AXIS_TICK = { fill: '#8b92a0', fontSize: 12 }
 
@@ -284,6 +285,8 @@ export default function RelatoriosPage() {
           </div>
         </div>
       )}
+
+      {aba === 4 && <RelatoriosROITab />}
 
       <RelatoriosOnboardingTour />
     </div>
