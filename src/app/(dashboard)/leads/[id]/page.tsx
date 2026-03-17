@@ -7,6 +7,7 @@ import CalculadoraPrev from '@/components/calculadora-prev'
 import GeradorDocumentosIA from '@/components/gerador-documentos-ia'
 import PortalLead from '@/components/portal-lead'
 import ContratoLead from '@/components/contrato-lead'
+import LeadDetalheOnboardingTour from '@/components/lead-detalhe-onboarding-tour'
 
 interface Lead {
   id: string
@@ -239,29 +240,31 @@ export default function LeadDetailPage() {
         </div>
       </div>
 
-      <Section icon={<User size={14} />} title="Dados Pessoais">
-        <Field label="CPF" value={lead.cpf} />
-        <Field label="Data de Nascimento" value={lead.data_nascimento} />
-        <Field label="Idade" value={lead.idade ? `${lead.idade} anos` : null} />
-        <Field label="Sexo" value={lead.sexo} />
-        <Field label="Categoria" value={lead.categoria} />
-        <Field label="Telefone" value={lead.telefone} />
-        <Field label="E-mail" value={lead.email} />
-      </Section>
+      <div data-tour="lead-dados">
+        <Section icon={<User size={14} />} title="Dados Pessoais">
+          <Field label="CPF" value={lead.cpf} />
+          <Field label="Data de Nascimento" value={lead.data_nascimento} />
+          <Field label="Idade" value={lead.idade ? `${lead.idade} anos` : null} />
+          <Field label="Sexo" value={lead.sexo} />
+          <Field label="Categoria" value={lead.categoria} />
+          <Field label="Telefone" value={lead.telefone} />
+          <Field label="E-mail" value={lead.email} />
+        </Section>
 
-      <Section icon={<FileText size={14} />} title="Benefício Previdenciário">
-        <Field label="NB" value={lead.nb} />
-        <Field label="Tipo de Benefício" value={lead.tipo_beneficio} />
-        <Field label="DIB" value={lead.dib} />
-        <Field label="DER" value={lead.der} />
-        <Field label="APS" value={lead.aps} />
-        <Field label="Isenção IR" value={lead.isencao_ir} />
-      </Section>
+        <Section icon={<FileText size={14} />} title="Benefício Previdenciário">
+          <Field label="NB" value={lead.nb} />
+          <Field label="Tipo de Benefício" value={lead.tipo_beneficio} />
+          <Field label="DIB" value={lead.dib} />
+          <Field label="DER" value={lead.der} />
+          <Field label="APS" value={lead.aps} />
+          <Field label="Isenção IR" value={lead.isencao_ir} />
+        </Section>
 
-      <Section icon={<CreditCard size={14} />} title="Pagamento">
-        <Field label="Banco" value={lead.banco} />
-        <Field label="Forma de Pagamento" value={lead.forma_pagamento} />
-      </Section>
+        <Section icon={<CreditCard size={14} />} title="Pagamento">
+          <Field label="Banco" value={lead.banco} />
+          <Field label="Forma de Pagamento" value={lead.forma_pagamento} />
+        </Section>
+      </div>
 
       {/* Documentos */}
       <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: '12px', padding: '20px', marginBottom: '16px' }}>
@@ -406,21 +409,25 @@ export default function LeadDetailPage() {
       )}
 
       {/* Calculadora Previdenciária */}
-      <CalculadoraPrev leadId={id} />
+      <div data-tour="lead-calculadora">
+        <CalculadoraPrev leadId={id} />
+      </div>
 
       {/* Gerador de Documentos IA */}
-      <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: '14px', padding: '24px', marginTop: '24px' }}>
+      <div data-tour="lead-documentos-ia" style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: '14px', padding: '24px', marginTop: '24px' }}>
         <GeradorDocumentosIA leadId={id} leadNome={lead.nome} />
       </div>
 
       {/* Portal do Cliente */}
-      <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '14px', padding: '24px', marginBottom: '20px', marginTop: '24px' }}>
+      <div data-tour="lead-portal" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '14px', padding: '24px', marginBottom: '20px', marginTop: '24px' }}>
         <PortalLead leadId={id} />
       </div>
 
       <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '14px', padding: '24px', marginBottom: '20px' }}>
         <ContratoLead leadId={id} />
       </div>
+
+      <LeadDetalheOnboardingTour />
     </div>
   )
 }

@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { List, CheckCircle, XCircle, HelpCircle, Zap, Upload, Users } from 'lucide-react'
+import ListasOnboardingTour from '@/components/listas-onboarding-tour'
 
 interface Lista {
   id: string
@@ -56,13 +57,39 @@ export default function ListasPage() {
             Gerencie suas listas importadas e verifique presenca no WhatsApp
           </p>
         </div>
-        <a href="/leads/import" style={{
+        <a data-tour="listas-importar" href="/leads/import" style={{
           display: 'flex', alignItems: 'center', gap: '7px', padding: '9px 16px',
           borderRadius: '8px', background: 'var(--accent)', color: '#fff',
           textDecoration: 'none', fontSize: '13px', fontWeight: '500'
         }}>
           <Upload size={14} /> Importar lista
         </a>
+      </div>
+
+      <div data-tour="listas-status" style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+        gap: '12px',
+        marginBottom: '24px'
+      }}>
+        {[
+          { icon: CheckCircle, label: 'Com WhatsApp', color: '#22c55e', text: 'Leads aptos para receber disparos.' },
+          { icon: XCircle, label: 'Sem WhatsApp', color: '#ef4444', text: 'Números marcados para não entrar na campanha.' },
+          { icon: HelpCircle, label: 'Não verificados', color: 'var(--text-muted)', text: 'Contatos aguardando checagem automática.' },
+        ].map(({ icon: Icon, label, color, text }) => (
+          <div key={label} style={{
+            background: 'var(--bg-surface)',
+            border: '1px solid var(--border)',
+            borderRadius: '12px',
+            padding: '14px 16px'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+              <Icon size={14} color={color} />
+              <strong style={{ fontSize: '13px', color: 'var(--text-primary)' }}>{label}</strong>
+            </div>
+            <p style={{ margin: 0, fontSize: '12px', color: 'var(--text-muted)', lineHeight: 1.45 }}>{text}</p>
+          </div>
+        ))}
       </div>
 
       {!loading && listas.length === 0 && (
@@ -77,7 +104,7 @@ export default function ListasPage() {
 
       {loading && <div style={{ color: 'var(--text-muted)', fontSize: '14px' }}>Carregando listas...</div>}
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+      <div data-tour="listas-lista" style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
         {listas.map(lista => {
           const total = lista.total_leads || 0
           const isVerificando = verificando === lista.id
@@ -154,6 +181,8 @@ export default function ListasPage() {
           )
         })}
       </div>
+
+      <ListasOnboardingTour />
     </div>
   )
 }

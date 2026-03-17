@@ -6,6 +6,7 @@ import {
   LineChart, Line,
   PieChart, Pie, Legend, Cell,
 } from 'recharts'
+import RelatoriosOnboardingTour from '@/components/relatorios-onboarding-tour'
 
 interface RelatorioData {
   kpis: {
@@ -110,9 +111,9 @@ export default function RelatoriosPage() {
       </p>
 
       {/* Tabs */}
-      <div style={{ display: 'flex', gap: '4px', marginBottom: '32px', background: 'var(--bg-surface)', padding: '4px', borderRadius: '10px', width: 'fit-content' }}>
+      <div data-tour="relatorios-abas" style={{ display: 'flex', gap: '4px', marginBottom: '32px', background: 'var(--bg-surface)', padding: '4px', borderRadius: '10px', width: 'fit-content' }}>
         {TABS.map((t, i) => (
-          <button key={t} onClick={() => setAba(i)} style={{
+          <button key={t} data-tour={t === 'Funil' ? 'relatorios-funil' : undefined} onClick={() => setAba(i)} style={{
             padding: '8px 18px', borderRadius: '7px', border: 'none', cursor: 'pointer',
             fontSize: '13px', fontWeight: aba === i ? '600' : '400',
             background: aba === i ? 'var(--bg-hover)' : 'transparent',
@@ -127,7 +128,7 @@ export default function RelatoriosPage() {
       {/* ABA 0 — Visão Geral */}
       {aba === 0 && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '16px' }}>
+          <div data-tour="relatorios-kpis" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '16px' }}>
             <KpiCard label="Total de Leads" value={data.kpis.totalLeads.toLocaleString('pt-BR')} />
             <KpiCard label="Com WhatsApp" value={`${data.kpis.taxaWhatsapp}%`} sub={`${data.kpis.totalComWhatsapp} leads`} color="#22c55e" />
             <KpiCard label="Convertidos" value={data.kpis.totalConvertidos.toLocaleString('pt-BR')} sub={`Taxa: ${data.kpis.taxaConversao}%`} color="#22c55e" />
@@ -283,6 +284,8 @@ export default function RelatoriosPage() {
           </div>
         </div>
       )}
+
+      <RelatoriosOnboardingTour />
     </div>
   )
 }

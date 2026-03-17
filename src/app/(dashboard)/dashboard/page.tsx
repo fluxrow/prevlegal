@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { Users, TrendingUp, Calendar, DollarSign, ArrowUpRight, Clock, CheckCircle2, XCircle } from 'lucide-react'
 import RecentLeads from '@/components/recent-leads'
+import DashboardOnboardingTour from '@/components/dashboard-onboarding-tour'
 
 export default async function DashboardPage() {
     const supabase = await createClient()
@@ -55,7 +56,7 @@ export default async function DashboardPage() {
             </div>
 
             {/* Stats cards */}
-            <div style={{
+            <div data-tour="dashboard-kpis" style={{
                 display: 'grid',
                 gridTemplateColumns: 'repeat(4, 1fr)',
                 gap: '16px',
@@ -88,7 +89,7 @@ export default async function DashboardPage() {
             </div>
 
             {/* Pipeline */}
-            <div style={{
+            <div data-tour="dashboard-pipeline" style={{
                 background: 'var(--bg-card)',
                 border: '1px solid var(--border)',
                 borderRadius: '12px',
@@ -122,7 +123,7 @@ export default async function DashboardPage() {
             </div>
 
             {/* Recent leads */}
-            <div style={{
+            <div data-tour="dashboard-recentes" style={{
                 background: 'var(--bg-card)',
                 border: '1px solid var(--border)',
                 borderRadius: '12px',
@@ -134,6 +135,8 @@ export default async function DashboardPage() {
                 </div>
                 <RecentLeads leads={recentLeads || []} />
             </div>
+
+            <DashboardOnboardingTour />
         </div>
     )
 }

@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { Megaphone, Plus, Zap, CheckCircle2, XCircle, X } from "lucide-react";
+import CampanhasOnboardingTour from "@/components/campanhas-onboarding-tour";
 
 type Toast = { id: number; type: "success" | "error"; message: string };
 
@@ -403,7 +404,7 @@ export default function CampanhasPage() {
 
       {/* Tab: Campanhas */}
       {activeTab === "campanhas" && (
-        <div style={{ maxWidth: "960px" }}>
+        <div data-tour="campanhas-lista" style={{ maxWidth: "960px" }}>
           <div
             style={{
               display: "flex",
@@ -424,6 +425,7 @@ export default function CampanhasPage() {
               </p>
             </div>
             <button
+              data-tour="campanhas-nova"
               onClick={() => setShowForm(!showForm)}
               style={{
                 display: "flex",
@@ -441,6 +443,80 @@ export default function CampanhasPage() {
             >
               <Plus size={14} /> Nova campanha
             </button>
+          </div>
+
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+              gap: "12px",
+              marginBottom: "20px",
+            }}
+          >
+            <div
+              data-tour="campanhas-metricas"
+              style={{
+                background: "var(--bg-surface)",
+                border: "1px solid var(--border)",
+                borderRadius: "12px",
+                padding: "16px",
+              }}
+            >
+              <strong
+                style={{
+                  display: "block",
+                  fontSize: "13px",
+                  color: "var(--text-primary)",
+                  marginBottom: "6px",
+                }}
+              >
+                Métricas de entrega
+              </strong>
+              <p
+                style={{
+                  margin: 0,
+                  fontSize: "12px",
+                  color: "var(--text-muted)",
+                  lineHeight: 1.5,
+                }}
+              >
+                Cada campanha mostra quantos leads foram enviados, quantos
+                responderam e quantas falhas aconteceram ao longo do disparo.
+              </p>
+            </div>
+
+            <div
+              data-tour="campanhas-agente"
+              style={{
+                background: "var(--bg-surface)",
+                border: "1px solid var(--border)",
+                borderRadius: "12px",
+                padding: "16px",
+              }}
+            >
+              <strong
+                style={{
+                  display: "block",
+                  fontSize: "13px",
+                  color: "var(--text-primary)",
+                  marginBottom: "6px",
+                }}
+              >
+                Agente IA nas respostas
+              </strong>
+              <p
+                style={{
+                  margin: 0,
+                  fontSize: "12px",
+                  color: "var(--text-muted)",
+                  lineHeight: 1.5,
+                }}
+              >
+                Depois do disparo, as respostas dos leads podem seguir para o
+                fluxo automatizado do agente, que qualifica o contato e escala
+                os casos quentes para você.
+              </p>
+            </div>
           </div>
 
           {/* Formulário nova campanha */}
@@ -1210,6 +1286,8 @@ export default function CampanhasPage() {
           </button>
         </div>
       )}
+
+      <CampanhasOnboardingTour />
     </div>
   );
 }

@@ -6,6 +6,7 @@ import { format, parseISO } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { Calendar, Video, Clock, User, RefreshCw, CheckCircle2, XCircle, AlertCircle } from 'lucide-react'
 import toast from 'react-hot-toast'
+import AgendamentosOnboardingTour from '@/components/agendamentos-onboarding-tour'
 
 interface Agendamento {
   id: string
@@ -111,149 +112,170 @@ export default function AgendamentosPage() {
         </button>
       </div>
 
-      {/* Banner Google Calendar */}
-      {googleConnected === false && (
-        <div className="mb-6 flex items-center justify-between p-4 rounded-xl border border-yellow-500/20 bg-yellow-500/5">
-          <div className="flex items-center gap-3">
-            <AlertCircle className="w-5 h-5 text-yellow-400 flex-shrink-0" />
-            <div>
-              <p className="text-sm font-medium text-yellow-300">Google Calendar não conectado</p>
-              <p className="text-xs text-slate-500 mt-0.5">
-                Conecte para criar links do Google Meet automaticamente
-              </p>
+      <div data-tour="agendamentos-google" className="mb-6">
+        {googleConnected === false && (
+          <div className="flex items-center justify-between p-4 rounded-xl border border-yellow-500/20 bg-yellow-500/5">
+            <div className="flex items-center gap-3">
+              <AlertCircle className="w-5 h-5 text-yellow-400 flex-shrink-0" />
+              <div>
+                <p className="text-sm font-medium text-yellow-300">Google Calendar não conectado</p>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Conecte para criar links do Google Meet automaticamente
+                </p>
+              </div>
             </div>
+            <a
+              href="/api/google/auth"
+              className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium transition-colors flex items-center gap-2"
+            >
+              <Video className="w-4 h-4" />
+              Conectar Google
+            </a>
           </div>
-          <a
-            href="/api/google/auth"
-            className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium transition-colors flex items-center gap-2"
+        )}
+
+        {googleConnected === true && (
+          <div className="flex items-center gap-2 text-sm text-emerald-400">
+            <CheckCircle2 className="w-4 h-4" />
+            Google Calendar conectado
+          </div>
+        )}
+
+        {googleConnected === null && (
+          <div className="text-sm text-slate-500">
+            Verificando integração com Google Calendar...
+          </div>
+        )}
+      </div>
+
+      <div data-tour="agendamentos-status" className="mb-6 flex flex-wrap gap-2">
+        {Object.values(STATUS_LABELS).map(({ label, color }) => (
+          <span
+            key={label}
+            className={`px-3 py-1 rounded-full text-xs font-medium ${color}`}
           >
-            <Video className="w-4 h-4" />
-            Conectar Google
-          </a>
-        </div>
-      )}
+            {label}
+          </span>
+        ))}
+      </div>
 
-      {googleConnected === true && (
-        <div className="mb-4 flex items-center gap-2 text-sm text-emerald-400">
-          <CheckCircle2 className="w-4 h-4" />
-          Google Calendar conectado
-        </div>
-      )}
+      <div data-tour="agendamentos-lista">
+        {loading ? (
+          <div className="space-y-3">
+            {[1, 2, 3].map(i => (
+              <div key={i} className="h-24 rounded-xl bg-[#13131f] animate-pulse" />
+            ))}
+          </div>
+        ) : agendamentos.length === 0 ? (
+          <div className="text-center py-16 text-slate-500">
+            <Calendar className="w-10 h-10 mx-auto mb-3 opacity-30" />
+            <p className="font-medium text-slate-400">Nenhum agendamento encontrado</p>
+            <p className="text-sm mt-1">Os agendamentos criados pelo agente aparecerão aqui</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {agendamentos.map(ag => {
+              const statusInfo = STATUS_LABELS[ag.status] ?? { label: ag.status, color: 'text-slate-400 bg-slate-400/10' }
+              const date = parseISO(ag.data_hora)
 
-      {/* Lista */}
-      {loading ? (
-        <div className="space-y-3">
-          {[1, 2, 3].map(i => (
-            <div key={i} className="h-24 rounded-xl bg-[#13131f] animate-pulse" />
-          ))}
-        </div>
-      ) : agendamentos.length === 0 ? (
-        <div className="text-center py-16 text-slate-500">
-          <Calendar className="w-10 h-10 mx-auto mb-3 opacity-30" />
-          <p className="font-medium text-slate-400">Nenhum agendamento encontrado</p>
-          <p className="text-sm mt-1">Os agendamentos criados pelo agente aparecerão aqui</p>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {agendamentos.map(ag => {
-            const statusInfo = STATUS_LABELS[ag.status] ?? { label: ag.status, color: 'text-slate-400 bg-slate-400/10' }
-            const date = parseISO(ag.data_hora)
-
-            return (
-              <div
-                key={ag.id}
-                className="p-4 rounded-xl border border-[#1e1e30] bg-[#13131f] hover:border-[#2e2e45] transition-colors"
-              >
-                <div className="flex items-start gap-4">
-                  {/* Data */}
-                  <div className="flex-shrink-0 text-center w-14">
-                    <div className="text-2xl font-bold text-white leading-none">
-                      {format(date, 'dd')}
+              return (
+                <div
+                  key={ag.id}
+                  className="p-4 rounded-xl border border-[#1e1e30] bg-[#13131f] hover:border-[#2e2e45] transition-colors"
+                >
+                  <div className="flex items-start gap-4">
+                    {/* Data */}
+                    <div className="flex-shrink-0 text-center w-14">
+                      <div className="text-2xl font-bold text-white leading-none">
+                        {format(date, 'dd')}
+                      </div>
+                      <div className="text-xs text-slate-500 uppercase mt-0.5">
+                        {format(date, 'MMM', { locale: ptBR })}
+                      </div>
+                      <div className="text-xs text-slate-600 mt-0.5">
+                        {format(date, 'HH:mm')}
+                      </div>
                     </div>
-                    <div className="text-xs text-slate-500 uppercase mt-0.5">
-                      {format(date, 'MMM', { locale: ptBR })}
-                    </div>
-                    <div className="text-xs text-slate-600 mt-0.5">
-                      {format(date, 'HH:mm')}
-                    </div>
-                  </div>
 
-                  {/* Info */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${statusInfo.color}`}>
-                        {statusInfo.label}
-                      </span>
-                      {ag.honorario && (
-                        <span className="text-xs text-slate-500">
-                          R$ {ag.honorario.toLocaleString('pt-BR')}
+                    {/* Info */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${statusInfo.color}`}>
+                          {statusInfo.label}
                         </span>
-                      )}
-                    </div>
-
-                    {ag.leads && (
-                      <div className="flex items-center gap-1 mt-1.5 text-sm font-medium text-slate-200">
-                        <User className="w-3.5 h-3.5 text-slate-500" />
-                        {ag.leads.nome}
-                        {ag.leads.telefone && (
-                          <span className="text-slate-500 font-normal text-xs ml-1">· {ag.leads.telefone}</span>
+                        {ag.honorario && (
+                          <span className="text-xs text-slate-500">
+                            R$ {ag.honorario.toLocaleString('pt-BR')}
+                          </span>
                         )}
                       </div>
-                    )}
 
-                    <div className="flex items-center gap-3 mt-1.5">
-                      <span className="flex items-center gap-1 text-xs text-slate-500">
-                        <Clock className="w-3 h-3" />
-                        {ag.duracao_minutos} min
-                      </span>
-                      {ag.meet_link && (
-                        <a
-                          href={ag.meet_link}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300 transition-colors"
-                        >
-                          <Video className="w-3 h-3" />
-                          Google Meet
-                        </a>
+                      {ag.leads && (
+                        <div className="flex items-center gap-1 mt-1.5 text-sm font-medium text-slate-200">
+                          <User className="w-3.5 h-3.5 text-slate-500" />
+                          {ag.leads.nome}
+                          {ag.leads.telefone && (
+                            <span className="text-slate-500 font-normal text-xs ml-1">· {ag.leads.telefone}</span>
+                          )}
+                        </div>
                       )}
-                      {ag.usuarios && (
-                        <span className="text-xs text-slate-600">
-                          {ag.usuarios.nome}
+
+                      <div className="flex items-center gap-3 mt-1.5">
+                        <span className="flex items-center gap-1 text-xs text-slate-500">
+                          <Clock className="w-3 h-3" />
+                          {ag.duracao_minutos} min
                         </span>
+                        {ag.meet_link && (
+                          <a
+                            href={ag.meet_link}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300 transition-colors"
+                          >
+                            <Video className="w-3 h-3" />
+                            Google Meet
+                          </a>
+                        )}
+                        {ag.usuarios && (
+                          <span className="text-xs text-slate-600">
+                            {ag.usuarios.nome}
+                          </span>
+                        )}
+                      </div>
+
+                      {ag.observacoes && (
+                        <p className="mt-1.5 text-xs text-slate-500">{ag.observacoes}</p>
                       )}
                     </div>
 
-                    {ag.observacoes && (
-                      <p className="mt-1.5 text-xs text-slate-500">{ag.observacoes}</p>
+                    {/* Ações */}
+                    {ag.status === 'agendado' && (
+                      <div className="flex items-center gap-1 flex-shrink-0">
+                        <button
+                          onClick={() => updateStatus(ag.id, 'realizado')}
+                          className="p-1.5 rounded-md text-slate-500 hover:text-emerald-400 hover:bg-emerald-400/10 transition-colors"
+                          title="Marcar como realizado"
+                        >
+                          <CheckCircle2 className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => cancelar(ag.id)}
+                          className="p-1.5 rounded-md text-slate-500 hover:text-red-400 hover:bg-red-400/10 transition-colors"
+                          title="Cancelar"
+                        >
+                          <XCircle className="w-4 h-4" />
+                        </button>
+                      </div>
                     )}
                   </div>
-
-                  {/* Ações */}
-                  {ag.status === 'agendado' && (
-                    <div className="flex items-center gap-1 flex-shrink-0">
-                      <button
-                        onClick={() => updateStatus(ag.id, 'realizado')}
-                        className="p-1.5 rounded-md text-slate-500 hover:text-emerald-400 hover:bg-emerald-400/10 transition-colors"
-                        title="Marcar como realizado"
-                      >
-                        <CheckCircle2 className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => cancelar(ag.id)}
-                        className="p-1.5 rounded-md text-slate-500 hover:text-red-400 hover:bg-red-400/10 transition-colors"
-                        title="Cancelar"
-                      >
-                        <XCircle className="w-4 h-4" />
-                      </button>
-                    </div>
-                  )}
                 </div>
-              </div>
-            )
-          })}
-        </div>
-      )}
+              )
+            })}
+          </div>
+        )}
+      </div>
+
+      <AgendamentosOnboardingTour />
     </div>
   )
 }

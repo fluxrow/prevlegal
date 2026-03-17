@@ -97,6 +97,33 @@ Pontos que precisam ser preservados durante a implementacao:
 - Supabase CLI encontrado localmente (`2.78.1`), mas sem autenticacao ativa
 - A migration `029_financeiro.sql` ainda nao foi aplicada no projeto remoto por falta de `SUPABASE_ACCESS_TOKEN` ou login local do CLI
 
+2026-03-17 - Fase 22 onboarding expandido em andamento
+- Objetivo: completar os tours guiados nas paginas Dashboard, Agendamentos, Listas, Campanhas, Relatorios e detalhe do lead
+- Padrao seguido a partir de:
+  - `src/hooks/useOnboarding.ts`
+  - `src/components/onboarding-tooltip.tsx`
+  - `src/components/leads-onboarding-tour.tsx`
+- Novos componentes criados:
+  - `src/components/dashboard-onboarding-tour.tsx`
+  - `src/components/agendamentos-onboarding-tour.tsx`
+  - `src/components/listas-onboarding-tour.tsx`
+  - `src/components/campanhas-onboarding-tour.tsx`
+  - `src/components/relatorios-onboarding-tour.tsx`
+  - `src/components/lead-detalhe-onboarding-tour.tsx`
+- Integracoes aplicadas:
+  - Dashboard: anchors em KPIs, pipeline e leads recentes
+  - Agendamentos: anchors em lista, bloco Google Calendar e legenda de status
+  - Listas: anchors em lista, botao importar e bloco explicativo de status
+  - Campanhas: anchors em lista principal, botao nova campanha e dois cards explicativos para metricas e fluxo com agente IA
+  - Relatorios: anchors em abas, grid de KPIs e botao/aba de funil
+  - Detalhe do lead: anchors em dados do perfil, calculadora, geracao de documentos IA e portal do cliente
+- Reset de onboarding ampliado em `src/components/onboarding-reset-section.tsx` para listar as 9 paginas com tour
+- Motivo de alguns blocos explicativos extras:
+  - garantir alvos estaveis para o tour mesmo quando a pagina ainda nao tiver dados carregados
+  - evitar steps quebrando por falta de elemento alvo no primeiro acesso
+- Validacao concluida:
+  - `npm run build` executado com sucesso apos integrar os novos tours
+
 ## Arquivos Alterados Nesta Sessao
 
 - `supabase/migrations/029_financeiro.sql`
@@ -111,6 +138,18 @@ Pontos que precisam ser preservados durante a implementacao:
 - `src/components/sidebar.tsx`
 - `README.md`
 - `docs/CODEX_HANDOFF.md`
+- `src/components/dashboard-onboarding-tour.tsx`
+- `src/components/agendamentos-onboarding-tour.tsx`
+- `src/components/listas-onboarding-tour.tsx`
+- `src/components/campanhas-onboarding-tour.tsx`
+- `src/components/relatorios-onboarding-tour.tsx`
+- `src/components/lead-detalhe-onboarding-tour.tsx`
+- `src/app/(dashboard)/dashboard/page.tsx`
+- `src/app/(dashboard)/agendamentos/page.tsx`
+- `src/app/(dashboard)/listas/page.tsx`
+- `src/app/(dashboard)/campanhas/page.tsx`
+- `src/app/(dashboard)/relatorios/page.tsx`
+- `src/components/onboarding-reset-section.tsx`
 
 ## Proximos Passos
 

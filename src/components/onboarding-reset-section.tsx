@@ -6,11 +6,23 @@ export default function OnboardingResetSection() {
   const leadsOnboarding = useOnboarding('leads')
   const inboxOnboarding = useOnboarding('caixa-de-entrada')
   const agenteOnboarding = useOnboarding('agente')
+  const dashboardOnboarding = useOnboarding('dashboard')
+  const agendamentosOnboarding = useOnboarding('agendamentos')
+  const listasOnboarding = useOnboarding('listas')
+  const campanhasOnboarding = useOnboarding('campanhas')
+  const relatoriosOnboarding = useOnboarding('relatorios')
+  const leadDetalheOnboarding = useOnboarding('lead-detalhe')
 
   const tours = [
     { label: 'Leads', fn: leadsOnboarding.reset },
     { label: 'Caixa de Entrada', fn: inboxOnboarding.reset },
     { label: 'Agente IA', fn: agenteOnboarding.reset },
+    { label: 'Dashboard', fn: dashboardOnboarding.reset },
+    { label: 'Agendamentos', fn: agendamentosOnboarding.reset },
+    { label: 'Listas', fn: listasOnboarding.reset },
+    { label: 'Campanhas', fn: campanhasOnboarding.reset },
+    { label: 'Relatórios', fn: relatoriosOnboarding.reset },
+    { label: 'Detalhe do Lead', fn: leadDetalheOnboarding.reset },
   ]
 
   return (
