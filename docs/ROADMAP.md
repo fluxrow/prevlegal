@@ -126,11 +126,40 @@
 
 ## Backlog
 
+## Próximas Fases Recomendadas
+
+### Fase 25 — Multi-tenant real
+- Isolar métricas, campanhas, Twilio, contratos e notificações por tenant real
+- Permitir que a página de detalhe do tenant leia da base/credencial correta
+
+### Fase 26 — Inbox Humana Avançada
+- Adicionar estados operacionais como `novo`, `assumido`, `aguardando cliente`, `resolvido`
+- Separar fila de qualificação do agente da fila de atendimento humano
+
+### Fase 27 — Agendamentos Operacionais
+- Criar fila de reuniões geradas pelo agente com ação rápida de confirmar, remarcar e cancelar
+- Adicionar status de visualização e responsável humano
+
+### Fase 28 — Saúde e risco do tenant
+- Expandir o admin com tendências de uso, último acesso, risco de churn e crescimento por período
+- Exibir sinais executivos de adoção para o time comercial da Fluxrow
+
+### Fase 29 — Financeiro preditivo
+- Projeção de receita, aging de parcelas, previsão de sucumbência e carteira prevista por mês
+- Conectar ROI de campanha com contratos e recebimento real
+
+### Fase 30 — Campanhas inteligentes
+- Comparar templates, horários e listas por performance
+- Exibir falhas de envio, resposta e conversão em uma camada de otimização
+
 ### Alta prioridade
 - [ ] Isolar métricas do detalhe do tenant por base/credencial real quando o multi-tenant deixar de ser piloto único
+- [ ] Definir estados explícitos da fila humana na Caixa de Entrada (`assumido`, `aguardando cliente`, `resolvido`)
 
 ### Média prioridade
 - [ ] Marcação explícita de "assumido por humano" nas conversas para separar fila de atendimento de conversas apenas abertas
+- [ ] Fila dedicada de agendamentos criados pelo agente com confirmação operacional
+- [ ] Sinais de risco de churn e adoção no detalhe do tenant
 
 ### Baixa prioridade
 - [ ] Repo GitHub privado
