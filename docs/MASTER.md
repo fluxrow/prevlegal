@@ -130,6 +130,17 @@ Estratégia: entrar com R$ 1.997 para gerar cases, subir gradualmente.
 - Sempre informar o commit hash após deploy
 - Separar sempre `SITE_URL` de `APP_URL` ao mexer em SEO, LP, convites, portal ou links absolutos
 
+### Política de sessão recomendada
+- Plataforma principal: expiração por inatividade após `45 minutos`
+- Admin: expiração por inatividade após `15 minutos`
+- Portal do cliente: continua por link/token, sem sessão persistente clássica de backoffice
+- Ações sensíveis devem exigir reautenticação adicional:
+  - admin
+  - financeiro
+  - exportações
+  - exclusões
+  - troca de credenciais/integradores
+
 ---
 
 ## Twilio — Situação atual e roadmap

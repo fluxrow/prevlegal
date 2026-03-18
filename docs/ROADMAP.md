@@ -135,36 +135,43 @@
 
 ## Próximas Fases Recomendadas
 
-### Fase 25 — Multi-tenant real
+### Fase 25 — Session Security Hardening
+- Expiração por inatividade na plataforma (`45 min`)
+- Expiração por inatividade no admin (`15 min`)
+- Reautenticação para áreas e ações sensíveis
+- Revisão de UX para manter login fluido com timeout inteligente
+
+### Fase 26 — Multi-tenant real
 - Isolar métricas, campanhas, Twilio, contratos e notificações por tenant real
 - Permitir que a página de detalhe do tenant leia da base/credencial correta
 
-### Fase 26 — Inbox Humana Avançada
+### Fase 27 — Inbox Humana Avançada
 - Adicionar estados operacionais como `novo`, `assumido`, `aguardando cliente`, `resolvido`
 - Separar fila de qualificação do agente da fila de atendimento humano
 
-### Fase 27 — Agendamentos Operacionais
+### Fase 28 — Agendamentos Operacionais
 - Criar fila de reuniões geradas pelo agente com ação rápida de confirmar, remarcar e cancelar
 - Adicionar status de visualização e responsável humano
 
-### Fase 28 — Saúde e risco do tenant
+### Fase 29 — Saúde e risco do tenant
 - Expandir o admin com tendências de uso, último acesso, risco de churn e crescimento por período
 - Exibir sinais executivos de adoção para o time comercial da Fluxrow
 
-### Fase 29 — Financeiro preditivo
+### Fase 30 — Financeiro preditivo
 - Projeção de receita, aging de parcelas, previsão de sucumbência e carteira prevista por mês
 - Conectar ROI de campanha com contratos e recebimento real
 
-### Fase 30 — Campanhas inteligentes
+### Fase 31 — Campanhas inteligentes
 - Comparar templates, horários e listas por performance
 - Exibir falhas de envio, resposta e conversão em uma camada de otimização
 
-### Fase 31 — Migração para domínio próprio
+### Fase 32 — Migração para domínio próprio
 - Colocar `prevlegal.com.br` como domínio principal do site
 - Separar `app.prevlegal.com.br` para a plataforma
 - Revisar CTAs, login, portal, links absolutos e notificações
 
 ### Alta prioridade
+- [ ] Implementar política de sessão por inatividade no app e no admin sem degradar a experiência diária
 - [ ] Isolar métricas do detalhe do tenant por base/credencial real quando o multi-tenant deixar de ser piloto único
 - [ ] Definir estados explícitos da fila humana na Caixa de Entrada (`assumido`, `aguardando cliente`, `resolvido`)
 
