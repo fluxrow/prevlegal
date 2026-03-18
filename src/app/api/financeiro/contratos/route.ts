@@ -1,11 +1,13 @@
 import { createClient } from '@/lib/supabase/server'
 import { gerarParcelasContrato, normalizarNumero } from '@/lib/financeiro'
+import { hasRecentReauth } from '@/lib/session-security'
 import { NextResponse } from 'next/server'
 
 export async function GET(request: Request) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!await hasRecentReauth('app')) return NextResponse.json({ error: 'Reauthentication required' }, { status: 428 })
 
   const { searchParams } = new URL(request.url)
   const leadId = searchParams.get('lead_id')
@@ -29,6 +31,7 @@ export async function POST(request: Request) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!await hasRecentReauth('app')) return NextResponse.json({ error: 'Reauthentication required' }, { status: 428 })
 
   const body = await request.json()
 

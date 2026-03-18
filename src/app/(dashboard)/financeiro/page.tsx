@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { AlertCircle, Check, CheckCircle, ChevronDown, ChevronUp, Clock, DollarSign, TrendingUp, X } from 'lucide-react'
 
 interface Resumo {
@@ -72,6 +73,7 @@ function fmtData(d: string | null) {
 }
 
 export default function FinanceiroPage() {
+  const router = useRouter()
   const [resumo, setResumo] = useState<Resumo | null>(null)
   const [contratos, setContratos] = useState<Contrato[]>([])
   const [loading, setLoading] = useState(true)
@@ -85,9 +87,18 @@ export default function FinanceiroPage() {
 
   async function fetchData() {
     setLoading(true)
+    const [resumoResponse, contratosResponse] = await Promise.all([
+      fetch('/api/financeiro/resumo'),
+      fetch('/api/financeiro/contratos'),
+    ])
+    if (resumoResponse.status === 428 || contratosResponse.status === 428) {
+      router.replace('/reauth?next=/financeiro')
+      return
+    }
+
     const [resumoRes, contratosRes] = await Promise.all([
-      fetch('/api/financeiro/resumo').then((r) => r.json()),
-      fetch('/api/financeiro/contratos').then((r) => r.json()),
+      resumoResponse.json(),
+      contratosResponse.json(),
     ])
 
     if (resumoRes.resumo) setResumo(resumoRes.resumo)
@@ -97,7 +108,7 @@ export default function FinanceiroPage() {
 
   async function marcarParcela(parcelaId: string, status: 'pago' | 'pendente') {
     setAtualizandoParcela(parcelaId)
-    await fetch(`/api/financeiro/parcelas/${parcelaId}`, {
+    const response = await fetch(`/api/financeiro/parcelas/${parcelaId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -106,16 +117,25 @@ export default function FinanceiroPage() {
         data_pagamento: status === 'pendente' ? null : undefined,
       }),
     })
+    if (response.status === 428) {
+      setAtualizandoParcela(null)
+      router.replace('/reauth?next=/financeiro')
+      return
+    }
     await fetchData()
     setAtualizandoParcela(null)
   }
 
   async function atualizarStatusContrato(contratoId: string, status: string) {
-    await fetch(`/api/financeiro/contratos/${contratoId}`, {
+    const response = await fetch(`/api/financeiro/contratos/${contratoId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status }),
     })
+    if (response.status === 428) {
+      router.replace('/reauth?next=/financeiro')
+      return
+    }
     await fetchData()
   }
 

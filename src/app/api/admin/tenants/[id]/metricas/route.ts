@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { verificarAdminAuth } from '@/lib/admin-auth'
+import { verificarAdminAuth, verificarAdminReauthRecente } from '@/lib/admin-auth'
 import { createClient } from '@supabase/supabase-js'
 
 export async function GET(
@@ -8,6 +8,9 @@ export async function GET(
 ) {
   if (!await verificarAdminAuth()) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+  if (!await verificarAdminReauthRecente()) {
+    return NextResponse.json({ error: 'Reauthentication required' }, { status: 428 })
   }
 
   const { id } = await params

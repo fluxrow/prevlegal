@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
+import { setReauthCookie, setSessionActivityCookie, clearSessionSecurityCookies } from '@/lib/session-security'
 
 const ADMIN_EMAIL = process.env.ADMIN_FLUXROW_EMAIL || 'fbcfarias@icloud.com'
 const ADMIN_SENHA = process.env.ADMIN_FLUXROW_SENHA || 'Fbc*2025#'
@@ -17,11 +18,14 @@ export async function POST(request: Request) {
     maxAge: 60 * 60 * 8,
     path: '/',
   })
+  await setSessionActivityCookie('admin')
+  await setReauthCookie('admin')
   return NextResponse.json({ ok: true })
 }
 
 export async function DELETE() {
   const cookieStore = await cookies()
   cookieStore.delete('admin_token')
+  await clearSessionSecurityCookies('admin')
   return NextResponse.json({ ok: true })
 }

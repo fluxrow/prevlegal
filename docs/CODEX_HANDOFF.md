@@ -18,14 +18,14 @@ Objetivo:
 
 ## Estado Atual Confirmado
 
-Data da ultima revisao: 2026-03-16
+Data da ultima revisao: 2026-03-18
 
 - Repositorio local em `main`
-- `HEAD` local: `2f79771`
-- Esse commit coincide com o deploy atual mostrado na imagem enviada pelo usuario
+- `HEAD` commitado atual: `87122de0`
+- Existe um conjunto local nao commitado da Fase 25 (`Session Security Hardening`)
 - O projeto esta vinculado a Vercel pelo arquivo `.vercel/project.json`
-- `npm run build` executado com sucesso no estado atual
-- `README.md` foi expandido nesta sessao para documentar o sistema
+- `npm run build` executado com sucesso apos o hardening de sessao
+- `README.md` e docs de sessao continuam sendo a base de memoria do projeto
 
 ## Mapa Atual do Sistema
 
@@ -53,18 +53,17 @@ Base atual identificada:
 - prompts em `src/lib/doc-templates.ts`
 - geracao via API em `src/app/api/leads/[id]/gerar-documento/route.ts`
 
-## Proxima Fase Combinada
+## Fase Atual em Trabalho
 
-Fase 21 - Gestao Financeira Basica
+Fase 25 - Session Security Hardening
 
-Escopo combinado pelo usuario:
-- contratos de honorarios por lead
-- parcelas automaticas
-- pagamentos e pendencias
-- resumo financeiro
-- pagina `/financeiro`
-- bloco de contrato na pagina do lead
-- item Financeiro na sidebar
+Escopo em implementacao local:
+- timeout por inatividade na plataforma (`45 min`)
+- timeout por inatividade no admin (`15 min`)
+- reautenticacao para financeiro e admin
+- paginas dedicadas de reautenticacao
+- refresh de atividade por cookie httpOnly
+- logout automatico no cliente por inatividade
 
 ## Cuidados de Compatibilidade
 
@@ -142,6 +141,39 @@ Pontos que precisam ser preservados durante a implementacao:
   - so considerar a migracao saudavel quando o apex parar de responder GoDaddy e o SSL propagar para os hosts restantes
 - Esse incidente foi registrado em `docs/LEARNINGS.md` e reforcado em `docs/DOMAIN_MIGRATION.md`
 
+2026-03-18 - Fase 25 implementada localmente
+- Criado o helper `src/lib/session-security.ts`
+- Criado o componente `src/components/session-activity-tracker.tsx`
+- Criadas as rotas:
+  - `src/app/api/session/touch/route.ts`
+  - `src/app/api/session/logout/route.ts`
+  - `src/app/api/session/reauth/route.ts`
+  - `src/app/api/admin/session/touch/route.ts`
+  - `src/app/api/admin/reauth/route.ts`
+- Criadas as paginas:
+  - `src/app/reauth/page.tsx`
+  - `src/app/admin/reauth/page.tsx`
+- App protegido por timeout e refresh de atividade em:
+  - `src/lib/supabase/middleware.ts`
+  - `src/app/page.tsx`
+  - `src/app/(dashboard)/layout.tsx`
+- Financeiro passou a exigir reautenticacao recente em:
+  - `src/app/api/financeiro/contratos/route.ts`
+  - `src/app/api/financeiro/contratos/[id]/route.ts`
+  - `src/app/api/financeiro/parcelas/[id]/route.ts`
+  - `src/app/api/financeiro/resumo/route.ts`
+  - `src/app/(dashboard)/financeiro/page.tsx`
+  - `src/components/contrato-lead.tsx`
+- Admin passou a exigir reautenticacao recente em:
+  - `src/lib/admin-auth.ts`
+  - `src/app/api/admin/auth/route.ts`
+  - `src/app/api/admin/tenants/route.ts`
+  - `src/app/api/admin/tenants/[id]/route.ts`
+  - `src/app/api/admin/tenants/[id]/metricas/route.ts`
+  - `src/app/admin/page.tsx`
+  - `src/app/admin/[id]/page.tsx`
+- `npm run build` executado com sucesso apos as alteracoes
+
 ## Arquivos Alterados Nesta Sessao
 
 - `supabase/migrations/029_financeiro.sql`
@@ -156,6 +188,25 @@ Pontos que precisam ser preservados durante a implementacao:
 - `src/components/sidebar.tsx`
 - `README.md`
 - `docs/CODEX_HANDOFF.md`
+- `src/lib/session-security.ts`
+- `src/components/session-activity-tracker.tsx`
+- `src/app/api/session/touch/route.ts`
+- `src/app/api/session/logout/route.ts`
+- `src/app/api/session/reauth/route.ts`
+- `src/app/api/admin/session/touch/route.ts`
+- `src/app/api/admin/reauth/route.ts`
+- `src/app/reauth/page.tsx`
+- `src/app/admin/reauth/page.tsx`
+- `src/app/(dashboard)/layout.tsx`
+- `src/app/page.tsx`
+- `src/lib/supabase/middleware.ts`
+- `src/lib/admin-auth.ts`
+- `src/app/api/admin/auth/route.ts`
+- `src/app/api/admin/tenants/route.ts`
+- `src/app/api/admin/tenants/[id]/route.ts`
+- `src/app/api/admin/tenants/[id]/metricas/route.ts`
+- `src/app/admin/page.tsx`
+- `src/app/admin/[id]/page.tsx`
 - `src/components/dashboard-onboarding-tour.tsx`
 - `src/components/agendamentos-onboarding-tour.tsx`
 - `src/components/listas-onboarding-tour.tsx`
@@ -171,10 +222,13 @@ Pontos que precisam ser preservados durante a implementacao:
 
 ## Proximos Passos
 
-- aplicar a migration `029_financeiro.sql` no Supabase do projeto
-- validar o fluxo do financeiro no preview
-- autenticar o Supabase CLI ou fornecer token para aplicar a migration remota
-- depois do banco atualizado, promover para producao se desejar
+- validar em runtime os fluxos:
+  - timeout automatico da plataforma
+  - timeout automatico do admin
+  - reautenticacao do financeiro
+  - reautenticacao do admin
+- decidir se a Fase 25 sera commitada e publicada agora
+- continuar acompanhamento do SSL final de `www`, `app` e `admin` na Vercel
 - continuar atualizando este arquivo a cada bloco de trabalho concluido
 
 ## Regra Permanente de Continuidade

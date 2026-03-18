@@ -1,6 +1,8 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
+import SessionActivityTracker from '@/components/session-activity-tracker'
+import { ADMIN_IDLE_MINUTES } from '@/lib/session-security'
 import {
   ArrowLeft, Building2, Users, MessageSquare, TrendingUp,
   CheckCircle, DollarSign, ExternalLink, Calendar, Zap,
@@ -103,6 +105,10 @@ export default function TenantDetailPage() {
           router.push('/admin/login')
           return null
         }
+        if (r.status === 428) {
+          router.push(`/admin/reauth?next=${encodeURIComponent(`/admin/${id}`)}`)
+          return null
+        }
         return r.json()
       })
       .then(json => {
@@ -128,6 +134,7 @@ export default function TenantDetailPage() {
 
   return (
     <div style={{ minHeight: '100vh', background: '#080b14', fontFamily: 'DM Sans, sans-serif', color: '#fff' }}>
+      <SessionActivityTracker mode="admin" idleMinutes={ADMIN_IDLE_MINUTES} touchUrl="/api/admin/session/touch" loginUrl="/admin/login" logoutUrl="/api/admin/auth" />
       <div style={{ height: '56px', background: '#111827', borderBottom: '1px solid #1f2937', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 28px', position: 'sticky', top: 0, zIndex: 100 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <button onClick={() => router.push('/admin')} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'none', border: 'none', color: '#9ca3af', cursor: 'pointer', fontSize: '13px' }}>

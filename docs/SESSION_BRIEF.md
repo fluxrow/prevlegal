@@ -26,21 +26,18 @@ Ultima atualizacao: 2026-03-18
 
 - Branch principal: `main`
 - Linha atual do produto no Obsidian: Fases 21, 22, 23 e 24 concluidas
-- Proxima fase recomendada: `Fase 25 — Session Security Hardening`
+- Fase atual: `Fase 25 — Session Security Hardening` implementada localmente e validada por build
 - Producao atual: `https://prevlegal.vercel.app`
 - Dominio comprado: `prevlegal.com.br`
 
 ## Proximo Passo Recomendado
 
-Implementar hardening de sessao:
-- timeout por inatividade no app: `45 min`
-- timeout por inatividade no admin: `15 min`
-- reautenticacao para acoes sensiveis:
-  - admin
-  - financeiro
-  - exportacoes
-  - exclusoes
-  - integracoes e credenciais
+Validar e publicar o hardening de sessao:
+- testar timeout por inatividade no app: `45 min`
+- testar timeout por inatividade no admin: `15 min`
+- testar reautenticacao do financeiro
+- testar reautenticacao do admin
+- depois commitar, sincronizar docs e publicar
 
 ## Bloqueios e Cuidados
 

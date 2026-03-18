@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { usePathname, useRouter } from 'next/navigation'
 import { Check, ChevronDown, ChevronUp, DollarSign, Plus, X } from 'lucide-react'
 
 interface Props {
@@ -54,6 +55,8 @@ function fmtData(d: string) {
 }
 
 export default function ContratoLead({ leadId }: Props) {
+  const router = useRouter()
+  const pathname = usePathname()
   const [contratos, setContratos] = useState<Contrato[]>([])
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState(FORM0)
@@ -62,11 +65,19 @@ export default function ContratoLead({ leadId }: Props) {
   const [atualizando, setAtualizando] = useState<string | null>(null)
 
   useEffect(() => {
-    fetchContratos()
+    void fetchContratos()
   }, [leadId])
+
+  function redirectToReauth() {
+    router.replace(`/reauth?next=${encodeURIComponent(pathname || `/leads/${leadId}`)}`)
+  }
 
   async function fetchContratos() {
     const res = await fetch(`/api/financeiro/contratos?lead_id=${leadId}`)
+    if (res.status === 428) {
+      redirectToReauth()
+      return
+    }
     const json = await res.json()
     if (json.contratos) setContratos(json.contratos)
   }
@@ -75,7 +86,7 @@ export default function ContratoLead({ leadId }: Props) {
     if (!form.valor_total) return
     setSalvando(true)
 
-    await fetch('/api/financeiro/contratos', {
+    const response = await fetch('/api/financeiro/contratos', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -91,6 +102,11 @@ export default function ContratoLead({ leadId }: Props) {
         sucumbencia_observacoes: form.sucumbencia_observacoes || null,
       }),
     })
+    if (response.status === 428) {
+      setSalvando(false)
+      redirectToReauth()
+      return
+    }
 
     await fetchContratos()
     setShowForm(false)
@@ -100,7 +116,7 @@ export default function ContratoLead({ leadId }: Props) {
 
   async function marcarParcela(parcelaId: string, status: 'pago' | 'pendente') {
     setAtualizando(parcelaId)
-    await fetch(`/api/financeiro/parcelas/${parcelaId}`, {
+    const response = await fetch(`/api/financeiro/parcelas/${parcelaId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -109,6 +125,11 @@ export default function ContratoLead({ leadId }: Props) {
         data_pagamento: status === 'pendente' ? null : undefined,
       }),
     })
+    if (response.status === 428) {
+      setAtualizando(null)
+      redirectToReauth()
+      return
+    }
     await fetchContratos()
     setAtualizando(null)
   }

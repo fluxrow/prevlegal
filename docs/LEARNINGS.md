@@ -253,3 +253,19 @@ export async function GET(
 **Correção:** Remover o apontamento do apex para a GoDaddy, deixar o `@` somente na configuração pedida pela Vercel e aguardar a emissão em cascata dos certificados
 **Sinal prático:** Se `https://prevlegal.com.br` responder com `Server: DPS/2.0.0-beta`, ainda está servindo GoDaddy e não Vercel
 **Regra prática:** Em migração de domínio para a Vercel, nunca considerar DNS "ok" só porque `www/app/admin` já apontam por CNAME. O primeiro checkpoint real é o apex deixar de responder GoDaddy e começar a mostrar `Generating SSL Certificate` no painel
+
+### 39. Reautenticação seletiva funciona melhor do que expirar tudo a cada ação sensível
+**Problema:** Proteger financeiro e admin apenas com login inicial deixa áreas críticas expostas em máquinas compartilhadas; proteger tudo com login constante degrada demais a UX
+**Causa:** O app mistura uso operacional frequente com áreas sensíveis que exigem um nível extra de confiança
+**Correção:** Adotar dois mecanismos combinados:
+- timeout por inatividade da sessão (`45 min` app, `15 min` admin)
+- reautenticação recente apenas para financeiro e operações administrativas críticas
+**Regra prática:** No PrevLegal, sessão expira por abandono da máquina; ações e telas sensíveis exigem um carimbo recente de reauth, não um novo login completo em cada navegação
+
+### 40. Middleware do app e auth do admin precisam ser tratados como trilhas diferentes
+**Problema:** O app usa Supabase auth, enquanto o admin usa cookie próprio httpOnly; tratar ambos como se fossem a mesma sessão causa redirecionamentos errados
+**Causa:** O proxy global protegia rotas com base em uma única lógica de autenticação
+**Correção:** Separar a trilha do admin dentro do middleware/proxy:
+- `/admin` valida `admin_token` e cookie de atividade do admin
+- app normal valida usuário Supabase e cookie de atividade do app
+**Regra prática:** Sempre que coexistirem auths diferentes no mesmo domínio, o middleware deve reconhecer explicitamente cada área antes de aplicar redirecionamentos

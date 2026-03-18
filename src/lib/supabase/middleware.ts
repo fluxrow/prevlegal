@@ -1,5 +1,13 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import {
+  ADMIN_LAST_ACTIVE_COOKIE,
+  APP_LAST_ACTIVE_COOKIE,
+  APP_IDLE_MINUTES,
+  ADMIN_IDLE_MINUTES,
+  getTimestampNow,
+  isTimestampExpired,
+} from "@/lib/session-security";
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
@@ -39,15 +47,59 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const publicPaths = ["/login", "/admin/login", "/portal", "/auth/", "/api/"];
+  const pathname = request.nextUrl.pathname
+  const publicPaths = ["/login", "/reauth", "/admin/login", "/admin/reauth", "/portal", "/auth/", "/api/", "/lp.html"];
   const isPublic = publicPaths.some((p) =>
-    request.nextUrl.pathname.startsWith(p),
+    pathname.startsWith(p),
   );
+  const isAdminRoute = pathname === '/admin' || pathname.startsWith('/admin/')
+
+  if (isAdminRoute && pathname !== '/admin/login' && pathname !== '/admin/reauth') {
+    const adminToken = request.cookies.get('admin_token')?.value
+    const adminLastActive = request.cookies.get(ADMIN_LAST_ACTIVE_COOKIE)?.value
+
+    if (!adminToken || isTimestampExpired(adminLastActive, ADMIN_IDLE_MINUTES * 60 * 1000)) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/admin/login'
+      const response = NextResponse.redirect(url)
+      response.cookies.delete(ADMIN_LAST_ACTIVE_COOKIE)
+      return response
+    }
+
+    supabaseResponse.cookies.set(ADMIN_LAST_ACTIVE_COOKIE, getTimestampNow(), {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: ADMIN_IDLE_MINUTES * 60,
+    })
+
+    return supabaseResponse
+  }
 
   if (!user && !isPublic) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);
+  }
+
+  if (user && !isPublic) {
+    const lastActive = request.cookies.get(APP_LAST_ACTIVE_COOKIE)?.value
+    if (isTimestampExpired(lastActive, APP_IDLE_MINUTES * 60 * 1000)) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/login'
+      const response = NextResponse.redirect(url)
+      response.cookies.delete(APP_LAST_ACTIVE_COOKIE)
+      return response
+    }
+
+    supabaseResponse.cookies.set(APP_LAST_ACTIVE_COOKIE, getTimestampNow(), {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: APP_IDLE_MINUTES * 60,
+    })
   }
 
   return supabaseResponse;

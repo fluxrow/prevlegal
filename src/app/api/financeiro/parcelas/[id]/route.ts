@@ -1,4 +1,5 @@
 import { calcularStatusContrato, getDataHojeISO } from '@/lib/financeiro'
+import { hasRecentReauth } from '@/lib/session-security'
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 
@@ -9,6 +10,7 @@ export async function PATCH(
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!await hasRecentReauth('app')) return NextResponse.json({ error: 'Reauthentication required' }, { status: 428 })
 
   const { id } = await params
   const body = await request.json()

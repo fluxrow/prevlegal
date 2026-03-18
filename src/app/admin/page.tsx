@@ -1,6 +1,8 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import SessionActivityTracker from '@/components/session-activity-tracker'
+import { ADMIN_IDLE_MINUTES } from '@/lib/session-security'
 import {
   Plus, Building2, Users, CheckCircle, Clock, LogOut,
   Edit2, Trash2, X, Save, MessageSquare, Search,
@@ -106,6 +108,7 @@ export default function AdminPage() {
     setLoading(true)
     const res = await fetch('/api/admin/tenants')
     if (res.status === 401) { router.push('/admin/login'); return }
+    if (res.status === 428) { router.push('/admin/reauth?next=/admin'); return }
     const json = await res.json()
     setTenants(json.tenants || [])
     setMetricas(json.metricas || { totalLeads: 0, totalConversas: 0 })
@@ -118,24 +121,27 @@ export default function AdminPage() {
     const method = editId ? 'PATCH' : 'POST'
     const body = { ...form, trial_expira_em: form.trial_expira_em || null }
     const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+    if (res.status === 428) { setSalvando(false); router.push(`/admin/reauth?next=${encodeURIComponent('/admin')}`); return }
     if (res.ok) { fetchData(); fecharForm() }
     setSalvando(false)
   }
 
   async function excluir(id: string, nome: string) {
     if (!confirm(`Remover "${nome}"? Esta ação não pode ser desfeita.`)) return
-    await fetch(`/api/admin/tenants/${id}`, { method: 'DELETE' })
+    const res = await fetch(`/api/admin/tenants/${id}`, { method: 'DELETE' })
+    if (res.status === 428) { router.push('/admin/reauth?next=/admin'); return }
     fetchData()
   }
 
   async function toggleStatus(t: Tenant) {
     const novoStatus = t.status === 'ativo' ? 'suspenso' : 'ativo'
     setTogglingId(t.id)
-    await fetch(`/api/admin/tenants/${t.id}`, {
+    const res = await fetch(`/api/admin/tenants/${t.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status: novoStatus }),
     })
+    if (res.status === 428) { setTogglingId(null); router.push('/admin/reauth?next=/admin'); return }
     await fetchData()
     setTogglingId(null)
   }
@@ -202,6 +208,7 @@ export default function AdminPage() {
 
   return (
     <div style={{ minHeight: '100vh', background: '#080b14', fontFamily: 'DM Sans, sans-serif', color: '#fff' }}>
+      <SessionActivityTracker mode="admin" idleMinutes={ADMIN_IDLE_MINUTES} touchUrl="/api/admin/session/touch" loginUrl="/admin/login" logoutUrl="/api/admin/auth" />
       <div style={{ height: '56px', background: '#111827', borderBottom: '1px solid #1f2937', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 28px', position: 'sticky', top: 0, zIndex: 100 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <div style={{ width: '30px', height: '30px', background: 'linear-gradient(135deg, #4f7aff, #7c3aed)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>

@@ -154,6 +154,11 @@
 - Reautenticação para áreas e ações sensíveis
 - Revisão de UX para manter login fluido com timeout inteligente
 
+Status atual em 18/03/2026:
+- implementada localmente no código
+- validada com `npm run build`
+- pendente de validação manual em runtime e commit/push
+
 ### Fase 26 — Multi-tenant real
 - Isolar métricas, campanhas, Twilio, contratos e notificações por tenant real
 - Permitir que a página de detalhe do tenant leia da base/credencial correta
@@ -184,7 +189,7 @@
 - Revisar CTAs, login, portal, links absolutos e notificações
 
 ### Alta prioridade
-- [ ] Implementar política de sessão por inatividade no app e no admin sem degradar a experiência diária
+- [x] Implementar política de sessão por inatividade no app e no admin sem degradar a experiência diária
 - [ ] Isolar métricas do detalhe do tenant por base/credencial real quando o multi-tenant deixar de ser piloto único
 - [ ] Definir estados explícitos da fila humana na Caixa de Entrada (`assumido`, `aguardando cliente`, `resolvido`)
 
