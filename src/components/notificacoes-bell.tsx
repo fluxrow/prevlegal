@@ -75,6 +75,7 @@ export default function NotificacoesBell() {
   function corTipo(tipo: string) {
     if (tipo === 'escalada') return '#f59e0b'
     if (tipo === 'mensagem') return '#4f7aff'
+    if (tipo === 'portal') return '#2dd4a0'
     return '#a0aec0'
   }
 

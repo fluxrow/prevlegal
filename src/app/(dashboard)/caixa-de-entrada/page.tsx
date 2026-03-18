@@ -66,13 +66,17 @@ export default function CaixaDeEntradaPage() {
   const [conversas, setConversas] = useState<Conversa[]>([])
   const [conversaSelecionada, setConversaSelecionada] = useState<Conversa | null>(null)
   const [mensagens, setMensagens] = useState<Mensagem[]>([])
+  const [portalNaoLidas, setPortalNaoLidas] = useState(0)
   const [textoResposta, setTextoResposta] = useState('')
   const [enviando, setEnviando] = useState(false)
   const [loading, setLoading] = useState(true)
   const [filtro, setFiltro] = useState<'todas' | 'agente' | 'humano'>('todas')
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
-  useEffect(() => { fetchConversas() }, [])
+  useEffect(() => {
+    fetchConversas()
+    fetchPortalNaoLidas()
+  }, [])
 
   useEffect(() => {
     if (conversaSelecionada) fetchMensagens(conversaSelecionada.id)
@@ -87,7 +91,12 @@ export default function CaixaDeEntradaPage() {
       fetchConversas()
       if (conversaSelecionada) fetchMensagens(conversaSelecionada.id)
     }, 5000)
-    return () => clearInterval(interval)
+
+    const portalInterval = setInterval(fetchPortalNaoLidas, 15000)
+    return () => {
+      clearInterval(interval)
+      clearInterval(portalInterval)
+    }
   }, [conversaSelecionada])
 
   async function fetchConversas() {
@@ -101,6 +110,14 @@ export default function CaixaDeEntradaPage() {
   async function fetchMensagens(conversaId: string) {
     const res = await fetch(`/api/conversas/${conversaId}`)
     if (res.ok) setMensagens(await res.json())
+  }
+
+  async function fetchPortalNaoLidas() {
+    const res = await fetch('/api/portal/nao-lidas')
+    if (res.ok) {
+      const data = await res.json()
+      setPortalNaoLidas(data.total || 0)
+    }
   }
 
   async function assumirConversa(conversaId: string) {
@@ -155,6 +172,17 @@ export default function CaixaDeEntradaPage() {
         <div style={{ padding: '20px 20px 12px', borderBottom: '1px solid var(--border)' }}>
           <h1 style={{ fontFamily: 'Syne, sans-serif', fontSize: '18px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '12px', marginTop: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
             <MessageSquare size={18} color="var(--accent)" /> Caixa de Entrada
+            {portalNaoLidas > 0 && (
+              <span style={{
+                display: 'inline-flex', alignItems: 'center', gap: '5px',
+                background: 'rgba(79,122,255,0.12)', color: 'var(--accent)',
+                border: '1px solid rgba(79,122,255,0.25)',
+                borderRadius: '100px', padding: '3px 10px',
+                fontSize: '12px', fontWeight: '600', marginLeft: '10px',
+              }}>
+                🔗 {portalNaoLidas} no portal
+              </span>
+            )}
           </h1>
           <div data-tour="inbox-filtros" style={{ display: 'flex', gap: '4px' }}>
             {(['todas', 'agente', 'humano'] as const).map(f => (

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { createClient as createAdminClient } from '@supabase/supabase-js'
 
-const supabase = createClient(
+const adminSupabase = createAdminClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
@@ -12,7 +12,7 @@ export async function GET(
 ) {
   const { token } = await params
 
-  const { data: lead } = await supabase
+  const { data: lead } = await adminSupabase
     .from('leads')
     .select('id, nome, status, created_at, portal_ativo, portal_ultimo_acesso, nb, banco, valor_rma, ganho_potencial')
     .eq('portal_token', token)
@@ -22,10 +22,10 @@ export async function GET(
   if (!lead) return NextResponse.json({ error: 'Portal não encontrado' }, { status: 404 })
 
   // Atualiza último acesso
-  await supabase.from('leads').update({ portal_ultimo_acesso: new Date().toISOString() }).eq('id', lead.id)
+  await adminSupabase.from('leads').update({ portal_ultimo_acesso: new Date().toISOString() }).eq('id', lead.id)
 
   // Documentos compartilhados
-  const { data: documentos } = await supabase
+  const { data: documentos } = await adminSupabase
     .from('lead_documentos')
     .select('id, nome, tipo, arquivo_url, gerado_por_ia, tipo_documento, created_at')
     .eq('lead_id', lead.id)
@@ -33,14 +33,14 @@ export async function GET(
     .order('created_at', { ascending: false })
 
   // Mensagens do portal
-  const { data: mensagens } = await supabase
+  const { data: mensagens } = await adminSupabase
     .from('portal_mensagens')
     .select('id, remetente, mensagem, lida, created_at')
     .eq('lead_id', lead.id)
     .order('created_at', { ascending: true })
 
   // Marca mensagens do escritório como lidas pelo cliente
-  await supabase
+  await adminSupabase
     .from('portal_mensagens')
     .update({ lida: true })
     .eq('lead_id', lead.id)
@@ -62,21 +62,30 @@ export async function POST(
   const { mensagem } = await request.json()
   if (!mensagem?.trim()) return NextResponse.json({ error: 'Mensagem vazia' }, { status: 400 })
 
-  const { data: lead } = await supabase
+  const { data: lead } = await adminSupabase
     .from('leads')
-    .select('id')
+    .select('id, nome')
     .eq('portal_token', token)
     .eq('portal_ativo', true)
     .single()
 
   if (!lead) return NextResponse.json({ error: 'Portal não encontrado' }, { status: 404 })
 
-  const { data, error } = await supabase
+  const { data, error } = await adminSupabase
     .from('portal_mensagens')
     .insert({ lead_id: lead.id, remetente: 'cliente', mensagem: mensagem.trim() })
     .select()
     .single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  await adminSupabase.from('notificacoes').insert({
+    tipo: 'portal',
+    titulo: `Nova mensagem no portal — ${lead.nome}`,
+    descricao: mensagem.trim().substring(0, 80),
+    lida: false,
+    link: `/leads/${lead.id}`,
+  })
+
   return NextResponse.json({ mensagem: data })
 }
