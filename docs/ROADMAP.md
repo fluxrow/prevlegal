@@ -1,6 +1,19 @@
 # PrevLegal — ROADMAP.md
 > Última atualização: 18/03/2026
 
+## Navegação
+
+- [[INDEX]]
+- [[MASTER]]
+- [[LEARNINGS]]
+- [[SESSION_BRIEF]]
+- [[CODEX_HANDOFF]]
+
+## Sessões Relacionadas
+
+- [[Sessoes/2026-03-18-prevlegal-admin-roi-obsidian]]
+- [[Sessoes/2026-03-18-fase-24-inbox-operacional-unificada-roadmap-final]]
+
 ## Fases Concluídas
 
 | Fase | Feature | Commit |

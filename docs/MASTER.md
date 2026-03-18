@@ -4,6 +4,15 @@
 
 ---
 
+## Navegação
+
+- [[INDEX]]
+- [[ROADMAP]]
+- [[LEARNINGS]]
+- [[SESSION_BRIEF]]
+- [[CODEX_HANDOFF]]
+- [[DOMAIN_MIGRATION]]
+
 ## Produto
 
 **Nome:** PrevLegal
@@ -31,7 +40,7 @@
 5. Revisar login, portal, notificações e links enviados automaticamente
 6. Validar redirects e HTTPS em produção
 
-Checklist detalhado em: `docs/DOMAIN_MIGRATION.md`
+Checklist detalhado em: [[DOMAIN_MIGRATION]]
 
 ### Posicionamento correto
 O PrevLegal NÃO é para advogados autônomos.

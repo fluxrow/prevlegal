@@ -4,6 +4,19 @@
 
 ---
 
+## Navegação
+
+- [[INDEX]]
+- [[MASTER]]
+- [[ROADMAP]]
+- [[SESSION_BRIEF]]
+- [[CODEX_HANDOFF]]
+
+## Sessões Relacionadas
+
+- [[Sessoes/2026-03-18-prevlegal-admin-roi-obsidian]]
+- [[Sessoes/2026-03-18-sessoes-17-18-marco-prevlegal-completo]]
+
 ## Padrões TypeScript/Next.js 16
 
 ### 1. `createClient` admin no nível de módulo

@@ -2,6 +2,15 @@
 
 Este documento registra o que foi analisado, alterado, validado e combinado durante a continuidade do desenvolvimento no Codex.
 
+## Navegação
+
+- [[INDEX]]
+- [[SESSION_BRIEF]]
+- [[MASTER]]
+- [[ROADMAP]]
+- [[LEARNINGS]]
+- [[SESSION_PROTOCOL]]
+
 Objetivo:
 - servir como memoria de trabalho local
 - facilitar o repasse posterior para o Claude
@@ -158,3 +167,13 @@ Pontos que precisam ser preservados durante a implementacao:
 - autenticar o Supabase CLI ou fornecer token para aplicar a migration remota
 - depois do banco atualizado, promover para producao se desejar
 - continuar atualizando este arquivo a cada bloco de trabalho concluido
+
+## Regra Permanente de Continuidade
+
+- toda sessao deve atualizar `docs/CODEX_HANDOFF.md`
+- toda sessao deve atualizar `docs/ROADMAP.md` se mudar fase, prioridade ou status
+- toda sessao deve atualizar `docs/LEARNINGS.md` se surgir regra tecnica, de produto ou compatibilidade
+- toda sessao deve revisar `docs/SESSION_BRIEF.md` para manter o proximo passo claro
+- toda sessao deve preservar links cruzados entre `INDEX`, `MASTER`, `ROADMAP`, `LEARNINGS`, `SESSION_BRIEF` e `CODEX_HANDOFF`
+- ao final, deve rodar `scripts/sync-obsidian.sh "<tema>" "<proximo passo>"`
+- no inicio da proxima sessao, deve rodar `scripts/resume-context.sh`
