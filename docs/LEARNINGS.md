@@ -153,3 +153,9 @@ export async function GET(
 **Risco:** Assets externos e boot frágil aumentam chance de falha visual dentro de `iframe` e prejudicam previsibilidade em produção
 **Correção:** Trocar para stacks locais de fonte e inicializar a animação com `window.load` + guard idempotente
 **Regra prática:** Todo `public/demo.html` do PrevLegal deve funcionar sozinho, sem dependência crítica de terceiros para tipografia ou start das cenas
+
+### 24. Transição de cenas no demo precisa adicionar `visible` depois de `active`
+**Erro:** A cena inicial podia entrar como `active` sem ganhar `visible`, quebrando a transição visual
+**Causa:** O boot e a navegação trocavam a cena ativa sem garantir um frame de separação antes da classe final
+**Correção:** Usar `requestAnimationFrame` duplo após `classList.add('active')` tanto no init quanto em `goTo`
+**Regra prática:** Em animações de cena dentro de `iframe`, separar classes de estado em dois frames para evitar race condition de renderização

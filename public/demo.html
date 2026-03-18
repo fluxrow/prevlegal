@@ -571,9 +571,15 @@ function resetScene(n){
 function goTo(n){
   if(n<1||n>SCENES)return
   resetScene(current)
-  document.getElementById('scene-'+current).classList.remove('active')
+  document.getElementById('scene-'+current).classList.remove('active','visible')
   current=n
-  document.getElementById('scene-'+current).classList.add('active')
+  const novaScene=document.getElementById('scene-'+current)
+  novaScene.classList.add('active')
+  requestAnimationFrame(function() {
+    requestAnimationFrame(function() {
+      novaScene.classList.add('visible')
+    })
+  })
   document.querySelectorAll('.dot').forEach((d,i)=>{
     d.classList.toggle('active',i+1===current)
   })
@@ -620,19 +626,20 @@ document.addEventListener('keydown',e=>{
 })
 
 // ── INIT ──
-let booted=false
-function bootDemo(){
-  if(booted)return
-  booted=true
-  initScene1()
-  requestAnimationFrame(()=>startProgress())
-}
-
-if(document.readyState==='complete'){
-  bootDemo()
-}else{
-  window.addEventListener('load',bootDemo,{once:true})
-}
+window.addEventListener('load', function() {
+  const firstScene = document.getElementById('scene-1')
+  if (firstScene) {
+    firstScene.classList.add('active')
+    requestAnimationFrame(function() {
+      requestAnimationFrame(function() {
+        firstScene.classList.add('visible')
+        if (typeof initScene1 === 'function') initScene1()
+        if (typeof startProgress === 'function') startProgress()
+        if (typeof init1 === 'function') init1()
+      })
+    })
+  }
+})
 </script>
 </body>
 </html>
