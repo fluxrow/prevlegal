@@ -16,7 +16,13 @@ export async function PATCH(
   const { id } = await params
   const body = await request.json()
   const { data, error } = await adminSupabase
-    .from('tenants').update({ ...body, updated_at: new Date().toISOString() })
+    .from('tenants').update({
+      ...body,
+      twilio_account_sid: body.twilio_account_sid || null,
+      twilio_auth_token: body.twilio_auth_token || null,
+      twilio_whatsapp_number: body.twilio_whatsapp_number || null,
+      updated_at: new Date().toISOString(),
+    })
     .eq('id', id).select().single()
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json(data)

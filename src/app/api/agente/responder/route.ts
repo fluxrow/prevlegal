@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import Anthropic from '@anthropic-ai/sdk'
+import { getTwilioCredentials, sendWhatsApp } from '@/lib/twilio'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -154,25 +155,12 @@ export async function POST(request: NextRequest) {
 
     // 8. Se resposta automática ativa, enviar via Twilio
     if (config.agente_resposta_automatica && mensagem.telefone_remetente) {
-      const twilioAccountSid = process.env.TWILIO_ACCOUNT_SID!
-      const twilioAuthToken = process.env.TWILIO_AUTH_TOKEN!
-      const twilioFrom = process.env.TWILIO_WHATSAPP_NUMBER!
+      const creds = await getTwilioCredentials(process.env.TENANT_SLUG)
+      const result = await sendWhatsApp(mensagem.telefone_remetente, respostaTexto, creds)
 
-      const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${twilioAccountSid}/Messages.json`
-      const params = new URLSearchParams({
-        From: twilioFrom,
-        To: mensagem.telefone_remetente,
-        Body: respostaTexto,
-      })
-
-      await fetch(twilioUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          Authorization: `Basic ${Buffer.from(`${twilioAccountSid}:${twilioAuthToken}`).toString('base64')}`,
-        },
-        body: params.toString(),
-      })
+      if (!result.success) {
+        console.error('Falha ao enviar resposta automática via Twilio:', result.error)
+      }
     }
 
     return NextResponse.json({

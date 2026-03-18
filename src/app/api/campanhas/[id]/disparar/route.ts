@@ -1,6 +1,7 @@
 export const runtime = "nodejs";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient as createAdmin } from "@supabase/supabase-js";
+import { getTwilioCredentials, sendWhatsApp } from "@/lib/twilio";
 
 const adminClient = createAdmin(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -36,36 +37,6 @@ function buildMessage(template: string, lead: any): string {
     );
 }
 
-async function sendWhatsApp(
-  to: string,
-  message: string,
-): Promise<{ sid: string } | null> {
-  const accountSid = process.env.TWILIO_ACCOUNT_SID!;
-  const authToken = process.env.TWILIO_AUTH_TOKEN!;
-  const from = process.env.TWILIO_WHATSAPP_NUMBER || "whatsapp:+14155238886";
-  const encoded = Buffer.from(`${accountSid}:${authToken}`).toString("base64");
-
-  const res = await fetch(
-    `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`,
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Basic ${encoded}`,
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: new URLSearchParams({
-        From: `whatsapp:${from.replace("whatsapp:", "")}`,
-        To: `whatsapp:${to}`,
-        Body: message,
-      }).toString(),
-    },
-  );
-
-  if (!res.ok) return null;
-  const data = await res.json();
-  return { sid: data.sid };
-}
-
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
@@ -99,9 +70,9 @@ export async function POST(
 
     // Buscar leads da lista
     const query = adminClient
-      .from("lista_leads")
-      .select(
-        "lead_id, leads(id, nome, nb, cpf, banco, valor_rma, ganho_potencial, tem_whatsapp)",
+        .from("lista_leads")
+        .select(
+        "lead_id, leads(id, nome, nb, cpf, telefone, banco, valor_rma, ganho_potencial, tem_whatsapp)",
       )
       .eq("lista_id", campanha.lista_id);
 
@@ -159,6 +130,7 @@ export async function POST(
     const delayMax = campanha.delay_max_ms || 3500;
     const tamLote = campanha.tamanho_lote || 50;
     const pausaLote = (campanha.pausa_entre_lotes_s || 30) * 1000;
+    const creds = await getTwilioCredentials(process.env.TENANT_SLUG);
 
     for (let i = 0; i < leadsParaEnviar.length; i++) {
       // Checar se campanha foi pausada/cancelada
@@ -185,8 +157,8 @@ export async function POST(
         });
         falhos++;
       } else {
-        const result = await sendWhatsApp(phone, mensagem);
-        if (result) {
+        const result = await sendWhatsApp(phone, mensagem, creds);
+        if (result.success) {
           await adminClient.from("campanha_mensagens").insert({
             campanha_id: campanhaId,
             lead_id: lead.id,
@@ -213,7 +185,7 @@ export async function POST(
             telefone: phone,
             mensagem: mensagem,
             status: "falhou",
-            erro_detalhe: "Falha no envio Twilio",
+            erro_detalhe: result.error || "Falha no envio Twilio",
           });
           falhos++;
         }

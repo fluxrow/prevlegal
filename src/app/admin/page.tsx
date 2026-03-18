@@ -20,6 +20,9 @@ interface Tenant {
   plano: string
   status: string
   notas: string
+  twilio_account_sid?: string | null
+  twilio_auth_token?: string | null
+  twilio_whatsapp_number?: string | null
   trial_expira_em: string | null
   created_at: string
 }
@@ -42,6 +45,7 @@ const FORM0 = {
   nome: '', slug: '', cnpj: '',
   responsavel_nome: '', responsavel_email: '', responsavel_telefone: '',
   oab_estado: '', oab_numero: '',
+  twilio_account_sid: '', twilio_auth_token: '', twilio_whatsapp_number: '',
   plano: 'profissional', status: 'trial', notas: '',
   trial_expira_em: '',
 }
@@ -148,6 +152,9 @@ export default function AdminPage() {
       responsavel_email: t.responsavel_email,
       responsavel_telefone: t.responsavel_telefone || '',
       oab_estado: t.oab_estado || '', oab_numero: t.oab_numero || '',
+      twilio_account_sid: t.twilio_account_sid || '',
+      twilio_auth_token: t.twilio_auth_token || '',
+      twilio_whatsapp_number: t.twilio_whatsapp_number || '',
       plano: t.plano, status: t.status, notas: t.notas || '',
       trial_expira_em: t.trial_expira_em ? t.trial_expira_em.split('T')[0] : '',
     })
@@ -410,6 +417,14 @@ export default function AdminPage() {
               <FormField label="Email *" value={form.responsavel_email} onChange={setField('responsavel_email')} type="email" col="1 / -1" />
               <FormField label="OAB Estado" value={form.oab_estado} onChange={setField('oab_estado')} />
               <FormField label="OAB Número" value={form.oab_numero} onChange={setField('oab_numero')} />
+              <div style={{ gridColumn: '1 / -1', borderTop: '1px solid #1f2937', paddingTop: '14px', marginTop: '4px' }}>
+                <p style={{ fontSize: '11px', fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '12px' }}>
+                  Twilio (opcional — usa credenciais globais se vazio)
+                </p>
+              </div>
+              <FormField label="Account SID" value={form.twilio_account_sid} onChange={setField('twilio_account_sid')} col="1 / -1" />
+              <FormField label="Auth Token" value={form.twilio_auth_token} onChange={setField('twilio_auth_token')} />
+              <FormField label="Número WhatsApp (ex: whatsapp:+5541...)" value={form.twilio_whatsapp_number} onChange={setField('twilio_whatsapp_number')} />
               <FormField label="Plano" value={form.plano} onChange={setField('plano')} options={[
                 { value: 'entrada', label: 'Entrada — R$ 1.997/mês' },
                 { value: 'profissional', label: 'Profissional — R$ 3.497/mês' },
