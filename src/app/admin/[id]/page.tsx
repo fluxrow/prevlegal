@@ -124,6 +124,7 @@ export default function TenantDetailPage() {
   const { tenant, metricas, ultimasConversas, ultimosCampanhas } = data
   const status = STATUS[tenant.status] || STATUS.trial
   const plano = PLANO[tenant.plano] || PLANO.profissional
+  const plataformaUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://prevlegal.vercel.app'
 
   return (
     <div style={{ minHeight: '100vh', background: '#080b14', fontFamily: 'DM Sans, sans-serif', color: '#fff' }}>
@@ -141,7 +142,7 @@ export default function TenantDetailPage() {
           </div>
         </div>
         <a
-          href={`https://${tenant.slug}.prevlegal.com.br`}
+          href={plataformaUrl}
           target="_blank"
           rel="noreferrer"
           style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '12px', color: '#4f7aff', textDecoration: 'none' }}

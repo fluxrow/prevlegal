@@ -10,25 +10,23 @@ Migrar o projeto para domínio próprio com separação clara entre:
 - plataforma
 - possíveis superfícies futuras de admin
 
-## Decisão operacional recomendada
+## Decisão operacional aprovada
 
 - `www.prevlegal.com.br` -> site / LP canônico
 - `prevlegal.com.br` -> redirect para `www.prevlegal.com.br`
 - `app.prevlegal.com.br` -> plataforma principal
-
-Se você preferir simplicidade de marca em vez da recomendação da Vercel para sites, pode usar o apex como canônico do site. Mas a decisão deve ser tomada antes de mexer em Vercel, DNS e env vars.
+- `admin.prevlegal.com.br` -> painel admin desde o início
 
 ## Status da migração
 
-### Bloqueio atual
-
-- falta decidir explicitamente se o site canônico será `www.prevlegal.com.br` ou `prevlegal.com.br`
+- Fase 0 = CONCLUÍDA
+- Fase 2 = CONCLUÍDA
 
 ### Estado do app hoje
 
 - produção atual continua em `https://prevlegal.vercel.app`
 - o código já usa `NEXT_PUBLIC_APP_URL` em vários pontos
-- ainda existem fallbacks hardcoded para `prevlegal.vercel.app`
+- `NEXT_PUBLIC_SITE_URL` passou a existir para separar site e plataforma
 
 ## Estado atual encontrado no código
 
@@ -36,6 +34,7 @@ Se você preferir simplicidade de marca em vez da recomendação da Vercel para 
 
 - `public/lp.html`
   - CTAs ainda apontam para `https://prevlegal.vercel.app/login`
+  - fallback literal mantido temporariamente por ser HTML estático fora do bundle do Next
 - `public/demo.html`
   - mostra `app.prevlegal.com.br/dashboard` no mockup
   - ainda tem link para `https://prevlegal.vercel.app/login`
@@ -50,15 +49,15 @@ Se você preferir simplicidade de marca em vez da recomendação da Vercel para 
 - `src/app/api/google/callback/route.ts`
   - depende de `NEXT_PUBLIC_APP_URL`
 - `src/app/admin/[id]/page.tsx`
-  - gera link `https://${tenant.slug}.prevlegal.com.br`
+  - agora usa `NEXT_PUBLIC_APP_URL` em vez de antecipar subdomínio por tenant
 - `docs/MASTER.md`
   - ainda registra a produção atual como `https://prevlegal.vercel.app`
 
 ### Observações
 
-- O projeto já usa `NEXT_PUBLIC_APP_URL` em pontos críticos. Isso ajuda a migração.
-- Ainda existe fallback hardcoded para `prevlegal.vercel.app`, então a troca de domínio precisa remover esses defaults.
-- O mockup do demo e a LP precisam ser ajustados em conjunto para evitar inconsistência visual.
+- O projeto agora separa `NEXT_PUBLIC_SITE_URL` (site/LP/SEO) de `NEXT_PUBLIC_APP_URL` (plataforma/convites/portal).
+- HTMLs estáticos em `public/` não conseguem ler `process.env` em runtime; por isso usam fallback literal temporário até o cutover.
+- O mockup do demo e a LP precisam ser ajustados em conjunto na janela final da migração para evitar inconsistência visual.
 
 ## Decisão de arquitetura
 
@@ -97,11 +96,12 @@ Objetivo:
 - travar a arquitetura para evitar retrabalho
 
 Checklist:
-- [ ] escolher host canônico do site:
-  - [ ] `www.prevlegal.com.br`
+- [x] escolher host canônico do site:
+  - [x] `www.prevlegal.com.br`
   - [ ] `prevlegal.com.br`
-- [ ] confirmar `app.prevlegal.com.br` para a plataforma
-- [ ] decidir se o admin permanece dentro do app por enquanto
+- [x] confirmar `app.prevlegal.com.br` para a plataforma
+- [x] decidir host inicial do admin:
+  - [x] `admin.prevlegal.com.br`
 
 Saída esperada:
 - uma única arquitetura aprovada para Vercel, DNS e código
@@ -130,19 +130,30 @@ Objetivo:
 - remover dependência do domínio antigo no repositório
 
 Checklist:
-- [ ] atualizar `public/lp.html`
-- [ ] atualizar `public/demo.html`
-- [ ] remover fallback `https://prevlegal.vercel.app` em `src/app/api/usuarios/convidar/route.ts`
-- [ ] remover fallback `https://prevlegal.vercel.app` em `src/app/api/portal/link/[leadId]/route.ts`
+- [x] recriar `src/app/page.tsx` com redirect inteligente:
+  - [x] sessão -> `/dashboard`
+  - [x] sem sessão -> `/lp.html`
+- [x] substituir `src/app/layout.tsx` por metadata SEO completa
+- [x] criar `src/app/sitemap.ts`
+- [x] criar `src/app/robots.ts`
+- [x] criar `public/manifest.json`
+- [x] endurecer `next.config.ts` com headers de segurança
+- [x] criar `src/app/og/route.tsx`
+- [x] adicionar assets públicos de ícone para SEO/PWA
+- [x] normalizar `NEXT_PUBLIC_APP_URL` em `src/app/api/usuarios/convidar/route.ts`
+- [x] normalizar `NEXT_PUBLIC_APP_URL` em `src/app/api/portal/link/[leadId]/route.ts`
 - [ ] revisar `src/app/api/webhooks/twilio/route.ts`
 - [ ] revisar `src/app/api/webhooks/twilio/status/route.ts`
 - [ ] revisar `src/app/api/google/callback/route.ts`
-- [ ] revisar `src/app/admin/[id]/page.tsx`
-- [ ] atualizar docs de URL principal
-- [ ] rodar `npm run build`
+- [x] revisar `src/app/admin/[id]/page.tsx`
+- [x] criar `NEXT_PUBLIC_SITE_URL` em `.env.local`
+- [x] manter `public/lp.html` com fallback literal temporário documentado
+- [x] atualizar docs de URL principal
+- [x] rodar `npm run build`
 
 Saída esperada:
 - nenhum link crítico hardcoded para `prevlegal.vercel.app`
+- separação clara entre URL pública do site e URL pública da plataforma
 
 ### Fase 3 — configurar Vercel
 
@@ -243,6 +254,11 @@ Se algo crítico quebrar:
 3. redeploy
 4. revisar callback URLs de Google/Twilio antes de tentar novamente
 
+## Env vars definitivas aprovadas
+
+- `NEXT_PUBLIC_APP_URL=https://app.prevlegal.com.br`
+- `NEXT_PUBLIC_SITE_URL=https://www.prevlegal.com.br`
+
 ## Ordem lógica de execução
 
 ### Fase 1 — decisão final de domínio
@@ -273,7 +289,6 @@ Padronizar pelo menos:
 
 - `NEXT_PUBLIC_APP_URL=https://app.prevlegal.com.br`
 - `NEXT_PUBLIC_SITE_URL=https://www.prevlegal.com.br`
-  - ou `https://prevlegal.com.br`, se o site usar apex como canônico
 
 Sugestão adicional:
 
@@ -324,15 +339,15 @@ Checklist mínimo:
 
 ### No código
 
-- [ ] Atualizar `public/lp.html`
-- [ ] Atualizar `public/demo.html`
-- [ ] Atualizar `src/app/api/usuarios/convidar/route.ts`
-- [ ] Atualizar `src/app/api/portal/link/[leadId]/route.ts`
+- [ ] Atualizar `public/lp.html` com o domínio final do app na janela de cutover
+- [ ] Atualizar `public/demo.html` com o domínio final do app na janela de cutover
+- [x] Atualizar `src/app/api/usuarios/convidar/route.ts`
+- [x] Atualizar `src/app/api/portal/link/[leadId]/route.ts`
 - [ ] Revisar `src/app/api/webhooks/twilio/route.ts`
 - [ ] Revisar `src/app/api/webhooks/twilio/status/route.ts`
 - [ ] Revisar `src/app/api/google/callback/route.ts`
-- [ ] Revisar `src/app/admin/[id]/page.tsx`
-- [ ] Atualizar `docs/MASTER.md`
+- [x] Revisar `src/app/admin/[id]/page.tsx`
+- [x] Atualizar `docs/MASTER.md`
 
 ### Em ambiente
 
@@ -351,9 +366,9 @@ Checklist mínimo:
 
 Antes de qualquer deploy de migração:
 
-1. decidir entre `prevlegal.com.br` ou `www.prevlegal.com.br` como canônico do site
-2. manter `app.prevlegal.com.br` para a plataforma
-3. depois executar a troca de env + código + Vercel na mesma janela
+1. configurar `www`, apex redirect, `app` e `admin` no Vercel
+2. aplicar o DNS pedido pelo painel
+3. trocar as env vars para os valores finais e redeployar na mesma janela
 
 ## Fontes
 

@@ -18,6 +18,7 @@ export async function GET(
 
   if (!lead) return NextResponse.json({ error: 'Lead não encontrado' }, { status: 404 })
 
-  const url = `${process.env.NEXT_PUBLIC_APP_URL || 'https://prevlegal.vercel.app'}/portal/${lead.portal_token}`
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://prevlegal.vercel.app'
+  const url = `${baseUrl}/portal/${lead.portal_token}`
   return NextResponse.json({ url, token: lead.portal_token, nome: lead.nome })
 }

@@ -114,6 +114,12 @@
 - Tipografia de títulos migrada para Cabinet Grotesk
 - Mockups e copy do agente foram limpos de NB e de qualquer vínculo explícito com escritório parceiro
 - O demo animado foi embedado na LP e reforçado para funcionar sem dependências externas críticas
+- A raiz `/` agora funciona como porta de entrada inteligente:
+  - visitante sem sessão -> LP
+  - usuário com sessão -> dashboard
+- A Fase 0 e a Fase 2 do runbook de domínio foram executadas localmente:
+  - arquitetura aprovada: `www` + apex redirect + `app` + `admin`
+  - metadata SEO, sitemap, robots, manifest, headers e OG image já estão preparados para o cutover
 
 ### Integrações e mensageria
 - O envio WhatsApp agora usa helper centralizado com fallback global e suporte a credenciais Twilio por tenant

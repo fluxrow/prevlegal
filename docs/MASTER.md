@@ -9,14 +9,19 @@
 **Nome:** PrevLegal
 **Categoria:** SaaS B2B para operações de captação previdenciária
 **Repositório:** https://github.com/fluxrow/prevlegal
-**Produção:** https://prevlegal.vercel.app
-**LP de vendas:** https://prevlegal.vercel.app/lp.html
+**Produção atual:** https://prevlegal.vercel.app
+**LP atual:** https://prevlegal.vercel.app/lp.html
 **Domínio próprio adquirido:** `prevlegal.com.br`
 
-### Arquitetura de domínio recomendada
-- `prevlegal.com.br` -> site institucional / LP
+### Arquitetura de domínio aprovada
+- `www.prevlegal.com.br` -> site / LP canônico
+- `prevlegal.com.br` -> redirect para `www.prevlegal.com.br`
 - `app.prevlegal.com.br` -> plataforma principal
-- `admin.prevlegal.com.br` -> opcional depois, quando o admin merecer isolamento próprio
+- `admin.prevlegal.com.br` -> painel admin desde o início
+
+### Variáveis públicas aprovadas para o cutover
+- `NEXT_PUBLIC_SITE_URL=https://www.prevlegal.com.br`
+- `NEXT_PUBLIC_APP_URL=https://app.prevlegal.com.br`
 
 ### Ordem lógica de execução da migração de domínio
 1. Definir a arquitetura final (`site` vs `app`)
@@ -123,6 +128,7 @@ Estratégia: entrar com R$ 1.997 para gerar cases, subir gradualmente.
 - Código completo, não parcial
 - Commits com mensagens descritivas
 - Sempre informar o commit hash após deploy
+- Separar sempre `SITE_URL` de `APP_URL` ao mexer em SEO, LP, convites, portal ou links absolutos
 
 ---
 
