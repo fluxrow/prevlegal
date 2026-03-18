@@ -152,6 +152,11 @@
 - Comparar templates, horários e listas por performance
 - Exibir falhas de envio, resposta e conversão em uma camada de otimização
 
+### Fase 31 — Migração para domínio próprio
+- Colocar `prevlegal.com.br` como domínio principal do site
+- Separar `app.prevlegal.com.br` para a plataforma
+- Revisar CTAs, login, portal, links absolutos e notificações
+
 ### Alta prioridade
 - [ ] Isolar métricas do detalhe do tenant por base/credencial real quando o multi-tenant deixar de ser piloto único
 - [ ] Definir estados explícitos da fila humana na Caixa de Entrada (`assumido`, `aguardando cliente`, `resolvido`)
@@ -160,6 +165,7 @@
 - [ ] Marcação explícita de "assumido por humano" nas conversas para separar fila de atendimento de conversas apenas abertas
 - [ ] Fila dedicada de agendamentos criados pelo agente com confirmação operacional
 - [ ] Sinais de risco de churn e adoção no detalhe do tenant
+- [ ] Migração segura para `prevlegal.com.br` + `app.prevlegal.com.br`
 
 ### Baixa prioridade
 - [ ] Repo GitHub privado

@@ -11,6 +11,20 @@
 **Repositório:** https://github.com/fluxrow/prevlegal
 **Produção:** https://prevlegal.vercel.app
 **LP de vendas:** https://prevlegal.vercel.app/lp.html
+**Domínio próprio adquirido:** `prevlegal.com.br`
+
+### Arquitetura de domínio recomendada
+- `prevlegal.com.br` -> site institucional / LP
+- `app.prevlegal.com.br` -> plataforma principal
+- `admin.prevlegal.com.br` -> opcional depois, quando o admin merecer isolamento próprio
+
+### Ordem lógica de execução da migração de domínio
+1. Definir a arquitetura final (`site` vs `app`)
+2. Configurar domínio e subdomínios no Vercel
+3. Ajustar DNS do domínio comprado
+4. Atualizar URLs canônicas, CTAs e links absolutos do sistema
+5. Revisar login, portal, notificações e links enviados automaticamente
+6. Validar redirects e HTTPS em produção
 
 ### Posicionamento correto
 O PrevLegal NÃO é para advogados autônomos.
@@ -118,4 +132,3 @@ Estratégia: entrar com R$ 1.997 para gerar cases, subir gradualmente.
 - Campos necessários no tenant: twilio_account_sid, twilio_auth_token, twilio_number
 - APIs de disparo usarão credenciais do tenant em vez das globais
 - Onboarding: Fluxrow cria subconta e provisiona número para o cliente
-
