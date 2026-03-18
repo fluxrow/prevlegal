@@ -21,7 +21,7 @@
 | 21 | Gestão financeira (contratos, parcelas, dashboard) | cf99ff5 |
 | 22 | Onboarding tooltips — 6 páginas | 18a859b |
 | 23 | ROI por campanha (contratual + sucumbência separados) | b60be88 |
-| 24 | Inbox Operacional Unificada (Portal na Caixa de Entrada + badges de pendências) | pending |
+| 24 | Inbox Operacional Unificada (Portal na Caixa de Entrada + badges de pendências) | e923833 |
 
 ## Commits das sessões 17-18/03/2026
 
