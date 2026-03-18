@@ -35,7 +35,7 @@ A empresa de captação NUNCA se identifica como vinculada ao escritório parcei
 ## Fundador
 
 **Nome:** Flávio Cauã Farias de Farias
-**Email:** fbcfarias@icloud.com / fbcfarias@gmail.com
+**Email:** fbcfarias@icloud.com / fbcfarias@icloud.com
 **GitHub:** fbcfarias (NÃO é CauaFarias — pessoa diferente)
 **Empresa:** Fluxrow
 
