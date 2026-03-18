@@ -16,5 +16,14 @@ export async function GET(
     .eq('lead_id', leadId)
     .order('created_at', { ascending: true })
 
+  if ((data || []).some(m => m.remetente === 'cliente' && !m.lida)) {
+    await supabase
+      .from('portal_mensagens')
+      .update({ lida: true })
+      .eq('lead_id', leadId)
+      .eq('remetente', 'cliente')
+      .eq('lida', false)
+  }
+
   return NextResponse.json({ mensagens: data || [] })
 }

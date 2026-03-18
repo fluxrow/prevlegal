@@ -125,3 +125,9 @@ export async function GET(
 **Causa:** O bloco responsivo antigo era genérico demais e não tratava nav, hero, mockup, pricing, ROI e footer com granularidade suficiente
 **Correção:** Padronizar um bloco mobile completo com breakpoints em `768px` e `480px`
 **Regra prática:** Em landing pages ricas, revisar sempre nav, hero CTA, mockup, métricas, pricing, ROI e footer separadamente no mobile
+
+### 20. Chat do portal precisa de polling + Realtime no painel interno
+**Erro:** As mensagens novas do cliente e do escritório só apareciam após recarregar a tela do lead
+**Causa:** `portal-lead.tsx` fazia fetch único no mount e não mantinha a conversa sincronizada
+**Correção:** Adicionar polling de 5 segundos + canal Supabase Realtime por `lead_id`
+**Regra prática:** Em chat bidirecional do PrevLegal, usar Realtime para inserções e polling leve como fallback de consistência

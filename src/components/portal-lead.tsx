@@ -8,7 +8,7 @@ interface Documento {
   id: string; nome: string; tipo: string; compartilhado_cliente: boolean
 }
 interface Mensagem {
-  id: string; remetente: string; mensagem: string; created_at: string
+  id: string; remetente: string; mensagem: string; lida: boolean; created_at: string
 }
 
 export default function PortalLead({ leadId }: Props) {
@@ -21,18 +21,66 @@ export default function PortalLead({ leadId }: Props) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    let ativo = true
+    let cleanupRealtime: (() => void) | undefined
+
     Promise.all([
       fetch(`/api/portal/link/${leadId}`).then(r => r.json()),
       fetch(`/api/leads/${leadId}/documentos`).then(r => r.json()),
     ]).then(([linkData, docsData]) => {
+      if (!ativo) return
       if (linkData.url) setUrlPortal(linkData.url)
       if (Array.isArray(docsData)) setDocumentos(docsData)
       setLoading(false)
     })
 
-    fetch(`/api/portal/mensagens/${leadId}`).then(r => r.json()).then(d => {
-      if (d.mensagens) setMensagens(d.mensagens)
-    })
+    function buscarMensagens() {
+      fetch(`/api/portal/mensagens/${leadId}`)
+        .then(r => r.json())
+        .then(d => {
+          if (!ativo) return
+          if (d.mensagens) setMensagens(d.mensagens)
+        })
+    }
+
+    buscarMensagens()
+    const interval = setInterval(buscarMensagens, 5000)
+
+    ;(async () => {
+      const { createClient } = await import('@/lib/supabase/client')
+      const supabase = createClient()
+      const channel = supabase
+        .channel(`portal-mensagens-${leadId}`)
+        .on('postgres_changes', {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'portal_mensagens',
+          filter: `lead_id=eq.${leadId}`,
+        }, (payload) => {
+          if (!ativo) return
+          setMensagens(m => {
+            const novaMensagem = payload.new as Mensagem
+            if (m.some(msg => msg.id === novaMensagem.id)) return m
+            return [...m, novaMensagem]
+          })
+        })
+        .subscribe()
+
+      if (!ativo) {
+        supabase.removeChannel(channel)
+        return
+      }
+
+      cleanupRealtime = () => {
+        supabase.removeChannel(channel)
+      }
+    })()
+
+    return () => {
+      ativo = false
+      clearInterval(interval)
+      cleanupRealtime?.()
+    }
   }, [leadId])
 
   async function copiarLink() {
@@ -119,7 +167,9 @@ export default function PortalLead({ leadId }: Props) {
       {/* Mensagens do portal */}
       <div>
         <p style={{ fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '10px' }}>
-          Mensagens do portal{mensagens.filter(m => m.remetente === 'cliente').length > 0 ? ` (${mensagens.filter(m => m.remetente === 'cliente').length} do cliente)` : ''}
+          Mensagens do portal{mensagens.filter(m => m.remetente === 'cliente' && !m.lida).length > 0
+            ? ` · ${mensagens.filter(m => m.remetente === 'cliente' && !m.lida).length} não lida(s)`
+            : ''}
         </p>
         {mensagens.length > 0 && (
           <div style={{ background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: '10px', padding: '12px', marginBottom: '10px', maxHeight: '200px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' }}>
