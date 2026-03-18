@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation'
 import {
   Plus, Building2, Users, CheckCircle, Clock, LogOut,
   Edit2, Trash2, X, Save, MessageSquare, Search,
-  TrendingUp, AlertTriangle, ToggleLeft, ToggleRight, Filter,
+  TrendingUp, AlertTriangle, ToggleLeft, ToggleRight, Filter, BarChart2,
 } from 'lucide-react'
 
 interface Tenant {
@@ -372,6 +372,13 @@ export default function AdminPage() {
                             {t.status === 'ativo' ? <ToggleRight size={14} /> : <ToggleLeft size={14} />}
                           </button>
                         )}
+                        <button
+                          onClick={() => router.push(`/admin/${t.id}`)}
+                          title="Ver detalhes"
+                          style={{ width: '30px', height: '30px', borderRadius: '7px', background: 'rgba(79,122,255,0.1)', border: '1px solid rgba(79,122,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#4f7aff' }}
+                        >
+                          <BarChart2 size={13} />
+                        </button>
                         <button
                           onClick={() => abrirEdicao(t)}
                           title="Editar"

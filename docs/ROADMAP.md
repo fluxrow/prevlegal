@@ -90,6 +90,7 @@
 
 ### Admin e segurança operacional
 - O admin ganhou filtros por plano/status, MRR estimado, toggle ativar/suspender e alerta de trial expirando
+- O admin agora tem página de detalhe do tenant com métricas de uso, saúde da conta, últimas conversas e últimas campanhas
 - O acesso admin foi desenhado em 3 camadas:
   - rota discreta
   - cookie httpOnly
@@ -126,7 +127,7 @@
 ## Backlog
 
 ### Alta prioridade
-- [ ] Página de detalhe do tenant no admin (métricas de uso por cliente)
+- [ ] Isolar métricas do detalhe do tenant por base/credencial real quando o multi-tenant deixar de ser piloto único
 
 ### Média prioridade
 - [ ] Marcação explícita de "assumido por humano" nas conversas para separar fila de atendimento de conversas apenas abertas
