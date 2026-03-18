@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PrevLegal — Demo</title>
-<style>@import url(https://fonts.googleapis.com/css2?family=Cabinet+Grotesk:wght@400;500;700;800;900&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap);</style>
 <style>
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
 :root{
@@ -23,8 +22,11 @@
   --green:#00c48c;
   --green2:#00e5a5;
   --amber:#f0a500;
+  --font-sans:"Inter","Avenir Next","Segoe UI",system-ui,-apple-system,BlinkMacSystemFont,sans-serif;
+  --font-display:"Avenir Next","Inter","Segoe UI",system-ui,-apple-system,BlinkMacSystemFont,sans-serif;
+  --font-mono:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;
 }
-html,body{width:100%;height:100%;background:var(--bg);overflow:hidden;font-family:'DM Sans',sans-serif;-webkit-font-smoothing:antialiased}
+html,body{width:100%;height:100%;background:var(--bg);overflow:hidden;font-family:var(--font-sans);-webkit-font-smoothing:antialiased}
 
 /* ── CANVAS PRINCIPAL ── */
 #demo{width:100%;height:100vh;position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden}
@@ -42,7 +44,7 @@ html,body{width:100%;height:100%;background:var(--bg);overflow:hidden;font-famil
 .scene.active{opacity:1;pointer-events:all}
 
 /* ── TÍTULO DE CENA ── */
-.scene-label{position:absolute;top:32px;left:50%;transform:translateX(-50%);font-size:11px;font-weight:600;letter-spacing:0.2em;text-transform:uppercase;color:var(--text3);font-family:'DM Mono',monospace}
+.scene-label{position:absolute;top:32px;left:50%;transform:translateX(-50%);font-size:11px;font-weight:600;letter-spacing:0.2em;text-transform:uppercase;color:var(--text3);font-family:var(--font-mono)}
 
 /* ── PROGRESS BAR ── */
 #progress{position:fixed;bottom:0;left:0;right:0;height:2px;background:var(--bg3);z-index:100}
@@ -55,7 +57,7 @@ html,body{width:100%;height:100%;background:var(--bg);overflow:hidden;font-famil
 #scene-dots{display:flex;gap:6px;align-items:center}
 .dot{width:6px;height:6px;border-radius:50%;background:var(--border2);transition:all .3s;cursor:pointer}
 .dot.active{background:var(--accent3);width:20px;border-radius:3px}
-#scene-counter{font-size:11px;color:var(--text3);font-family:'DM Mono',monospace;min-width:32px;text-align:center}
+#scene-counter{font-size:11px;color:var(--text3);font-family:var(--font-mono);min-width:32px;text-align:center}
 
 /* ════════════════════════
    CENA 1 — HERO / TÍTULO
@@ -65,7 +67,7 @@ html,body{width:100%;height:100%;background:var(--bg);overflow:hidden;font-famil
 .hero-tag.show{opacity:1;transform:translateY(0)}
 .hero-tag-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse-dot 2s infinite}
 @keyframes pulse-dot{0%,100%{opacity:1}50%{opacity:0.3}}
-.hero-h1{font-family:'Cabinet Grotesk',sans-serif;font-size:clamp(48px,7vw,88px);font-weight:900;line-height:1.02;letter-spacing:-3px;color:#fff;opacity:0;transform:translateY(20px);transition:all 0.8s cubic-bezier(0.16,1,0.3,1) 0.5s}
+.hero-h1{font-family:var(--font-display);font-size:clamp(48px,7vw,88px);font-weight:900;line-height:1.02;letter-spacing:-3px;color:#fff;opacity:0;transform:translateY(20px);transition:all 0.8s cubic-bezier(0.16,1,0.3,1) 0.5s}
 .hero-h1.show{opacity:1;transform:translateY(0)}
 .hero-h1 .g{background:linear-gradient(120deg,var(--accent3) 0%,var(--green2) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
 .hero-sub{font-size:18px;font-weight:300;color:var(--text2);margin-top:20px;opacity:0;transform:translateY(10px);transition:all 0.7s ease 0.9s;line-height:1.6}
@@ -80,7 +82,7 @@ html,body{width:100%;height:100%;background:var(--bg);overflow:hidden;font-famil
 ════════════════════════ */
 .import-scene{display:flex;align-items:center;gap:60px;max-width:1100px;width:100%;padding:40px}
 .import-left{flex:1}
-.import-title{font-family:'Cabinet Grotesk',sans-serif;font-size:36px;font-weight:800;color:#fff;letter-spacing:-1px;margin-bottom:12px;opacity:0;transform:translateX(-20px);transition:all 0.7s ease 0.2s}
+.import-title{font-family:var(--font-display);font-size:36px;font-weight:800;color:#fff;letter-spacing:-1px;margin-bottom:12px;opacity:0;transform:translateX(-20px);transition:all 0.7s ease 0.2s}
 .import-title.show{opacity:1;transform:translateX(0)}
 .import-sub{font-size:15px;color:var(--text2);line-height:1.7;opacity:0;transition:opacity 0.6s ease 0.5s;max-width:360px}
 .import-sub.show{opacity:1}
@@ -89,7 +91,7 @@ html,body{width:100%;height:100%;background:var(--bg);overflow:hidden;font-famil
 .istat.show{opacity:1;transform:translateX(0)}
 .istat-bar{height:3px;background:linear-gradient(90deg,var(--accent),transparent);border-radius:2px;width:0;transition:width 1.5s cubic-bezier(0.16,1,0.3,1)}
 .istat-label{font-size:12px;color:var(--text2);white-space:nowrap;min-width:100px}
-.istat-val{font-family:'DM Mono',monospace;font-size:13px;color:var(--accent3);margin-left:auto}
+.istat-val{font-family:var(--font-mono);font-size:13px;color:var(--accent3);margin-left:auto}
 .import-right{flex:1.2;max-width:520px}
 
 /* TABLE */
@@ -103,7 +105,7 @@ html,body{width:100%;height:100%;background:var(--bg);overflow:hidden;font-famil
 .dt-badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:100px;font-size:10px;font-weight:600}
 .badge-wpp{background:rgba(0,196,140,0.1);color:var(--green);border:1px solid rgba(0,196,140,0.2)}
 .badge-sem{background:rgba(255,87,87,0.1);color:#ff7070;border:1px solid rgba(255,87,87,0.2)}
-.dt-score{font-family:'DM Mono',monospace;font-size:12px}
+.dt-score{font-family:var(--font-mono);font-size:12px}
 .score-hi{color:var(--green)}
 .score-md{color:var(--amber)}
 
@@ -112,11 +114,11 @@ html,body{width:100%;height:100%;background:var(--bg);overflow:hidden;font-famil
 ════════════════════════ */
 .disparo-scene{display:flex;align-items:center;gap:48px;max-width:1100px;width:100%;padding:40px}
 .disparo-left{flex:1.1}
-.disparo-title{font-family:'Cabinet Grotesk',sans-serif;font-size:36px;font-weight:800;color:#fff;letter-spacing:-1px;margin-bottom:12px;opacity:0;transform:translateX(-20px);transition:all 0.7s ease 0.2s}
+.disparo-title{font-family:var(--font-display);font-size:36px;font-weight:800;color:#fff;letter-spacing:-1px;margin-bottom:12px;opacity:0;transform:translateX(-20px);transition:all 0.7s ease 0.2s}
 .disparo-title.show{opacity:1;transform:translateX(0)}
 .disparo-sub{font-size:15px;color:var(--text2);line-height:1.7;opacity:0;transition:opacity 0.6s ease 0.5s;max-width:360px}
 .disparo-sub.show{opacity:1}
-.disparo-counter{margin-top:28px;font-family:'Cabinet Grotesk',sans-serif;font-size:64px;font-weight:900;letter-spacing:-3px;background:linear-gradient(135deg,var(--accent3),var(--green2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;opacity:0;transition:opacity 0.5s ease 0.8s}
+.disparo-counter{margin-top:28px;font-family:var(--font-display);font-size:64px;font-weight:900;letter-spacing:-3px;background:linear-gradient(135deg,var(--accent3),var(--green2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;opacity:0;transition:opacity 0.5s ease 0.8s}
 .disparo-counter.show{opacity:1}
 .disparo-counter-label{font-size:13px;color:var(--text3);margin-top:4px}
 .disparo-right{flex:1;max-width:480px}
@@ -152,7 +154,7 @@ html,body{width:100%;height:100%;background:var(--bg);overflow:hidden;font-famil
 ════════════════════════ */
 .qualif-scene{display:flex;align-items:center;gap:60px;max-width:1100px;width:100%;padding:40px}
 .qualif-left{flex:1}
-.qualif-title{font-family:'Cabinet Grotesk',sans-serif;font-size:36px;font-weight:800;color:#fff;letter-spacing:-1px;margin-bottom:12px;opacity:0;transform:translateX(-20px);transition:all 0.7s ease 0.2s}
+.qualif-title{font-family:var(--font-display);font-size:36px;font-weight:800;color:#fff;letter-spacing:-1px;margin-bottom:12px;opacity:0;transform:translateX(-20px);transition:all 0.7s ease 0.2s}
 .qualif-title.show{opacity:1;transform:translateX(0)}
 .qualif-sub{font-size:15px;color:var(--text2);line-height:1.7;opacity:0;transition:opacity 0.6s ease 0.5s;max-width:360px}
 .qualif-sub.show{opacity:1}
@@ -160,7 +162,7 @@ html,body{width:100%;height:100%;background:var(--bg);overflow:hidden;font-famil
 .qm{background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;opacity:0;transform:translateX(-15px);transition:all 0.5s ease}
 .qm.show{opacity:1;transform:translateX(0)}
 .qm-label{font-size:12px;color:var(--text2)}
-.qm-val{font-family:'Cabinet Grotesk',sans-serif;font-size:22px;font-weight:800;letter-spacing:-0.5px}
+.qm-val{font-family:var(--font-display);font-size:22px;font-weight:800;letter-spacing:-0.5px}
 .qm-val.green{color:var(--green)}
 .qm-val.accent{color:var(--accent3)}
 .qm-val.amber{color:var(--amber)}
@@ -182,14 +184,14 @@ html,body{width:100%;height:100%;background:var(--bg);overflow:hidden;font-famil
 .notif-body{flex:1}
 .notif-title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:3px}
 .notif-desc{font-size:12px;color:var(--text2);line-height:1.5}
-.notif-time{font-size:10px;color:var(--text3);font-family:'DM Mono',monospace;margin-top:4px}
+.notif-time{font-size:10px;color:var(--text3);font-family:var(--font-mono);margin-top:4px}
 .notif-badge{display:inline-flex;padding:2px 8px;border-radius:100px;font-size:10px;font-weight:700;background:rgba(0,196,140,0.12);color:var(--green);border:1px solid rgba(0,196,140,0.25)}
 
 /* ════════════════════════
    CENA 5 — DASHBOARD
 ════════════════════════ */
 .dash-scene{display:flex;flex-direction:column;align-items:center;max-width:1000px;width:100%;padding:20px}
-.dash-title{font-family:'Cabinet Grotesk',sans-serif;font-size:32px;font-weight:800;color:#fff;letter-spacing:-1px;margin-bottom:20px;text-align:center;opacity:0;transition:opacity 0.6s ease 0.2s}
+.dash-title{font-family:var(--font-display);font-size:32px;font-weight:800;color:#fff;letter-spacing:-1px;margin-bottom:20px;text-align:center;opacity:0;transition:opacity 0.6s ease 0.2s}
 .dash-title.show{opacity:1}
 .mockup-shell{background:var(--bg3);border:1px solid var(--border2);border-radius:16px;overflow:hidden;width:100%;box-shadow:0 40px 100px rgba(0,0,0,0.6);opacity:0;transform:translateY(30px) scale(0.96);transition:all 1s cubic-bezier(0.16,1,0.3,1) 0.4s}
 .mockup-shell.show{opacity:1;transform:translateY(0) scale(1)}
@@ -198,7 +200,7 @@ html,body{width:100%;height:100%;background:var(--bg);overflow:hidden;font-famil
 .mdot:nth-child(1){background:#ff5f57}
 .mdot:nth-child(2){background:#ffbd2e}
 .mdot:nth-child(3){background:#28c940}
-.murl{margin-left:10px;font-size:11px;color:var(--text3);background:var(--bg);padding:3px 12px;border-radius:6px;border:1px solid var(--border);font-family:'DM Mono',monospace}
+.murl{margin-left:10px;font-size:11px;color:var(--text3);background:var(--bg);padding:3px 12px;border-radius:6px;border:1px solid var(--border);font-family:var(--font-mono)}
 .mock-body{display:grid;grid-template-columns:180px 1fr;min-height:280px}
 .mock-sidebar{background:var(--bg2);border-right:1px solid var(--border);padding:12px 8px}
 .msi{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:7px;font-size:12px;color:var(--text3);margin-bottom:2px;cursor:default}
@@ -209,7 +211,7 @@ html,body{width:100%;height:100%;background:var(--bg);overflow:hidden;font-famil
 .mock-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
 .mkpi{background:var(--bg4);border:1px solid var(--border);border-radius:10px;padding:13px}
 .mkpi-lbl{font-size:9.5px;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:5px}
-.mkpi-val{font-family:'Cabinet Grotesk',sans-serif;font-size:24px;font-weight:800;color:#fff;line-height:1;opacity:0;transition:opacity 0.4s ease}
+.mkpi-val{font-family:var(--font-display);font-size:24px;font-weight:800;color:#fff;line-height:1;opacity:0;transition:opacity 0.4s ease}
 .mkpi-val.show{opacity:1}
 .mkpi-val.green{color:var(--green)}
 .mkpi-val.accent{color:var(--accent3)}
@@ -221,19 +223,19 @@ html,body{width:100%;height:100%;background:var(--bg);overflow:hidden;font-famil
 .mfbar{width:100%;background:linear-gradient(180deg,var(--accent),rgba(67,97,238,0.3));border-radius:4px 4px 0 0;height:0;transition:height 1.5s cubic-bezier(0.16,1,0.3,1)}
 .mfbar.green{background:linear-gradient(180deg,var(--green),rgba(0,196,140,0.3))}
 .mflabel{font-size:9px;color:var(--text3);text-align:center}
-.mfval{font-size:10px;color:var(--text2);font-family:'DM Mono',monospace}
+.mfval{font-size:10px;color:var(--text2);font-family:var(--font-mono)}
 
 /* ════════════════════════
    CENA 6 — CLOSING
 ════════════════════════ */
 .close-scene{text-align:center;padding:40px}
-.close-logo{font-family:'Cabinet Grotesk',sans-serif;font-size:clamp(56px,8vw,100px);font-weight:900;letter-spacing:-4px;opacity:0;transform:scale(0.9);transition:all 1s cubic-bezier(0.16,1,0.3,1) 0.3s}
+.close-logo{font-family:var(--font-display);font-size:clamp(56px,8vw,100px);font-weight:900;letter-spacing:-4px;opacity:0;transform:scale(0.9);transition:all 1s cubic-bezier(0.16,1,0.3,1) 0.3s}
 .close-logo.show{opacity:1;transform:scale(1)}
 .close-logo .prev{color:#fff}
 .close-logo .legal{background:linear-gradient(120deg,var(--accent3),var(--green2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
 .close-tag{font-size:16px;font-weight:300;color:var(--text2);margin-top:12px;opacity:0;transition:opacity 0.7s ease 0.9s;letter-spacing:0.05em}
 .close-tag.show{opacity:1}
-.close-url{font-family:'DM Mono',monospace;font-size:13px;color:var(--text3);margin-top:20px;opacity:0;transition:opacity 0.6s ease 1.3s}
+.close-url{font-family:var(--font-mono);font-size:13px;color:var(--text3);margin-top:20px;opacity:0;transition:opacity 0.6s ease 1.3s}
 .close-url.show{opacity:1}
 .close-url a{color:var(--accent3);text-decoration:none}
 .close-pills{display:flex;gap:12px;justify-content:center;margin-top:28px;opacity:0;transition:opacity 0.6s ease 1.6s;flex-wrap:wrap}
@@ -298,7 +300,7 @@ html,body{width:100%;height:100%;background:var(--bg);overflow:hidden;font-famil
         <h2 class="disparo-title" id="dt2">Ana qualifica.<br>Você fecha.</h2>
         <p class="disparo-sub" id="ds">A consultora previdenciária IA aborda cada lead com linguagem natural, identifica interesse real e escala para você no momento certo.</p>
         <div class="disparo-counter show" id="dcounter">
-          <div style="font-size:11px;color:var(--text3);font-family:'DM Mono',monospace;margin-bottom:4px;letter-spacing:0.1em">CONVERSAS ATIVAS AGORA</div>
+          <div style="font-size:11px;color:var(--text3);font-family:var(--font-mono);margin-bottom:4px;letter-spacing:0.1em">CONVERSAS ATIVAS AGORA</div>
           <span id="counter-num">0</span>
         </div>
       </div>
@@ -618,7 +620,19 @@ document.addEventListener('keydown',e=>{
 })
 
 // ── INIT ──
-setTimeout(() => { initScene1(); startProgress() }, 150)
+let booted=false
+function bootDemo(){
+  if(booted)return
+  booted=true
+  initScene1()
+  requestAnimationFrame(()=>startProgress())
+}
+
+if(document.readyState==='complete'){
+  bootDemo()
+}else{
+  window.addEventListener('load',bootDemo,{once:true})
+}
 </script>
 </body>
 </html>

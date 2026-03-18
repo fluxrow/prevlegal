@@ -147,3 +147,9 @@ export async function GET(
 - `pg_trgm` no schema `public` é um aviso técnico de baixo risco no contexto atual
 - `Leaked password protection disabled` deve ser ativado no Dashboard do Supabase em `Authentication -> Password Settings`
 **Regra prática:** Em auditoria de segurança, diferenciar achado crítico de aviso contextual. Quando o produto migrar para multi-tenant real, revisar todas as policies `USING (true)` para filtrar por `tenant_id`
+
+### 23. Demos embedados na LP precisam ser autossuficientes
+**Erro:** O demo novo ainda dependia de Google Fonts externas e inicialização direta no fim do script
+**Risco:** Assets externos e boot frágil aumentam chance de falha visual dentro de `iframe` e prejudicam previsibilidade em produção
+**Correção:** Trocar para stacks locais de fonte e inicializar a animação com `window.load` + guard idempotente
+**Regra prática:** Todo `public/demo.html` do PrevLegal deve funcionar sozinho, sem dependência crítica de terceiros para tipografia ou start das cenas
