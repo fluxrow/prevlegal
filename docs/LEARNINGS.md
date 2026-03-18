@@ -84,3 +84,38 @@ export async function GET(
 - **Sucumbência:** definido pelo juiz na sentença, pago pelo INSS (~10% do valor da causa)
 **Impacto:** Sistema financeiro precisa registrar e trackear os dois separadamente
 **Implementado:** Migration 030 + campos na tabela contratos + KPIs no financeiro
+
+### 13. LP CTA deve apontar para /login não para a raiz
+**Erro:** Botão "Acessar plataforma" redirecionava para o dashboard da Alexandrini
+**Causa:** URL apontava para prevlegal.vercel.app sem path — usuário já logado ia direto pro dashboard
+**Correção:** Todos os CTAs da LP apontam para /login
+
+### 14. Env vars admin hardcoded no código
+**Erro:** Token admin era string literal no código — inseguro
+**Causa:** Variáveis não configuradas no Vercel
+**Correção:** 3 env vars adicionadas no Vercel — EMAIL, SENHA e TOKEN gerado com openssl rand -hex 24
+
+### 15. Agente NUNCA pode se identificar com o escritório parceiro
+**Regra permanente de negócio e compliance OAB**
+**Errado:** "Sou assistente do escritório Alexandrini Advogados"
+**Correto:** "(nome) — Consultor(a) Previdenciário(a)"
+**Motivo:** Empresa de captação não pode ter vínculo público com o escritório — viola o Provimento 205/2021 OAB
+
+### 16. Obsidian MCP — vault precisa estar aberto
+**Erro:** mcp-obsidian retornava 404 mesmo com plugin ativo
+**Causa:** Obsidian aberto mas sem vault carregado
+**Correção:** Sempre abrir a pasta ~/Documents/Fluxrow como cofre antes de usar o MCP
+**Porta:** HTTPS 27124, requer NODE_TLS_REJECT_UNAUTHORIZED=0
+
+### 17. Dois tipos de honorários em ações previdenciárias
+**Aprendizado de negócio crítico — definido pela Jéssica Alexandrini**
+- Contratual: definido no contrato de êxito com o cliente (20-30% do benefício)
+- Sucumbência: definido pelo juiz na sentença, pago pelo INSS (~10% do valor da causa)
+**Impacto no sistema:** tabela contratos tem campos separados — honorario_contratual e honorario_sucumbencia
+**ROI real de cada caso = contratual + sucumbência**
+
+### 18. PrevLegal não é para advogados autônomos
+**Posicionamento correto:** SaaS para OPERAÇÕES DE CAPTAÇÃO PREVIDENCIÁRIA
+**Modelo:** Empresa de captação (não-OAB) + Escritório parceiro (OAB)
+**A empresa de captação usa o PrevLegal — o escritório recebe os leads qualificados**
+**Base legal:** Provimento 205/2021 OAB + Art. 34 IV Estatuto da Advocacia
