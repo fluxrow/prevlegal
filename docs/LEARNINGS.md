@@ -269,3 +269,9 @@ export async function GET(
 - `/admin` valida `admin_token` e cookie de atividade do admin
 - app normal valida usuário Supabase e cookie de atividade do app
 **Regra prática:** Sempre que coexistirem auths diferentes no mesmo domínio, o middleware deve reconhecer explicitamente cada área antes de aplicar redirecionamentos
+
+### 41. Cookie ausente de reautenticação deve falhar fechado, não passar silenciosamente
+**Problema:** As APIs sensíveis do admin respondiam normalmente mesmo sem cookie recente de reautenticação
+**Causa:** O helper considerava timestamp ausente como "não expirado", o que abre uma brecha lógica
+**Correção:** `hasRecentReauth` e `verificarAdminReauthRecente` agora exigem timestamp válido antes de aceitar a sessão
+**Regra prática:** Em qualquer verificação de reauth no PrevLegal, ausência do cookie deve ser tratada como falha de segurança, nunca como sessão válida

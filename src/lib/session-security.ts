@@ -38,7 +38,8 @@ export function isTimestampExpired(value: string | null | undefined, maxAgeMs: n
 export async function hasRecentReauth(mode: 'app' | 'admin') {
   const cookieStore = await cookies()
   const cookieName = mode === 'admin' ? ADMIN_REAUTH_COOKIE : APP_REAUTH_COOKIE
-  return !isTimestampExpired(cookieStore.get(cookieName)?.value, getReauthWindowMs())
+  const value = cookieStore.get(cookieName)?.value
+  return parseTimestamp(value) !== null && !isTimestampExpired(value, getReauthWindowMs())
 }
 
 export function getSessionCookieOptions(maxAgeSeconds: number) {

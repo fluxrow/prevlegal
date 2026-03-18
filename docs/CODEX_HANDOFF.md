@@ -174,6 +174,15 @@ Pontos que precisam ser preservados durante a implementacao:
   - `src/app/admin/[id]/page.tsx`
 - `npm run build` executado com sucesso apos as alteracoes
 
+2026-03-18 - Fix de reautenticacao da Fase 25
+- Validacao manual no deploy revelou que a API admin aceitava acesso sem cookie recente de reauth quando o cookie estava ausente
+- Causa: helper tratava timestamp ausente como "nao expirado"
+- Correcao aplicada em:
+  - `src/lib/session-security.ts`
+  - `src/lib/admin-auth.ts`
+- Regra final: cookie ausente de reauth agora invalida o acesso sensivel, como esperado
+- `npm run build` executado novamente com sucesso apos o fix
+
 ## Arquivos Alterados Nesta Sessao
 
 - `supabase/migrations/029_financeiro.sql`
