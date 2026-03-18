@@ -3,10 +3,12 @@ import { createClient } from '@supabase/supabase-js'
 import Anthropic from '@anthropic-ai/sdk'
 import { getTwilioCredentials, sendWhatsApp } from '@/lib/twilio'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+function createAdminSupabase() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+}
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY!,
@@ -36,6 +38,7 @@ INSTRUÇÕES:
 
 export async function POST(request: NextRequest) {
   try {
+    const supabase = createAdminSupabase()
     const { mensagem_id } = await request.json()
 
     if (!mensagem_id) {

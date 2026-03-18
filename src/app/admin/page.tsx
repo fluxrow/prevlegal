@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import SessionActivityTracker from '@/components/session-activity-tracker'
-import { ADMIN_IDLE_MINUTES } from '@/lib/session-security'
+import { ADMIN_IDLE_MINUTES } from '@/lib/session-config'
 import {
   Plus, Building2, Users, CheckCircle, Clock, LogOut,
   Edit2, Trash2, X, Save, MessageSquare, Search,

@@ -1,10 +1,10 @@
 'use client'
 
+import { Suspense, useState } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
-import { useState } from 'react'
 import { ShieldCheck } from 'lucide-react'
 
-export default function AdminReauthPage() {
+function AdminReauthPageContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const next = searchParams.get('next') || '/admin'
@@ -50,5 +50,13 @@ export default function AdminReauthPage() {
         </button>
       </form>
     </div>
+  )
+}
+
+export default function AdminReauthPage() {
+  return (
+    <Suspense fallback={null}>
+      <AdminReauthPageContent />
+    </Suspense>
   )
 }

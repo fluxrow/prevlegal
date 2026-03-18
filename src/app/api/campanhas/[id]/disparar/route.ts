@@ -3,10 +3,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient as createAdmin } from "@supabase/supabase-js";
 import { getTwilioCredentials, sendWhatsApp } from "@/lib/twilio";
 
-const adminClient = createAdmin(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-);
+function createAdminClient() {
+  return createAdmin(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  );
+}
 
 function normalizePhone(cpf: string): string | null {
   const digits = cpf.replace(/\D/g, "");
@@ -42,6 +44,7 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
+    const adminClient = createAdminClient();
     const { id: campanhaId } = await params;
 
     // Buscar campanha

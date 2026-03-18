@@ -7,7 +7,7 @@ import {
   ADMIN_IDLE_MINUTES,
   getTimestampNow,
   isTimestampExpired,
-} from "@/lib/session-security";
+} from "@/lib/session-config";
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });

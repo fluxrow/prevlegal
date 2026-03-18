@@ -1,10 +1,10 @@
 'use client'
 
+import { Suspense, useState } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
-import { useState } from 'react'
 import { ShieldCheck } from 'lucide-react'
 
-export default function ReauthPage() {
+function ReauthPageContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const next = searchParams.get('next') || '/dashboard'
@@ -58,5 +58,13 @@ export default function ReauthPage() {
         </button>
       </form>
     </div>
+  )
+}
+
+export default function ReauthPage() {
+  return (
+    <Suspense fallback={null}>
+      <ReauthPageContent />
+    </Suspense>
   )
 }

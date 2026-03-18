@@ -2,10 +2,12 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import twilio from 'twilio'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+function createAdminSupabase() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+}
 
 // Mapeamento dos status do Twilio para o enum mensagem_status do banco
 const STATUS_MAP: Record<string, string> = {
@@ -19,6 +21,7 @@ const STATUS_MAP: Record<string, string> = {
 }
 
 export async function POST(request: NextRequest) {
+  const supabase = createAdminSupabase()
   // 1. Validar assinatura Twilio
   const twilioSignature = request.headers.get('x-twilio-signature') || ''
   const url = `${process.env.NEXT_PUBLIC_APP_URL}/api/webhooks/twilio/status`

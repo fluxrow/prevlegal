@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import SessionActivityTracker from '@/components/session-activity-tracker'
-import { ADMIN_IDLE_MINUTES } from '@/lib/session-security'
+import { ADMIN_IDLE_MINUTES } from '@/lib/session-config'
 import {
   ArrowLeft, Building2, Users, MessageSquare, TrendingUp,
   CheckCircle, DollarSign, ExternalLink, Calendar, Zap,

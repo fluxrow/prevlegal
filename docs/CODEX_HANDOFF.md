@@ -208,6 +208,26 @@ Pontos que precisam ser preservados durante a implementacao:
   - se `nb` vier vazio, gera `MANUAL-<telefone|cpf|timestamp>`
 - Objetivo: permitir lead de teste/manual sem quebrar o modelo legado
 
+2026-03-18 - Estabilizacao do build/deploy Next na Vercel
+- Problema observado apos deploy em producao:
+  - hosts publicos com alias correto, mas rotas do app retornando `404`
+  - `lp.html` respondendo `200`, sugerindo artefato parcial/errado
+- Causas encontradas e corrigidas:
+  - existia uma arvore `app/` vazia na raiz competindo com `src/app`
+  - existia um `next.config.js` residual competindo com `next.config.ts`
+  - modulos com client Supabase admin criados no escopo de arquivo quebravam o build em `Collecting page data`
+  - `/reauth` e `/admin/reauth` usavam `useSearchParams` sem `Suspense`
+  - `/login` e `Sidebar` criavam `createBrowserClient` no corpo do componente
+- Correcoes aplicadas:
+  - remocao da arvore `app/` vazia na raiz
+  - remocao de `next.config.js`
+  - criacao de `src/lib/session-config.ts` para separar constantes compartilhadas da parte server-only
+  - lazy init dos clients Supabase em handlers/requests
+  - wrappers `Suspense` nas paginas de reauth
+  - `next.config.ts` agora fixa `turbopack.root` com `process.cwd()`
+- Validacao final:
+  - `npm run build` voltou a passar com manifesto completo de rotas do app
+
 ## Arquivos Alterados Nesta Sessao
 
 - `supabase/migrations/029_financeiro.sql`

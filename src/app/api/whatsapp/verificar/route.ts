@@ -2,10 +2,12 @@ export const runtime = 'nodejs'
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient as createAdmin } from '@supabase/supabase-js'
 
-const adminClient = createAdmin(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+function createAdminClient() {
+  return createAdmin(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+}
 
 function normalizePhone(raw: string): string | null {
   const digits = raw.replace(/\D/g, '')
@@ -30,6 +32,7 @@ async function checkWhatsApp(phone: string): Promise<boolean> {
 
 export async function POST(request: NextRequest) {
   try {
+    const adminClient = createAdminClient()
     const { lista_id } = await request.json()
     if (!lista_id) return NextResponse.json({ error: 'lista_id obrigatorio' }, { status: 400 })
     if (!process.env.TWILIO_ACCOUNT_SID || !process.env.TWILIO_AUTH_TOKEN) {

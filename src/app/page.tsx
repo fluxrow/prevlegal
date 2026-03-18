@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import { APP_IDLE_MINUTES, APP_LAST_ACTIVE_COOKIE, isTimestampExpired } from '@/lib/session-security'
+import { APP_IDLE_MINUTES, APP_LAST_ACTIVE_COOKIE, isTimestampExpired } from '@/lib/session-config'
 import { cookies } from 'next/headers'
 
 export default async function RootPage() {

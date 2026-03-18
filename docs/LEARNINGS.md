@@ -218,6 +218,23 @@ export async function GET(
 **Regra prática:** Quando o produto sair do estágio de subdomínio temporário, migrar com ordem explícita: arquitetura -> Vercel -> DNS -> URLs canônicas -> links automáticos -> validação final
 
 ### 33. Migração de domínio precisa começar pelo inventário de URLs absolutas e fallbacks
+### 34. Estrutura duplicada na raiz pode fazer a Vercel/Next publicar o app errado
+**Problema:** O deploy público passou a responder só `lp.html` e `404` nas rotas do app, mesmo com aliases corretos na Vercel
+**Causa:** Havia uma árvore `app/` vazia na raiz e um `next.config.js` residual competindo com a aplicação real em `src/app` e com `next.config.ts`
+**Correção:** Remover a árvore `app/` vazia, apagar `next.config.js`, centralizar a config em `next.config.ts` e fixar `turbopack.root` com `process.cwd()`
+**Regra prática:** No PrevLegal, manter apenas uma raiz de App Router e um único arquivo de configuração do Next; qualquer resíduo estrutural pode mascarar erros no build e gerar deploy aparentemente "pronto" mas servindo o artefato errado
+
+### 35. `createBrowserClient` não deve rodar no corpo de componentes que podem prerenderizar
+**Problema:** O build quebrava no `/login` com `Your project's URL and API key are required to create a Supabase client`
+**Causa:** `createClient()` do browser era chamado no corpo do componente durante o prerender
+**Correção:** Instanciar o client apenas dentro de handlers/eventos do cliente, como submit de login e logout
+**Regra prática:** Em componentes client-side do PrevLegal, `createBrowserClient` só deve nascer em interação do usuário, `useEffect` ou import dinâmico controlado
+
+### 36. `useSearchParams` em páginas client do App Router precisa de `Suspense`
+**Problema:** O build falhava em `/reauth` com `useSearchParams() should be wrapped in a suspense boundary`
+**Causa:** Next 16 exige boundary explícita quando `useSearchParams` dispara bailout CSR em página
+**Correção:** Criar um componente interno com `useSearchParams` e exportar a página com wrapper `<Suspense>`
+**Regra prática:** Toda página client do PrevLegal que usar `useSearchParams` deve sair já envolvida em `Suspense`
 **Problema:** É fácil trocar o domínio visível da LP e esquecer convites, portal, webhooks, callbacks e links internos do admin
 **Causa:** O projeto mistura CTAs estáticos, variáveis de ambiente e fallbacks hardcoded para `prevlegal.vercel.app`
 **Correção:** Criar checklist técnico dedicado (`docs/DOMAIN_MIGRATION.md`) antes da migração, mapeando arquivos, envs e riscos

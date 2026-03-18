@@ -2,12 +2,15 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient as createServerClient } from '@/lib/supabase/server'
 import { createClient } from '@supabase/supabase-js'
 
-const serviceSupabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+function createServiceSupabase() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+}
 
 export async function GET() {
+  const serviceSupabase = createServiceSupabase()
   const { data, error } = await serviceSupabase
     .from('agent_documents')
     .select('*')
@@ -19,6 +22,7 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
+    const serviceSupabase = createServiceSupabase()
     const supabase = await createServerClient()
     const { data: { user } } = await supabase.auth.getUser()
 
@@ -44,6 +48,7 @@ export async function POST(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
+  const serviceSupabase = createServiceSupabase()
   const { searchParams } = new URL(request.url)
   const id = searchParams.get('id')
   if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 })

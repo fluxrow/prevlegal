@@ -5,7 +5,7 @@ import NotificacoesBell from '@/components/notificacoes-bell'
 import BuscaGlobal from '@/components/busca-global'
 import UsuarioAvatar from '@/components/usuario-avatar'
 import SessionActivityTracker from '@/components/session-activity-tracker'
-import { APP_IDLE_MINUTES } from '@/lib/session-security'
+import { APP_IDLE_MINUTES } from '@/lib/session-config'
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
     const supabase = await createClient()

@@ -1,15 +1,18 @@
 import { NextResponse } from 'next/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
 
-const adminSupabase = createAdminClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+function createAdminSupabase() {
+  return createAdminClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+}
 
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ token: string }> }
 ) {
+  const adminSupabase = createAdminSupabase()
   const { token } = await params
 
   const { data: lead } = await adminSupabase
@@ -58,6 +61,7 @@ export async function POST(
   request: Request,
   { params }: { params: Promise<{ token: string }> }
 ) {
+  const adminSupabase = createAdminSupabase()
   const { token } = await params
   const { mensagem } = await request.json()
   if (!mensagem?.trim()) return NextResponse.json({ error: 'Mensagem vazia' }, { status: 400 })

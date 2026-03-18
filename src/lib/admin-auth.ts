@@ -1,5 +1,5 @@
 import { cookies } from 'next/headers'
-import { ADMIN_REAUTH_COOKIE, getReauthWindowMs, isTimestampExpired, parseTimestamp } from './session-security'
+import { ADMIN_REAUTH_COOKIE, getReauthWindowMs, isTimestampExpired, parseTimestamp } from './session-config'
 
 const ADMIN_TOKEN = process.env.ADMIN_FLUXROW_TOKEN || 'fluxrow-admin-secret-2026'
 const ADMIN_EMAIL = process.env.ADMIN_FLUXROW_EMAIL || 'fbcfarias@icloud.com'

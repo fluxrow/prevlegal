@@ -1,12 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+function createAdminSupabase() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+}
 
 export async function GET() {
+  const supabase = createAdminSupabase()
   const { data, error } = await supabase
     .from('notificacoes')
     .select('*')
@@ -21,6 +24,7 @@ export async function GET() {
 }
 
 export async function PATCH(request: NextRequest) {
+  const supabase = createAdminSupabase()
   const body = await request.json()
   const { ids, marcar_todas } = body
 
