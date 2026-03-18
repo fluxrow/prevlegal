@@ -131,7 +131,16 @@ Pontos que precisam ser preservados durante a implementacao:
   - garantir alvos estaveis para o tour mesmo quando a pagina ainda nao tiver dados carregados
   - evitar steps quebrando por falta de elemento alvo no primeiro acesso
 - Validacao concluida:
-  - `npm run build` executado com sucesso apos integrar os novos tours
+- `npm run build` executado com sucesso apos integrar os novos tours
+
+2026-03-18 - Dominio proprio / DNS / SSL
+- Foi identificado conflito entre o apex `prevlegal.com.br` e o WebsiteBuilder da GoDaddy
+- Sintoma observado: apex respondendo headers da GoDaddy enquanto subdominios da Vercel ficavam pendentes
+- Regra registrada:
+  - apex nao pode misturar GoDaddy com Vercel
+  - `www/app/admin` podem demorar alguns minutos apos o apex entrar em `Generating SSL Certificate`
+  - so considerar a migracao saudavel quando o apex parar de responder GoDaddy e o SSL propagar para os hosts restantes
+- Esse incidente foi registrado em `docs/LEARNINGS.md` e reforcado em `docs/DOMAIN_MIGRATION.md`
 
 ## Arquivos Alterados Nesta Sessao
 

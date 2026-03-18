@@ -23,6 +23,11 @@ Migrar o projeto para domínio próprio com separação clara entre:
 - Fase 2 = CONCLUÍDA
 - Commit principal da Fase 2: `cebda979`
 - Nota Obsidian da execução: `2026-03-18-fase2-dominio-seo-lp-raiz.md`
+- Observação operacional importante:
+  - o apex `prevlegal.com.br` chegou a ficar misturado entre GoDaddy WebsiteBuilder e Vercel
+  - esse conflito impediu a validação completa dos subdomínios e do SSL
+  - após remover o WebsiteBuilder do apex, o painel passou a mostrar `Generating SSL Certificate` para `prevlegal.com.br`
+  - `www`, `app` e `admin` podem permanecer alguns minutos em `Invalid Configuration` ou aguardando SSL até a emissão em cascata terminar
 
 ### Estado do app hoje
 
@@ -172,6 +177,11 @@ Checklist:
 Saída esperada:
 - Vercel pronta para validar DNS e emitir HTTPS
 
+Checklist de verificação real:
+- [ ] confirmar que o domínio foi adicionado no owner/time correto da Vercel
+- [ ] confirmar que o painel não mostra conflito de ownership ou acesso ao domínio
+- [ ] confirmar que o apex entrou em `Generating SSL Certificate` antes de concluir que o setup está certo
+
 ### Fase 4 — configurar DNS
 
 Objetivo:
@@ -179,6 +189,8 @@ Objetivo:
 
 Checklist:
 - [ ] criar/editar registros solicitados pela Vercel
+- [ ] remover WebsiteBuilder / forwarding / parking da GoDaddy no apex
+- [ ] garantir que o `@` não mistura IP da GoDaddy com IPs da Vercel
 - [ ] validar resolução do apex
 - [ ] validar resolução de `www`
 - [ ] validar resolução de `app`
@@ -186,6 +198,11 @@ Checklist:
 
 Saída esperada:
 - todos os hosts resolvendo corretamente
+
+Sinais de erro conhecidos:
+- se `prevlegal.com.br` responder com `Server: DPS/2.0.0-beta`, o apex ainda está na GoDaddy
+- se o apex validar mas `www`, `app` e `admin` ficarem amarelos, pode ser apenas a emissão em cascata do SSL
+- não mexer de novo nos registros enquanto o painel já estiver em `Generating SSL Certificate`, salvo se houver apontamento claro para GoDaddy ainda ativo
 
 ### Fase 5 — atualizar env vars de produção
 
@@ -216,6 +233,8 @@ Checklist:
 - [ ] webhook do Twilio continua funcionando
 - [ ] redirect apex/www funciona
 - [ ] HTTPS está válido em todos os hosts
+- [ ] apex não responde mais conteúdo/headers da GoDaddy
+- [ ] `www`, `app` e `admin` saíram do estado `Invalid Configuration`
 
 Saída esperada:
 - migração concluída sem dependência operacional do domínio antigo
@@ -230,6 +249,7 @@ Checklist:
 - [ ] atualizar `docs/ROADMAP.md` se necessário
 - [ ] atualizar `docs/LEARNINGS.md` com incidentes reais da migração
 - [ ] sincronizar Obsidian
+- [ ] registrar explicitamente se houve conflito com GoDaddy WebsiteBuilder / DNS misto / SSL em cascata
 
 Saída esperada:
 - memória do projeto atualizada com o novo domínio oficial
