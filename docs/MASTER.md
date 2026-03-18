@@ -26,6 +26,8 @@
 5. Revisar login, portal, notificações e links enviados automaticamente
 6. Validar redirects e HTTPS em produção
 
+Checklist detalhado em: `docs/DOMAIN_MIGRATION.md`
+
 ### Posicionamento correto
 O PrevLegal NÃO é para advogados autônomos.
 É para **operações de captação previdenciária** — empresas não-OAB que:
