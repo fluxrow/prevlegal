@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PrevLegal — Demo</title>
+<link href="https://fonts.googleapis.com/css2?family=Cabinet+Grotesk:wght@400;500;700;800;900&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#07080d;
+  --bg2:#0b0d15;
+  --bg3:#10121d;
+  --bg4:#161924;
+  --border:rgba(255,255,255,0.06);
+  --border2:rgba(255,255,255,0.12);
+  --text:#e4e8f0;
+  --text2:#7a8499;
+  --text3:#3d4558;
+  --accent:#4361ee;
+  --accent2:#6278f5;
+  --accent3:#a5b4fc;
+  --green:#00c48c;
+  --green2:#00e5a5;
+  --amber:#f0a500;
+}
+html,body{width:100%;height:100%;background:var(--bg);overflow:hidden;font-family:'DM Sans',sans-serif;-webkit-font-smoothing:antialiased}
+
+/* ── CANVAS PRINCIPAL ── */
+#demo{width:100%;height:100vh;position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden}
+
+/* ── NOISE ── */
+#demo::before{content:'';position:absolute;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");pointer-events:none;z-index:0}
+
+/* ── GLOW DE FUNDO ── */
+.bg-glow{position:absolute;border-radius:50%;filter:blur(120px);pointer-events:none;opacity:0;transition:opacity 1.5s ease}
+.glow-blue{width:600px;height:400px;background:radial-gradient(ellipse,rgba(67,97,238,0.18) 0%,transparent 70%);top:10%;left:20%}
+.glow-green{width:500px;height:350px;background:radial-gradient(ellipse,rgba(0,196,140,0.12) 0%,transparent 70%);bottom:15%;right:15%}
+
+/* ── SCENE CONTAINER ── */
+.scene{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity 0.6s ease;z-index:1}
+.scene.active{opacity:1;pointer-events:all}
+
+/* ── TÍTULO DE CENA ── */
+.scene-label{position:absolute;top:32px;left:50%;transform:translateX(-50%);font-size:11px;font-weight:600;letter-spacing:0.2em;text-transform:uppercase;color:var(--text3);font-family:'DM Mono',monospace}
+
+/* ── PROGRESS BAR ── */
+#progress{position:fixed;bottom:0;left:0;right:0;height:2px;background:var(--bg3);z-index:100}
+#progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--green));width:0%;transition:width 0.1s linear}
+
+/* ── CONTROLS ── */
+#controls{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:16px;z-index:100;background:rgba(7,8,13,0.8);backdrop-filter:blur(20px);border:1px solid var(--border2);border-radius:100px;padding:10px 20px}
+.ctrl-btn{width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,0.05);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text2);font-size:12px;transition:all .2s}
+.ctrl-btn:hover{background:rgba(255,255,255,0.1);color:var(--text)}
+#scene-dots{display:flex;gap:6px;align-items:center}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--border2);transition:all .3s;cursor:pointer}
+.dot.active{background:var(--accent3);width:20px;border-radius:3px}
+#scene-counter{font-size:11px;color:var(--text3);font-family:'DM Mono',monospace;min-width:32px;text-align:center}
+
+/* ════════════════════════
+   CENA 1 — HERO / TÍTULO
+════════════════════════ */
+.hero-scene{text-align:center;padding:40px}
+.hero-tag{display:inline-flex;align-items:center;gap:8px;padding:5px 16px;background:rgba(67,97,238,0.1);border:1px solid rgba(67,97,238,0.2);border-radius:100px;font-size:11px;font-weight:600;color:var(--accent3);margin-bottom:28px;letter-spacing:0.04em;opacity:0;transform:translateY(10px);transition:all 0.6s ease 0.3s}
+.hero-tag.show{opacity:1;transform:translateY(0)}
+.hero-tag-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse-dot 2s infinite}
+@keyframes pulse-dot{0%,100%{opacity:1}50%{opacity:0.3}}
+.hero-h1{font-family:'Cabinet Grotesk',sans-serif;font-size:clamp(48px,7vw,88px);font-weight:900;line-height:1.02;letter-spacing:-3px;color:#fff;opacity:0;transform:translateY(20px);transition:all 0.8s cubic-bezier(0.16,1,0.3,1) 0.5s}
+.hero-h1.show{opacity:1;transform:translateY(0)}
+.hero-h1 .g{background:linear-gradient(120deg,var(--accent3) 0%,var(--green2) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero-sub{font-size:18px;font-weight:300;color:var(--text2);margin-top:20px;opacity:0;transform:translateY(10px);transition:all 0.7s ease 0.9s;line-height:1.6}
+.hero-sub.show{opacity:1;transform:translateY(0)}
+.hero-meta{display:flex;align-items:center;justify-content:center;gap:24px;margin-top:32px;opacity:0;transition:opacity 0.6s ease 1.3s}
+.hero-meta.show{opacity:1}
+.hero-pill{display:flex;align-items:center;gap:7px;font-size:13px;color:var(--text2)}
+.hero-pill-dot{width:8px;height:8px;border-radius:50%}
+
+/* ════════════════════════
+   CENA 2 — LISTA IMPORTADA
+════════════════════════ */
+.import-scene{display:flex;align-items:center;gap:60px;max-width:1100px;width:100%;padding:40px}
+.import-left{flex:1}
+.import-title{font-family:'Cabinet Grotesk',sans-serif;font-size:36px;font-weight:800;color:#fff;letter-spacing:-1px;margin-bottom:12px;opacity:0;transform:translateX(-20px);transition:all 0.7s ease 0.2s}
+.import-title.show{opacity:1;transform:translateX(0)}
+.import-sub{font-size:15px;color:var(--text2);line-height:1.7;opacity:0;transition:opacity 0.6s ease 0.5s;max-width:360px}
+.import-sub.show{opacity:1}
+.import-stats{display:flex;flex-direction:column;gap:12px;margin-top:28px}
+.istat{display:flex;align-items:center;gap:12px;opacity:0;transform:translateX(-15px);transition:all 0.5s ease}
+.istat.show{opacity:1;transform:translateX(0)}
+.istat-bar{height:3px;background:linear-gradient(90deg,var(--accent),transparent);border-radius:2px;width:0;transition:width 1.5s cubic-bezier(0.16,1,0.3,1)}
+.istat-label{font-size:12px;color:var(--text2);white-space:nowrap;min-width:100px}
+.istat-val{font-family:'DM Mono',monospace;font-size:13px;color:var(--accent3);margin-left:auto}
+.import-right{flex:1.2;max-width:520px}
+
+/* TABLE */
+.data-table{background:var(--bg3);border:1px solid var(--border);border-radius:14px;overflow:hidden;opacity:0;transform:translateY(20px) scale(0.97);transition:all 0.8s cubic-bezier(0.16,1,0.3,1) 0.3s}
+.data-table.show{opacity:1;transform:translateY(0) scale(1)}
+.dt-header{display:grid;grid-template-columns:2fr 1.5fr 1fr 1fr;padding:10px 16px;border-bottom:1px solid var(--border);font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em}
+.dt-row{display:grid;grid-template-columns:2fr 1.5fr 1fr 1fr;padding:10px 16px;border-bottom:1px solid var(--border);font-size:12px;color:var(--text2);align-items:center;opacity:0;transition:opacity 0.3s ease;background:transparent}
+.dt-row:hover{background:var(--bg4)}
+.dt-row.appear{opacity:1}
+.dt-name{color:var(--text);font-weight:500;font-size:12.5px}
+.dt-badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:100px;font-size:10px;font-weight:600}
+.badge-wpp{background:rgba(0,196,140,0.1);color:var(--green);border:1px solid rgba(0,196,140,0.2)}
+.badge-sem{background:rgba(255,87,87,0.1);color:#ff7070;border:1px solid rgba(255,87,87,0.2)}
+.dt-score{font-family:'DM Mono',monospace;font-size:12px}
+.score-hi{color:var(--green)}
+.score-md{color:var(--amber)}
+
+/* ════════════════════════
+   CENA 3 — DISPARO IA
+════════════════════════ */
+.disparo-scene{display:flex;align-items:center;gap:48px;max-width:1100px;width:100%;padding:40px}
+.disparo-left{flex:1.1}
+.disparo-title{font-family:'Cabinet Grotesk',sans-serif;font-size:36px;font-weight:800;color:#fff;letter-spacing:-1px;margin-bottom:12px;opacity:0;transform:translateX(-20px);transition:all 0.7s ease 0.2s}
+.disparo-title.show{opacity:1;transform:translateX(0)}
+.disparo-sub{font-size:15px;color:var(--text2);line-height:1.7;opacity:0;transition:opacity 0.6s ease 0.5s;max-width:360px}
+.disparo-sub.show{opacity:1}
+.disparo-counter{margin-top:28px;font-family:'Cabinet Grotesk',sans-serif;font-size:64px;font-weight:900;letter-spacing:-3px;background:linear-gradient(135deg,var(--accent3),var(--green2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;opacity:0;transition:opacity 0.5s ease 0.8s}
+.disparo-counter.show{opacity:1}
+.disparo-counter-label{font-size:13px;color:var(--text3);margin-top:4px}
+.disparo-right{flex:1;max-width:480px}
+
+/* PHONE */
+.phone-wrap{max-width:300px;margin:0 auto;opacity:0;transform:translateY(30px) scale(0.95);transition:all 0.9s cubic-bezier(0.16,1,0.3,1) 0.3s}
+.phone-wrap.show{opacity:1;transform:translateY(0) scale(1)}
+.phone{background:#15161e;border-radius:40px;padding:16px;border:7px solid #0a0b12;box-shadow:0 40px 100px rgba(0,0,0,0.7),0 0 0 1px rgba(255,255,255,0.04),inset 0 1px 0 rgba(255,255,255,0.06)}
+.phone-notch{width:90px;height:26px;background:#0a0b12;border-radius:0 0 16px 16px;margin:0 auto 12px;display:flex;align-items:center;justify-content:center}
+.phone-screen{background:#0d1018;border-radius:28px;overflow:hidden}
+.wpp-header{background:linear-gradient(135deg,#0a5445,#075e54);padding:12px 14px;display:flex;align-items:center;gap:10px}
+.wpp-av{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#25d366,#128c7e);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+.wpp-info{flex:1}
+.wpp-name{font-size:13.5px;font-weight:600;color:#fff}
+.wpp-status{font-size:10px;color:rgba(255,255,255,0.6);display:flex;align-items:center;gap:4px}
+.wpp-online-dot{width:5px;height:5px;border-radius:50%;background:#25d366}
+.wpp-msgs{padding:12px 10px;display:flex;flex-direction:column;gap:7px;min-height:220px}
+.wmsg{max-width:82%;padding:8px 12px;border-radius:10px;font-size:12px;line-height:1.5;opacity:0;transform:translateY(6px);transition:all 0.4s cubic-bezier(0.16,1,0.3,1)}
+.wmsg.show{opacity:1;transform:translateY(0)}
+.wmsg.out{background:linear-gradient(135deg,#005c4b,#00443b);color:#e9edef;align-self:flex-end;border-radius:10px 10px 2px 10px}
+.wmsg.in{background:#1f2c34;color:#e9edef;align-self:flex-start;border-radius:10px 10px 10px 2px}
+.wmsg.sys{background:rgba(0,196,140,0.08);border:1px solid rgba(0,196,140,0.2);color:rgba(0,196,140,0.9);align-self:center;font-size:11px;border-radius:8px;text-align:center}
+.wtime{font-size:9px;color:rgba(255,255,255,0.3);text-align:right;margin-top:3px}
+.typing{display:flex;gap:3px;padding:10px 12px;background:#1f2c34;border-radius:10px 10px 10px 2px;align-self:flex-start;width:fit-content;opacity:0;transition:opacity 0.3s ease}
+.typing.show{opacity:1}
+.typing span{width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,0.3);animation:bounce 1.2s infinite}
+.typing span:nth-child(2){animation-delay:.2s}
+.typing span:nth-child(3){animation-delay:.4s}
+@keyframes bounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-5px)}}
+
+/* ════════════════════════
+   CENA 4 — QUALIFICAÇÃO
+════════════════════════ */
+.qualif-scene{display:flex;align-items:center;gap:60px;max-width:1100px;width:100%;padding:40px}
+.qualif-left{flex:1}
+.qualif-title{font-family:'Cabinet Grotesk',sans-serif;font-size:36px;font-weight:800;color:#fff;letter-spacing:-1px;margin-bottom:12px;opacity:0;transform:translateX(-20px);transition:all 0.7s ease 0.2s}
+.qualif-title.show{opacity:1;transform:translateX(0)}
+.qualif-sub{font-size:15px;color:var(--text2);line-height:1.7;opacity:0;transition:opacity 0.6s ease 0.5s;max-width:360px}
+.qualif-sub.show{opacity:1}
+.qualif-metrics{display:flex;flex-direction:column;gap:14px;margin-top:28px}
+.qm{background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;opacity:0;transform:translateX(-15px);transition:all 0.5s ease}
+.qm.show{opacity:1;transform:translateX(0)}
+.qm-label{font-size:12px;color:var(--text2)}
+.qm-val{font-family:'Cabinet Grotesk',sans-serif;font-size:22px;font-weight:800;letter-spacing:-0.5px}
+.qm-val.green{color:var(--green)}
+.qm-val.accent{color:var(--accent3)}
+.qm-val.amber{color:var(--amber)}
+.qualif-right{flex:1.2;max-width:520px}
+
+/* NOTIFICAÇÃO */
+.notif-stack{display:flex;flex-direction:column;gap:12px;opacity:0;transform:translateX(20px);transition:all 0.8s cubic-bezier(0.16,1,0.3,1) 0.3s}
+.notif-stack.show{opacity:1;transform:translateX(0)}
+.notif{background:var(--bg3);border:1px solid var(--border);border-radius:14px;padding:16px 18px;display:flex;align-items:flex-start;gap:14px;position:relative;overflow:hidden;opacity:0;transform:translateY(15px);transition:all 0.5s cubic-bezier(0.16,1,0.3,1)}
+.notif.show{opacity:1;transform:translateY(0)}
+.notif::before{content:'';position:absolute;top:0;left:0;right:0;height:1.5px}
+.notif.green-accent::before{background:linear-gradient(90deg,var(--green),transparent)}
+.notif.blue-accent::before{background:linear-gradient(90deg,var(--accent),transparent)}
+.notif.amber-accent::before{background:linear-gradient(90deg,var(--amber),transparent)}
+.notif-icon{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.notif-icon.g{background:rgba(0,196,140,0.1);border:1px solid rgba(0,196,140,0.2)}
+.notif-icon.b{background:rgba(67,97,238,0.1);border:1px solid rgba(67,97,238,0.2)}
+.notif-icon.a{background:rgba(240,165,0,0.1);border:1px solid rgba(240,165,0,0.2)}
+.notif-body{flex:1}
+.notif-title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:3px}
+.notif-desc{font-size:12px;color:var(--text2);line-height:1.5}
+.notif-time{font-size:10px;color:var(--text3);font-family:'DM Mono',monospace;margin-top:4px}
+.notif-badge{display:inline-flex;padding:2px 8px;border-radius:100px;font-size:10px;font-weight:700;background:rgba(0,196,140,0.12);color:var(--green);border:1px solid rgba(0,196,140,0.25)}
+
+/* ════════════════════════
+   CENA 5 — DASHBOARD
+════════════════════════ */
+.dash-scene{display:flex;flex-direction:column;align-items:center;max-width:1000px;width:100%;padding:20px}
+.dash-title{font-family:'Cabinet Grotesk',sans-serif;font-size:32px;font-weight:800;color:#fff;letter-spacing:-1px;margin-bottom:20px;text-align:center;opacity:0;transition:opacity 0.6s ease 0.2s}
+.dash-title.show{opacity:1}
+.mockup-shell{background:var(--bg3);border:1px solid var(--border2);border-radius:16px;overflow:hidden;width:100%;box-shadow:0 40px 100px rgba(0,0,0,0.6);opacity:0;transform:translateY(30px) scale(0.96);transition:all 1s cubic-bezier(0.16,1,0.3,1) 0.4s}
+.mockup-shell.show{opacity:1;transform:translateY(0) scale(1)}
+.mock-bar{background:var(--bg4);padding:10px 16px;display:flex;align-items:center;gap:7px;border-bottom:1px solid var(--border)}
+.mdot{width:10px;height:10px;border-radius:50%}
+.mdot:nth-child(1){background:#ff5f57}
+.mdot:nth-child(2){background:#ffbd2e}
+.mdot:nth-child(3){background:#28c940}
+.murl{margin-left:10px;font-size:11px;color:var(--text3);background:var(--bg);padding:3px 12px;border-radius:6px;border:1px solid var(--border);font-family:'DM Mono',monospace}
+.mock-body{display:grid;grid-template-columns:180px 1fr;min-height:280px}
+.mock-sidebar{background:var(--bg2);border-right:1px solid var(--border);padding:12px 8px}
+.msi{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:7px;font-size:12px;color:var(--text3);margin-bottom:2px;cursor:default}
+.msi.active{background:rgba(67,97,238,0.12);color:var(--accent3);font-weight:500}
+.msi-dot{width:12px;height:12px;border-radius:3px;background:currentColor;opacity:0.4;flex-shrink:0}
+.msi.active .msi-dot{opacity:1}
+.mock-main{padding:18px;display:flex;flex-direction:column;gap:12px}
+.mock-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.mkpi{background:var(--bg4);border:1px solid var(--border);border-radius:10px;padding:13px}
+.mkpi-lbl{font-size:9.5px;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:5px}
+.mkpi-val{font-family:'Cabinet Grotesk',sans-serif;font-size:24px;font-weight:800;color:#fff;line-height:1;opacity:0;transition:opacity 0.4s ease}
+.mkpi-val.show{opacity:1}
+.mkpi-val.green{color:var(--green)}
+.mkpi-val.accent{color:var(--accent3)}
+.mkpi-delta{font-size:10px;color:var(--green);margin-top:3px}
+.mock-funnel{background:var(--bg4);border:1px solid var(--border);border-radius:10px;padding:14px}
+.mfunnel-title{font-size:11px;color:var(--text3);margin-bottom:10px}
+.mfunnel-bars{display:flex;gap:6px;align-items:flex-end;height:60px}
+.mfbar-wrap{display:flex;flex-direction:column;align-items:center;gap:4px;flex:1}
+.mfbar{width:100%;background:linear-gradient(180deg,var(--accent),rgba(67,97,238,0.3));border-radius:4px 4px 0 0;height:0;transition:height 1.5s cubic-bezier(0.16,1,0.3,1)}
+.mfbar.green{background:linear-gradient(180deg,var(--green),rgba(0,196,140,0.3))}
+.mflabel{font-size:9px;color:var(--text3);text-align:center}
+.mfval{font-size:10px;color:var(--text2);font-family:'DM Mono',monospace}
+
+/* ════════════════════════
+   CENA 6 — CLOSING
+════════════════════════ */
+.close-scene{text-align:center;padding:40px}
+.close-logo{font-family:'Cabinet Grotesk',sans-serif;font-size:clamp(56px,8vw,100px);font-weight:900;letter-spacing:-4px;opacity:0;transform:scale(0.9);transition:all 1s cubic-bezier(0.16,1,0.3,1) 0.3s}
+.close-logo.show{opacity:1;transform:scale(1)}
+.close-logo .prev{color:#fff}
+.close-logo .legal{background:linear-gradient(120deg,var(--accent3),var(--green2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.close-tag{font-size:16px;font-weight:300;color:var(--text2);margin-top:12px;opacity:0;transition:opacity 0.7s ease 0.9s;letter-spacing:0.05em}
+.close-tag.show{opacity:1}
+.close-url{font-family:'DM Mono',monospace;font-size:13px;color:var(--text3);margin-top:20px;opacity:0;transition:opacity 0.6s ease 1.3s}
+.close-url.show{opacity:1}
+.close-url a{color:var(--accent3);text-decoration:none}
+.close-pills{display:flex;gap:12px;justify-content:center;margin-top:28px;opacity:0;transition:opacity 0.6s ease 1.6s;flex-wrap:wrap}
+.close-pills.show{opacity:1}
+.cpill{padding:8px 18px;border-radius:100px;font-size:12px;font-weight:600;border:1px solid}
+.cpill.green{background:rgba(0,196,140,0.08);color:var(--green);border-color:rgba(0,196,140,0.2)}
+.cpill.blue{background:rgba(67,97,238,0.08);color:var(--accent3);border-color:rgba(67,97,238,0.2)}
+.cpill.amber{background:rgba(240,165,0,0.08);color:var(--amber);border-color:rgba(240,165,0,0.2)}
+</style>
+</head>
+<body>
+<div id="demo">
+  <div class="bg-glow glow-blue" id="glowBlue"></div>
+  <div class="bg-glow glow-green" id="glowGreen"></div>
+
+  <!-- CENA 1: HERO -->
+  <div class="scene active" id="scene-1">
+    <div class="scene-label">01 — Introdução</div>
+    <div class="hero-scene">
+      <div class="hero-tag" id="htag"><span class="hero-tag-dot"></span>Plataforma para operações previdenciárias</div>
+      <h1 class="hero-h1" id="hh1">Do lead importado<br><span class="g">ao contrato fechado</span></h1>
+      <p class="hero-sub" id="hsub">Qualificação por IA, gestão de casos e documentos<br>gerados em segundos — tudo em uma plataforma.</p>
+      <div class="hero-meta" id="hmeta">
+        <div class="hero-pill"><div class="hero-pill-dot" style="background:var(--green)"></div>Agente IA 24h</div>
+        <div class="hero-pill"><div class="hero-pill-dot" style="background:var(--accent3)"></div>WhatsApp automático</div>
+        <div class="hero-pill"><div class="hero-pill-dot" style="background:var(--amber)"></div>ROI mensurável</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CENA 2: IMPORTAÇÃO -->
+  <div class="scene" id="scene-2">
+    <div class="scene-label">02 — Importação de leads</div>
+    <div class="import-scene">
+      <div class="import-left">
+        <h2 class="import-title" id="it">Sua lista.<br>Pronta em segundos.</h2>
+        <p class="import-sub" id="is">Importe planilhas de beneficiários do INSS. O sistema verifica WhatsApp, elimina duplicatas e organiza por score automaticamente.</p>
+        <div class="import-stats" id="istats">
+          <div class="istat" style="transition-delay:0.7s"><span class="istat-label">Com WhatsApp</span><div class="istat-bar" id="bar1" data-w="73"></div><span class="istat-val">73%</span></div>
+          <div class="istat" style="transition-delay:0.9s"><span class="istat-label">Score alto (≥80)</span><div class="istat-bar" id="bar2" data-w="48" style="background:linear-gradient(90deg,var(--green),transparent)"></div><span class="istat-val">48%</span></div>
+          <div class="istat" style="transition-delay:1.1s"><span class="istat-label">Prontos p/ disparo</span><div class="istat-bar" id="bar3" data-w="61" style="background:linear-gradient(90deg,var(--amber),transparent)"></div><span class="istat-val">61%</span></div>
+        </div>
+      </div>
+      <div class="import-right">
+        <div class="data-table" id="dtable">
+          <div class="dt-header"><span>Beneficiário</span><span>Telefone</span><span>WhatsApp</span><span>Score</span></div>
+          <div class="dt-row" id="r1"><span class="dt-name">João Silva</span><span>(41) 99841-****</span><span><span class="dt-badge badge-wpp">✓ Sim</span></span><span class="dt-score score-hi">94</span></div>
+          <div class="dt-row" id="r2"><span class="dt-name">Maria Santos</span><span>(11) 97723-****</span><span><span class="dt-badge badge-wpp">✓ Sim</span></span><span class="dt-score score-hi">88</span></div>
+          <div class="dt-row" id="r3"><span class="dt-name">Antonio Ferreira</span><span>(21) 98834-****</span><span><span class="dt-badge badge-sem">✗ Não</span></span><span class="dt-score score-md">61</span></div>
+          <div class="dt-row" id="r4"><span class="dt-name">Rosa Oliveira</span><span>(31) 99156-****</span><span><span class="dt-badge badge-wpp">✓ Sim</span></span><span class="dt-score score-hi">91</span></div>
+          <div class="dt-row" id="r5"><span class="dt-name">Carlos Souza</span><span>(51) 99287-****</span><span><span class="dt-badge badge-wpp">✓ Sim</span></span><span class="dt-score score-md">75</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CENA 3: DISPARO -->
+  <div class="scene" id="scene-3">
+    <div class="scene-label">03 — Agente IA em ação</div>
+    <div class="disparo-scene">
+      <div class="disparo-left">
+        <h2 class="disparo-title" id="dt2">Ana qualifica.<br>Você fecha.</h2>
+        <p class="disparo-sub" id="ds">A consultora previdenciária IA aborda cada lead com linguagem natural, identifica interesse real e escala para você no momento certo.</p>
+        <div class="disparo-counter show" id="dcounter">
+          <div style="font-size:11px;color:var(--text3);font-family:'DM Mono',monospace;margin-bottom:4px;letter-spacing:0.1em">CONVERSAS ATIVAS AGORA</div>
+          <span id="counter-num">0</span>
+        </div>
+      </div>
+      <div class="disparo-right">
+        <div class="phone-wrap" id="phonewrap">
+          <div class="phone">
+            <div class="phone-notch"></div>
+            <div class="phone-screen">
+              <div class="wpp-header">
+                <div class="wpp-av">🤖</div>
+                <div class="wpp-info">
+                  <div class="wpp-name">Ana — Consultora Previdenciária</div>
+                  <div class="wpp-status"><div class="wpp-online-dot"></div>online</div>
+                </div>
+              </div>
+              <div class="wpp-msgs" id="wmsgs">
+                <div class="wmsg out" id="wm1">Olá, seu João! 👋 Meu nome é Ana, sou consultora previdenciária. Identificamos que beneficiários com seu perfil podem ter direito a uma revisão reconhecida pelo STF. Posso te explicar?<div class="wtime">09:14 ✓✓</div></div>
+                <div class="wmsg in" id="wm2">Oi. O que é isso?<div class="wtime">09:16</div></div>
+                <div class="wmsg out" id="wm3">Desde 2010 o STF reconheceu que muitos aposentados recebem menos do que deveriam. Não é buscar um direito novo — é executar um que já existe. Seu pai tem interesse em saber mais?<div class="wtime">09:17 ✓✓</div></div>
+                <div class="typing" id="wtyping"><span></span><span></span><span></span></div>
+                <div class="wmsg in" id="wm4">Pode ser sim. Quanto ele poderia receber?<div class="wtime">09:18</div></div>
+                <div class="wmsg sys" id="wm5">✅ Lead qualificado — operador notificado<div class="wtime">09:18</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CENA 4: QUALIFICAÇÃO -->
+  <div class="scene" id="scene-4">
+    <div class="scene-label">04 — Leads qualificados</div>
+    <div class="qualif-scene">
+      <div class="qualif-left">
+        <h2 class="qualif-title" id="qt">Só os quentes<br>chegam até você.</h2>
+        <p class="qualif-sub" id="qs">Enquanto o agente trabalha 847 leads em paralelo, você recebe apenas os que demonstraram interesse real — com histórico completo da conversa.</p>
+        <div class="qualif-metrics" id="qmetrics">
+          <div class="qm" style="transition-delay:0.6s"><span class="qm-label">Leads processados</span><span class="qm-val accent">847</span></div>
+          <div class="qm" style="transition-delay:0.8s"><span class="qm-label">Qualificados (interesse real)</span><span class="qm-val green">67</span></div>
+          <div class="qm" style="transition-delay:1s"><span class="qm-label">Taxa de conversão</span><span class="qm-val amber">7,9%</span></div>
+        </div>
+      </div>
+      <div class="qualif-right">
+        <div class="notif-stack" id="nstack">
+          <div class="notif green-accent" id="n1" style="transition-delay:0.4s">
+            <div class="notif-icon g">🔔</div>
+            <div class="notif-body">
+              <div class="notif-title">João Silva — Qualificado <span class="notif-badge">NOVO</span></div>
+              <div class="notif-desc">Filho do beneficiário. Alta interesse em revisão. Score 94. Aguarda contato do advogado.</div>
+              <div class="notif-time">09:18 · agora</div>
+            </div>
+          </div>
+          <div class="notif blue-accent" id="n2" style="transition-delay:0.7s">
+            <div class="notif-icon b">⚖️</div>
+            <div class="notif-body">
+              <div class="notif-title">Rosa Oliveira — Agendamento solicitado</div>
+              <div class="notif-desc">Lead pediu horário para consulta. Disponível seg/ter manhã. Google Calendar sincronizado.</div>
+              <div class="notif-time">09:14 · 4 min atrás</div>
+            </div>
+          </div>
+          <div class="notif amber-accent" id="n3" style="transition-delay:1s">
+            <div class="notif-icon a">📋</div>
+            <div class="notif-body">
+              <div class="notif-title">Contrato gerado — Maria Santos</div>
+              <div class="notif-desc">Petição inicial + procuração + requerimento INSS gerados pela IA. Prontos para assinar.</div>
+              <div class="notif-time">08:52 · 30 min atrás</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CENA 5: DASHBOARD -->
+  <div class="scene" id="scene-5">
+    <div class="scene-label">05 — Painel da operação</div>
+    <div class="dash-scene">
+      <h2 class="dash-title" id="dasht">Sua operação em tempo real.</h2>
+      <div class="mockup-shell" id="mshell">
+        <div class="mock-bar">
+          <div class="mdot"></div><div class="mdot"></div><div class="mdot"></div>
+          <span class="murl">app.prevlegal.com.br/dashboard</span>
+        </div>
+        <div class="mock-body">
+          <div class="mock-sidebar">
+            <div class="msi active"><div class="msi-dot"></div>Dashboard</div>
+            <div class="msi"><div class="msi-dot"></div>Leads</div>
+            <div class="msi"><div class="msi-dot"></div>Campanhas</div>
+            <div class="msi"><div class="msi-dot"></div>Caixa de entrada</div>
+            <div class="msi"><div class="msi-dot"></div>Agendamentos</div>
+            <div class="msi"><div class="msi-dot"></div>Agente IA</div>
+            <div class="msi"><div class="msi-dot"></div>Financeiro</div>
+          </div>
+          <div class="mock-main">
+            <div class="mock-kpis">
+              <div class="mkpi"><div class="mkpi-lbl">Leads ativos</div><div class="mkpi-val" id="kv1">—</div><div class="mkpi-delta">↑ 127 esta semana</div></div>
+              <div class="mkpi"><div class="mkpi-lbl">Qualificados hoje</div><div class="mkpi-val green" id="kv2">—</div><div class="mkpi-delta">↑ 8 agora</div></div>
+              <div class="mkpi"><div class="mkpi-lbl">Conversão IA</div><div class="mkpi-val accent" id="kv3">—</div><div class="mkpi-delta">vs 2% manual</div></div>
+              <div class="mkpi"><div class="mkpi-lbl">Potencial</div><div class="mkpi-val" id="kv4" style="font-size:16px;color:var(--amber)">—</div><div class="mkpi-delta">honorários estimados</div></div>
+            </div>
+            <div class="mock-funnel">
+              <div class="mfunnel-title">Pipeline — Funil de conversão</div>
+              <div class="mfunnel-bars">
+                <div class="mfbar-wrap"><div class="mfbar" id="fb1" style="height:0"></div><div class="mflabel">Novos</div><div class="mfval">847</div></div>
+                <div class="mfbar-wrap"><div class="mfbar" id="fb2" style="height:0"></div><div class="mflabel">Contato</div><div class="mfval">312</div></div>
+                <div class="mfbar-wrap"><div class="mfbar green" id="fb3" style="height:0"></div><div class="mflabel">Qualif.</div><div class="mfval">67</div></div>
+                <div class="mfbar-wrap"><div class="mfbar green" id="fb4" style="height:0"></div><div class="mflabel">Agend.</div><div class="mfval">23</div></div>
+                <div class="mfbar-wrap"><div class="mfbar green" id="fb5" style="height:0"></div><div class="mflabel">Fechado</div><div class="mfval">11</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CENA 6: CLOSING -->
+  <div class="scene" id="scene-6">
+    <div class="close-scene">
+      <div class="close-logo" id="clogo"><span class="prev">Prev</span><span class="legal">Legal</span></div>
+      <div class="close-tag" id="ctag">Do lead importado ao contrato fechado.</div>
+      <div class="close-url" id="curl"><a href="https://prevlegal.vercel.app/login">prevlegal.vercel.app</a></div>
+      <div class="close-pills" id="cpills">
+        <div class="cpill green">✓ Agente IA 24h</div>
+        <div class="cpill blue">✓ WhatsApp automático</div>
+        <div class="cpill amber">✓ Compliance OAB</div>
+        <div class="cpill green">✓ ROI mensurável</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PROGRESS + CONTROLS -->
+<div id="progress"><div id="progress-fill"></div></div>
+<div id="controls">
+  <div class="ctrl-btn" id="prev-btn">‹</div>
+  <div id="scene-dots">
+    <div class="dot active" data-scene="1"></div>
+    <div class="dot" data-scene="2"></div>
+    <div class="dot" data-scene="3"></div>
+    <div class="dot" data-scene="4"></div>
+    <div class="dot" data-scene="5"></div>
+    <div class="dot" data-scene="6"></div>
+  </div>
+  <div id="scene-counter">1/6</div>
+  <div class="ctrl-btn" id="next-btn">›</div>
+  <div class="ctrl-btn" id="play-btn">⏸</div>
+</div>
+
+<script>
+const SCENES = 6
+const SCENE_DURATION = 6000
+let current = 1
+let playing = true
+let timer = null
+let progressTimer = null
+let progressStart = null
+
+// ── FUNÇÕES POR CENA ──
+
+function initScene1(){
+  const el = (id)=>document.getElementById(id)
+  setTimeout(()=>el('htag').classList.add('show'),200)
+  setTimeout(()=>el('hh1').classList.add('show'),400)
+  setTimeout(()=>el('hsub').classList.add('show'),800)
+  setTimeout(()=>el('hmeta').classList.add('show'),1200)
+  document.getElementById('glowBlue').style.opacity='1'
+}
+
+function initScene2(){
+  const el=(id)=>document.getElementById(id)
+  setTimeout(()=>el('it').classList.add('show'),200)
+  setTimeout(()=>el('is').classList.add('show'),500)
+  el('dtable').classList.add('show')
+  ;['r1','r2','r3','r4','r5'].forEach((id,i)=>{
+    setTimeout(()=>el(id).classList.add('appear'),600+i*150)
+  })
+  document.querySelectorAll('.istat').forEach((el,i)=>{
+    setTimeout(()=>{
+      el.classList.add('show')
+      const bar=el.querySelector('.istat-bar')
+      setTimeout(()=>bar.style.width=(bar.dataset.w||'50')+'%',200)
+    },700+i*200)
+  })
+}
+
+function initScene3(){
+  const el=(id)=>document.getElementById(id)
+  setTimeout(()=>el('dt2').classList.add('show'),200)
+  setTimeout(()=>el('ds').classList.add('show'),500)
+  el('phonewrap').classList.add('show')
+  // contador animado
+  let n=0,target=14
+  const tick=setInterval(()=>{n=Math.min(n+1,target);el('counter-num').textContent=n;if(n>=target)clearInterval(tick)},80)
+  // mensagens sequenciais
+  setTimeout(()=>el('wm1').classList.add('show'),600)
+  setTimeout(()=>el('wm2').classList.add('show'),1400)
+  setTimeout(()=>el('wm3').classList.add('show'),2200)
+  setTimeout(()=>el('wtyping').classList.add('show'),3000)
+  setTimeout(()=>{el('wtyping').classList.remove('show');el('wm4').classList.add('show')},4000)
+  setTimeout(()=>el('wm5').classList.add('show'),4600)
+  document.getElementById('glowGreen').style.opacity='1'
+}
+
+function initScene4(){
+  const el=(id)=>document.getElementById(id)
+  setTimeout(()=>el('qt').classList.add('show'),200)
+  setTimeout(()=>el('qs').classList.add('show'),500)
+  el('nstack').classList.add('show')
+  document.querySelectorAll('.qm').forEach(e=>e.classList.add('show'))
+  ;['n1','n2','n3'].forEach((id,i)=>{
+    setTimeout(()=>el(id).classList.add('show'),400+i*300)
+  })
+}
+
+function initScene5(){
+  const el=(id)=>document.getElementById(id)
+  setTimeout(()=>el('dasht').classList.add('show'),200)
+  setTimeout(()=>{
+    el('mshell').classList.add('show')
+    // KPI counters
+    const kpis=[{id:'kv1',val:'2.847'},{id:'kv2',val:'67'},{id:'kv3',val:'7,9%'},{id:'kv4',val:'R$2,1M'}]
+    kpis.forEach((k,i)=>{
+      setTimeout(()=>{const e=el(k.id);e.textContent=k.val;e.classList.add('show')},800+i*150)
+    })
+    // Barras do funil
+    const bars=[{id:'fb1',h:60},{id:'fb2',h:37},{id:'fb3',h:20},{id:'fb4',h:15},{id:'fb5',h:9}]
+    bars.forEach((b,i)=>{
+      setTimeout(()=>document.getElementById(b.id).style.height=b.h+'px',900+i*100)
+    })
+  },400)
+}
+
+function initScene6(){
+  const el=(id)=>document.getElementById(id)
+  setTimeout(()=>el('clogo').classList.add('show'),200)
+  setTimeout(()=>el('ctag').classList.add('show'),800)
+  setTimeout(()=>el('curl').classList.add('show'),1200)
+  setTimeout(()=>el('cpills').classList.add('show'),1600)
+  document.getElementById('glowBlue').style.opacity='1'
+  document.getElementById('glowGreen').style.opacity='1'
+}
+
+const initFns=[null,initScene1,initScene2,initScene3,initScene4,initScene5,initScene6]
+
+// ── RESET DE CENA ──
+function resetScene(n){
+  const scene=document.getElementById('scene-'+n)
+  // remove todas as classes show/appear dos filhos
+  scene.querySelectorAll('.show,.appear').forEach(el=>{
+    el.classList.remove('show','appear')
+  })
+  // reset barras
+  scene.querySelectorAll('.istat-bar').forEach(b=>b.style.width='0')
+  scene.querySelectorAll('.mfbar').forEach(b=>b.style.height='0')
+  scene.querySelectorAll('.mkpi-val').forEach(v=>v.textContent='—')
+  if(n===3){
+    const c=document.getElementById('counter-num')
+    if(c)c.textContent='0'
+  }
+  // reset glows
+  document.getElementById('glowBlue').style.opacity='0'
+  document.getElementById('glowGreen').style.opacity='0'
+}
+
+// ── NAVEGAÇÃO ──
+function goTo(n){
+  if(n<1||n>SCENES)return
+  resetScene(current)
+  document.getElementById('scene-'+current).classList.remove('active')
+  current=n
+  document.getElementById('scene-'+current).classList.add('active')
+  document.querySelectorAll('.dot').forEach((d,i)=>{
+    d.classList.toggle('active',i+1===current)
+  })
+  document.getElementById('scene-counter').textContent=current+'/'+SCENES
+  initFns[current]()
+  startProgress()
+}
+
+// ── PROGRESS ──
+function startProgress(){
+  clearInterval(progressTimer)
+  const fill=document.getElementById('progress-fill')
+  fill.style.transition='none'
+  fill.style.width='0%'
+  if(!playing)return
+  progressStart=Date.now()
+  const dur=SCENE_DURATION
+  requestAnimationFrame(()=>{
+    fill.style.transition='width '+dur+'ms linear'
+    fill.style.width='100%'
+  })
+  clearTimeout(timer)
+  timer=setTimeout(()=>{
+    if(playing)goTo(current<SCENES?current+1:1)
+  },dur)
+}
+
+// ── CONTROLES ──
+document.getElementById('next-btn').onclick=()=>{goTo(current<SCENES?current+1:1)}
+document.getElementById('prev-btn').onclick=()=>{goTo(current>1?current-1:SCENES)}
+document.getElementById('play-btn').onclick=function(){
+  playing=!playing
+  this.textContent=playing?'⏸':'▶'
+  if(playing)startProgress()
+  else{clearTimeout(timer);clearInterval(progressTimer)}
+}
+document.querySelectorAll('.dot').forEach(d=>{
+  d.onclick=()=>goTo(+d.dataset.scene)
+})
+// keyboard
+document.addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight'||e.key===' ')goTo(current<SCENES?current+1:1)
+  if(e.key==='ArrowLeft')goTo(current>1?current-1:SCENES)
+})
+
+// ── INIT ──
+initScene1()
+startProgress()
+</script>
+</body>
+</html>
