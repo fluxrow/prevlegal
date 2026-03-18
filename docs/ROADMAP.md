@@ -120,6 +120,7 @@
 - A Fase 0 e a Fase 2 do runbook de domínio foram executadas localmente:
   - arquitetura aprovada: `www` + apex redirect + `app` + `admin`
   - metadata SEO, sitemap, robots, manifest, headers e OG image já estão preparados para o cutover
+  - commit principal: `cebda979`
 
 ### Integrações e mensageria
 - O envio WhatsApp agora usa helper centralizado com fallback global e suporte a credenciais Twilio por tenant

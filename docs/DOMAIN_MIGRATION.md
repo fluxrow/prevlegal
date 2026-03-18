@@ -21,6 +21,8 @@ Migrar o projeto para domínio próprio com separação clara entre:
 
 - Fase 0 = CONCLUÍDA
 - Fase 2 = CONCLUÍDA
+- Commit principal da Fase 2: `cebda979`
+- Nota Obsidian da execução: `2026-03-18-fase2-dominio-seo-lp-raiz.md`
 
 ### Estado do app hoje
 
