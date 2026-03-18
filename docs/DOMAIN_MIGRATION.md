@@ -10,6 +10,26 @@ Migrar o projeto para domínio próprio com separação clara entre:
 - plataforma
 - possíveis superfícies futuras de admin
 
+## Decisão operacional recomendada
+
+- `www.prevlegal.com.br` -> site / LP canônico
+- `prevlegal.com.br` -> redirect para `www.prevlegal.com.br`
+- `app.prevlegal.com.br` -> plataforma principal
+
+Se você preferir simplicidade de marca em vez da recomendação da Vercel para sites, pode usar o apex como canônico do site. Mas a decisão deve ser tomada antes de mexer em Vercel, DNS e env vars.
+
+## Status da migração
+
+### Bloqueio atual
+
+- falta decidir explicitamente se o site canônico será `www.prevlegal.com.br` ou `prevlegal.com.br`
+
+### Estado do app hoje
+
+- produção atual continua em `https://prevlegal.vercel.app`
+- o código já usa `NEXT_PUBLIC_APP_URL` em vários pontos
+- ainda existem fallbacks hardcoded para `prevlegal.vercel.app`
+
 ## Estado atual encontrado no código
 
 ### URLs absolutas e pontos de atenção
@@ -68,6 +88,160 @@ Motivo:
 - marketing e produto deixam de competir pelo mesmo host
 
 Se a prioridade for simplicidade visual da marca, a Opção A também funciona, mas a decisão deve ser explícita antes da troca.
+
+## Runbook de execução
+
+### Fase 0 — decisão final
+
+Objetivo:
+- travar a arquitetura para evitar retrabalho
+
+Checklist:
+- [ ] escolher host canônico do site:
+  - [ ] `www.prevlegal.com.br`
+  - [ ] `prevlegal.com.br`
+- [ ] confirmar `app.prevlegal.com.br` para a plataforma
+- [ ] decidir se o admin permanece dentro do app por enquanto
+
+Saída esperada:
+- uma única arquitetura aprovada para Vercel, DNS e código
+
+### Fase 1 — preparar ambiente
+
+Objetivo:
+- deixar as variáveis e referências prontas antes da troca pública
+
+Checklist:
+- [ ] definir valor final de `NEXT_PUBLIC_APP_URL`
+- [ ] definir valor final de `NEXT_PUBLIC_SITE_URL`
+- [ ] opcional: criar `NEXT_PUBLIC_MARKETING_URL`
+- [ ] listar integrações dependentes de callback URL:
+  - [ ] Google OAuth
+  - [ ] Twilio webhook
+  - [ ] convites
+  - [ ] links do portal
+
+Saída esperada:
+- valores finais de env aprovados antes de alterar produção
+
+### Fase 2 — ajustar código
+
+Objetivo:
+- remover dependência do domínio antigo no repositório
+
+Checklist:
+- [ ] atualizar `public/lp.html`
+- [ ] atualizar `public/demo.html`
+- [ ] remover fallback `https://prevlegal.vercel.app` em `src/app/api/usuarios/convidar/route.ts`
+- [ ] remover fallback `https://prevlegal.vercel.app` em `src/app/api/portal/link/[leadId]/route.ts`
+- [ ] revisar `src/app/api/webhooks/twilio/route.ts`
+- [ ] revisar `src/app/api/webhooks/twilio/status/route.ts`
+- [ ] revisar `src/app/api/google/callback/route.ts`
+- [ ] revisar `src/app/admin/[id]/page.tsx`
+- [ ] atualizar docs de URL principal
+- [ ] rodar `npm run build`
+
+Saída esperada:
+- nenhum link crítico hardcoded para `prevlegal.vercel.app`
+
+### Fase 3 — configurar Vercel
+
+Objetivo:
+- preparar os hosts no projeto antes do DNS final
+
+Checklist:
+- [ ] adicionar `prevlegal.com.br`
+- [ ] adicionar `www.prevlegal.com.br` se for usado
+- [ ] adicionar `app.prevlegal.com.br`
+- [ ] configurar redirects entre apex e `www`
+- [ ] revisar qual host ficará como primary domain
+
+Saída esperada:
+- Vercel pronta para validar DNS e emitir HTTPS
+
+### Fase 4 — configurar DNS
+
+Objetivo:
+- apontar o domínio comprado para o projeto certo
+
+Checklist:
+- [ ] criar/editar registros solicitados pela Vercel
+- [ ] validar resolução do apex
+- [ ] validar resolução de `www`
+- [ ] validar resolução de `app`
+- [ ] aguardar propagação completa
+
+Saída esperada:
+- todos os hosts resolvendo corretamente
+
+### Fase 5 — atualizar env vars de produção
+
+Objetivo:
+- alinhar o runtime com o domínio final
+
+Checklist:
+- [ ] atualizar `NEXT_PUBLIC_APP_URL`
+- [ ] atualizar `NEXT_PUBLIC_SITE_URL`
+- [ ] revisar outras envs que dependam de URL base
+- [ ] forçar redeploy se necessário
+
+Saída esperada:
+- callbacks, convites e links automáticos usando o domínio novo
+
+### Fase 6 — validar produção
+
+Objetivo:
+- confirmar que marketing, auth e integrações continuam saudáveis
+
+Checklist:
+- [ ] LP abre no host canônico
+- [ ] CTA vai para o login certo
+- [ ] login abre a plataforma no host certo
+- [ ] link do portal funciona
+- [ ] convite por e-mail abre no host certo
+- [ ] callback do Google funciona
+- [ ] webhook do Twilio continua funcionando
+- [ ] redirect apex/www funciona
+- [ ] HTTPS está válido em todos os hosts
+
+Saída esperada:
+- migração concluída sem dependência operacional do domínio antigo
+
+### Fase 7 — pós-migração
+
+Objetivo:
+- limpar resíduos e registrar a nova base canônica
+
+Checklist:
+- [ ] atualizar `docs/MASTER.md`
+- [ ] atualizar `docs/ROADMAP.md` se necessário
+- [ ] atualizar `docs/LEARNINGS.md` com incidentes reais da migração
+- [ ] sincronizar Obsidian
+
+Saída esperada:
+- memória do projeto atualizada com o novo domínio oficial
+
+## Execução rápida
+
+Se quiser executar com menor risco, a ordem prática é:
+
+1. decidir host canônico
+2. ajustar código + env vars em branch/local
+3. validar `npm run build`
+4. configurar Vercel
+5. configurar DNS
+6. atualizar env vars em produção
+7. redeploy
+8. validar callbacks e links automáticos
+
+## Rollback simples
+
+Se algo crítico quebrar:
+
+1. manter o domínio antigo funcional na Vercel
+2. voltar `NEXT_PUBLIC_APP_URL` para o host anterior
+3. redeploy
+4. revisar callback URLs de Google/Twilio antes de tentar novamente
 
 ## Ordem lógica de execução
 
