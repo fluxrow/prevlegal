@@ -227,18 +227,72 @@ footer{border-top:1px solid var(--border);padding:48px 40px 32px;background:var(
 .footer-legal a{color:var(--text3);text-decoration:none}
 
 /* ── RESPONSIVE ── */
-@media(max-width:900px){
+@media(max-width:768px){
+  /* NAV */
   nav{padding:14px 20px}
   .nav-links{display:none}
-  .problema-grid,.feat-grid,.dif-grid,.fluxo-grid,.pricing-wrap{grid-template-columns:1fr}
-  .fluxo-grid::before{display:none}
-  .demo-grid,.roi-card{grid-template-columns:1fr}
-  .metrics-inner{grid-template-columns:repeat(2,1fr)}
-  .metric{border-right:none;border-bottom:1px solid var(--border);padding:20px 0}
-  .metric:nth-child(odd){border-right:1px solid var(--border)}
+  .nav-actions .btn-ghost{display:none}
+  .btn-nav{padding:8px 16px;font-size:13px}
+
+  /* HERO */
+  .hero{padding:100px 20px 60px}
+  h1{letter-spacing:-1.5px}
+  .hero-cta{flex-direction:column;align-items:center}
+  .hero-cta a{width:100%;text-align:center;max-width:360px}
+
+  /* MOCKUP */
+  .mockup-wrap{overflow-x:auto}
   .m-body{grid-template-columns:1fr}
   .m-sidebar{display:none}
-  .footer-inner{grid-template-columns:1fr 1fr;gap:28px}
+  .m-kpis{grid-template-columns:1fr 1fr}
+
+  /* METRICS */
+  .metrics-inner{grid-template-columns:1fr 1fr;gap:0}
+  .metric{border-right:none;border-bottom:1px solid var(--border);padding:24px 16px}
+  .metric:nth-child(odd){border-right:1px solid var(--border)}
+  .metric-num{font-size:36px}
+
+  /* SECTIONS */
+  .section{padding:72px 20px}
+  .section-h{letter-spacing:-0.5px}
+
+  /* PROBLEMA / FEATURES / DIFERENCIAIS */
+  .problema-grid,
+  .feat-grid,
+  .dif-grid{grid-template-columns:1fr}
+
+  /* FLUXO */
+  .fluxo-grid{grid-template-columns:1fr 1fr;gap:32px}
+  .fluxo-grid::before{display:none}
+
+  /* DEMO — chat */
+  .demo-grid{grid-template-columns:1fr;gap:40px}
+  .phone-wrap{max-width:280px}
+
+  /* PRICING */
+  .pricing-wrap{grid-template-columns:1fr;gap:20px}
+  .price-card.featured{order:-1}
+
+  /* ROI */
+  .roi-card{grid-template-columns:1fr;gap:28px}
+
+  /* FOOTER */
+  .footer-inner{grid-template-columns:1fr;gap:28px}
+  footer{padding:40px 20px 28px}
+  .footer-bottom{flex-direction:column;gap:12px;text-align:center}
+  .footer-legal{justify-content:center}
+}
+
+@media(max-width:480px){
+  /* Fluxo vira 1 coluna em telas muito pequenas */
+  .fluxo-grid{grid-template-columns:1fr}
+  /* Métricas em 1 coluna */
+  .metrics-inner{grid-template-columns:1fr}
+  .metric:nth-child(odd){border-right:none}
+  /* Pricing pill "mais escolhido" */
+  .price-badge{font-size:10px;padding:3px 10px}
+  /* Botões CTA em coluna */
+  .hero-cta a{max-width:100%}
 }
 </style>
 </head>

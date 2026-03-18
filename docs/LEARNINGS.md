@@ -119,3 +119,9 @@ export async function GET(
 **Modelo:** Empresa de captação (não-OAB) + Escritório parceiro (OAB)
 **A empresa de captação usa o PrevLegal — o escritório recebe os leads qualificados**
 **Base legal:** Provimento 205/2021 OAB + Art. 34 IV Estatuto da Advocacia
+
+### 19. LP precisa de responsividade específica para 768px e 480px
+**Erro:** Layout da LP quebrava em telas móveis estreitas, especialmente em 390px
+**Causa:** O bloco responsivo antigo era genérico demais e não tratava nav, hero, mockup, pricing, ROI e footer com granularidade suficiente
+**Correção:** Padronizar um bloco mobile completo com breakpoints em `768px` e `480px`
+**Regra prática:** Em landing pages ricas, revisar sempre nav, hero CTA, mockup, métricas, pricing, ROI e footer separadamente no mobile
