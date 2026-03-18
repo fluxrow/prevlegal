@@ -183,6 +183,31 @@ Pontos que precisam ser preservados durante a implementacao:
 - Regra final: cookie ausente de reauth agora invalida o acesso sensivel, como esperado
 - `npm run build` executado novamente com sucesso apos o fix
 
+2026-03-18 - Alinhamento Twilio Sandbox
+- O codigo ja possui fluxo completo para receber mensagens inbound do WhatsApp e exibi-las no app
+- Rotas principais confirmadas:
+  - `src/app/api/webhooks/twilio/route.ts`
+  - `src/app/api/webhooks/twilio/status/route.ts`
+  - `src/app/api/conversas/route.ts`
+  - `src/app/api/conversas/[id]/route.ts`
+  - `src/components/modal-msg-lead.tsx`
+- Foi identificado desalinhamento entre o sender do sandbox no painel Twilio e o `.env.local`
+- Ajuste aplicado:
+  - `.env.local` agora usa `TWILIO_WHATSAPP_NUMBER=\"whatsapp:+14155238886\"`
+- Proximo checklist operacional:
+  - confirmar no Twilio Sandbox o webhook `When a message comes in`
+  - confirmar o `Status callback`
+  - garantir que o numero de teste enviou o `join <codigo>` para o sandbox
+
+2026-03-18 - Fix no cadastro manual de lead
+- Erro reproduzido novamente no modal `Novo lead`
+- Causa confirmada: a tabela `leads` ainda exige `nb` obrigatorio e unico
+- Correcao aplicada em `src/app/api/leads/route.ts`
+- Novo comportamento:
+  - se `nb` vier preenchido, usa o valor informado
+  - se `nb` vier vazio, gera `MANUAL-<telefone|cpf|timestamp>`
+- Objetivo: permitir lead de teste/manual sem quebrar o modelo legado
+
 ## Arquivos Alterados Nesta Sessao
 
 - `supabase/migrations/029_financeiro.sql`

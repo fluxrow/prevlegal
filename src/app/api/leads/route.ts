@@ -5,6 +5,17 @@ import { createClient as createAdminClient } from '@supabase/supabase-js'
 const LISTA_MANUAL_NOME = 'Cadastro manual'
 const LISTA_MANUAL_FORNECEDOR = 'sistema'
 
+function normalizarTexto(value: unknown) {
+  return typeof value === 'string' ? value.trim() : ''
+}
+
+function criarNbManual(body: Record<string, unknown>) {
+  const telefone = normalizarTexto(body.telefone).replace(/\D/g, '')
+  const cpf = normalizarTexto(body.cpf).replace(/\D/g, '')
+  const base = telefone || cpf || Date.now().toString()
+  return `MANUAL-${base}`
+}
+
 export async function POST(request: Request) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -58,6 +69,7 @@ export async function POST(request: Request) {
   }
 
   const ganhoPotencial = body.ganho_potencial ? parseFloat(body.ganho_potencial) : null
+  const nbManual = normalizarTexto(body.nb) || criarNbManual(body)
 
   const { data, error } = await supabase
     .from('leads')
@@ -66,7 +78,7 @@ export async function POST(request: Request) {
       nome: body.nome,
       cpf: body.cpf || null,
       telefone: body.telefone || null,
-      nb: body.nb || null,
+      nb: nbManual,
       banco: body.banco || null,
       valor_rma: body.valor_rma ? parseFloat(body.valor_rma) : null,
       ganho_potencial: ganhoPotencial,
