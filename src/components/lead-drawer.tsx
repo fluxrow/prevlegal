@@ -1,9 +1,10 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import { useRouter } from 'next/navigation'
 import {
   X, User, FileText, CreditCard, Hash,
-  MessageSquarePlus, Loader2, ChevronDown, AlertCircle
+  MessageSquarePlus, Loader2, ChevronDown, AlertCircle, ExternalLink
 } from 'lucide-react'
 
 type Lead = {
@@ -102,6 +103,7 @@ export default function LeadDrawer({
   const [novaAnotacao, setNovaAnotacao] = useState('')
   const [salvando, setSalvando] = useState(false)
   const [showStatus, setShowStatus] = useState(false)
+  const router = useRouter()
 
   useEffect(() => {
     if (!leadId) { setLead(null); return }
@@ -177,9 +179,23 @@ export default function LeadDrawer({
                     </div>
                   </div>
                 </div>
-                <button onClick={onClose} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px', marginLeft: '12px' }}>
-                  <X size={18} />
-                </button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginLeft: '12px' }}>
+                  <button
+                    onClick={() => { onClose(); router.push(`/leads/${lead.id}`) }}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: '5px',
+                      background: 'var(--accent)', border: 'none', borderRadius: '8px',
+                      padding: '6px 12px', color: '#fff', fontSize: '12px',
+                      fontWeight: '600', cursor: 'pointer', fontFamily: 'DM Sans, sans-serif',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    <ExternalLink size={12} /> Ver completo
+                  </button>
+                  <button onClick={onClose} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px' }}>
+                    <X size={18} />
+                  </button>
+                </div>
               </div>
               {/* Score + Ganho */}
               <div style={{ display: 'flex', gap: '10px', marginTop: '14px' }}>

@@ -159,3 +159,8 @@ export async function GET(
 **Causa:** O boot e a navegação trocavam a cena ativa sem garantir um frame de separação antes da classe final
 **Correção:** Usar `requestAnimationFrame` duplo após `classList.add('active')` tanto no init quanto em `goTo`
 **Regra prática:** Em animações de cena dentro de `iframe`, separar classes de estado em dois frames para evitar race condition de renderização
+
+### 25. Drawer de lead precisa oferecer atalho para a página completa
+**Problema:** O drawer resolve consulta rápida, mas tarefas de edição, documentos e contratos exigem navegação adicional manual
+**Correção:** Adicionar CTA "Ver completo" no header do drawer apontando para `/leads/[id]`
+**Regra prática:** Componentes de preview lateral devem sempre oferecer um caminho explícito para a tela completa quando houver ações avançadas fora do escopo do drawer
