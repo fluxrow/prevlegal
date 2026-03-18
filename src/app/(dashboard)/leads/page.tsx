@@ -12,7 +12,7 @@ export default async function LeadsPage() {
 
   const { data: leads } = await supabase
     .from('leads')
-    .select('id, nome, nb, status, score, ganho_potencial, tipo_beneficio, banco, origem')
+    .select('id, nome, nb, telefone, status, score, ganho_potencial, tipo_beneficio, banco, origem')
     .eq('lgpd_optout', false)
     .order('score', { ascending: false })
 

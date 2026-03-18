@@ -131,3 +131,9 @@ export async function GET(
 **Causa:** `portal-lead.tsx` fazia fetch único no mount e não mantinha a conversa sincronizada
 **Correção:** Adicionar polling de 5 segundos + canal Supabase Realtime por `lead_id`
 **Regra prática:** Em chat bidirecional do PrevLegal, usar Realtime para inserções e polling leve como fallback de consistência
+
+### 21. Botões de mensagem rápida no Kanban dependem do telefone no select dos leads
+**Erro:** O modal do card não consegue localizar a conversa WhatsApp se o kanban não carregar `telefone`
+**Causa:** A página de leads buscava apenas campos visuais do board e omitia o identificador usado pela conversa
+**Correção:** Incluir `telefone` no `select` da página de leads e normalizar o número para casar com `conversas.telefone`
+**Regra prática:** Sempre que um card abrir ações de comunicação, carregar no dataset ao menos `id`, `nome` e `telefone`
