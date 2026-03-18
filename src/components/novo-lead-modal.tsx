@@ -7,6 +7,12 @@ interface Props {
   onCriado: (lead: unknown) => void
 }
 
+interface SectionProps {
+  icon: React.ReactNode
+  title: string
+  children: React.ReactNode
+}
+
 const BANCOS = ['BB', 'Bradesco', 'Caixa', 'Itaú', 'Santander', 'BRB', 'Sicoob', 'Sicredi', 'Outro']
 const STATUS_OPCOES = [
   { value: 'new', label: 'Novo' },
@@ -15,6 +21,18 @@ const STATUS_OPCOES = [
   { value: 'scheduled', label: 'Agendado' },
   { value: 'converted', label: 'Convertido' },
 ]
+
+function NovoLeadSection({ icon, title, children }: SectionProps) {
+  return (
+    <div style={{ marginBottom: '22px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '7px', marginBottom: '12px' }}>
+        <span style={{ color: 'var(--accent)' }}>{icon}</span>
+        <span style={{ fontSize: '12px', fontWeight: '700', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{title}</span>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>{children}</div>
+    </div>
+  )
+}
 
 export default function NovoLeadModal({ onClose, onCriado }: Props) {
   const [form, setForm] = useState({
@@ -63,18 +81,6 @@ export default function NovoLeadModal({ onClose, onCriado }: Props) {
     textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: '5px',
   }
 
-  function Section({ icon, title, children }: { icon: React.ReactNode; title: string; children: React.ReactNode }) {
-    return (
-      <div style={{ marginBottom: '22px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '7px', marginBottom: '12px' }}>
-          <span style={{ color: 'var(--accent)' }}>{icon}</span>
-          <span style={{ fontSize: '12px', fontWeight: '700', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{title}</span>
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>{children}</div>
-      </div>
-    )
-  }
-
   return (
     <>
       <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 999 }} />
@@ -102,7 +108,7 @@ export default function NovoLeadModal({ onClose, onCriado }: Props) {
         </div>
 
         {/* Dados pessoais */}
-        <Section icon={<User size={14} />} title="Dados pessoais">
+        <NovoLeadSection icon={<User size={14} />} title="Dados pessoais">
           <div style={{ gridColumn: '1 / -1' }}>
             <label style={lbl}>Nome completo *</label>
             <input value={form.nome} onChange={e => set('nome', e.target.value)} placeholder="Maria da Silva" style={inp} />
@@ -126,10 +132,10 @@ export default function NovoLeadModal({ onClose, onCriado }: Props) {
               <span style={{ position: 'absolute', top: '2px', left: form.tem_whatsapp ? '20px' : '2px', width: '16px', height: '16px', borderRadius: '50%', background: '#fff', transition: 'left 0.2s', display: 'block' }} />
             </button>
           </div>
-        </Section>
+        </NovoLeadSection>
 
         {/* Dados do benefício */}
-        <Section icon={<CreditCard size={14} />} title="Dados do benefício">
+        <NovoLeadSection icon={<CreditCard size={14} />} title="Dados do benefício">
           <div>
             <label style={lbl}>Número do benefício (NB)</label>
             <input value={form.nb} onChange={e => set('nb', e.target.value)} placeholder="000.000.000-0" style={inp} />
@@ -149,7 +155,7 @@ export default function NovoLeadModal({ onClose, onCriado }: Props) {
             <label style={lbl}>Ganho potencial (R$)</label>
             <input type="number" value={form.ganho_potencial} onChange={e => set('ganho_potencial', e.target.value)} placeholder="0,00" style={inp} />
           </div>
-        </Section>
+        </NovoLeadSection>
 
         {/* Status inicial */}
         <div style={{ marginBottom: '22px' }}>

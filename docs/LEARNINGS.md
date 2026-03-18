@@ -179,3 +179,9 @@ export async function GET(
 **Problema:** Badge global sem fila operacional gera alerta, mas não resolve ação humana
 **Correção:** A `Caixa de Entrada` passou a distinguir WhatsApp (`todas`, `agente`, `humano`) e `portal` como aba própria, enquanto a sidebar usa endpoint agregado de pendências reais
 **Regra prática:** Badge só faz sentido quando aponta para uma fila acionável; sempre modelar junto contagem agregada + lista operacional + painel de resposta
+
+### 29. Inputs perdem foco quando subcomponentes de formulário são declarados dentro do componente principal
+**Problema:** Ao digitar uma letra, o cursor sai do campo e o usuário precisa clicar novamente para continuar
+**Causa:** Helpers como `Section`, `Field`, `Grid` e similares foram declarados dentro de componentes client-side; a cada mudança de estado, React recria esse tipo de componente e pode remontar o trecho da árvore
+**Correção:** Mover subcomponentes reutilizados de formulário para o escopo do módulo, fora do componente principal
+**Regra prática:** Em formulários do PrevLegal, nunca declarar componentes React auxiliares dentro do componente que mantém o estado de digitação

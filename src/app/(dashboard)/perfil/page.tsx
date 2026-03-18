@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { User, Building2, FileText, Camera, Save, CheckCircle, AlertCircle, Upload } from 'lucide-react'
 
 const ESTADOS = ['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO']
@@ -28,6 +28,101 @@ interface Perfil {
 }
 
 type Toast = { tipo: 'ok' | 'erro'; msg: string } | null
+
+interface SectionProps {
+  icon: React.ReactNode
+  title: string
+  children: React.ReactNode
+}
+
+interface GridProps {
+  children: React.ReactNode
+}
+
+interface FieldProps {
+  label: string
+  field: keyof Perfil
+  value: string
+  onChange: (field: keyof Perfil, value: string) => void
+  labelStyle: React.CSSProperties
+  inputStyle: React.CSSProperties
+  type?: string
+  col?: string
+  placeholder?: string
+}
+
+interface SelectFieldProps {
+  label: string
+  field: keyof Perfil
+  value: string
+  onChange: (field: keyof Perfil, value: string) => void
+  labelStyle: React.CSSProperties
+  inputStyle: React.CSSProperties
+  options: { value: string; label: string }[]
+  col?: string
+}
+
+function PerfilSection({ icon, title, children }: SectionProps) {
+  return (
+    <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '14px', padding: '24px', marginBottom: '20px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '9px', marginBottom: '20px' }}>
+        <span style={{ color: 'var(--accent)' }}>{icon}</span>
+        <h2 style={{ fontSize: '15px', fontWeight: '700', color: 'var(--text-primary)', fontFamily: 'Syne, sans-serif', margin: 0 }}>{title}</h2>
+      </div>
+      {children}
+    </div>
+  )
+}
+
+function PerfilGrid({ children }: GridProps) {
+  return <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>{children}</div>
+}
+
+function PerfilField({
+  label,
+  field,
+  value,
+  onChange,
+  labelStyle,
+  inputStyle,
+  type = 'text',
+  col,
+  placeholder,
+}: FieldProps) {
+  return (
+    <div style={{ gridColumn: col }}>
+      <label style={labelStyle}>{label}</label>
+      <input
+        type={type}
+        value={value}
+        onChange={e => onChange(field, e.target.value)}
+        placeholder={placeholder}
+        style={inputStyle}
+      />
+    </div>
+  )
+}
+
+function PerfilSelectField({
+  label,
+  field,
+  value,
+  onChange,
+  labelStyle,
+  inputStyle,
+  options,
+  col,
+}: SelectFieldProps) {
+  return (
+    <div style={{ gridColumn: col }}>
+      <label style={labelStyle}>{label}</label>
+      <select value={value} onChange={e => onChange(field, e.target.value)} style={inputStyle}>
+        <option value="">Selecione</option>
+        {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+      </select>
+    </div>
+  )
+}
 
 export default function PerfilPage() {
   const [perfil, setPerfil] = useState<Perfil>({})
@@ -104,54 +199,6 @@ export default function PerfilPage() {
     display: 'block', marginBottom: '5px', textTransform: 'uppercase', letterSpacing: '0.06em',
   }
 
-  function Section({ icon, title, children }: { icon: React.ReactNode; title: string; children: React.ReactNode }) {
-    return (
-      <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '14px', padding: '24px', marginBottom: '20px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '9px', marginBottom: '20px' }}>
-          <span style={{ color: 'var(--accent)' }}>{icon}</span>
-          <h2 style={{ fontSize: '15px', fontWeight: '700', color: 'var(--text-primary)', fontFamily: 'Syne, sans-serif', margin: 0 }}>{title}</h2>
-        </div>
-        {children}
-      </div>
-    )
-  }
-
-  function Grid({ children }: { children: React.ReactNode }) {
-    return <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>{children}</div>
-  }
-
-  function Field({ label, field, type = 'text', col, placeholder }: {
-    label: string; field: keyof Perfil; type?: string; col?: string; placeholder?: string
-  }) {
-    return (
-      <div style={{ gridColumn: col }}>
-        <label style={labelSt}>{label}</label>
-        <input
-          type={type}
-          value={perfil[field] || ''}
-          onChange={e => set(field, e.target.value)}
-          placeholder={placeholder}
-          style={inputSt}
-        />
-      </div>
-    )
-  }
-
-  function SelectField({ label, field, options, col }: {
-    label: string; field: keyof Perfil
-    options: { value: string; label: string }[]; col?: string
-  }) {
-    return (
-      <div style={{ gridColumn: col }}>
-        <label style={labelSt}>{label}</label>
-        <select value={perfil[field] || ''} onChange={e => set(field, e.target.value)} style={inputSt}>
-          <option value="">Selecione</option>
-          {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-        </select>
-      </div>
-    )
-  }
-
   const saveBtnStyle: React.CSSProperties = {
     display: 'flex', alignItems: 'center', gap: '7px',
     background: 'var(--accent)', border: 'none', borderRadius: '10px',
@@ -170,8 +217,6 @@ export default function PerfilPage() {
 
   return (
     <div style={{ padding: '32px', maxWidth: '900px' }}>
-
-      {/* Toast */}
       {toast && (
         <div style={{
           position: 'fixed', top: '24px', right: '24px', zIndex: 9999,
@@ -187,7 +232,6 @@ export default function PerfilPage() {
         </div>
       )}
 
-      {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '28px' }}>
         <div>
           <h1 style={{ fontFamily: 'Syne, sans-serif', fontSize: '24px', fontWeight: '700', color: 'var(--text-primary)', letterSpacing: '-0.5px', margin: '0 0 4px' }}>
@@ -202,8 +246,7 @@ export default function PerfilPage() {
         </button>
       </div>
 
-      {/* Dados Pessoais + Foto */}
-      <Section icon={<User size={16} />} title="Dados Pessoais">
+      <PerfilSection icon={<User size={16} />} title="Dados Pessoais">
         <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '20px' }}>
           <div style={{ position: 'relative', flexShrink: 0 }}>
             <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: 'var(--bg)', border: '2px solid var(--border)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -228,35 +271,38 @@ export default function PerfilPage() {
             <p style={{ fontSize: '11px', color: 'var(--text-muted)', margin: 0, fontFamily: 'DM Sans, sans-serif' }}>Aparece em documentos e comunicações. JPG, PNG ou WEBP.</p>
           </div>
         </div>
-        <Grid>
-          <Field label="Nome completo *" field="nome" col="1 / -1" placeholder="Dr. João Silva" />
-          <Field label="Email profissional" field="email" type="email" placeholder="joao@escritorio.com.br" />
-          <Field label="Telefone" field="telefone" placeholder="(41) 99999-9999" />
-          <Field label="CPF" field="cpf" placeholder="000.000.000-00" />
-        </Grid>
-      </Section>
+        <PerfilGrid>
+          <PerfilField label="Nome completo *" field="nome" value={perfil.nome || ''} onChange={set} labelStyle={labelSt} inputStyle={inputSt} col="1 / -1" placeholder="Dr. João Silva" />
+          <PerfilField label="Email profissional" field="email" value={perfil.email || ''} onChange={set} labelStyle={labelSt} inputStyle={inputSt} type="email" placeholder="joao@escritorio.com.br" />
+          <PerfilField label="Telefone" field="telefone" value={perfil.telefone || ''} onChange={set} labelStyle={labelSt} inputStyle={inputSt} placeholder="(41) 99999-9999" />
+          <PerfilField label="CPF" field="cpf" value={perfil.cpf || ''} onChange={set} labelStyle={labelSt} inputStyle={inputSt} placeholder="000.000.000-00" />
+        </PerfilGrid>
+      </PerfilSection>
 
-      {/* Registro OAB */}
-      <Section icon={<FileText size={16} />} title="Registro OAB">
-        <Grid>
-          <Field label="Número OAB *" field="oab_numero" placeholder="123456" />
-          <SelectField
-            label="Estado (Seccional)"
-            field="oab_estado"
-            options={ESTADOS.map(e => ({ value: e, label: e }))}
-          />
-          <SelectField
+      <PerfilSection icon={<FileText size={16} />} title="Registro OAB">
+        <PerfilGrid>
+          <PerfilField label="Número OAB *" field="oab_numero" value={perfil.oab_numero || ''} onChange={set} labelStyle={labelSt} inputStyle={inputSt} placeholder="123456" />
+          <PerfilSelectField label="Estado (Seccional)" field="oab_estado" value={perfil.oab_estado || ''} onChange={set} labelStyle={labelSt} inputStyle={inputSt} options={ESTADOS.map(e => ({ value: e, label: e }))} />
+          <PerfilSelectField
             label="Tipo"
             field="oab_tipo"
+            value={perfil.oab_tipo || ''}
+            onChange={set}
+            labelStyle={labelSt}
+            inputStyle={inputSt}
             options={[
               { value: 'advogado', label: 'Advogado' },
               { value: 'estagiario', label: 'Estagiário' },
               { value: 'sociedade', label: 'Sociedade' },
             ]}
           />
-          <SelectField
+          <PerfilSelectField
             label="Situação"
             field="oab_situacao"
+            value={perfil.oab_situacao || ''}
+            onChange={set}
+            labelStyle={labelSt}
+            inputStyle={inputSt}
             options={[
               { value: 'ativo', label: 'Ativo' },
               { value: 'suspenso', label: 'Suspenso' },
@@ -264,7 +310,7 @@ export default function PerfilPage() {
               { value: 'cancelado', label: 'Cancelado' },
             ]}
           />
-        </Grid>
+        </PerfilGrid>
 
         {(perfil.nome || perfil.oab_numero) && (
           <div style={{ marginTop: '16px', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: '10px', padding: '14px 16px', display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -281,10 +327,9 @@ export default function PerfilPage() {
             </div>
           </div>
         )}
-      </Section>
+      </PerfilSection>
 
-      {/* Escritório */}
-      <Section icon={<Building2 size={16} />} title="Escritório">
+      <PerfilSection icon={<Building2 size={16} />} title="Escritório">
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '20px' }}>
           <div style={{ width: '64px', height: '64px', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: '10px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             {perfil.escritorio_logo_url
@@ -304,24 +349,19 @@ export default function PerfilPage() {
               onChange={e => e.target.files?.[0] && uploadImagem(e.target.files[0], 'logo')} />
           </div>
         </div>
-        <Grid>
-          <Field label="Nome do escritório" field="escritorio_nome" col="1 / -1" placeholder="Advocacia Silva & Associados" />
-          <Field label="CNPJ" field="escritorio_cnpj" placeholder="00.000.000/0001-00" />
-          <Field label="Telefone" field="escritorio_telefone" placeholder="(41) 3333-3333" />
-          <Field label="Email" field="escritorio_email" type="email" placeholder="contato@escritorio.com.br" col="1 / -1" />
-          <Field label="Endereço" field="escritorio_endereco" col="1 / -1" placeholder="Rua das Flores, 123 — Sala 45" />
-          <Field label="Cidade" field="escritorio_cidade" placeholder="Curitiba" />
-          <SelectField
-            label="Estado"
-            field="escritorio_estado"
-            options={ESTADOS.map(e => ({ value: e, label: e }))}
-          />
-          <Field label="CEP" field="escritorio_cep" placeholder="80000-000" />
-        </Grid>
-      </Section>
+        <PerfilGrid>
+          <PerfilField label="Nome do escritório" field="escritorio_nome" value={perfil.escritorio_nome || ''} onChange={set} labelStyle={labelSt} inputStyle={inputSt} col="1 / -1" placeholder="Advocacia Silva & Associados" />
+          <PerfilField label="CNPJ" field="escritorio_cnpj" value={perfil.escritorio_cnpj || ''} onChange={set} labelStyle={labelSt} inputStyle={inputSt} placeholder="00.000.000/0001-00" />
+          <PerfilField label="Telefone" field="escritorio_telefone" value={perfil.escritorio_telefone || ''} onChange={set} labelStyle={labelSt} inputStyle={inputSt} placeholder="(41) 3333-3333" />
+          <PerfilField label="Email" field="escritorio_email" value={perfil.escritorio_email || ''} onChange={set} labelStyle={labelSt} inputStyle={inputSt} type="email" placeholder="contato@escritorio.com.br" col="1 / -1" />
+          <PerfilField label="Endereço" field="escritorio_endereco" value={perfil.escritorio_endereco || ''} onChange={set} labelStyle={labelSt} inputStyle={inputSt} col="1 / -1" placeholder="Rua das Flores, 123 — Sala 45" />
+          <PerfilField label="Cidade" field="escritorio_cidade" value={perfil.escritorio_cidade || ''} onChange={set} labelStyle={labelSt} inputStyle={inputSt} placeholder="Curitiba" />
+          <PerfilSelectField label="Estado" field="escritorio_estado" value={perfil.escritorio_estado || ''} onChange={set} labelStyle={labelSt} inputStyle={inputSt} options={ESTADOS.map(e => ({ value: e, label: e }))} />
+          <PerfilField label="CEP" field="escritorio_cep" value={perfil.escritorio_cep || ''} onChange={set} labelStyle={labelSt} inputStyle={inputSt} placeholder="80000-000" />
+        </PerfilGrid>
+      </PerfilSection>
 
-      {/* Assinatura */}
-      <Section icon={<FileText size={16} />} title="Assinatura em Documentos">
+      <PerfilSection icon={<FileText size={16} />} title="Assinatura em Documentos">
         <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '16px', marginTop: 0, fontFamily: 'DM Sans, sans-serif' }}>
           Texto usado no rodapé de petições, procurações e documentos gerados pela IA.
         </p>
@@ -362,9 +402,8 @@ export default function PerfilPage() {
             )}
           </div>
         )}
-      </Section>
+      </PerfilSection>
 
-      {/* Salvar bottom */}
       <div style={{ display: 'flex', justifyContent: 'flex-end', paddingBottom: '48px' }}>
         <button onClick={salvar} disabled={salvando} style={{ ...saveBtnStyle, padding: '11px 24px', fontSize: '14px' }}>
           <Save size={15} /> {salvando ? 'Salvando...' : 'Salvar perfil'}
