@@ -137,3 +137,13 @@ export async function GET(
 **Causa:** A página de leads buscava apenas campos visuais do board e omitia o identificador usado pela conversa
 **Correção:** Incluir `telefone` no `select` da página de leads e normalizar o número para casar com `conversas.telefone`
 **Regra prática:** Sempre que um card abrir ações de comunicação, carregar no dataset ao menos `id`, `nome` e `telefone`
+
+### 22. Security Advisor do Supabase: zerar ERRORs primeiro, interpretar WARNINGs no contexto do produto
+**Cenário:** O relatório do Security Advisor apontou erros críticos em `prevlegal-alexandrini` e `prevlegal-central`
+**Correções aplicadas:** RLS ativado nas tabelas expostas, views trocadas para `security_invoker`, convites protegidos, tabela de teste removida e funções corrigidas com `search_path`
+**Resultado:** Todos os `ERRORs` foram eliminados; restaram apenas `WARNINGs`
+**Leitura correta dos WARNINGs atuais:**
+- `rls_policy_always_true` é aceitável no modelo `single-tenant` atual, porque todos os usuários autenticados pertencem ao mesmo tenant operacional
+- `pg_trgm` no schema `public` é um aviso técnico de baixo risco no contexto atual
+- `Leaked password protection disabled` deve ser ativado no Dashboard do Supabase em `Authentication -> Password Settings`
+**Regra prática:** Em auditoria de segurança, diferenciar achado crítico de aviso contextual. Quando o produto migrar para multi-tenant real, revisar todas as policies `USING (true)` para filtrar por `tenant_id`

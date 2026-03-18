@@ -94,6 +94,11 @@
   - cookie httpOnly
   - token secreto validado no servidor com expiração
 - Após configurar env vars no Vercel, foi necessário forçar redeploy para garantir leitura no ambiente de produção
+- O hardening do Supabase zerou todos os `ERRORs` do Security Advisor em `prevlegal-alexandrini` e `prevlegal-central`
+- Os `WARNINGs` remanescentes foram classificados:
+  - `rls_policy_always_true` aceito no modelo `single-tenant` atual
+  - `pg_trgm` em `public` sem impacto prático relevante
+  - `Leaked password protection disabled` pendente de ativação no painel do Supabase
 
 ### Marketing site / LP
 - A LP foi reescrita com foco em operações de captação previdenciária
