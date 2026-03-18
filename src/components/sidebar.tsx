@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
@@ -26,6 +27,18 @@ export default function Sidebar() {
     const pathname = usePathname()
     const router = useRouter()
     const supabase = createClient()
+    const [pendencias, setPendencias] = useState({ total: 0, agendamentos: 0 })
+
+    useEffect(() => {
+        async function fetchPendencias() {
+            const res = await fetch('/api/pendencias')
+            if (res.ok) setPendencias(await res.json())
+        }
+
+        fetchPendencias()
+        const iv = setInterval(fetchPendencias, 20000)
+        return () => clearInterval(iv)
+    }, [])
 
     async function handleLogout() {
         await supabase.auth.signOut()
@@ -93,6 +106,36 @@ export default function Sidebar() {
                         >
                             <Icon size={16} strokeWidth={1.8} />
                             {label}
+                            {pendencias.total > 0 && label === 'Caixa de Entrada' && (
+                                <span style={{
+                                    marginLeft: 'auto',
+                                    background: '#ef4444',
+                                    color: '#fff',
+                                    borderRadius: '100px',
+                                    padding: '1px 6px',
+                                    fontSize: '10px',
+                                    fontWeight: '700',
+                                    minWidth: '18px',
+                                    textAlign: 'center',
+                                }}>
+                                    {pendencias.total > 99 ? '99+' : pendencias.total}
+                                </span>
+                            )}
+                            {pendencias.agendamentos > 0 && label === 'Agendamentos' && (
+                                <span style={{
+                                    marginLeft: 'auto',
+                                    background: '#f59e0b',
+                                    color: '#fff',
+                                    borderRadius: '100px',
+                                    padding: '1px 6px',
+                                    fontSize: '10px',
+                                    fontWeight: '700',
+                                    minWidth: '18px',
+                                    textAlign: 'center',
+                                }}>
+                                    {pendencias.agendamentos}
+                                </span>
+                            )}
                         </Link>
                     )
                 })}

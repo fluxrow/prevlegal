@@ -1,5 +1,6 @@
 'use client'
-import { useEffect, useState, useRef } from 'react'
+
+import { useEffect, useRef, useState } from 'react'
 import { MessageSquare, User, Bot, UserCheck, RotateCcw, Send } from 'lucide-react'
 import { useOnboarding } from '@/hooks/useOnboarding'
 import OnboardingTooltip from '@/components/onboarding-tooltip'
@@ -45,9 +46,25 @@ interface Mensagem {
   created_at: string
 }
 
+interface ThreadPortal {
+  lead_id: string
+  lead_nome: string
+  ultima_mensagem: string | null
+  ultima_mensagem_em: string | null
+  nao_lidas: number
+}
+
+interface PortalMensagem {
+  id: string
+  remetente: string
+  mensagem: string
+  lida: boolean
+  created_at: string
+}
+
 const STATUS_CONVERSA = {
-  agente:    { label: 'Agente',    color: '#4f7aff', bg: '#4f7aff20', icon: '🤖' },
-  humano:    { label: 'Humano',    color: '#2dd4a0', bg: '#2dd4a020', icon: '👤' },
+  agente: { label: 'Agente', color: '#4f7aff', bg: '#4f7aff20', icon: '🤖' },
+  humano: { label: 'Humano', color: '#2dd4a0', bg: '#2dd4a020', icon: '👤' },
   encerrado: { label: 'Encerrado', color: '#4a5060', bg: '#4a506020', icon: '✓' },
 }
 
@@ -66,38 +83,60 @@ export default function CaixaDeEntradaPage() {
   const [conversas, setConversas] = useState<Conversa[]>([])
   const [conversaSelecionada, setConversaSelecionada] = useState<Conversa | null>(null)
   const [mensagens, setMensagens] = useState<Mensagem[]>([])
-  const [portalNaoLidas, setPortalNaoLidas] = useState(0)
+  const [abaAtiva, setAbaAtiva] = useState<'todas' | 'agente' | 'humano' | 'portal'>('todas')
+  const [threadsPortal, setThreadsPortal] = useState<ThreadPortal[]>([])
+  const [threadSelecionada, setThreadSelecionada] = useState<ThreadPortal | null>(null)
+  const [msgsPortal, setMsgsPortal] = useState<PortalMensagem[]>([])
+  const [textoPortal, setTextoPortal] = useState('')
+  const [enviandoPortal, setEnviandoPortal] = useState(false)
   const [textoResposta, setTextoResposta] = useState('')
   const [enviando, setEnviando] = useState(false)
   const [loading, setLoading] = useState(true)
-  const [filtro, setFiltro] = useState<'todas' | 'agente' | 'humano'>('todas')
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     fetchConversas()
-    fetchPortalNaoLidas()
+    fetchThreadsPortal()
   }, [])
 
   useEffect(() => {
-    if (conversaSelecionada) fetchMensagens(conversaSelecionada.id)
-  }, [conversaSelecionada])
+    if (conversaSelecionada && abaAtiva !== 'portal') fetchMensagens(conversaSelecionada.id)
+  }, [conversaSelecionada, abaAtiva])
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [mensagens])
+  }, [mensagens, msgsPortal])
 
   useEffect(() => {
     const interval = setInterval(() => {
       fetchConversas()
-      if (conversaSelecionada) fetchMensagens(conversaSelecionada.id)
+      if (conversaSelecionada && abaAtiva !== 'portal') fetchMensagens(conversaSelecionada.id)
     }, 5000)
 
-    const portalInterval = setInterval(fetchPortalNaoLidas, 15000)
+    const portalIv = setInterval(fetchThreadsPortal, 10000)
     return () => {
       clearInterval(interval)
-      clearInterval(portalInterval)
+      clearInterval(portalIv)
     }
-  }, [conversaSelecionada])
+  }, [conversaSelecionada, abaAtiva])
+
+  useEffect(() => {
+    if (!threadSelecionada) return
+
+    const fetchMsgs = () =>
+      fetch(`/api/portal/mensagens/${threadSelecionada.lead_id}`)
+        .then(r => r.json())
+        .then(d => {
+          setMsgsPortal(d.mensagens || [])
+          setThreadsPortal(ts => ts.map(t =>
+            t.lead_id === threadSelecionada.lead_id ? { ...t, nao_lidas: 0 } : t
+          ))
+        })
+
+    fetchMsgs()
+    const iv = setInterval(fetchMsgs, 5000)
+    return () => clearInterval(iv)
+  }, [threadSelecionada])
 
   async function fetchConversas() {
     const res = await fetch('/api/conversas')
@@ -112,11 +151,11 @@ export default function CaixaDeEntradaPage() {
     if (res.ok) setMensagens(await res.json())
   }
 
-  async function fetchPortalNaoLidas() {
-    const res = await fetch('/api/portal/nao-lidas')
+  async function fetchThreadsPortal() {
+    const res = await fetch('/api/portal/threads')
     if (res.ok) {
       const data = await res.json()
-      setPortalNaoLidas(data.total || 0)
+      setThreadsPortal(data.threads || [])
     }
   }
 
@@ -124,7 +163,7 @@ export default function CaixaDeEntradaPage() {
     await fetch(`/api/conversas/${conversaId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: 'humano' })
+      body: JSON.stringify({ status: 'humano' }),
     })
     setConversas(prev => prev.map(c => c.id === conversaId ? { ...c, status: 'humano' } : c))
     setConversaSelecionada(prev => prev?.id === conversaId ? { ...prev, status: 'humano' } : prev)
@@ -134,7 +173,7 @@ export default function CaixaDeEntradaPage() {
     await fetch(`/api/conversas/${conversaId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: 'agente' })
+      body: JSON.stringify({ status: 'agente' }),
     })
     setConversas(prev => prev.map(c => c.id === conversaId ? { ...c, status: 'agente' } : c))
     setConversaSelecionada(prev => prev?.id === conversaId ? { ...prev, status: 'agente' } : prev)
@@ -146,108 +185,260 @@ export default function CaixaDeEntradaPage() {
     await fetch(`/api/conversas/${conversaSelecionada.id}/responder`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ mensagem: textoResposta })
+      body: JSON.stringify({ mensagem: textoResposta }),
     })
     setTextoResposta('')
     await fetchMensagens(conversaSelecionada.id)
     setEnviando(false)
   }
 
+  async function enviarMsgPortal() {
+    if (!textoPortal.trim() || !threadSelecionada) return
+    setEnviandoPortal(true)
+    const res = await fetch('/api/portal/responder', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ lead_id: threadSelecionada.lead_id, mensagem: textoPortal }),
+    })
+    if (res.ok) {
+      const json = await res.json()
+      setMsgsPortal(m => [...m, json.mensagem])
+      setTextoPortal('')
+      setThreadsPortal(ts => ts.map(t =>
+        t.lead_id === threadSelecionada.lead_id ? { ...t, nao_lidas: 0 } : t
+      ))
+    }
+    setEnviandoPortal(false)
+  }
+
   const conversasFiltradas = conversas.filter(c =>
-    filtro === 'todas' ? true : c.status === filtro
+    abaAtiva === 'todas' ? true : abaAtiva === 'portal' ? false : c.status === abaAtiva
   )
 
+  const badgePortal = threadsPortal.reduce((a, t) => a + t.nao_lidas, 0)
+
   const inputStyle: React.CSSProperties = {
-    background: 'var(--bg-surface)', border: '1px solid var(--border)',
-    borderRadius: '8px', padding: '10px 14px', color: 'var(--text-primary)',
-    fontSize: '14px', fontFamily: 'DM Sans, sans-serif'
+    background: 'var(--bg-surface)',
+    border: '1px solid var(--border)',
+    borderRadius: '8px',
+    padding: '10px 14px',
+    color: 'var(--text-primary)',
+    fontSize: '14px',
+    fontFamily: 'DM Sans, sans-serif',
   }
 
   return (
     <div style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
-
-      {/* Sidebar de conversas */}
       <div style={{ width: '340px', flexShrink: 0, borderRight: '1px solid var(--border)', display: 'flex', flexDirection: 'column', background: 'var(--bg-surface)' }}>
-
         <div style={{ padding: '20px 20px 12px', borderBottom: '1px solid var(--border)' }}>
           <h1 style={{ fontFamily: 'Syne, sans-serif', fontSize: '18px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '12px', marginTop: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
             <MessageSquare size={18} color="var(--accent)" /> Caixa de Entrada
-            {portalNaoLidas > 0 && (
-              <span style={{
-                display: 'inline-flex', alignItems: 'center', gap: '5px',
-                background: 'rgba(79,122,255,0.12)', color: 'var(--accent)',
-                border: '1px solid rgba(79,122,255,0.25)',
-                borderRadius: '100px', padding: '3px 10px',
-                fontSize: '12px', fontWeight: '600', marginLeft: '10px',
-              }}>
-                🔗 {portalNaoLidas} no portal
-              </span>
-            )}
           </h1>
-          <div data-tour="inbox-filtros" style={{ display: 'flex', gap: '4px' }}>
-            {(['todas', 'agente', 'humano'] as const).map(f => (
-              <button key={f} onClick={() => setFiltro(f)}
-                style={{ flex: 1, padding: '6px 8px', borderRadius: '6px', border: 'none', cursor: 'pointer', fontSize: '12px', fontWeight: '500', fontFamily: 'DM Sans, sans-serif', background: filtro === f ? 'var(--accent)' : 'var(--bg-hover)', color: filtro === f ? '#fff' : 'var(--text-secondary)' }}>
-                {f === 'todas' ? 'Todas' : f === 'agente' ? '🤖 Agente' : '👤 Humano'}
+          <div data-tour="inbox-filtros" style={{ display: 'flex', borderBottom: '1px solid var(--border)', marginBottom: '12px' }}>
+            {[
+              { id: 'todas', label: 'Todas' },
+              { id: 'agente', label: '🤖 Agente' },
+              { id: 'humano', label: '👤 Humano' },
+              { id: 'portal', label: '🔗 Portal', badge: badgePortal },
+            ].map(aba => (
+              <button
+                key={aba.id}
+                onClick={() => setAbaAtiva(aba.id as 'todas' | 'agente' | 'humano' | 'portal')}
+                style={{
+                  flex: 1,
+                  padding: '9px 4px',
+                  fontSize: '12px',
+                  fontWeight: abaAtiva === aba.id ? '600' : '400',
+                  color: abaAtiva === aba.id ? 'var(--accent)' : 'var(--text-muted)',
+                  background: 'none',
+                  border: 'none',
+                  borderBottom: abaAtiva === aba.id ? '2px solid var(--accent)' : '2px solid transparent',
+                  cursor: 'pointer',
+                  fontFamily: 'DM Sans, sans-serif',
+                  marginBottom: '-1px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '5px',
+                }}
+              >
+                {aba.label}
+                {aba.badge ? (
+                  <span style={{ background: 'var(--accent)', color: '#fff', borderRadius: '100px', padding: '1px 5px', fontSize: '9px', fontWeight: '700' }}>
+                    {aba.badge}
+                  </span>
+                ) : null}
               </button>
             ))}
           </div>
         </div>
 
         <div data-tour="inbox-lista" style={{ flex: 1, overflowY: 'auto' }}>
-          {loading && <p style={{ padding: '20px', color: 'var(--text-muted)', fontSize: '13px', fontFamily: 'DM Sans, sans-serif', textAlign: 'center' }}>Carregando...</p>}
-          {!loading && conversasFiltradas.length === 0 && (
-            <div style={{ padding: '40px 20px', textAlign: 'center' }}>
-              <MessageSquare size={28} color="var(--text-muted)" style={{ marginBottom: '8px' }} />
-              <p style={{ color: 'var(--text-muted)', fontSize: '13px', fontFamily: 'DM Sans, sans-serif' }}>Nenhuma conversa</p>
-            </div>
-          )}
-          {conversasFiltradas.map(conversa => {
-            const st = STATUS_CONVERSA[conversa.status] || STATUS_CONVERSA.agente
-            const selecionada = conversaSelecionada?.id === conversa.id
-            return (
-              <div key={conversa.id} onClick={() => setConversaSelecionada(conversa)}
-                style={{ padding: '14px 16px', borderBottom: '1px solid var(--border)', cursor: 'pointer', background: selecionada ? 'var(--bg-hover)' : 'transparent', borderLeft: selecionada ? '3px solid var(--accent)' : '3px solid transparent', transition: 'all 0.1s' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '4px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <span style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text-primary)', fontFamily: 'DM Sans, sans-serif' }}>
-                      {conversa.leads?.nome || conversa.telefone}
-                    </span>
-                    {conversa.nao_lidas > 0 && (
-                      <span style={{ background: 'var(--accent)', color: '#fff', borderRadius: '10px', padding: '1px 6px', fontSize: '10px', fontWeight: '700' }}>{conversa.nao_lidas}</span>
+          {abaAtiva === 'portal' ? (
+            threadsPortal.length === 0 ? (
+              <div style={{ padding: '40px 20px', textAlign: 'center' }}>
+                <MessageSquare size={28} color="var(--text-muted)" style={{ marginBottom: '8px' }} />
+                <p style={{ color: 'var(--text-muted)', fontSize: '13px', fontFamily: 'DM Sans, sans-serif' }}>Nenhuma mensagem pelo portal ainda</p>
+              </div>
+            ) : (
+              threadsPortal.map(t => (
+                <div
+                  key={t.lead_id}
+                  onClick={() => setThreadSelecionada(t)}
+                  style={{
+                    padding: '14px 16px',
+                    borderBottom: '1px solid var(--border)',
+                    cursor: 'pointer',
+                    background: threadSelecionada?.lead_id === t.lead_id ? 'var(--bg-hover)' : 'transparent',
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                    <span style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text-primary)' }}>{t.lead_nome}</span>
+                    {t.nao_lidas > 0 && (
+                      <span style={{ background: 'var(--accent)', color: '#fff', borderRadius: '100px', padding: '1px 6px', fontSize: '10px', fontWeight: '700' }}>
+                        {t.nao_lidas}
+                      </span>
                     )}
                   </div>
-                  <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'DM Sans, sans-serif' }}>
-                    {conversa.ultima_mensagem_at ? formatTime(conversa.ultima_mensagem_at) : ''}
-                  </span>
+                  {t.ultima_mensagem && (
+                    <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {t.ultima_mensagem}
+                    </p>
+                  )}
+                  {t.ultima_mensagem_em && (
+                    <p style={{ fontSize: '10px', color: 'var(--text-muted)', margin: '3px 0 0' }}>
+                      {new Date(t.ultima_mensagem_em).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                    </p>
+                  )}
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <p style={{ fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'DM Sans, sans-serif', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '190px', margin: 0 }}>
-                    {conversa.ultima_mensagem || '—'}
-                  </p>
-                  <span style={{ fontSize: '10px', padding: '2px 7px', borderRadius: '10px', background: st.bg, color: st.color, fontWeight: '600', whiteSpace: 'nowrap', marginLeft: '6px' }}>
-                    {st.icon} {st.label}
-                  </span>
-                </div>
-                {conversa.leads?.nb && (
-                  <p style={{ fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'DM Sans, sans-serif', marginTop: '2px', marginBottom: 0 }}>NB {conversa.leads.nb}</p>
-                )}
-              </div>
+              ))
             )
-          })}
+          ) : (
+            <>
+              {loading && <p style={{ padding: '20px', color: 'var(--text-muted)', fontSize: '13px', fontFamily: 'DM Sans, sans-serif', textAlign: 'center' }}>Carregando...</p>}
+              {!loading && conversasFiltradas.length === 0 && (
+                <div style={{ padding: '40px 20px', textAlign: 'center' }}>
+                  <MessageSquare size={28} color="var(--text-muted)" style={{ marginBottom: '8px' }} />
+                  <p style={{ color: 'var(--text-muted)', fontSize: '13px', fontFamily: 'DM Sans, sans-serif' }}>Nenhuma conversa</p>
+                </div>
+              )}
+              {conversasFiltradas.map(conversa => {
+                const st = STATUS_CONVERSA[conversa.status] || STATUS_CONVERSA.agente
+                const selecionada = conversaSelecionada?.id === conversa.id
+                return (
+                  <div
+                    key={conversa.id}
+                    onClick={() => setConversaSelecionada(conversa)}
+                    style={{
+                      padding: '14px 16px',
+                      borderBottom: '1px solid var(--border)',
+                      cursor: 'pointer',
+                      background: selecionada ? 'var(--bg-hover)' : 'transparent',
+                      borderLeft: selecionada ? '3px solid var(--accent)' : '3px solid transparent',
+                      transition: 'all 0.1s',
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '4px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text-primary)', fontFamily: 'DM Sans, sans-serif' }}>
+                          {conversa.leads?.nome || conversa.telefone}
+                        </span>
+                        {conversa.nao_lidas > 0 && (
+                          <span style={{ background: 'var(--accent)', color: '#fff', borderRadius: '10px', padding: '1px 6px', fontSize: '10px', fontWeight: '700' }}>
+                            {conversa.nao_lidas}
+                          </span>
+                        )}
+                      </div>
+                      <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'DM Sans, sans-serif' }}>
+                        {conversa.ultima_mensagem_at ? formatTime(conversa.ultima_mensagem_at) : ''}
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <p style={{ fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'DM Sans, sans-serif', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '190px', margin: 0 }}>
+                        {conversa.ultima_mensagem || '—'}
+                      </p>
+                      <span style={{ fontSize: '10px', padding: '2px 7px', borderRadius: '10px', background: st.bg, color: st.color, fontWeight: '600', whiteSpace: 'nowrap', marginLeft: '6px' }}>
+                        {st.icon} {st.label}
+                      </span>
+                    </div>
+                    {conversa.leads?.nb && (
+                      <p style={{ fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'DM Sans, sans-serif', marginTop: '2px', marginBottom: 0 }}>
+                        NB {conversa.leads.nb}
+                      </p>
+                    )}
+                  </div>
+                )
+              })}
+            </>
+          )}
         </div>
       </div>
 
-      {/* Painel da conversa */}
-      {!conversaSelecionada ? (
+      {abaAtiva === 'portal' ? (
+        <div data-tour="inbox-painel" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+          {!threadSelecionada ? (
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', fontSize: '13px' }}>
+              Selecione uma conversa do portal
+            </div>
+          ) : (
+            <>
+              <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div>
+                  <div style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text-primary)' }}>{threadSelecionada.lead_nome}</div>
+                  <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Portal do cliente · link privado</div>
+                </div>
+                <a href={`/leads/${threadSelecionada.lead_id}`} style={{ fontSize: '12px', color: 'var(--accent)', textDecoration: 'none', fontWeight: '500' }}>
+                  Ver lead →
+                </a>
+              </div>
+              <div style={{ flex: 1, overflowY: 'auto', padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {msgsPortal.map(m => (
+                  <div key={m.id} style={{ display: 'flex', justifyContent: m.remetente === 'escritorio' ? 'flex-end' : 'flex-start' }}>
+                    <div style={{
+                      maxWidth: '75%',
+                      padding: '8px 12px',
+                      borderRadius: '10px',
+                      background: m.remetente === 'escritorio' ? 'rgba(79,122,255,0.15)' : 'var(--bg-hover)',
+                      border: '1px solid var(--border)',
+                    }}>
+                      <div style={{ fontSize: '9px', fontWeight: '700', color: m.remetente === 'escritorio' ? 'var(--accent)' : 'var(--green)', marginBottom: '3px', textTransform: 'uppercase' }}>
+                        {m.remetente === 'escritorio' ? 'Você' : 'Cliente'}
+                      </div>
+                      <div style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: '1.5' }}>{m.mensagem}</div>
+                      <div style={{ fontSize: '9px', color: 'var(--text-muted)', marginTop: '3px', textAlign: 'right' }}>
+                        {new Date(m.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                <div ref={messagesEndRef} />
+              </div>
+              <div style={{ padding: '12px 16px', borderTop: '1px solid var(--border)', display: 'flex', gap: '8px' }}>
+                <input
+                  value={textoPortal}
+                  onChange={e => setTextoPortal(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && !e.shiftKey && enviarMsgPortal()}
+                  placeholder="Responder pelo portal..."
+                  style={{ flex: 1, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: '9px', padding: '9px 12px', color: 'var(--text-primary)', fontSize: '13px', outline: 'none', fontFamily: 'DM Sans, sans-serif' }}
+                />
+                <button
+                  onClick={enviarMsgPortal}
+                  disabled={enviandoPortal || !textoPortal.trim()}
+                  style={{ display: 'flex', alignItems: 'center', gap: '5px', background: textoPortal.trim() ? 'var(--accent)' : 'var(--bg-hover)', border: 'none', borderRadius: '9px', padding: '9px 14px', color: textoPortal.trim() ? '#fff' : 'var(--text-muted)', fontSize: '12px', cursor: 'pointer', fontFamily: 'DM Sans, sans-serif', flexShrink: 0 }}
+                >
+                  {enviandoPortal ? '...' : 'Enviar'}
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      ) : !conversaSelecionada ? (
         <div data-tour="inbox-painel" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '12px' }}>
           <MessageSquare size={40} color="var(--text-muted)" />
           <p style={{ color: 'var(--text-muted)', fontSize: '14px', fontFamily: 'DM Sans, sans-serif' }}>Selecione uma conversa</p>
         </div>
       ) : (
         <div data-tour="inbox-painel" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-
-          {/* Header */}
           <div style={{ padding: '16px 24px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-surface)' }}>
             <div>
               <p style={{ fontSize: '15px', fontWeight: '600', color: 'var(--text-primary)', fontFamily: 'DM Sans, sans-serif', margin: '0 0 2px' }}>
@@ -277,11 +468,9 @@ export default function CaixaDeEntradaPage() {
             </div>
           </div>
 
-          {/* Mensagens */}
           <div style={{ flex: 1, overflowY: 'auto', padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {mensagens.map(msg => (
               <div key={msg.id}>
-                {/* Mensagem do lead */}
                 <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: msg.resposta_agente ? '6px' : '0' }}>
                   <div style={{ maxWidth: '70%' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
@@ -296,7 +485,6 @@ export default function CaixaDeEntradaPage() {
                   </div>
                 </div>
 
-                {/* Resposta do agente/humano */}
                 {msg.resposta_agente && (
                   <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
                     <div style={{ maxWidth: '70%' }}>
@@ -319,7 +507,6 @@ export default function CaixaDeEntradaPage() {
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Campo de resposta — humano */}
           {conversaSelecionada.status === 'humano' && (
             <div style={{ padding: '16px 24px', borderTop: '1px solid var(--border)', background: 'var(--bg-surface)', display: 'flex', gap: '10px', alignItems: 'flex-end' }}>
               <textarea
@@ -330,8 +517,11 @@ export default function CaixaDeEntradaPage() {
                 rows={1}
                 style={{ ...inputStyle, flex: 1, resize: 'none', minHeight: '44px', maxHeight: '120px', lineHeight: '1.5' }}
               />
-              <button onClick={enviarResposta} disabled={enviando || !textoResposta.trim()}
-                style={{ padding: '10px 16px', background: textoResposta.trim() ? 'var(--accent)' : 'var(--bg-hover)', color: textoResposta.trim() ? '#fff' : 'var(--text-muted)', border: 'none', borderRadius: '8px', cursor: textoResposta.trim() ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: '600', fontFamily: 'DM Sans, sans-serif', transition: 'all 0.15s' }}>
+              <button
+                onClick={enviarResposta}
+                disabled={enviando || !textoResposta.trim()}
+                style={{ padding: '10px 16px', background: textoResposta.trim() ? 'var(--accent)' : 'var(--bg-hover)', color: textoResposta.trim() ? '#fff' : 'var(--text-muted)', border: 'none', borderRadius: '8px', cursor: textoResposta.trim() ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: '600', fontFamily: 'DM Sans, sans-serif', transition: 'all 0.15s' }}
+              >
                 <Send size={14} /> {enviando ? '...' : 'Enviar'}
               </button>
             </div>

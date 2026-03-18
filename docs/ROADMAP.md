@@ -21,6 +21,7 @@
 | 21 | Gestão financeira (contratos, parcelas, dashboard) | cf99ff5 |
 | 22 | Onboarding tooltips — 6 páginas | 18a859b |
 | 23 | ROI por campanha (contratual + sucumbência separados) | b60be88 |
+| 24 | Inbox Operacional Unificada (Portal na Caixa de Entrada + badges de pendências) | pending |
 
 ## Commits das sessões 17-18/03/2026
 
@@ -100,10 +101,22 @@
   - `pg_trgm` em `public` sem impacto prático relevante
   - `Leaked password protection disabled` pendente de ativação no painel do Supabase
 
+### Operação e atendimento
+- A `Caixa de Entrada` evoluiu de lista WhatsApp para inbox operacional multicanal, com aba dedicada para `Portal`
+- O canal `Portal` agora tem fila própria por lead, painel de resposta e leitura baseada em mensagens reais do cliente
+- A sidebar passou a exibir badges por pendência operacional:
+  - `Caixa de Entrada` soma portal + conversas humanas pendentes + agendamentos novos do agente
+  - `Agendamentos` destaca reuniões criadas pelo agente ainda não visualizadas
+
 ### Marketing site / LP
 - A LP foi reescrita com foco em operações de captação previdenciária
 - Tipografia de títulos migrada para Cabinet Grotesk
 - Mockups e copy do agente foram limpos de NB e de qualquer vínculo explícito com escritório parceiro
+- O demo animado foi embedado na LP e reforçado para funcionar sem dependências externas críticas
+
+### Integrações e mensageria
+- O envio WhatsApp agora usa helper centralizado com fallback global e suporte a credenciais Twilio por tenant
+- O portal do cliente passou a alimentar notificações globais e badges operacionais fora do detalhe do lead
 
 ### Documentação viva e rotina de sessão
 - `MASTER.md`, `ROADMAP.md` e `LEARNINGS.md` passaram a funcionar como memória viva do projeto
@@ -113,11 +126,10 @@
 ## Backlog
 
 ### Alta prioridade
-- [ ] Vídeo animado de demo para a LP (HTML/CSS/JS)
-- [ ] Twilio multi-tenant — subcontas por tenant, credenciais no admin
+- [ ] Página de detalhe do tenant no admin (métricas de uso por cliente)
 
 ### Média prioridade
-- [ ] Página de detalhe do tenant no admin (métricas de uso por cliente)
+- [ ] Marcação explícita de "assumido por humano" nas conversas para separar fila de atendimento de conversas apenas abertas
 
 ### Baixa prioridade
 - [ ] Repo GitHub privado
