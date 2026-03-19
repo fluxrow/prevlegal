@@ -269,6 +269,23 @@ Checklist:
 Saída esperada:
 - memória do projeto atualizada com o novo domínio oficial
 
+## Branding dos emails de Auth
+
+Objetivo:
+- evitar emails genéricos de `Supabase Auth`
+- aumentar confiança do usuário ao redefinir senha ou ativar conta
+
+Recomendação:
+- configurar SMTP próprio no Supabase Auth
+- usar remetente como `no-reply@auth.prevlegal.com.br`
+- usar nome do remetente como `PrevLegal`
+- personalizar os templates de `Reset password`, `Invite user` e `Magic link`
+- avaliar custom domain do Supabase Auth (`auth.prevlegal.com.br`) para branding completo do host dos links
+
+Observação prática:
+- personalizar remetente e conteúdo é simples via Supabase Dashboard/Management API
+- personalizar também o host visível do link depende de custom SMTP + template e, para experiência completa, de custom domain no Supabase Auth
+
 ## Execução rápida
 
 Se quiser executar com menor risco, a ordem prática é:
