@@ -554,7 +554,7 @@ export default function AdminPage() {
                           Acesso do responsavel
                         </p>
                         <p style={{ fontSize: '12px', color: '#6b7280', margin: 0 }}>
-                          Recria o acesso e gera um novo link para o responsavel definir a senha
+                          Provisiona a conta do responsavel e envia email para definir a senha
                         </p>
                       </div>
                       <button

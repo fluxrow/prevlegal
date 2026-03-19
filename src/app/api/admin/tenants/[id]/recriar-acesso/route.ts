@@ -9,6 +9,10 @@ function createAdminSupabase() {
   )
 }
 
+function gerarSenhaTemporaria() {
+  return `Tmp#${crypto.randomUUID()}Aa1`
+}
+
 export async function POST(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -42,16 +46,29 @@ export async function POST(
 
   const { data: usuariosExistentes, error: usuariosError } = await adminSupabase
     .from('usuarios')
-    .select('id, auth_id, email')
+    .select('id, auth_id, email, nome, role, ativo, tenant_id, convidado_por')
     .eq('email', email)
 
   if (usuariosError) {
     return NextResponse.json({ error: usuariosError.message }, { status: 500 })
   }
 
+  const { data: adminsExistentes, error: adminsError } = await adminSupabase
+    .from('usuarios')
+    .select('id, auth_id, email, nome, role, ativo, tenant_id, convidado_por')
+    .eq('role', 'admin')
+    .order('convidado_em', { ascending: true })
+
+  if (adminsError) {
+    return NextResponse.json({ error: adminsError.message }, { status: 500 })
+  }
+
+  const usuarioResponsavel =
+    usuariosExistentes?.[0] ||
+    ((adminsExistentes || []).length === 1 ? adminsExistentes?.[0] : null)
+
   const authIds = new Set(
-    (usuariosExistentes || [])
-      .map((usuario) => usuario.auth_id)
+    [usuarioResponsavel?.auth_id, ...(usuariosExistentes || []).map((usuario) => usuario.auth_id)]
       .filter(Boolean)
   )
 
@@ -86,28 +103,53 @@ export async function POST(
     return NextResponse.json({ error: convitesDeleteError.message }, { status: 500 })
   }
 
-  const { data: convite, error: conviteError } = await adminSupabase
-    .from('convites')
-    .insert({
-      email,
-      role: 'admin',
-      convidado_por: usuariosExistentes?.[0]?.id || null,
-    })
-    .select('id, token, email, expires_at')
-    .single()
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://prevlegal.vercel.app'
+  const senhaTemporaria = gerarSenhaTemporaria()
 
-  if (conviteError) {
-    return NextResponse.json({ error: conviteError.message }, { status: 500 })
+  const { data: authUser, error: createAuthError } = await adminSupabase.auth.admin.createUser({
+    email,
+    password: senhaTemporaria,
+    email_confirm: true,
+    user_metadata: {
+      full_name: tenant?.responsavel_nome || tenant?.nome || email,
+    },
+  })
+
+  if (createAuthError || !authUser.user) {
+    return NextResponse.json({ error: createAuthError?.message || 'Nao foi possivel provisionar o usuario auth' }, { status: 500 })
   }
 
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://prevlegal.vercel.app'
-  const url = `${baseUrl}/auth/aceitar-convite?token=${convite.token}`
+  const payload = {
+    auth_id: authUser.user.id,
+    email,
+    nome: tenant?.responsavel_nome || usuarioResponsavel?.nome || tenant?.nome || email,
+    role: 'admin',
+    ativo: true,
+    tenant_id: usuarioResponsavel?.tenant_id || null,
+    convidado_por: usuarioResponsavel?.convidado_por || null,
+    convidado_em: new Date().toISOString(),
+  }
+
+  const { error: usuarioSyncError } = usuarioResponsavel
+    ? await adminSupabase.from('usuarios').update(payload).eq('id', usuarioResponsavel.id)
+    : await adminSupabase.from('usuarios').insert(payload)
+
+  if (usuarioSyncError) {
+    await adminSupabase.auth.admin.deleteUser(authUser.user.id)
+    return NextResponse.json({ error: usuarioSyncError.message }, { status: 500 })
+  }
+
+  const { error: resetError } = await adminSupabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${baseUrl}/auth/redefinir-senha`,
+  })
+
+  if (resetError) {
+    return NextResponse.json({ error: resetError.message }, { status: 500 })
+  }
 
   return NextResponse.json({
     ok: true,
     email,
-    url,
-    convite,
-    mensagem: `Novo acesso gerado para ${email}`,
+    mensagem: `Conta provisionada e email de definicao de senha enviado para ${email}`,
   })
 }

@@ -252,6 +252,12 @@ Pontos que precisam ser preservados durante a implementacao:
   - URL emitida: `https://prevlegal.vercel.app/auth/aceitar-convite?token=d87e828911ca82a53551aedfdb173bd82b3bbcb8395d2f02cbcecec5cc7539a5`
   - expiracao do convite: `2026-03-26T11:43:12.919293+00:00`
 
+2026-03-19 - Fluxo final de senha do responsavel
+- `src/app/api/admin/tenants/[id]/recriar-acesso/route.ts` agora provisiona a conta do responsavel em `auth.users`, sincroniza `public.usuarios` e dispara email real de definicao de senha
+- `src/app/api/admin/tenants/[id]/reset-senha/route.ts` passou a usar `resetPasswordForEmail` em vez de `generateLink`
+- Criada a tela `src/app/auth/redefinir-senha/page.tsx` para concluir a troca de senha dentro do produto
+- Objetivo: permitir primeiro acesso e redefinicao sem depender do convite customizado para o responsavel principal
+
 ## Arquivos Alterados Nesta Sessao
 
 - `supabase/migrations/029_financeiro.sql`

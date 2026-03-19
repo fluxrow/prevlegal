@@ -56,9 +56,9 @@ export async function POST(
     }, { status: 409 })
   }
 
-  const { error } = await adminSupabase.auth.admin.generateLink({
-    type: 'recovery',
-    email,
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://prevlegal.vercel.app'
+  const { error } = await adminSupabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${baseUrl}/auth/redefinir-senha`,
   })
 
   if (error) {
