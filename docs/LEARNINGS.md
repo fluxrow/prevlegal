@@ -242,6 +242,16 @@ export async function GET(
 - resetar o operacional
 - bootstrapar o primeiro escritorio real do zero
 **Regra prática:** Em transição de single-tenant piloto para multi-tenant real, só fazer backfill quando o legado for de fato produção que precisa ser preservada
+
+### 37. Reset limpo no banco so resolve metade do problema; o bootstrap precisa nascer tenant-aware
+**Cenário:** Depois da `031` e do reset operacional, o banco ficou limpo, mas as rotas de onboarding e criação ainda poderiam voltar a gravar dados sem `tenant_id`
+**Risco:** Recriar o primeiro escritório real em cima de fluxos antigos recoloca dados “soltos” logo após o reset
+**Correção:** Ajustar imediatamente o bootstrap:
+- responsável do tenant gravando `usuarios.tenant_id`
+- convites internos gravando `convites.tenant_id`
+- aceite de convite gravando `usuarios.tenant_id`
+- importação de listas e criação manual de leads gravando `tenant_id`
+**Regra prática:** Toda vez que houver reset estrutural para bootstrap limpo, revisar antes os fluxos de criação para garantir que o novo dado já nasce no modelo final
 ### 34. Estrutura duplicada na raiz pode fazer a Vercel/Next publicar o app errado
 **Problema:** O deploy público passou a responder só `lp.html` e `404` nas rotas do app, mesmo com aliases corretos na Vercel
 **Causa:** Havia uma árvore `app/` vazia na raiz e um `next.config.js` residual competindo com a aplicação real em `src/app` e com `next.config.ts`
@@ -290,6 +300,16 @@ export async function GET(
 **Evidência:** `supabase/migrations/001_initial_schema.sql` traz explicitamente a regra `cada tenant tem seu proprio banco`
 **Impacto:** tabelas principais e policies antigas não usam `tenant_id`, então qualquer expansão multi-escritório no mesmo banco causa vazamento sistêmico
 **Regra prática:** enquanto não houver tenant isolation real, não tratar o ambiente compartilhado como multi-tenant seguro
+
+### 37. Quando o CLI estiver linkado no projeto errado e o remoto nao tiver historico local confiavel, o caminho seguro e SQL direto no alvo correto
+**Problema:** Em uma etapa critica de isolamento multi-tenant, o Supabase CLI estava apontando para o projeto central e `db push` sugeria um fluxo enganoso para o banco operacional
+**Causa:** O projeto remoto nao estava alinhado a um historico normal de migrations locais, entao confiar em link do CLI + `db push` aumentava o risco de executar no lugar errado
+**Correcao:** Para o reset limpo do operacional, executar diretamente o arquivo `supabase/reset/combined_apply_031_and_reset.sql` no host do projeto correto (`lrqvvxmgimjlghpwavdb`) e validar as contagens finais no mesmo banco
+**Regra pratica:** Em operacoes destrutivas do PrevLegal, sempre travar 3 confirmacoes antes de rodar:
+- `project ref` alvo
+- metodo de execucao real
+- query final de validacao no mesmo banco
+**Regra complementar:** Nunca usar `db push` como atalho quando houver duvida de link do CLI ou quando o remoto nao refletir o historico local de migrations
 
 ### 37. `src/lib/types.ts` já assume `tenant_id`, mas o banco ainda não
 **Problema:** Tipos TypeScript de `Usuario`, `Lead`, `Lista`, `Campanha`, `Agendamento` e outros já carregam `tenant_id`, mas as tabelas equivalentes do banco operacional não

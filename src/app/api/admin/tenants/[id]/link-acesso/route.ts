@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { verificarAdminAuth, verificarAdminReauthRecente } from '@/lib/admin-auth'
-import { isAllowedByTenantContainment } from '@/lib/tenant-containment'
+import { canProvisionOutsideContainment, isAllowedByTenantContainment } from '@/lib/tenant-containment'
 
 function createAdminSupabase() {
   return createClient(
@@ -41,7 +41,9 @@ export async function POST(
     return NextResponse.json({ error: 'Email do responsavel nao encontrado para este tenant' }, { status: 404 })
   }
 
-  if (!isAllowedByTenantContainment(email)) {
+  const canBootstrapPrimeiroTenant = await canProvisionOutsideContainment(adminSupabase)
+
+  if (!isAllowedByTenantContainment(email) && !canBootstrapPrimeiroTenant) {
     return NextResponse.json({
       error: 'Rollout multi-escritorio temporariamente pausado enquanto o isolamento de dados e corrigido.',
     }, { status: 423 })

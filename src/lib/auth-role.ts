@@ -5,6 +5,7 @@ export type Role = 'admin' | 'operador' | 'visualizador'
 export interface UsuarioLogado {
   id: string
   auth_id: string
+  tenant_id: string | null
   nome: string
   email: string
   role: Role
@@ -18,7 +19,7 @@ export async function getUsuarioLogado(): Promise<UsuarioLogado | null> {
 
   const { data } = await supabase
     .from('usuarios')
-    .select('id, auth_id, nome, email, role, ativo')
+    .select('id, auth_id, tenant_id, nome, email, role, ativo')
     .eq('auth_id', user.id)
     .limit(1)
     .single()

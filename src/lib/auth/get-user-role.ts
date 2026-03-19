@@ -17,7 +17,7 @@ export async function getUserWithRole() {
   // Usa service_role para evitar bloqueio de RLS na leitura do próprio perfil
   const { data: usuario, error: dbError } = await adminClient
     .from('usuarios')
-    .select('id, nome, email, role, ativo')
+    .select('id, nome, email, role, ativo, tenant_id')
     .eq('auth_id', user.id)
     .single()
 

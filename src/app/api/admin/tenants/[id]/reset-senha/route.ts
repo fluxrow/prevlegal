@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { verificarAdminAuth, verificarAdminReauthRecente } from '@/lib/admin-auth'
 import { createClient } from '@supabase/supabase-js'
-import { isAllowedByTenantContainment } from '@/lib/tenant-containment'
+import { canProvisionOutsideContainment, isAllowedByTenantContainment } from '@/lib/tenant-containment'
 
 export async function POST(
   _request: Request,
@@ -38,7 +38,9 @@ export async function POST(
 
   const email = tenant.responsavel_email.trim().toLowerCase()
 
-  if (!isAllowedByTenantContainment(email)) {
+  const canBootstrapPrimeiroTenant = await canProvisionOutsideContainment(adminSupabase)
+
+  if (!isAllowedByTenantContainment(email) && !canBootstrapPrimeiroTenant) {
     return NextResponse.json({
       error: 'Rollout multi-escritorio temporariamente pausado enquanto o isolamento de dados e corrigido.',
     }, { status: 423 })

@@ -26,23 +26,30 @@ Ultima atualizacao: 2026-03-19
 
 - Branch principal: `main`
 - Linha atual do produto no Obsidian: Fases 21, 22, 23, 24 e 25 concluidas
-- Fase atual: incidente critico de isolamento de dados entre escritorios + ajuste do Google OAuth
+- Fase atual: bootstrap multi-tenant apos reset limpo do operacional + ajuste pendente do Google OAuth
 - Producao atual: `https://app.prevlegal.com.br`
 - LP canônica: `https://www.prevlegal.com.br`
 - Dominio comprado: `prevlegal.com.br`
+- Estado operacional confirmado:
+  - banco operacional alvo: `lrqvvxmgimjlghpwavdb`
+  - projeto central preservado: `zjelgobexwhhfoisuilm`
+  - `supabase/reset/combined_apply_031_and_reset.sql` executado com sucesso direto no operacional
+  - contagens finais zeradas em `tenants`, `usuarios`, `listas`, `leads`, `conversas`, `mensagens_inbound`, `portal_mensagens`, `configuracoes`, `contratos` e `parcelas`
+  - bootstrap tenant-aware iniciado no codigo para responsavel, convites, importacao e lead manual
 - Contencao atual:
-  - allowlist no app apenas para a Jessica
-  - onboarding de responsavel bloqueado fora da allowlist
-  - endurecimento temporario no app por ownership de usuario em leads e superficies derivadas
+  - allowlist do app continua ativa
+  - onboarding fora do piloto continua bloqueado
+  - endurecimento temporario por ownership de usuario continua no codigo ate o tenant isolation definitivo
 
 ## Proximo Passo Recomendado
 
-Conter e corrigir o risco de multi-tenant:
-- bloquear onboarding multi-escritorio no mesmo banco enquanto nao houver isolamento real
-- aplicar a migration 031 no banco remoto
-- preferir reset operacional limpo ao inves de backfill, ja que o legado piloto pode ser descartado
-- recadastrar o primeiro escritorio real do zero
-- substituir o escopo temporario por usuario por tenant isolation canonico
+Bootstrapar o operacional limpo:
+- recadastrar o primeiro escritorio real do zero no banco operacional
+- provisionar o responsavel real e validar o primeiro acesso no modelo novo
+- manter o legado piloto descartado, sem backfill Alexandrini/Jessica
+- revisar a allowlist do app antes de liberar o primeiro escritorio real para uso operacional
+- depois substituir o escopo temporario por usuario por tenant isolation canonico
+- revisar filtros por `tenant_id`, trechos com `service_role` e RLS
 - em paralelo, corrigir o Google OAuth no Console para `app.prevlegal.com.br`
 
 ## Bloqueios e Cuidados

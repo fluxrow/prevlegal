@@ -21,6 +21,8 @@ Objetivo:
 Data da ultima revisao: 2026-03-19
 
 - Repositorio local em `main`
+- Banco operacional alvo confirmado: `lrqvvxmgimjlghpwavdb`
+- Projeto central preservado: `zjelgobexwhhfoisuilm`
 - Existe um conjunto local de fechamento da migracao de dominio e alinhamento de URLs ainda a ser commitado nesta sessao
 - O projeto esta vinculado a Vercel pelo arquivo `.vercel/project.json`
 - `npm run build` executado com sucesso apos o fechamento da Fase 5 da migracao de dominio
@@ -93,8 +95,58 @@ Proximo passo recomendado:
   - `docs/TENANT_RESET_PLAN.md`
   - `supabase/reset/operational_reset_after_031.sql`
   - `supabase/reset/combined_apply_031_and_reset.sql`
+- execucao confirmada no banco operacional:
+  - `031` aplicada
+  - reset operacional concluido
+  - tabelas centrais de operacao zeradas
+- contagens confirmadas:
+  - `tenants = 0`
+  - `usuarios = 0`
+  - `listas = 0`
+  - `leads = 0`
+  - `conversas = 0`
+  - `mensagens_inbound = 0`
+  - `portal_mensagens = 0`
+  - `configuracoes = 0`
+  - `contratos = 0`
+  - `parcelas = 0`
+- bootstrap tenant-aware iniciado no codigo:
+  - `src/app/api/admin/tenants/[id]/recriar-acesso/route.ts` grava `usuarios.tenant_id`
+  - `src/app/api/usuarios/convidar/route.ts` grava `convites.tenant_id`
+  - `src/app/api/usuarios/aceitar-convite/route.ts` grava `usuarios.tenant_id`
+  - `src/app/api/import/route.ts` grava `listas.tenant_id` e `leads.tenant_id`
+  - `src/app/api/leads/route.ts` grava `tenant_id` e cria lista manual por tenant
+  - contencao agora permite bootstrap do primeiro tenant fora da allowlist apenas enquanto `usuarios = 0`
 - depois substituir o escopo temporario por usuario por `tenant_id` canonico
 - revisar RLS com tenant isolation real
+
+2026-03-19 - Reset limpo executado no banco operacional
+- O caminho correto foi confirmado como SQL direto no operacional `lrqvvxmgimjlghpwavdb`
+- O projeto central `zjelgobexwhhfoisuilm` nao foi tocado
+- Motivo para NAO usar `supabase db push` nesta etapa:
+  - o CLI estava linkado ao projeto central por engano
+  - o banco remoto nao tem historico local de migrations confiavel para esse fluxo
+- Arquivo executado:
+  - `supabase/reset/combined_apply_031_and_reset.sql`
+- O pacote aplicou:
+  - foundation `031_tenant_isolation_foundation`
+  - reset operacional limpo
+- Validacao final confirmada no operacional:
+  - `tenants = 0`
+  - `usuarios = 0`
+  - `listas = 0`
+  - `leads = 0`
+  - `conversas = 0`
+  - `mensagens_inbound = 0`
+  - `portal_mensagens = 0`
+  - `configuracoes = 0`
+  - `contratos = 0`
+  - `parcelas = 0`
+- Observacoes importantes:
+  - legado piloto `Alexandrini/Jessica` foi tratado como descartavel, sem backfill
+  - `auth.users` nao foi limpo nesta etapa
+  - nao houve mudanca de dominio, Vercel ou Google nesta execucao
+  - nenhuma alteracao de codigo de app foi feita nesta etapa; foco total em operacao + documentacao
 
 ## Mapa Atual do Sistema
 
@@ -491,6 +543,11 @@ Pontos que precisam ser preservados durante a implementacao:
 
 ## Arquivos Alterados Nesta Sessao
 
+- `docs/MASTER.md`
+- `docs/ROADMAP.md`
+- `docs/SESSION_BRIEF.md`
+- `docs/CODEX_HANDOFF.md`
+- `docs/LEARNINGS.md`
 - `supabase/migrations/029_financeiro.sql`
 - `src/lib/financeiro.ts`
 - `src/app/api/financeiro/contratos/route.ts`
@@ -537,13 +594,10 @@ Pontos que precisam ser preservados durante a implementacao:
 
 ## Proximos Passos
 
-- validar em runtime os fluxos:
-  - timeout automatico da plataforma
-  - timeout automatico do admin
-  - reautenticacao do financeiro
-  - reautenticacao do admin
-- decidir se a Fase 25 sera commitada e publicada agora
-- continuar acompanhamento do SSL final de `www`, `app` e `admin` na Vercel
+- cadastrar o primeiro escritorio real do zero no operacional limpo
+- provisionar o responsavel real e validar primeiro acesso sem reaproveitar legado piloto
+- manter a contencao ativa ate o tenant isolation definitivo fechar
+- seguir com filtros por `tenant_id`, revisao de `service_role` e RLS por tenant
 - continuar atualizando este arquivo a cada bloco de trabalho concluido
 
 ## Regra Permanente de Continuidade

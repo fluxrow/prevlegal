@@ -4,6 +4,7 @@ import type { Role } from '@/lib/auth-role'
 export interface TenantContext {
   authUserId: string
   usuarioId: string
+  tenantId: string | null
   email: string
   role: Role
   isAdmin: boolean
@@ -17,7 +18,7 @@ export async function getTenantContext(existingSupabase?: Awaited<ReturnType<typ
 
   const { data: usuario, error: usuarioError } = await supabase
     .from('usuarios')
-    .select('id, email, role, ativo')
+    .select('id, tenant_id, email, role, ativo')
     .eq('auth_id', user.id)
     .maybeSingle()
 
@@ -26,6 +27,7 @@ export async function getTenantContext(existingSupabase?: Awaited<ReturnType<typ
   return {
     authUserId: user.id,
     usuarioId: usuario.id,
+    tenantId: usuario.tenant_id || null,
     email: (user.email || usuario.email || '').toLowerCase(),
     role: usuario.role as Role,
     isAdmin: usuario.role === 'admin',

@@ -1,5 +1,5 @@
 # PrevLegal — ROADMAP.md
-> Última atualização: 18/03/2026
+> Última atualização: 19/03/2026
 
 ## Navegação
 
@@ -13,6 +13,27 @@
 
 - [[Sessoes/2026-03-18-prevlegal-admin-roi-obsidian]]
 - [[Sessoes/2026-03-18-fase-24-inbox-operacional-unificada-roadmap-final]]
+
+## Atualização Crítica — 19/03/2026
+
+- O pacote `supabase/reset/combined_apply_031_and_reset.sql` foi executado diretamente no banco operacional `lrqvvxmgimjlghpwavdb`
+- O projeto central `zjelgobexwhhfoisuilm` foi preservado sem execucao destrutiva
+- A etapa aplicou a foundation `031` e o reset operacional limpo no mesmo alvo
+- Validacao final confirmada com `0` registros em:
+  - `tenants`
+  - `usuarios`
+  - `listas`
+  - `leads`
+  - `conversas`
+  - `mensagens_inbound`
+  - `portal_mensagens`
+  - `configuracoes`
+  - `contratos`
+  - `parcelas`
+- Proximo passo de produto/operacao:
+  - cadastrar o primeiro escritorio real do zero
+  - provisionar o responsavel real
+  - continuar o tenant isolation definitivo com `tenant_id`, filtros canonicos e RLS
 
 ## Fases Concluídas
 

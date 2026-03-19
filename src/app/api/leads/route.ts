@@ -30,13 +30,18 @@ export async function POST(request: Request) {
 
   const { data: usuario } = await supabase
     .from('usuarios')
-    .select('id')
+    .select('id, tenant_id')
     .eq('auth_id', user.id)
     .maybeSingle()
+
+  if (!usuario?.tenant_id) {
+    return NextResponse.json({ error: 'Tenant do usuário não configurado' }, { status: 409 })
+  }
 
   let { data: listaManual } = await adminSupabase
     .from('listas')
     .select('id, total_registros, total_ativos, ganho_potencial_total')
+    .eq('tenant_id', usuario.tenant_id)
     .eq('nome', LISTA_MANUAL_NOME)
     .eq('fornecedor', LISTA_MANUAL_FORNECEDOR)
     .limit(1)
@@ -46,6 +51,7 @@ export async function POST(request: Request) {
     const { data: novaLista, error: listaError } = await adminSupabase
       .from('listas')
       .insert({
+        tenant_id: usuario.tenant_id,
         nome: LISTA_MANUAL_NOME,
         fornecedor: LISTA_MANUAL_FORNECEDOR,
         arquivo_original: null,
@@ -74,6 +80,7 @@ export async function POST(request: Request) {
   const { data, error } = await supabase
     .from('leads')
     .insert({
+      tenant_id: usuario.tenant_id,
       lista_id: listaManual.id,
       nome: body.nome,
       cpf: body.cpf || null,
@@ -85,6 +92,7 @@ export async function POST(request: Request) {
       status: body.status || 'new',
       tem_whatsapp: body.tem_whatsapp ?? true,
       origem: 'manual',
+      responsavel_id: usuario.id,
     })
     .select()
     .single()

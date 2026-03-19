@@ -5,6 +5,7 @@ import { getUsuarioLogado, soAdmin } from '@/lib/auth-role'
 export async function POST(request: Request) {
   const usuario = await getUsuarioLogado()
   if (!usuario || !soAdmin(usuario.role)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  if (!usuario.tenant_id) return NextResponse.json({ error: 'Tenant do usuário não configurado' }, { status: 409 })
 
   const supabase = await createClient()
   const { email, role } = await request.json()
@@ -23,7 +24,7 @@ export async function POST(request: Request) {
 
   const { data, error } = await supabase
     .from('convites')
-    .insert({ email, role, convidado_por: usuario.id })
+    .insert({ email, role, convidado_por: usuario.id, tenant_id: usuario.tenant_id })
     .select()
     .single()
 
@@ -38,9 +39,10 @@ export async function POST(request: Request) {
 export async function DELETE(request: Request) {
   const usuario = await getUsuarioLogado()
   if (!usuario || !soAdmin(usuario.role)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  if (!usuario.tenant_id) return NextResponse.json({ error: 'Tenant do usuário não configurado' }, { status: 409 })
 
   const supabase = await createClient()
   const { id } = await request.json()
-  await supabase.from('convites').delete().eq('id', id)
+  await supabase.from('convites').delete().eq('id', id).eq('tenant_id', usuario.tenant_id)
   return NextResponse.json({ ok: true })
 }

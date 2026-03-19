@@ -27,6 +27,7 @@ export async function POST(request: Request) {
     .single()
 
   if (!convite) return NextResponse.json({ error: 'Convite inválido ou expirado' }, { status: 404 })
+  if (!convite.tenant_id) return NextResponse.json({ error: 'Convite sem tenant configurado' }, { status: 409 })
 
   const email = convite.email.toLowerCase()
 
@@ -79,6 +80,7 @@ export async function POST(request: Request) {
 
   // Cria registro em usuarios
   const payload = {
+    tenant_id: convite.tenant_id,
     auth_id: authUser.user.id,
     email,
     nome,

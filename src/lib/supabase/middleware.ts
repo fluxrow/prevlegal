@@ -8,7 +8,7 @@ import {
   getTimestampNow,
   isTimestampExpired,
 } from "@/lib/session-config";
-import { isBlockedByTenantContainment } from "@/lib/tenant-containment";
+import { canBypassContainmentForBootstrap, isBlockedByTenantContainment } from "@/lib/tenant-containment";
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
@@ -103,7 +103,11 @@ export async function updateSession(request: NextRequest) {
   }
 
   if (user && !isPublic) {
-    if (isBlockedByTenantContainment(user.email)) {
+    const bootstrapBypass = isBlockedByTenantContainment(user.email)
+      ? await canBypassContainmentForBootstrap(supabase, user.id)
+      : false
+
+    if (isBlockedByTenantContainment(user.email) && !bootstrapBypass) {
       if (isApiRoute) {
         const canBypass = allowedBlockedApiPrefixes.some((prefix) => pathname.startsWith(prefix))
         if (!canBypass) {

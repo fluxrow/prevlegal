@@ -1,6 +1,6 @@
 # PrevLegal — MASTER.md
 > Documento vivo. Atualizado a cada sessão de desenvolvimento.
-> Última atualização: 18/03/2026
+> Última atualização: 19/03/2026
 
 ---
 
@@ -47,6 +47,9 @@
 - `https://app.prevlegal.com.br` -> plataforma principal
 - `https://admin.prevlegal.com.br` -> admin principal
 - `https://prevlegal.vercel.app` -> host técnico de fallback, não mais canônico
+- banco operacional `lrqvvxmgimjlghpwavdb` resetado com sucesso via SQL direto (`031` + reset limpo)
+- banco central `zjelgobexwhhfoisuilm` preservado sem execução destrutiva
+- legado piloto foi descartado; o próximo passo correto é recadastrar o primeiro escritório real do zero
 
 Checklist detalhado em: [[DOMAIN_MIGRATION]]
 

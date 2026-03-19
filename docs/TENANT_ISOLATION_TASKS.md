@@ -62,6 +62,8 @@ Incidente P0 de isolamento de dados entre escritorios.
 - [x] Limitar leituras por ownership de usuario nas superficies mais sensiveis
 - [x] Preservar admins do tenant piloto com visao total do legado atual
 - [ ] Aplicar a migration `031` no banco remoto
+- [x] Aplicar a migration `031` no banco remoto
+- [x] Executar reset operacional limpo no banco remoto
 - [ ] Fazer backfill de `tenant_id`
 - [ ] Trocar o escopo temporario por tenant isolation real
 
@@ -86,6 +88,23 @@ Incidente P0 de isolamento de dados entre escritorios.
 - observacao critica:
   - esta camada reduz superficie de vazamento dentro do app, mas ainda nao e isolamento real por tenant
   - o fechamento definitivo continua dependendo de `tenant_id` + backfill + filtros canonicos + RLS
+
+### Estado remoto confirmado apos reset
+
+- banco operacional `lrqvvxmgimjlghpwavdb`:
+  - `031` aplicada
+  - reset operacional concluido
+- contagens confirmadas em `2026-03-19`:
+  - `tenants = 0`
+  - `usuarios = 0`
+  - `listas = 0`
+  - `leads = 0`
+  - `conversas = 0`
+  - `mensagens_inbound = 0`
+  - `portal_mensagens = 0`
+  - `configuracoes = 0`
+  - `contratos = 0`
+  - `parcelas = 0`
 
 ## Fase 26B — Auditoria de schema
 
@@ -204,7 +223,7 @@ Referencia detalhada:
   - backfill do legado
   - reset limpo + bootstrap
 - [ ] Backfill dos dados existentes, se o legado for preservado
-- [ ] Reset operacional limpo, se o legado piloto for descartado
+- [x] Reset operacional limpo, se o legado piloto for descartado
 - [ ] Atualizar inserts para gravarem `tenant_id`
 - [ ] Atualizar selects para filtrarem `tenant_id`
 - [ ] Revisar trechos com `service_role`
@@ -235,6 +254,15 @@ Se os dados `Alexandrini/Jessica` forem apenas piloto/contexto e puderem ser des
 Referencias:
 - `docs/TENANT_RESET_PLAN.md`
 - `supabase/reset/operational_reset_after_031.sql`
+
+### Bootstrap tenant-aware iniciado
+
+- `recriar-acesso` agora grava `usuarios.tenant_id`
+- `convites` internos agora gravam `tenant_id`
+- aceite de convite agora exige `convites.tenant_id` e grava `usuarios.tenant_id`
+- importacao de listas agora grava `listas.tenant_id` e `leads.tenant_id`
+- criacao manual de lead agora grava `tenant_id` e cria lista tecnica por tenant
+- bootstrap do primeiro tenant agora pode furar a allowlist de contencao apenas enquanto `usuarios = 0`
 
 ## Frente separada — Google OAuth
 

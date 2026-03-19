@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
     // Fetch internal public.usuarios ID e role
     const { data: usuario, error: usuarioError } = await supabase
         .from('usuarios')
-        .select('id, role')
+        .select('id, role, tenant_id')
         .eq('auth_id', user.id)
         .single()
 
@@ -77,6 +77,10 @@ export async function POST(request: NextRequest) {
 
     if (usuario.role !== 'admin') {
         return NextResponse.json({ error: 'Apenas administradores podem importar listas' }, { status: 403 })
+    }
+
+    if (!usuario.tenant_id) {
+        return NextResponse.json({ error: 'Tenant do usuário não configurado' }, { status: 409 })
     }
 
     const formData = await request.formData()
@@ -96,6 +100,7 @@ export async function POST(request: NextRequest) {
     const { data: lista, error: listaError } = await supabase
         .from('listas')
         .insert({
+            tenant_id: usuario.tenant_id,
             nome: listaNome,
             fornecedor,
             arquivo_original: file.name,
@@ -139,6 +144,7 @@ export async function POST(request: NextRequest) {
         if (ganho) ganhoTotal += ganho
 
         leads.push({
+            tenant_id: usuario.tenant_id,
             lista_id: lista.id,
             nb,
             nome,
