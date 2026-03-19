@@ -44,6 +44,11 @@ Ultima atualizacao: 2026-03-19
 - `Enviar acesso do responsavel` agora ja devolve o link manual de contingencia no mesmo passo
 - `Enviar reset de senha` agora tambem devolve o link manual de contingencia no mesmo passo
 - reset manual agora usa token proprio no backend e nao depende mais da sessao recovery do Supabase
+- importacao de listas foi endurecida:
+  - bloqueio de duplicidade por nome/arquivo no mesmo tenant
+  - erro real de insert nao e mais engolido
+  - `/api/listas` agora mapeia os totais corretamente para a UI
+  - `/api/whatsapp/verificar` agora usa `leads.lista_id` e nao mais a tabela legado `lista_leads`
 - Contencao atual:
   - allowlist do app continua ativa
   - onboarding fora do piloto continua bloqueado
@@ -51,14 +56,11 @@ Ultima atualizacao: 2026-03-19
 
 ## Proximo Passo Recomendado
 
-Bootstrapar o operacional limpo:
-- recadastrar o primeiro escritorio real do zero no banco operacional
-- provisionar o responsavel do escritorio de teste/real e validar o primeiro acesso no modelo novo
-- manter o legado piloto descartado, sem backfill Alexandrini/Jessica
-- revisar a allowlist do app antes de liberar o primeiro escritorio real para uso operacional
-- depois substituir o escopo temporario por usuario por tenant isolation canonico
-- revisar filtros por `tenant_id`, trechos com `service_role` e RLS
-- em paralelo, corrigir o Google OAuth no Console para `app.prevlegal.com.br`
+Validar o primeiro tenant real/limpo:
+- reimportar a lista no tenant `Fluxrow` e confirmar que os leads entram
+- confirmar que a segunda importacao da mesma lista e bloqueada
+- validar a pagina `/listas` com os totais corretos
+- depois seguir para tenant isolation canonico por `tenant_id`
 
 ## Bloqueios e Cuidados
 

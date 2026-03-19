@@ -2,6 +2,7 @@ export const runtime = 'nodejs'
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createClient as createAdminClient } from '@supabase/supabase-js'
 import * as XLSX from 'xlsx'
 
 // Mapeamento das colunas da planilha NOMES_RJ_BNG.xlsx
@@ -46,6 +47,12 @@ function parseDate(val: unknown): string | null {
     return null
 }
 
+function truncate(value: string | null | undefined, max: number) {
+    if (!value) return null
+    const normalized = value.trim()
+    return normalized ? normalized.slice(0, max) : null
+}
+
 function calcScore(ganho: number | null, tipo: string): number {
     let score = 50
     if (ganho) {
@@ -61,6 +68,10 @@ function calcScore(ganho: number | null, tipo: string): number {
 
 export async function POST(request: NextRequest) {
     const supabase = await createClient()
+    const adminSupabase = createAdminClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!
+    )
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
@@ -85,10 +96,53 @@ export async function POST(request: NextRequest) {
 
     const formData = await request.formData()
     const file = formData.get('file') as File
-    const listaNome = formData.get('nome') as string || file.name
+    const listaNome = (formData.get('nome') as string || file.name).trim()
     const fornecedor = formData.get('fornecedor') as string || ''
 
     if (!file) return NextResponse.json({ error: 'Arquivo não enviado' }, { status: 400 })
+
+    const [
+        { data: listasMesmoNome, error: listaMesmoNomeError },
+        { data: listasMesmoArquivo, error: listaMesmoArquivoError },
+    ] = await Promise.all([
+        adminSupabase
+            .from('listas')
+            .select('id, total_leads')
+            .eq('tenant_id', usuario.tenant_id)
+            .eq('nome', listaNome)
+            .limit(10),
+        adminSupabase
+            .from('listas')
+            .select('id, total_leads')
+            .eq('tenant_id', usuario.tenant_id)
+            .eq('arquivo_original', file.name)
+            .limit(10),
+    ])
+
+    if (listaMesmoNomeError || listaMesmoArquivoError) {
+        return NextResponse.json({ error: 'Erro ao verificar duplicidade da lista' }, { status: 500 })
+    }
+
+    const listasDuplicadas = [...(listasMesmoNome || []), ...(listasMesmoArquivo || [])]
+    const listasOrfas = Array.from(
+        new Map(
+            listasDuplicadas
+                .filter((lista) => !lista.total_leads || lista.total_leads === 0)
+                .map((lista) => [lista.id, lista])
+        ).values()
+    )
+
+    if (listasOrfas.length > 0) {
+        await adminSupabase.from('listas').delete().in('id', listasOrfas.map((lista) => lista.id))
+    }
+
+    const listasAtivas = listasDuplicadas.filter((lista) => (lista.total_leads || 0) > 0)
+
+    if (listasAtivas.length > 0) {
+        return NextResponse.json({
+            error: 'Ja existe uma lista com esse nome ou com esse mesmo arquivo neste escritorio. Use uma nova lista ou remova a importacao anterior antes de subir novamente.',
+        }, { status: 409 })
+    }
 
     // Ler o arquivo XLSX
     const buffer = await file.arrayBuffer()
@@ -97,7 +151,7 @@ export async function POST(request: NextRequest) {
     const rows: unknown[][] = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: null })
 
     // Criar lista no banco
-    const { data: lista, error: listaError } = await supabase
+    const { data: lista, error: listaError } = await adminSupabase
         .from('listas')
         .insert({
             tenant_id: usuario.tenant_id,
@@ -146,13 +200,14 @@ export async function POST(request: NextRequest) {
         leads.push({
             tenant_id: usuario.tenant_id,
             lista_id: lista.id,
-            nb,
-            nome,
-            cpf,
-            aps: row[COL.APS] ? String(row[COL.APS]).trim() : null,
-            banco: row[COL.BANCO] ? String(row[COL.BANCO]).trim() : null,
+            responsavel_id: usuario.id,
+            nb: truncate(nb, 20),
+            nome: truncate(nome, 255),
+            cpf: cpf.slice(0, 14),
+            aps: truncate(row[COL.APS] ? String(row[COL.APS]) : null, 255),
+            banco: truncate(row[COL.BANCO] ? String(row[COL.BANCO]) : null, 100),
             dib: parseDate(row[COL.DIB]),
-            tipo_beneficio: tipo || null,
+            tipo_beneficio: truncate(tipo, 255),
             valor_rma: parseGanho(row[COL.VALOR_RMA]),
             ganho_potencial: ganho,
             score: calcScore(ganho, tipo),
@@ -163,12 +218,16 @@ export async function POST(request: NextRequest) {
     }
 
     // Atualizar stats da lista
-    await supabase
+    await adminSupabase
         .from('listas')
         .update({
             total_ativos: totalAtivos,
             total_cessados: totalCessados,
             total_duplicados: totalDuplicados,
+            total_leads: 0,
+            total_com_whatsapp: 0,
+            total_sem_whatsapp: 0,
+            total_nao_verificado: 0,
             ganho_potencial_total: ganhoTotal,
             ganho_potencial_medio: totalAtivos > 0 ? ganhoTotal / totalAtivos : 0
         })
@@ -177,11 +236,12 @@ export async function POST(request: NextRequest) {
     // Inserir leads em batches de 50 (ignorar duplicatas por NB)
     let inseridos = 0
     let duplicatasNoBanco = 0
+    const errosInsercao: string[] = []
     const batchSize = 50
 
     for (let i = 0; i < leads.length; i += batchSize) {
         const batch = leads.slice(i, i + batchSize)
-        const { data, error } = await supabase
+        const { data, error } = await adminSupabase
             .from('leads')
             .upsert(batch, { onConflict: 'nb', ignoreDuplicates: true })
             .select('id')
@@ -189,8 +249,46 @@ export async function POST(request: NextRequest) {
         if (!error && data) {
             inseridos += data.length
             duplicatasNoBanco += batch.length - data.length
+            continue
+        }
+
+        for (const lead of batch) {
+            const { data: itemData, error: itemError } = await adminSupabase
+                .from('leads')
+                .upsert([lead], { onConflict: 'nb', ignoreDuplicates: true })
+                .select('id')
+
+            if (itemError) {
+                if (errosInsercao.length < 5) {
+                    errosInsercao.push(`${lead.nb}: ${itemError.message}`)
+                }
+                continue
+            }
+
+            const insertedCount = itemData?.length || 0
+            inseridos += insertedCount
+            duplicatasNoBanco += 1 - insertedCount
         }
     }
+
+    if (inseridos === 0) {
+        await adminSupabase.from('listas').delete().eq('id', lista.id)
+        return NextResponse.json({
+            error: errosInsercao[0] || 'Nenhum lead valido foi inserido. Verifique a planilha e tente novamente.',
+            details: errosInsercao,
+        }, { status: 422 })
+    }
+
+    await adminSupabase
+        .from('listas')
+        .update({
+            total_leads: inseridos,
+            total_duplicados: totalDuplicados + duplicatasNoBanco,
+            total_com_whatsapp: 0,
+            total_sem_whatsapp: 0,
+            total_nao_verificado: inseridos,
+        })
+        .eq('id', lista.id)
 
     return NextResponse.json({
         success: true,
@@ -203,6 +301,7 @@ export async function POST(request: NextRequest) {
             duplicatas_banco: duplicatasNoBanco,
             inseridos,
             ganho_potencial_total: ganhoTotal
-        }
+        },
+        warnings: errosInsercao
     })
 }

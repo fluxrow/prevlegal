@@ -509,3 +509,21 @@ export async function GET(
 **Causa:** O app ainda opera como single-tenant em partes relevantes; esperar a modelagem completa sem contencao deixaria o vazamento ativo
 **Correcao aplicada:** Adotar contencao temporaria no middleware, permitindo acesso apenas a uma allowlist minima de emails enquanto a Fase 26 nao termina
 **Regra pratica:** Quando houver risco LGPD imediato, primeiro conter o acesso, depois modelar a arquitetura definitiva
+
+### 55. Importacao de lista nao pode “parecer sucesso” quando o batch de leads falha
+**Problema:** A lista era criada e aparecia na UI, mas os leads nao entravam no banco; ainda assim o fluxo terminava sem erro util
+**Causa:** A rota `/api/import` criava a lista primeiro e depois engolia o erro do `upsert` em batch, apenas deixando `inseridos = 0`
+**Correcao aplicada:** Fazer fallback row-by-row quando um batch falha, expor o primeiro erro real ao usuario e remover a lista criada se nenhum lead for inserido
+**Regra pratica:** Em importacao em lote, nunca concluir o fluxo como sucesso se a entidade-pai foi criada mas os registros-filho falharam silenciosamente
+
+### 56. UI e API precisam falar os mesmos nomes de campo para os totais da lista
+**Problema:** A pagina `/listas` mostrava contadores zerados ou vazios mesmo quando a lista possuia dados agregados
+**Causa:** O banco grava `total_com_whatsapp`, `total_sem_whatsapp` e `total_nao_verificado`, mas a UI esperava `com_whatsapp`, `sem_whatsapp` e `nao_verificado`
+**Correcao aplicada:** Mapear os nomes reais na API `/api/listas` antes de responder para a UI
+**Regra pratica:** Quando a interface usar nomes derivados mais amigaveis do que o schema, a adaptacao deve acontecer na API e nao ficar implícita
+
+### 57. Duplicidade de lista precisa ser bloqueada no tenant antes de persistir a importacao
+**Problema:** A mesma planilha foi importada duas vezes no mesmo escritorio, criando conflito operacional e duplicidade de base
+**Causa:** Nao havia validacao previa por `tenant_id` + `nome`/`arquivo_original`
+**Correcao aplicada:** Bloquear a importacao se ja existir lista com o mesmo nome ou arquivo original no mesmo tenant
+**Regra pratica:** Em fluxos de importacao manual, sempre validar duplicidade de lote antes de criar a lista/pai

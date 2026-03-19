@@ -1,6 +1,8 @@
 export const runtime = 'nodejs'
 import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdmin } from '@supabase/supabase-js'
+import { getTenantContext } from '@/lib/tenant-context'
 
 function createAdminClient() {
   return createAdmin(
@@ -32,16 +34,49 @@ async function checkWhatsApp(phone: string): Promise<boolean> {
 
 export async function POST(request: NextRequest) {
   try {
+    const supabase = await createClient()
+    const context = await getTenantContext(supabase)
+    if (!context) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const adminClient = createAdminClient()
     const { lista_id } = await request.json()
     if (!lista_id) return NextResponse.json({ error: 'lista_id obrigatorio' }, { status: 400 })
     if (!process.env.TWILIO_ACCOUNT_SID || !process.env.TWILIO_AUTH_TOKEN) {
       return NextResponse.json({ error: 'Credenciais Twilio nao configuradas' }, { status: 500 })
     }
-    const { data: listaLeads, error: leadsError } = await adminClient
-      .from('lista_leads').select('lead_id').eq('lista_id', lista_id).limit(500)
-    if (leadsError || !listaLeads) return NextResponse.json({ error: 'Lista nao encontrada' }, { status: 404 })
-    const leadIds = listaLeads.map((ll: any) => ll.lead_id)
+    let listaQuery = adminClient
+      .from('listas')
+      .select('id, tenant_id')
+      .eq('id', lista_id)
+      .limit(1)
+
+    if (context.tenantId) {
+      listaQuery = listaQuery.eq('tenant_id', context.tenantId)
+    }
+
+    const { data: lista, error: listaError } = await listaQuery.maybeSingle()
+    if (listaError || !lista) return NextResponse.json({ error: 'Lista nao encontrada' }, { status: 404 })
+
+    let leadsDaListaQuery = adminClient
+      .from('leads')
+      .select('id')
+      .eq('lista_id', lista_id)
+      .limit(500)
+
+    if (context.tenantId) {
+      leadsDaListaQuery = leadsDaListaQuery.eq('tenant_id', context.tenantId)
+    }
+
+    const { data: listaLeads, error: leadsError } = await leadsDaListaQuery
+    if (leadsError || !listaLeads) return NextResponse.json({ error: 'Erro ao buscar leads da lista' }, { status: 500 })
+    const leadIds = listaLeads.map((lead: any) => lead.id)
+
+    if (leadIds.length === 0) {
+      return NextResponse.json({ success: true, stats: { verificados: 0, com_whatsapp: 0, sem_whatsapp: 0 } })
+    }
+
     const { data: leads, error: fetchError } = await adminClient
       .from('leads').select('id, cpf, nome, tem_whatsapp').in('id', leadIds).is('tem_whatsapp', null)
     if (fetchError) return NextResponse.json({ error: 'Erro ao buscar leads' }, { status: 500 })
@@ -67,9 +102,9 @@ export async function POST(request: NextRequest) {
     }
     const { data: statsLeads } = await adminClient.from('leads').select('tem_whatsapp').in('id', leadIds)
     await adminClient.from('listas').update({
-      com_whatsapp: (statsLeads || []).filter((l: any) => l.tem_whatsapp === true).length,
-      sem_whatsapp: (statsLeads || []).filter((l: any) => l.tem_whatsapp === false).length,
-      nao_verificado: (statsLeads || []).filter((l: any) => l.tem_whatsapp === null).length,
+      total_com_whatsapp: (statsLeads || []).filter((l: any) => l.tem_whatsapp === true).length,
+      total_sem_whatsapp: (statsLeads || []).filter((l: any) => l.tem_whatsapp === false).length,
+      total_nao_verificado: (statsLeads || []).filter((l: any) => l.tem_whatsapp == null).length,
       updated_at: new Date().toISOString()
     }).eq('id', lista_id)
     return NextResponse.json({ success: true, stats: { verificados: leads.length, com_whatsapp: comWhatsapp, sem_whatsapp: semWhatsapp, erros } })

@@ -611,11 +611,42 @@ Pontos que precisam ser preservados durante a implementacao:
 
 ## Proximos Passos
 
-- cadastrar o primeiro escritorio real do zero no operacional limpo
-- provisionar o responsavel real e validar primeiro acesso sem reaproveitar legado piloto
+- validar novamente a importacao de listas no tenant `Fluxrow` apos os fixes desta sessao
+- confirmar que uma lista nao pode mais ser importada duas vezes no mesmo escritorio
+- confirmar que os leads passam a ser criados e que a pagina `/listas` mostra os totais reais
 - manter a contencao ativa ate o tenant isolation definitivo fechar
 - seguir com filtros por `tenant_id`, revisao de `service_role` e RLS por tenant
 - continuar atualizando este arquivo a cada bloco de trabalho concluido
+
+## Atualizacao de 2026-03-19 — Importacao de listas
+
+- investigacao confirmou que a lista estava sendo criada, mas os leads nao entravam
+- o fluxo antigo aceitava a mesma lista duas vezes no mesmo tenant
+- a API `/api/import` engolia erro de batch de insert e terminava “com sucesso” mesmo com `leads = 0`
+- a API `/api/listas` retornava os campos crus do banco (`total_com_whatsapp`, `total_sem_whatsapp`, `total_nao_verificado`), enquanto a UI esperava `com_whatsapp`, `sem_whatsapp`, `nao_verificado`
+- a rota `/api/whatsapp/verificar` ainda usava a tabela legado `lista_leads` e nomes de coluna antigos em `listas`
+
+### Correcao aplicada
+
+- `src/app/api/import/route.ts`
+  - previne duplicidade por `nome` ou `arquivo_original` dentro do mesmo tenant
+  - passa a usar `service_role` apenas para persistencia, mantendo auth do usuario para autorizar o fluxo
+  - grava `responsavel_id` no lead importado
+  - normaliza/trunca campos textuais antes do insert
+  - faz fallback row-by-row quando um batch falha
+  - expõe erro real quando nenhum lead e inserido e remove a lista vazia criada na tentativa
+  - atualiza `total_leads` e `total_nao_verificado` ao final
+- `src/app/api/listas/route.ts`
+  - filtra por `tenant_id`
+  - mapeia os campos reais do banco para os nomes esperados pela UI
+- `src/app/api/whatsapp/verificar/route.ts`
+  - deixa de depender de `lista_leads`
+  - busca leads por `lista_id`
+  - atualiza `total_com_whatsapp`, `total_sem_whatsapp` e `total_nao_verificado`
+
+### Validacao
+
+- `npm run build` passou apos as correcoes
 
 ## Regra Permanente de Continuidade
 
