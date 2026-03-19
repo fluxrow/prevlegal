@@ -264,6 +264,15 @@ Pontos que precisam ser preservados durante a implementacao:
 - Correcao aplicada: ambos os fluxos agora sincronizam apenas por `email`, `auth_id`, `role`, `ativo` e metadados de convite
 - Objetivo imediato desta sessao: publicar essa correcao, reprovisionar `jessica@alexandrini.com.br` e validar o envio real do email de definicao de senha
 
+2026-03-19 - Trigger do Supabase no reprovisionamento
+- O erro `Database error creating new user` veio do trigger `public.handle_new_user()`, que insere automaticamente em `public.usuarios` quando nasce um registro em `auth.users`
+- Se o usuario logico ja existe em `public.usuarios`, criar direto com o email final colide no `UNIQUE(email)` antes da sincronizacao customizada
+- Correcao aplicada em `src/app/api/admin/tenants/[id]/recriar-acesso/route.ts` e `src/app/api/usuarios/aceitar-convite/route.ts`:
+  - cria com email tecnico temporario
+  - remove a linha automatica criada pelo trigger
+  - atualiza o usuario Auth para o email real
+  - reaproveita a linha existente de `public.usuarios`
+
 ## Arquivos Alterados Nesta Sessao
 
 - `supabase/migrations/029_financeiro.sql`

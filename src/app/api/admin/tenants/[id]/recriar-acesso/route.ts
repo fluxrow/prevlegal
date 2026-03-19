@@ -13,6 +13,10 @@ function gerarSenhaTemporaria() {
   return `Tmp#${crypto.randomUUID()}Aa1`
 }
 
+function gerarEmailProvisionamento() {
+  return `provision+${crypto.randomUUID()}@prevlegal.local`
+}
+
 export async function POST(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -105,13 +109,16 @@ export async function POST(
 
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://prevlegal.vercel.app'
   const senhaTemporaria = gerarSenhaTemporaria()
+  const nomeResponsavel = tenant?.responsavel_nome || usuarioResponsavel?.nome || tenant?.nome || email
+  const precisaReaproveitarUsuario = Boolean(usuarioResponsavel)
+  const emailProvisionamento = precisaReaproveitarUsuario ? gerarEmailProvisionamento() : email
 
   const { data: authUser, error: createAuthError } = await adminSupabase.auth.admin.createUser({
-    email,
+    email: emailProvisionamento,
     password: senhaTemporaria,
     email_confirm: true,
     user_metadata: {
-      full_name: tenant?.responsavel_nome || tenant?.nome || email,
+      full_name: nomeResponsavel,
     },
   })
 
@@ -119,19 +126,52 @@ export async function POST(
     return NextResponse.json({ error: createAuthError?.message || 'Nao foi possivel provisionar o usuario auth' }, { status: 500 })
   }
 
+  if (precisaReaproveitarUsuario) {
+    const { error: cleanupAutoUserError } = await adminSupabase
+      .from('usuarios')
+      .delete()
+      .eq('auth_id', authUser.user.id)
+
+    if (cleanupAutoUserError) {
+      await adminSupabase.auth.admin.deleteUser(authUser.user.id)
+      return NextResponse.json({ error: cleanupAutoUserError.message }, { status: 500 })
+    }
+
+    const { error: authUpdateError } = await adminSupabase.auth.admin.updateUserById(authUser.user.id, {
+      email,
+      email_confirm: true,
+      user_metadata: {
+        full_name: nomeResponsavel,
+      },
+    })
+
+    if (authUpdateError) {
+      await adminSupabase.auth.admin.deleteUser(authUser.user.id)
+      return NextResponse.json({ error: authUpdateError.message }, { status: 500 })
+    }
+  }
+
   const payload = {
     auth_id: authUser.user.id,
     email,
-    nome: tenant?.responsavel_nome || usuarioResponsavel?.nome || tenant?.nome || email,
+    nome: nomeResponsavel,
     role: 'admin',
     ativo: true,
     convidado_por: usuarioResponsavel?.convidado_por || null,
     convidado_em: new Date().toISOString(),
   }
 
+  const { data: usuarioCriadoNoTrigger } = await adminSupabase
+    .from('usuarios')
+    .select('id')
+    .eq('auth_id', authUser.user.id)
+    .maybeSingle()
+
   const { error: usuarioSyncError } = usuarioResponsavel
     ? await adminSupabase.from('usuarios').update(payload).eq('id', usuarioResponsavel.id)
-    : await adminSupabase.from('usuarios').insert(payload)
+    : usuarioCriadoNoTrigger
+      ? await adminSupabase.from('usuarios').update(payload).eq('id', usuarioCriadoNoTrigger.id)
+      : await adminSupabase.from('usuarios').insert(payload)
 
   if (usuarioSyncError) {
     await adminSupabase.auth.admin.deleteUser(authUser.user.id)

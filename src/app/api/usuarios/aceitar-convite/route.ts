@@ -8,6 +8,10 @@ function createAdminSupabase() {
   )
 }
 
+function gerarEmailProvisionamento() {
+  return `invite+${crypto.randomUUID()}@prevlegal.local`
+}
+
 export async function POST(request: Request) {
   const adminSupabase = createAdminSupabase()
   const { token, nome, senha } = await request.json()
@@ -33,14 +37,45 @@ export async function POST(request: Request) {
     .limit(1)
     .single()
 
+  const precisaReaproveitarUsuario = Boolean(usuarioPorEmail)
+  const emailProvisionamento = precisaReaproveitarUsuario ? gerarEmailProvisionamento() : email
+
   // Cria usuário no Supabase Auth
   const { data: authUser, error: authError } = await adminSupabase.auth.admin.createUser({
-    email,
+    email: emailProvisionamento,
     password: senha,
     email_confirm: true,
+    user_metadata: {
+      full_name: nome,
+    },
   })
 
   if (authError) return NextResponse.json({ error: authError.message }, { status: 500 })
+
+  if (precisaReaproveitarUsuario) {
+    const { error: cleanupAutoUserError } = await adminSupabase
+      .from('usuarios')
+      .delete()
+      .eq('auth_id', authUser.user.id)
+
+    if (cleanupAutoUserError) {
+      await adminSupabase.auth.admin.deleteUser(authUser.user.id)
+      return NextResponse.json({ error: cleanupAutoUserError.message }, { status: 500 })
+    }
+
+    const { error: authUpdateError } = await adminSupabase.auth.admin.updateUserById(authUser.user.id, {
+      email,
+      email_confirm: true,
+      user_metadata: {
+        full_name: nome,
+      },
+    })
+
+    if (authUpdateError) {
+      await adminSupabase.auth.admin.deleteUser(authUser.user.id)
+      return NextResponse.json({ error: authUpdateError.message }, { status: 500 })
+    }
+  }
 
   // Cria registro em usuarios
   const payload = {
@@ -53,14 +88,25 @@ export async function POST(request: Request) {
     convidado_em: new Date().toISOString(),
   }
 
+  const { data: usuarioCriadoNoTrigger } = await adminSupabase
+    .from('usuarios')
+    .select('id')
+    .eq('auth_id', authUser.user.id)
+    .maybeSingle()
+
   const { error: userError } = usuarioPorEmail
     ? await adminSupabase
         .from('usuarios')
         .update(payload)
         .eq('id', usuarioPorEmail.id)
-    : await adminSupabase
-        .from('usuarios')
-        .insert(payload)
+    : usuarioCriadoNoTrigger
+      ? await adminSupabase
+          .from('usuarios')
+          .update(payload)
+          .eq('id', usuarioCriadoNoTrigger.id)
+      : await adminSupabase
+          .from('usuarios')
+          .insert(payload)
 
   if (userError) {
     // Rollback auth user
