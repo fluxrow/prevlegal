@@ -99,6 +99,8 @@ export default function AdminPage() {
   const [editId, setEditId] = useState<string | null>(null)
   const [form, setForm] = useState<typeof FORM0>(FORM0)
   const [salvando, setSalvando] = useState(false)
+  const [resetandoSenha, setResetandoSenha] = useState(false)
+  const [resetMsg, setResetMsg] = useState('')
   const [togglingId, setTogglingId] = useState<string | null>(null)
   const router = useRouter()
 
@@ -146,6 +148,29 @@ export default function AdminPage() {
     setTogglingId(null)
   }
 
+  async function resetarSenha() {
+    if (!editId) return
+    setResetandoSenha(true)
+    setResetMsg('')
+
+    const res = await fetch(`/api/admin/tenants/${editId}/reset-senha`, { method: 'POST' })
+    const data = await res.json()
+
+    if (res.status === 428) {
+      setResetandoSenha(false)
+      router.push(`/admin/reauth?next=${encodeURIComponent('/admin')}`)
+      return
+    }
+
+    if (res.ok) {
+      setResetMsg(`Sucesso: ${data.mensagem}`)
+    } else {
+      setResetMsg(`Erro: ${data.error || 'Erro ao enviar reset'}`)
+    }
+
+    setResetandoSenha(false)
+  }
+
   async function logout() {
     await fetch('/api/admin/auth', { method: 'DELETE' })
     router.push('/admin/login')
@@ -165,10 +190,18 @@ export default function AdminPage() {
       trial_expira_em: t.trial_expira_em ? t.trial_expira_em.split('T')[0] : '',
     })
     setEditId(t.id)
+    setResetMsg('')
+    setResetandoSenha(false)
     setShowForm(true)
   }
 
-  function fecharForm() { setShowForm(false); setEditId(null); setForm(FORM0) }
+  function fecharForm() {
+    setShowForm(false)
+    setEditId(null)
+    setForm(FORM0)
+    setResetMsg('')
+    setResetandoSenha(false)
+  }
   function setField(field: keyof typeof FORM0) {
     return (v: string) => setForm(f => ({ ...f, [field]: v }))
   }
@@ -279,7 +312,7 @@ export default function AdminPage() {
             </div>
           </div>
           <button
-            onClick={() => { setForm(FORM0); setEditId(null); setShowForm(true) }}
+            onClick={() => { setForm(FORM0); setEditId(null); setResetMsg(''); setResetandoSenha(false); setShowForm(true) }}
             style={{ display: 'flex', alignItems: 'center', gap: '7px', background: 'linear-gradient(135deg, #4f7aff, #7c3aed)', border: 'none', borderRadius: '10px', padding: '9px 18px', color: '#fff', fontSize: '13px', fontWeight: '600', cursor: 'pointer', whiteSpace: 'nowrap' }}
           >
             <Plus size={14} /> Novo escritório
@@ -462,6 +495,49 @@ export default function AdminPage() {
                   style={{ ...inputStyle, resize: 'vertical' }}
                 />
               </div>
+              {editId && (
+                <div style={{ gridColumn: '1 / -1' }}>
+                  <div style={{ height: '1px', background: '#1f2937', margin: '8px 0 16px' }} />
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
+                    <div>
+                      <p style={{ fontSize: '13px', fontWeight: '600', color: '#d1d5db', margin: '0 0 3px' }}>
+                        Redefinicao de senha
+                      </p>
+                      <p style={{ fontSize: '12px', color: '#6b7280', margin: 0 }}>
+                        Envia email de redefinicao para o responsavel do escritorio
+                      </p>
+                    </div>
+                    <button
+                      onClick={resetarSenha}
+                      disabled={resetandoSenha}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: '6px',
+                        padding: '8px 16px', borderRadius: '8px',
+                        background: 'rgba(245,166,35,0.1)', border: '1px solid rgba(245,166,35,0.25)',
+                        color: '#f5a623', fontSize: '12px', fontWeight: '600',
+                        cursor: resetandoSenha ? 'not-allowed' : 'pointer',
+                        opacity: resetandoSenha ? 0.6 : 1, transition: 'all 0.15s',
+                        whiteSpace: 'nowrap',
+                      }}
+                      onMouseEnter={e => { if (!resetandoSenha) (e.currentTarget as HTMLElement).style.background = 'rgba(245,166,35,0.18)' }}
+                      onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'rgba(245,166,35,0.1)'}
+                    >
+                      {resetandoSenha ? 'Enviando...' : 'Enviar reset de senha'}
+                    </button>
+                  </div>
+                  {resetMsg && (
+                    <p style={{
+                      marginTop: '10px', fontSize: '12px', padding: '8px 12px',
+                      borderRadius: '6px',
+                      background: resetMsg.startsWith('Sucesso:') ? 'rgba(34,197,94,0.08)' : 'rgba(255,87,87,0.08)',
+                      color: resetMsg.startsWith('Sucesso:') ? '#22c55e' : '#ff5757',
+                      border: `1px solid ${resetMsg.startsWith('Sucesso:') ? 'rgba(34,197,94,0.2)' : 'rgba(255,87,87,0.2)'}`,
+                    }}>
+                      {resetMsg}
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
             <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '22px' }}>
               <button onClick={fecharForm} style={{ fontSize: '13px', color: '#9ca3af', background: 'none', border: '1px solid #1f2937', borderRadius: '8px', padding: '9px 16px', cursor: 'pointer' }}>

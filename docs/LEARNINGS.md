@@ -235,6 +235,11 @@ export async function GET(
 **Causa:** Next 16 exige boundary explícita quando `useSearchParams` dispara bailout CSR em página
 **Correção:** Criar um componente interno com `useSearchParams` e exportar a página com wrapper `<Suspense>`
 **Regra prática:** Toda página client do PrevLegal que usar `useSearchParams` deve sair já envolvida em `Suspense`
+
+### 37. Acoes sensiveis do admin devem ficar dentro do modal do tenant quando dependem do email do responsavel
+**Cenario:** Reset de senha precisava ser executado sem sair da tela de edicao do escritorio
+**Correcao:** Criar endpoint dedicado em `src/app/api/admin/tenants/[id]/reset-senha/route.ts` e acionar do proprio modal com feedback local
+**Regra pratica:** Quando a acao depende do tenant carregado e exige reauth do admin, ela deve viver junto do modal/detalhe para evitar friccao operacional
 **Problema:** É fácil trocar o domínio visível da LP e esquecer convites, portal, webhooks, callbacks e links internos do admin
 **Causa:** O projeto mistura CTAs estáticos, variáveis de ambiente e fallbacks hardcoded para `prevlegal.vercel.app`
 **Correção:** Criar checklist técnico dedicado (`docs/DOMAIN_MIGRATION.md`) antes da migração, mapeando arquivos, envs e riscos

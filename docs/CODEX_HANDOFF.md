@@ -228,6 +228,13 @@ Pontos que precisam ser preservados durante a implementacao:
 - Validacao final:
   - `npm run build` voltou a passar com manifesto completo de rotas do app
 
+2026-03-19 - Reset de senha do tenant direto no admin
+- Criada a rota `src/app/api/admin/tenants/[id]/reset-senha/route.ts`
+- Fluxo protegido por `verificarAdminAuth()` e `verificarAdminReauthRecente()`
+- A rota busca o email do responsavel no tenant e chama `auth.admin.generateLink({ type: 'recovery' })`
+- O modal de edicao em `src/app/admin/page.tsx` agora exibe uma secao dedicada para enviar o reset quando `editId` estiver presente
+- Feedback visual de sucesso/erro incluido no proprio modal
+
 ## Arquivos Alterados Nesta Sessao
 
 - `supabase/migrations/029_financeiro.sql`
