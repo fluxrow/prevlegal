@@ -308,6 +308,13 @@ Pontos que precisam ser preservados durante a implementacao:
 - `site/README.md` documenta o deploy recomendado do projeto `prevlegal-site`
 - `docs/DOMAIN_MIGRATION.md` foi atualizado com a nova trilha de separacao em dois projetos Vercel
 
+2026-03-19 - Estado atual dos dominios publicos
+- `https://app.prevlegal.com.br/login` responde `200`
+- `https://admin.prevlegal.com.br/admin/login` responde `200`
+- `https://prevlegal.com.br` responde `404 DEPLOYMENT_NOT_FOUND`
+- `https://www.prevlegal.com.br` responde `404 DEPLOYMENT_NOT_FOUND`
+- Foi criada a checklist `docs/AUTH_BRANDING_TASKS.md` para executar o branding de emails auth depois que o site publico estiver estabilizado
+
 ## Arquivos Alterados Nesta Sessao
 
 - `supabase/migrations/029_financeiro.sql`
