@@ -32,7 +32,7 @@ Ultima atualizacao: 2026-03-19
 - LP canônica: `https://www.prevlegal.com.br`
 - Dominio comprado: `prevlegal.com.br`
 - Contencao atual:
-  - allowlist no app
+  - allowlist no app apenas para a Jessica
   - onboarding de responsavel bloqueado fora da allowlist
 
 ## Proximo Passo Recomendado

@@ -326,3 +326,42 @@ Mantida:
   - `423` nas APIs autenticadas do app
 
 Essa contingencia nao substitui a correcao estrutural. Ela apenas reduz a exposicao enquanto a Fase 26 e executada.
+
+## Estado real do banco em 2026-03-19
+
+Leitura confirmada com `service_role` no projeto operacional:
+
+### Tenants presentes na base operacional
+
+- `Alexandrini Advogados`
+  - `id`: `ad01e4ec-509b-4bf0-976e-c17bc2e53373`
+  - `responsavel_email`: `jessica@alexandrini.adv.br`
+- `Fluxrow`
+  - `id`: `d6d398af-f27e-4d5f-bba0-378ae79caba7`
+  - `responsavel_email`: `fbcfarias@icloud.com`
+
+### Estado dos usuarios
+
+Foram encontrados 4 usuarios operacionais:
+- 3 registros historicos da Jessica
+- 1 registro do Caua/Fluxrow
+
+### Ownership real dos dados operacionais atuais
+
+Dados existentes hoje:
+- `listas`: 6
+- `leads`: 78
+- `configuracoes`: 1
+- `portal_mensagens`: 11
+- `mensagens_inbound`: 3
+
+Todos os registros operacionais principais encontrados ate aqui apontam para o legado da Jessica:
+- todas as `listas` foram importadas por `0123b8f0-dfa0-481c-a264-ba6700a863e6`
+- os `leads` atuais pertencem a essas listas
+- `configuracoes` ainda contem prompt e contexto do escritorio Alexandrini
+- `advogados` tambem aponta para a Jessica
+
+Conclusao pratica:
+- a base atual ainda e, de fato, a base legado da Alexandrini
+- o tenant `Fluxrow` existe no cadastro, mas nao tem isolamento operacional real
+- por seguranca, o tenant novo nao deve acessar a plataforma ate a Fase 26 fechar

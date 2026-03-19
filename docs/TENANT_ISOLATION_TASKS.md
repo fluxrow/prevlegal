@@ -40,8 +40,6 @@ Incidente P0 de isolamento de dados entre escritorios.
 
 - allowlist temporaria:
   - `jessica@alexandrini.adv.br`
-  - `fbcfarias@icloud.com`
-  - `fbcfarias@gmail.com`
 - usuarios autenticados fora da allowlist:
   - sao redirecionados para `/isolamento-em-andamento`
   - recebem `423` em APIs autenticadas do app
@@ -53,6 +51,9 @@ Incidente P0 de isolamento de dados entre escritorios.
 - reforco adicional:
   - rotas de onboarding do responsavel agora retornam `423` para emails fora da allowlist
   - isso bloqueia `recriar-acesso`, `link-acesso` e `reset-senha` para escritorios fora do piloto
+- decisao operacional atual:
+  - apenas o tenant piloto da Jessica permanece liberado no app
+  - novos escritorios ficam restritos ao admin ate o tenant isolation real fechar
 
 ## Fase 26B — Auditoria de schema
 
@@ -109,6 +110,10 @@ Incidente P0 de isolamento de dados entre escritorios.
 - `configuracoes` hoje e singleton global por banco
 - `notificacoes` nao tem ownership por tenant nem por usuario
 - `google_calendar_token` hoje fica preso em `configuracoes`, entao e global por banco
+- a leitura real do banco mostrou:
+  - 2 tenants na base operacional
+  - dados operacionais atuais ainda pertencem ao legado da Jessica
+  - tenant novo ainda nao possui base isolada propria
 
 Referencia detalhada:
 - `docs/TENANT_ISOLATION_AUDIT.md`

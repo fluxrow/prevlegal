@@ -52,6 +52,10 @@ Estado de producao hoje:
 - Contencao reforcada no admin:
   - rotas de onboarding do responsavel agora bloqueiam emails fora da allowlist com `423`
   - isso impede expandir o rollout multi-escritorio enquanto a Fase 26 nao fecha
+- Contencao reforcada no app:
+  - allowlist final reduzida ao tenant piloto da Jessica
+  - `fbcfarias@icloud.com` e `fbcfarias@gmail.com` saem da allowlist do app
+  - operacao do sistema admin continua no subdominio `admin`
 - Arquivos da contencao:
   - `src/lib/tenant-containment.ts`
   - `src/lib/supabase/middleware.ts`
@@ -69,6 +73,8 @@ Estado de producao hoje:
   - o ambiente atual compartilha o banco entre escritorios
   - tabelas operacionais principais ainda nao tem `tenant_id`
   - varias APIs e policies continuam globais
+  - a leitura real do banco mostrou que os dados operacionais existentes ainda pertencem ao legado Alexandrini
+  - o tenant `Fluxrow` existe cadastrado, mas ainda nao tem isolamento operacional real
 
 Proximo passo recomendado:
 - fechar o modelo canonico de tenancy antes de iniciar migration grande

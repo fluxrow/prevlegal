@@ -1,7 +1,5 @@
 const DEFAULT_ALLOWED_EMAILS = [
   'jessica@alexandrini.adv.br',
-  'fbcfarias@icloud.com',
-  'fbcfarias@gmail.com',
 ]
 
 export function getContainmentAllowedEmails() {
