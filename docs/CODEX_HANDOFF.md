@@ -322,6 +322,16 @@ Pontos que precisam ser preservados durante a implementacao:
 - Alinhamento esperado:
   - origem e redirect URI do OAuth Client apontando para `app.prevlegal.com.br`
   - callback do app permanece em `src/app/api/google/callback/route.ts`
+
+2026-03-19 - Estruturacao inicial da Fase 26
+- Criado o quadro de tasks em `docs/TENANT_ISOLATION_TASKS.md`
+- A fase foi dividida em:
+  - contencao
+  - auditoria de schema
+  - auditoria de APIs/superficies
+  - modelo de tenancy
+  - implementacao
+- A frente de Google OAuth foi explicitamente separada da correcao de isolamento LGPD
 - `src/app/api/usuarios/aceitar-convite/route.ts` agora reaproveita o registro existente em `usuarios` quando o email ja existir, atualizando `auth_id` em vez de falhar por conflito
 - O modal de edicao do tenant ganhou a acao `Gerar acesso do responsavel` com link copiavel
 - Objetivo: permitir recriar o acesso sem perder o historico do usuario na tabela `usuarios`
