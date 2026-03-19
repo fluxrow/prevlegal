@@ -34,13 +34,13 @@ SESSAO_FILE="$VAULT_DIR/Sessoes/$DATA-$TEMA.md"
   echo "- [[PrevLegal/SESSION_BRIEF]]"
   echo
   echo "## Commits desta sessao"
-  git -C "$PROJECT_DIR" log --oneline --since='12 hours ago' --format='- %h %s'
+  git -C "$PROJECT_DIR" --no-pager log --oneline --since='12 hours ago' --format='- %h %s'
   echo
   echo "## Ultimo commit"
-  git -C "$PROJECT_DIR" log --oneline -1
+  git -C "$PROJECT_DIR" --no-pager log --oneline -1
   echo
   echo "## Status"
-  git -C "$PROJECT_DIR" status --short --branch
+  git -C "$PROJECT_DIR" --no-pager status --short --branch
   echo
   echo "## Proximo passo"
   echo "- [ ] $PROXIMO_PASSO"
