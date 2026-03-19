@@ -8,6 +8,7 @@ import {
   getTimestampNow,
   isTimestampExpired,
 } from "@/lib/session-config";
+import { isBlockedByTenantContainment } from "@/lib/tenant-containment";
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
@@ -48,11 +49,29 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const pathname = request.nextUrl.pathname
-  const publicPaths = ["/login", "/reauth", "/admin/login", "/admin/reauth", "/portal", "/auth/", "/api/", "/lp.html"];
+  const publicPaths = ["/login", "/reauth", "/admin/login", "/admin/reauth", "/portal", "/auth/", "/lp.html", "/isolamento-em-andamento"];
+  const publicApiPrefixes = [
+    '/api/admin/auth',
+    '/api/usuarios/aceitar-convite',
+    '/api/usuarios/convite',
+    '/api/webhooks/',
+    '/api/whatsapp/verificar',
+    '/api/portal/',
+  ]
   const isPublic = publicPaths.some((p) =>
     pathname.startsWith(p),
-  );
+  ) || publicApiPrefixes.some((p) => pathname.startsWith(p));
   const isAdminRoute = pathname === '/admin' || pathname.startsWith('/admin/')
+  const isApiRoute = pathname.startsWith('/api/')
+  const allowedBlockedApiPrefixes = [
+    '/api/admin/',
+    '/api/webhooks/',
+    '/api/usuarios/aceitar-convite',
+    '/api/usuarios/convite',
+    '/api/session/logout',
+    '/api/session/touch',
+    '/api/session/reauth',
+  ]
 
   if (isAdminRoute && pathname !== '/admin/login' && pathname !== '/admin/reauth') {
     const adminToken = request.cookies.get('admin_token')?.value
@@ -84,6 +103,22 @@ export async function updateSession(request: NextRequest) {
   }
 
   if (user && !isPublic) {
+    if (isBlockedByTenantContainment(user.email)) {
+      if (isApiRoute) {
+        const canBypass = allowedBlockedApiPrefixes.some((prefix) => pathname.startsWith(prefix))
+        if (!canBypass) {
+          return NextResponse.json(
+            { error: 'Acesso temporariamente restrito enquanto o isolamento entre escritorios e corrigido.' },
+            { status: 423 },
+          )
+        }
+      } else {
+        const url = request.nextUrl.clone()
+        url.pathname = '/isolamento-em-andamento'
+        return NextResponse.redirect(url)
+      }
+    }
+
     const lastActive = request.cookies.get(APP_LAST_ACTIVE_COOKIE)?.value
     if (isTimestampExpired(lastActive, APP_IDLE_MINUTES * 60 * 1000)) {
       const url = request.nextUrl.clone()

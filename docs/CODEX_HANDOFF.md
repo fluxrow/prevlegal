@@ -332,6 +332,23 @@ Pontos que precisam ser preservados durante a implementacao:
   - modelo de tenancy
   - implementacao
 - A frente de Google OAuth foi explicitamente separada da correcao de isolamento LGPD
+
+2026-03-19 - Contencao temporaria da Fase 26
+- Contencao aplicada no middleware para impedir uso do app por escritorios fora da allowlist temporaria
+- Arquivos principais:
+  - `src/lib/tenant-containment.ts`
+  - `src/lib/supabase/middleware.ts`
+  - `src/app/isolamento-em-andamento/page.tsx`
+- Env adicionada:
+  - `TENANT_CONTAINMENT_ALLOWED_EMAILS`
+- Valores alinhados em `Production` e `Development`:
+  - `jessica@alexandrini.adv.br`
+  - `fbcfarias@icloud.com`
+  - `fbcfarias@gmail.com`
+- Comportamento:
+  - usuarios autenticados fora da allowlist sao redirecionados para `/isolamento-em-andamento`
+  - APIs autenticadas do app retornam `423`
+  - excecoes publicas preservadas para nao quebrar admin auth, convites, webhooks e portal publico
 - `src/app/api/usuarios/aceitar-convite/route.ts` agora reaproveita o registro existente em `usuarios` quando o email ja existir, atualizando `auth_id` em vez de falhar por conflito
 - O modal de edicao do tenant ganhou a acao `Gerar acesso do responsavel` com link copiavel
 - Objetivo: permitir recriar o acesso sem perder o historico do usuario na tabela `usuarios`

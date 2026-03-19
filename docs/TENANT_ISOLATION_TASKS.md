@@ -4,7 +4,7 @@ Incidente P0 de isolamento de dados entre escritorios.
 
 ## Status atual
 
-- [ ] Contencao temporaria aplicada
+- [x] Contencao temporaria aplicada
 - [ ] Auditoria completa das superficies vazando dados
 - [ ] Modelo de tenancy aprovado
 - [ ] Migration/backfill de `tenant_id`
@@ -28,10 +28,28 @@ Incidente P0 de isolamento de dados entre escritorios.
 
 ## Fase 26A — Contencao
 
-- [ ] Definir bloqueio temporario para impedir rollout multi-escritorio neste ambiente
-- [ ] Avaliar se o bloqueio deve ocorrer no admin (`novo escritorio` / `enviar acesso`) ou no login do tenant nao-piloto
-- [ ] Garantir que a contencao nao quebre o piloto atual
-- [ ] Comunicar no handoff que novos escritorios nao devem ser onboardados sem isolamento real
+- [x] Definir bloqueio temporario para impedir rollout multi-escritorio neste ambiente
+- [x] Avaliar se o bloqueio deve ocorrer no admin (`novo escritorio` / `enviar acesso`) ou no login do tenant nao-piloto
+- [x] Garantir que a contencao nao quebre o piloto atual
+- [x] Comunicar no handoff que novos escritorios nao devem ser onboardados sem isolamento real
+- [x] Implementar allowlist temporaria por email no middleware
+- [x] Criar pagina explicita de acesso restrito
+- [x] Configurar `TENANT_CONTAINMENT_ALLOWED_EMAILS` em `Production` e `Development`
+
+### Contencao aplicada
+
+- allowlist temporaria:
+  - `jessica@alexandrini.adv.br`
+  - `fbcfarias@icloud.com`
+  - `fbcfarias@gmail.com`
+- usuarios autenticados fora da allowlist:
+  - sao redirecionados para `/isolamento-em-andamento`
+  - recebem `423` em APIs autenticadas do app
+- excecoes publicas preservadas:
+  - admin auth
+  - convites
+  - webhooks
+  - portal publico
 
 ## Fase 26B — Auditoria de schema
 

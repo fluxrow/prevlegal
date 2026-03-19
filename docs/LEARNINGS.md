@@ -378,3 +378,9 @@ export async function GET(
 **Causa mais provavel no contexto atual:** O dominio/callback mudou para `app.prevlegal.com.br`, mas o OAuth Client do Google nao foi alinhado no Console com os novos redirect URIs/origins e possivelmente com a tela de consentimento
 **Correcao operacional:** Revisar o OAuth Client no Google Cloud Console usando navegador autenticado e garantir os redirect URIs do dominio `app`
 **Regra pratica:** Sempre que APP_URL muda, revisar imediatamente Google OAuth Client e tela de consentimento; so mudar env no app nao conclui a integracao
+
+### 54. Em incidente P0 de multi-tenant, uma allowlist temporaria no middleware e melhor do que deixar o ambiente “meio aberto”
+**Problema:** Sem isolamento real, um segundo escritorio autenticado conseguia navegar por dados de outro escritorio
+**Causa:** O app ainda opera como single-tenant em partes relevantes; esperar a modelagem completa sem contencao deixaria o vazamento ativo
+**Correcao aplicada:** Adotar contencao temporaria no middleware, permitindo acesso apenas a uma allowlist minima de emails enquanto a Fase 26 nao termina
+**Regra pratica:** Quando houver risco LGPD imediato, primeiro conter o acesso, depois modelar a arquitetura definitiva
