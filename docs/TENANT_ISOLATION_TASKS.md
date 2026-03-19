@@ -200,7 +200,11 @@ Referencia detalhada:
 ## Fase 26E — Implementacao
 
 - [x] Criar migration base de `tenant_id`
-- [ ] Backfill dos dados existentes
+- [ ] Escolher entre:
+  - backfill do legado
+  - reset limpo + bootstrap
+- [ ] Backfill dos dados existentes, se o legado for preservado
+- [ ] Reset operacional limpo, se o legado piloto for descartado
 - [ ] Atualizar inserts para gravarem `tenant_id`
 - [ ] Atualizar selects para filtrarem `tenant_id`
 - [ ] Revisar trechos com `service_role`
@@ -217,6 +221,20 @@ Referencia detalhada:
   - transformar `configuracoes` em singleton por tenant
 - observacao:
   - a migration ainda nao deve ser considerada suficiente sem backfill + APIs + RLS
+
+### Caminho preferido no contexto atual
+
+Se os dados `Alexandrini/Jessica` forem apenas piloto/contexto e puderem ser descartados:
+
+- preferir reset limpo ao inves de backfill
+- aplicar `031`
+- zerar o legado operacional
+- recriar o primeiro escritorio real do zero
+- recriar usuarios reais no modelo novo
+
+Referencias:
+- `docs/TENANT_RESET_PLAN.md`
+- `supabase/reset/operational_reset_after_031.sql`
 
 ## Frente separada — Google OAuth
 

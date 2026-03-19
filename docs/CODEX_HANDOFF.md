@@ -84,8 +84,14 @@ Estado de producao hoje:
   - isso reduz superficie de vazamento, mas nao substitui `tenant_id` + backfill + RLS
 
 Proximo passo recomendado:
-- aplicar a migration 031 no banco remoto
-- executar backfill seguro dos tenants existentes
+- decisao de execucao atual mais coerente:
+  - descartar o legado piloto
+  - aplicar a migration 031
+  - executar reset operacional limpo
+  - recadastrar o primeiro escritorio real do zero
+- referencias criadas:
+  - `docs/TENANT_RESET_PLAN.md`
+  - `supabase/reset/operational_reset_after_031.sql`
 - depois substituir o escopo temporario por usuario por `tenant_id` canonico
 - revisar RLS com tenant isolation real
 

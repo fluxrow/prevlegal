@@ -38,10 +38,10 @@ Ultima atualizacao: 2026-03-19
 ## Proximo Passo Recomendado
 
 Conter e corrigir o risco de multi-tenant:
-- confirmar e mapear todas as superficies vazando dados entre escritorios
 - bloquear onboarding multi-escritorio no mesmo banco enquanto nao houver isolamento real
 - aplicar a migration 031 no banco remoto
-- executar backfill seguro de `tenant_id`
+- preferir reset operacional limpo ao inves de backfill, ja que o legado piloto pode ser descartado
+- recadastrar o primeiro escritorio real do zero
 - substituir o escopo temporario por usuario por tenant isolation canonico
 - em paralelo, corrigir o Google OAuth no Console para `app.prevlegal.com.br`
 

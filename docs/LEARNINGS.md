@@ -233,6 +233,15 @@ export async function GET(
 **Risco:** Mudanças amplas de escopo podem parecer corretas em leitura, mas quebrar em tipos, joins Supabase ou páginas server-side
 **Correção:** Sempre fechar `npm run build` completo antes de publicar uma onda de contenção desse tipo
 **Regra prática:** Em PrevLegal, contenção P0 também precisa passar pelo mesmo ritual de qualidade: build, docs, handoff, Obsidian e só então push/deploy
+
+### 36. Quando o legado e descartável, reset limpo é melhor que backfill “forçado”
+**Cenário:** O banco operacional tinha dados piloto/contextuais (`Alexandrini/Jessica`) usados só para prototipagem do produto
+**Risco:** Backfillar esse legado para um tenant “real” carrega sujeira e ambiguidade para dentro do modelo multi-tenant final
+**Correção:** Se o dado piloto puder ser descartado, preferir:
+- aplicar a migration estrutural
+- resetar o operacional
+- bootstrapar o primeiro escritorio real do zero
+**Regra prática:** Em transição de single-tenant piloto para multi-tenant real, só fazer backfill quando o legado for de fato produção que precisa ser preservada
 ### 34. Estrutura duplicada na raiz pode fazer a Vercel/Next publicar o app errado
 **Problema:** O deploy público passou a responder só `lp.html` e `404` nas rotas do app, mesmo com aliases corretos na Vercel
 **Causa:** Havia uma árvore `app/` vazia na raiz e um `next.config.js` residual competindo com a aplicação real em `src/app` e com `next.config.ts`
