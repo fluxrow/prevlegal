@@ -126,6 +126,7 @@ Proximo passo recomendado:
   - `src/lib/tenant-containment.ts` agora permite onboarding/controlos do unico tenant operacional existente, mesmo apos o primeiro usuario ter sido criado
   - `src/app/auth/redefinir-senha/page.tsx` agora aceita links de redefinicao com `token_hash` e `code`, alem de sessao ja estabelecida
   - `src/app/admin/page.tsx` agora gera/copía automaticamente o link manual de contingencia logo apos `Enviar acesso do responsavel` responder sucesso
+  - `src/app/admin/page.tsx` agora tambem gera/copía automaticamente o link manual de contingencia logo apos `Enviar reset de senha`
 - validacao operacional concluida:
   - primeiro escritorio de teste foi criado com sucesso no admin apos o reset limpo
   - escritorio usado no teste: `Fluxrow`

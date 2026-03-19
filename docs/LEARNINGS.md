@@ -255,6 +255,12 @@ export async function GET(
 **Correção:** Após sucesso em `Enviar acesso do responsável`, o admin agora já gera e copia automaticamente o link manual de contingência
 **Regra prática:** Em onboarding crítico, sempre devolver um caminho manual utilizável no mesmo passo em que o sistema dispara um email externo
 
+### 40. Reset de senha do responsável deve ter a mesma contingência do onboarding
+**Problema:** O email de reset podia chegar, mas o clique ainda falhar com erro do Supabase/session JWT
+**Causa:** O fluxo de reset ainda dependia exclusivamente do link enviado por email
+**Correção:** Após sucesso em `Enviar reset de senha`, o admin agora também gera e copia automaticamente o link manual de contingência
+**Regra prática:** Sempre que um email de auth for opcionalmente instável, o operador deve sair da ação já com um link manual funcional em mãos
+
 ### 34. Contenção por allowlist sozinha não basta quando o tenant piloto ainda tem múltiplos usuários
 **Cenário:** Mesmo após bloquear novos escritórios no app, algumas superfícies continuavam amplas demais para o modelo legado compartilhado
 **Causa:** O banco operacional ainda não tem `tenant_id`, então várias rotas liam dados globais ou dependiam de permissões abertas herdadas do modelo `um banco por tenant`

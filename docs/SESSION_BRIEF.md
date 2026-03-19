@@ -42,6 +42,7 @@ Ultima atualizacao: 2026-03-19
 - primeiro escritorio de teste ja foi criado com sucesso no operacional limpo (`Fluxrow`)
 - onboarding do primeiro tenant agora pode seguir mesmo apos a criacao do primeiro usuario, e a tela de redefinicao aceita `token_hash`/`code`
 - `Enviar acesso do responsavel` agora ja devolve o link manual de contingencia no mesmo passo
+- `Enviar reset de senha` agora tambem devolve o link manual de contingencia no mesmo passo
 - Contencao atual:
   - allowlist do app continua ativa
   - onboarding fora do piloto continua bloqueado
