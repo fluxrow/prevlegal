@@ -300,6 +300,14 @@ Pontos que precisam ser preservados durante a implementacao:
 - `public/lp.html` passou a apontar todos os CTAs de acesso para `https://app.prevlegal.com.br/login`
 - Nao havia links relativos para `/login` nem outras ocorrencias restantes de `https://prevlegal.vercel.app` nesse arquivo
 
+2026-03-19 - Estrutura `site/` preparada para projeto separado da LP
+- Criada a pasta `site/` para servir a LP publica em um projeto Vercel proprio
+- `site/index.html` replica a LP atual
+- `site/demo.html` replica o demo e ja exibe `app.prevlegal.com.br`
+- `site/vercel.json` prepara deploy estatico limpo com raiz `/`
+- `site/README.md` documenta o deploy recomendado do projeto `prevlegal-site`
+- `docs/DOMAIN_MIGRATION.md` foi atualizado com a nova trilha de separacao em dois projetos Vercel
+
 ## Arquivos Alterados Nesta Sessao
 
 - `supabase/migrations/029_financeiro.sql`

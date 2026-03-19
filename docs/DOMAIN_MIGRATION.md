@@ -35,6 +35,17 @@ Migrar o projeto para domínio próprio com separação clara entre:
 - o código já usa `NEXT_PUBLIC_APP_URL` em vários pontos
 - `NEXT_PUBLIC_SITE_URL` passou a existir para separar site e plataforma
 
+### Estrutura preparada para separação em dois projetos Vercel
+
+- `site/` foi criado no repositório como raiz dedicada para o projeto público/LP
+- `site/index.html` replica a LP atual
+- `site/demo.html` replica o demo embedado e já mostra `app.prevlegal.com.br`
+- `site/vercel.json` permite deploy estático limpo no projeto novo `prevlegal-site`
+- objetivo operacional:
+  - projeto atual `prevlegal` -> `app.prevlegal.com.br` e `admin.prevlegal.com.br`
+  - projeto novo `prevlegal-site` -> `www.prevlegal.com.br`
+  - `prevlegal.com.br` -> redirect para `www.prevlegal.com.br`
+
 ## Estado atual encontrado no código
 
 ### URLs absolutas e pontos de atenção
@@ -168,11 +179,15 @@ Objetivo:
 - preparar os hosts no projeto antes do DNS final
 
 Checklist:
-- [ ] adicionar `prevlegal.com.br`
-- [ ] adicionar `www.prevlegal.com.br` se for usado
-- [ ] adicionar `app.prevlegal.com.br`
-- [ ] configurar redirects entre apex e `www`
-- [ ] revisar qual host ficará como primary domain
+- [ ] criar projeto novo `prevlegal-site`
+- [ ] conectar o mesmo repositório no projeto novo
+- [ ] definir `Root Directory = site`
+- [ ] manter no projeto atual `prevlegal` apenas:
+  - [ ] `app.prevlegal.com.br`
+  - [ ] `admin.prevlegal.com.br`
+- [ ] mover `www.prevlegal.com.br` para o projeto `prevlegal-site`
+- [ ] configurar `prevlegal.com.br` com redirect para `https://www.prevlegal.com.br`
+- [ ] revisar qual host ficará como primary domain em cada projeto
 
 Saída esperada:
 - Vercel pronta para validar DNS e emitir HTTPS
