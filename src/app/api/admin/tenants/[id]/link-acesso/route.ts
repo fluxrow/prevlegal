@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { verificarAdminAuth, verificarAdminReauthRecente } from '@/lib/admin-auth'
+import { isAllowedByTenantContainment } from '@/lib/tenant-containment'
 
 function createAdminSupabase() {
   return createClient(
@@ -38,6 +39,12 @@ export async function POST(
 
   if (!email) {
     return NextResponse.json({ error: 'Email do responsavel nao encontrado para este tenant' }, { status: 404 })
+  }
+
+  if (!isAllowedByTenantContainment(email)) {
+    return NextResponse.json({
+      error: 'Rollout multi-escritorio temporariamente pausado enquanto o isolamento de dados e corrigido.',
+    }, { status: 423 })
   }
 
   const { data: authUsersPage, error: authUsersError } = await adminSupabase.auth.admin.listUsers({

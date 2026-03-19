@@ -27,9 +27,13 @@ Ultima atualizacao: 2026-03-19
 - Branch principal: `main`
 - Linha atual do produto no Obsidian: Fases 21, 22, 23, 24 e 25 concluidas
 - Fase atual: incidente critico de isolamento de dados entre escritorios + ajuste do Google OAuth
+- Fase atual: incidente critico de isolamento de dados entre escritorios + ajuste do Google OAuth
 - Producao atual: `https://app.prevlegal.com.br`
 - LP canônica: `https://www.prevlegal.com.br`
 - Dominio comprado: `prevlegal.com.br`
+- Contencao atual:
+  - allowlist no app
+  - onboarding de responsavel bloqueado fora da allowlist
 
 ## Proximo Passo Recomendado
 

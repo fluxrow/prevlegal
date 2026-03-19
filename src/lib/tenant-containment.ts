@@ -14,11 +14,14 @@ export function getContainmentAllowedEmails() {
     .filter(Boolean)
 }
 
-export function isBlockedByTenantContainment(email?: string | null) {
-  if (!email) return false
+export function isAllowedByTenantContainment(email?: string | null) {
+  if (!email) return true
 
   const normalizedEmail = email.trim().toLowerCase()
   const allowedEmails = getContainmentAllowedEmails()
-  return !allowedEmails.includes(normalizedEmail)
+  return allowedEmails.includes(normalizedEmail)
 }
 
+export function isBlockedByTenantContainment(email?: string | null) {
+  return !isAllowedByTenantContainment(email)
+}

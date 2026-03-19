@@ -281,6 +281,11 @@ export async function GET(
 **Problema:** APIs como listas, conversas e configurações usam `service_role` para ler/escrever dados globais
 **Impacto:** mesmo com RLS futura, qualquer rota com `service_role` sem filtro explícito de `tenant_id` continua podendo vazar dados
 **Regra prática:** `service_role` só é aceitável no PrevLegal quando a query já entra com escopo explícito de tenant e ownership
+
+### 40. Em incidente multi-tenant P0, contenção também precisa atingir onboarding
+**Problema:** Bloquear só o acesso ao app reduz exposição, mas ainda permite provisionar novos responsaveis e expandir um rollout inseguro
+**Correção:** As rotas de onboarding do responsavel passaram a devolver `423` para emails fora da allowlist durante a contingência
+**Regra prática:** Em incidente de isolamento, não basta bloquear navegação; também é preciso travar pontos que aumentem a superfície de exposição
 **Causa:** Antes do cutover, o projeto tratava `prevlegal.vercel.app` como host único para marketing e plataforma
 **Correção:** Padronizar `NEXT_PUBLIC_SITE_URL` para site/LP/metadata e `NEXT_PUBLIC_APP_URL` para plataforma, convites, portal e fluxos autenticados
 **Regra prática:** Tudo que for canônico, indexável ou marketing usa `SITE_URL`; tudo que for login, convite, portal, webhook e app usa `APP_URL`

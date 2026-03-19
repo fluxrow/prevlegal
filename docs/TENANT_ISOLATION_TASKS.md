@@ -50,6 +50,9 @@ Incidente P0 de isolamento de dados entre escritorios.
   - convites
   - webhooks
   - portal publico
+- reforco adicional:
+  - rotas de onboarding do responsavel agora retornam `423` para emails fora da allowlist
+  - isso bloqueia `recriar-acesso`, `link-acesso` e `reset-senha` para escritorios fora do piloto
 
 ## Fase 26B — Auditoria de schema
 
@@ -159,13 +162,24 @@ Referencia detalhada:
 
 ## Fase 26E — Implementacao
 
-- [ ] Criar migration(s) de `tenant_id`
+- [x] Criar migration base de `tenant_id`
 - [ ] Backfill dos dados existentes
 - [ ] Atualizar inserts para gravarem `tenant_id`
 - [ ] Atualizar selects para filtrarem `tenant_id`
 - [ ] Revisar trechos com `service_role`
 - [ ] Ajustar RLS
 - [ ] Validar onboarding de escritorio novo sem vazamento
+
+### Foundation pronta no repo
+
+- migration criada:
+  - `supabase/migrations/031_tenant_isolation_foundation.sql`
+- objetivo:
+  - adicionar `tenant_id` nas tabelas operacionais
+  - preparar indexes
+  - transformar `configuracoes` em singleton por tenant
+- observacao:
+  - a migration ainda nao deve ser considerada suficiente sem backfill + APIs + RLS
 
 ## Frente separada — Google OAuth
 

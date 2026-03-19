@@ -168,6 +168,12 @@ export default function AdminPage() {
       return
     }
 
+    if (res.status === 423) {
+      setResetMsg(`Atenção: ${data.error || 'Rollout temporariamente pausado'}`)
+      setResetandoSenha(false)
+      return
+    }
+
     if (res.ok) {
       setResetMsg(`Sucesso: ${data.mensagem}`)
     } else {
@@ -198,6 +204,12 @@ export default function AdminPage() {
       return
     }
 
+    if (res.status === 423) {
+      setAcessoMsg(`Atenção: ${data.error || 'Rollout temporariamente pausado'}`)
+      setRecriandoAcesso(false)
+      return
+    }
+
     if (res.ok) {
       setAcessoMsg(`Sucesso: ${data.mensagem}`)
     } else {
@@ -219,6 +231,13 @@ export default function AdminPage() {
     if (res.status === 428) {
       setGerandoLinkManual(false)
       router.push(`/admin/reauth?next=${encodeURIComponent('/admin')}`)
+      return
+    }
+
+    if (res.status === 423) {
+      setLinkManual('')
+      setLinkManualMsg(`Atenção: ${data.error || 'Rollout temporariamente pausado'}`)
+      setGerandoLinkManual(false)
       return
     }
 

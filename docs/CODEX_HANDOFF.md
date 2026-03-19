@@ -45,16 +45,25 @@ Estado de producao hoje:
   - financeiro
   - configuracoes
 - Contencao temporaria publicada em producao:
+- Contencao temporaria publicada em producao:
   - allowlist por email
   - usuarios fora da allowlist sao redirecionados para `/isolamento-em-andamento`
   - APIs autenticadas do app retornam `423`
+- Contencao reforcada no admin:
+  - rotas de onboarding do responsavel agora bloqueiam emails fora da allowlist com `423`
+  - isso impede expandir o rollout multi-escritorio enquanto a Fase 26 nao fecha
 - Arquivos da contencao:
   - `src/lib/tenant-containment.ts`
   - `src/lib/supabase/middleware.ts`
   - `src/app/isolamento-em-andamento/page.tsx`
+  - `src/app/api/admin/tenants/[id]/recriar-acesso/route.ts`
+  - `src/app/api/admin/tenants/[id]/link-acesso/route.ts`
+  - `src/app/api/admin/tenants/[id]/reset-senha/route.ts`
 - Auditoria formal criada em:
   - `docs/TENANT_ISOLATION_AUDIT.md`
   - `docs/TENANT_ISOLATION_TASKS.md`
+- Foundation migration criada:
+  - `supabase/migrations/031_tenant_isolation_foundation.sql`
 - Conclusao da auditoria ate aqui:
   - o schema operacional nasceu para `um banco por tenant`
   - o ambiente atual compartilha o banco entre escritorios
@@ -70,6 +79,9 @@ Proximo passo recomendado:
   - portal
   - financeiro
   - configuracoes
+- antes do deploy de filtros por tenant:
+  - aplicar a migration 031
+  - executar backfill seguro dos tenants existentes
 
 ## Mapa Atual do Sistema
 
