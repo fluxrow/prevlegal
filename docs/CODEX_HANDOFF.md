@@ -33,6 +33,44 @@ Estado de producao hoje:
 - `https://admin.prevlegal.com.br` -> admin
 - `https://prevlegal.vercel.app` -> fallback tecnico
 
+## Incidente Atual Prioritario
+
+2026-03-19 - Fase 26 / isolamento entre escritorios
+
+- Incidente P0 confirmado: usuarios de escritorios diferentes conseguiram ver dados uns dos outros
+- Superficies reportadas com vazamento:
+  - leads
+  - listas
+  - conversas / inbox / portal
+  - financeiro
+  - configuracoes
+- Contencao temporaria publicada em producao:
+  - allowlist por email
+  - usuarios fora da allowlist sao redirecionados para `/isolamento-em-andamento`
+  - APIs autenticadas do app retornam `423`
+- Arquivos da contencao:
+  - `src/lib/tenant-containment.ts`
+  - `src/lib/supabase/middleware.ts`
+  - `src/app/isolamento-em-andamento/page.tsx`
+- Auditoria formal criada em:
+  - `docs/TENANT_ISOLATION_AUDIT.md`
+  - `docs/TENANT_ISOLATION_TASKS.md`
+- Conclusao da auditoria ate aqui:
+  - o schema operacional nasceu para `um banco por tenant`
+  - o ambiente atual compartilha o banco entre escritorios
+  - tabelas operacionais principais ainda nao tem `tenant_id`
+  - varias APIs e policies continuam globais
+
+Proximo passo recomendado:
+- fechar o modelo canonico de tenancy antes de iniciar migration grande
+- depois atacar a primeira onda de correcao em:
+  - leads
+  - listas
+  - conversas
+  - portal
+  - financeiro
+  - configuracoes
+
 ## Mapa Atual do Sistema
 
 Modulos ja identificados no app:

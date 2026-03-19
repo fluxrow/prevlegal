@@ -53,13 +53,13 @@ Incidente P0 de isolamento de dados entre escritorios.
 
 ## Fase 26B — Auditoria de schema
 
-- [ ] Inventariar tabelas sem `tenant_id`
+- [x] Inventariar tabelas sem `tenant_id`
 - [ ] Classificar tabelas:
   - operacionais
   - auth/usuarios
   - central/admin
   - auxiliares
-- [ ] Confirmar estrategia para:
+- [x] Confirmar estrategia para:
   - `usuarios`
   - `listas`
   - `leads`
@@ -76,19 +76,78 @@ Incidente P0 de isolamento de dados entre escritorios.
   - `notificacoes`
   - `advogados`
 
+### Findings de schema confirmados
+
+- schema operacional nasceu com a premissa `cada tenant tem seu proprio banco`
+- `src/lib/types.ts` ja assume `tenant_id`, mas o banco operacional ainda nao
+- tabelas operacionais sem `tenant_id` funcional:
+  - `usuarios`
+  - `agentes`
+  - `configuracoes`
+  - `listas`
+  - `campanhas`
+  - `campanha_usuarios`
+  - `leads`
+  - `conversas`
+  - `mensagens`
+  - `agendamentos`
+  - `templates`
+  - `disparos`
+  - `audit_logs`
+  - `lead_anotacoes`
+  - `mensagens_inbound`
+  - `notificacoes`
+  - `lead_documentos`
+  - `calculadora_prev`
+  - `advogados`
+  - `convites`
+  - `contratos`
+  - `parcelas`
+- `configuracoes` hoje e singleton global por banco
+- `notificacoes` nao tem ownership por tenant nem por usuario
+- `google_calendar_token` hoje fica preso em `configuracoes`, entao e global por banco
+
+Referencia detalhada:
+- `docs/TENANT_ISOLATION_AUDIT.md`
+
 ## Fase 26C — Auditoria de APIs/superficies
 
-- [ ] `src/app/api/leads/route.ts`
-- [ ] `src/app/api/listas/route.ts`
-- [ ] `src/app/api/conversas/route.ts`
-- [ ] `src/app/api/financeiro/*`
-- [ ] `src/app/api/configuracoes/route.ts`
-- [ ] `src/app/api/relatorios/route.ts`
-- [ ] `src/app/api/google/status/route.ts`
+- [x] `src/app/api/leads/route.ts`
+- [x] `src/app/api/listas/route.ts`
+- [x] `src/app/api/conversas/route.ts`
+- [x] `src/app/api/financeiro/*`
+- [x] `src/app/api/configuracoes/route.ts`
+- [x] `src/app/api/relatorios/route.ts`
+- [x] `src/app/api/google/status/route.ts`
 - [ ] `src/app/api/google/callback/route.ts`
-- [ ] `src/app/api/portal/*`
-- [ ] `src/app/api/usuarios/*`
+- [x] `src/app/api/portal/*`
+- [x] `src/app/api/usuarios/*`
 - [ ] componentes/paginas que assumem lista global ou config unica
+
+### Findings de APIs confirmados
+
+- `src/app/api/listas/route.ts`
+  - usa `service_role`
+  - retorna todas as listas
+- `src/app/api/conversas/route.ts`
+  - usa `service_role`
+  - retorna todas as conversas
+- `src/app/api/configuracoes/route.ts`
+  - usa `service_role`
+  - trabalha com `limit(1)` e singleton global
+- `src/app/api/financeiro/contratos/route.ts`
+  - autenticacao + reauth, mas sem tenant scope
+- `src/app/api/financeiro/resumo/route.ts`
+  - agrega todos os contratos/parcelas do banco
+- `src/app/api/agendamentos/route.ts`
+  - lista todos os agendamentos do banco
+- `src/app/api/google/status/route.ts`
+  - usa config singleton, logo o Google fica global por banco
+- `src/lib/auth-role.ts` e `src/lib/auth/get-user-role.ts`
+  - resolvem usuario sem `tenant_id`
+
+Referencia detalhada:
+- `docs/TENANT_ISOLATION_AUDIT.md`
 
 ## Fase 26D — Modelo de tenancy
 

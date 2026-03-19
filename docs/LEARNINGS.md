@@ -258,6 +258,29 @@ export async function GET(
 
 ### 35. Domínio do site e domínio do app precisam de env vars separadas
 **Problema:** Reaproveitar uma única URL base para LP, SEO, convites, portal e login mistura contextos e complica a migração para domínio próprio
+**Correção:** manter `SITE_URL` e `APP_URL` separados em código, envs e callbacks
+**Regra prática:** nenhum fluxo de auth, convite, portal ou integração externa deve inferir domínio a partir da LP
+
+### 36. O schema operacional do PrevLegal nasceu para "um banco por tenant", não para multi-tenant lógico
+**Problema:** O produto passou a operar mais de um escritório no mesmo banco operacional, mas o schema principal foi criado com a premissa de que cada cliente teria sua própria base
+**Evidência:** `supabase/migrations/001_initial_schema.sql` traz explicitamente a regra `cada tenant tem seu proprio banco`
+**Impacto:** tabelas principais e policies antigas não usam `tenant_id`, então qualquer expansão multi-escritório no mesmo banco causa vazamento sistêmico
+**Regra prática:** enquanto não houver tenant isolation real, não tratar o ambiente compartilhado como multi-tenant seguro
+
+### 37. `src/lib/types.ts` já assume `tenant_id`, mas o banco ainda não
+**Problema:** Tipos TypeScript de `Usuario`, `Lead`, `Lista`, `Campanha`, `Agendamento` e outros já carregam `tenant_id`, mas as tabelas equivalentes do banco operacional não
+**Impacto:** gera falsa sensação de multi-tenant pronto no código, enquanto a persistência e as APIs continuam globais
+**Regra prática:** considerar drift entre tipagem e schema como sinal de arquitetura incompleta; nunca usar os types como prova de isolamento real
+
+### 38. `configuracoes` singleton e token Google global quebram multi-tenant
+**Problema:** `src/app/api/configuracoes/route.ts` lê e escreve `configuracoes` com `limit(1)`, e `src/app/api/google/status/route.ts` usa `google_calendar_token` nessa configuração única
+**Impacto:** branding, Twilio e Google Calendar podem ficar compartilhados entre escritorios
+**Regra prática:** em multi-tenant real, `configuracoes` precisa ser "uma linha por tenant", não singleton global por banco
+
+### 39. `service_role` sem escopo explícito de tenant vira bypass estrutural
+**Problema:** APIs como listas, conversas e configurações usam `service_role` para ler/escrever dados globais
+**Impacto:** mesmo com RLS futura, qualquer rota com `service_role` sem filtro explícito de `tenant_id` continua podendo vazar dados
+**Regra prática:** `service_role` só é aceitável no PrevLegal quando a query já entra com escopo explícito de tenant e ownership
 **Causa:** Antes do cutover, o projeto tratava `prevlegal.vercel.app` como host único para marketing e plataforma
 **Correção:** Padronizar `NEXT_PUBLIC_SITE_URL` para site/LP/metadata e `NEXT_PUBLIC_APP_URL` para plataforma, convites, portal e fluxos autenticados
 **Regra prática:** Tudo que for canônico, indexável ou marketing usa `SITE_URL`; tudo que for login, convite, portal, webhook e app usa `APP_URL`

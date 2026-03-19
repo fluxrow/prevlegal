@@ -36,7 +36,8 @@ Ultima atualizacao: 2026-03-19
 Conter e corrigir o risco de multi-tenant:
 - confirmar e mapear todas as superficies vazando dados entre escritorios
 - bloquear onboarding multi-escritorio no mesmo banco enquanto nao houver isolamento real
-- implementar ou planejar tenant isolation antes de continuar com rollout
+- fechar o modelo canonico de tenancy antes de iniciar migration/backfill
+- atacar a primeira onda de correcao em leads, listas, conversas, portal, financeiro e configuracoes
 - em paralelo, corrigir o Google OAuth no Console para `app.prevlegal.com.br`
 
 ## Bloqueios e Cuidados
