@@ -41,6 +41,7 @@ Ultima atualizacao: 2026-03-19
 - middleware agora tambem respeita `/api/admin/reauth` como rota publica do admin
 - primeiro escritorio de teste ja foi criado com sucesso no operacional limpo (`Fluxrow`)
 - onboarding do primeiro tenant agora pode seguir mesmo apos a criacao do primeiro usuario, e a tela de redefinicao aceita `token_hash`/`code`
+- `Enviar acesso do responsavel` agora ja devolve o link manual de contingencia no mesmo passo
 - Contencao atual:
   - allowlist do app continua ativa
   - onboarding fora do piloto continua bloqueado

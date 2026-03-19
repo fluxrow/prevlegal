@@ -249,6 +249,12 @@ export async function GET(
 **Correção:** A página `/auth/redefinir-senha` agora processa `token_hash`, `type` e `code`, além do fluxo de sessão existente
 **Regra prática:** Páginas de auth do PrevLegal devem suportar os diferentes formatos de callback que o Supabase pode emitir em ambientes reais
 
+### 39. `Enviar acesso do responsável` não deve depender do email chegar para o onboarding continuar
+**Problema:** A API de provisionamento respondia sucesso, mas o email podia não chegar imediatamente e o operador ficava sem certeza do que fazer
+**Causa:** O fluxo separava demais "enviar email" e "copiar link manual", mesmo quando o email é a parte mais instável do processo
+**Correção:** Após sucesso em `Enviar acesso do responsável`, o admin agora já gera e copia automaticamente o link manual de contingência
+**Regra prática:** Em onboarding crítico, sempre devolver um caminho manual utilizável no mesmo passo em que o sistema dispara um email externo
+
 ### 34. Contenção por allowlist sozinha não basta quando o tenant piloto ainda tem múltiplos usuários
 **Cenário:** Mesmo após bloquear novos escritórios no app, algumas superfícies continuavam amplas demais para o modelo legado compartilhado
 **Causa:** O banco operacional ainda não tem `tenant_id`, então várias rotas liam dados globais ou dependiam de permissões abertas herdadas do modelo `um banco por tenant`
