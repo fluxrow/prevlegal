@@ -1,6 +1,6 @@
 # PrevLegal — Domain Migration Checklist
 > Preparação para migrar de `prevlegal.vercel.app` para domínio próprio
-> Atualizado em: 18/03/2026
+> Atualizado em: 19/03/2026
 
 ## Objetivo
 
@@ -21,6 +21,10 @@ Migrar o projeto para domínio próprio com separação clara entre:
 
 - Fase 0 = CONCLUÍDA
 - Fase 2 = CONCLUÍDA
+- Fase 3 = CONCLUÍDA
+- Fase 4 = CONCLUÍDA
+- Fase 5 = CONCLUÍDA
+- Fase 6 = CONCLUÍDA
 - Commit principal da Fase 2: `cebda979`
 - Nota Obsidian da execução: `2026-03-18-fase2-dominio-seo-lp-raiz.md`
 - Observação operacional importante:
@@ -31,9 +35,32 @@ Migrar o projeto para domínio próprio com separação clara entre:
 
 ### Estado do app hoje
 
-- produção atual continua em `https://prevlegal.vercel.app`
-- o código já usa `NEXT_PUBLIC_APP_URL` em vários pontos
-- `NEXT_PUBLIC_SITE_URL` passou a existir para separar site e plataforma
+- produção canônica da plataforma: `https://app.prevlegal.com.br`
+- produção canônica do site: `https://www.prevlegal.com.br`
+- apex `https://prevlegal.com.br` redireciona para `https://www.prevlegal.com.br/`
+- `https://admin.prevlegal.com.br` permanece no projeto principal do app
+- `https://prevlegal.vercel.app` virou host técnico/fallback, não canônico
+- o código usa `NEXT_PUBLIC_APP_URL` para fluxos autenticados e links operacionais
+- `NEXT_PUBLIC_SITE_URL` separa SEO/site/metadata da plataforma
+
+### Fechamento operacional confirmado em 2026-03-19
+
+- Projeto `prevlegal-site` criado na Vercel com `Root Directory = site`
+- `www.prevlegal.com.br` ligado ao projeto `prevlegal-site`
+- `prevlegal.com.br` configurado na Vercel com redirect para `www.prevlegal.com.br`
+- `app.prevlegal.com.br` e `admin.prevlegal.com.br` preservados no projeto `prevlegal`
+- DNS final no GoDaddy:
+  - `@` -> `A` -> `216.198.79.1`
+  - `www` -> `CNAME` -> `adac959f3e49cb9d.vercel-dns-017.com.`
+  - `app` -> `CNAME` -> `cname.vercel-dns.com.`
+  - `admin` -> `CNAME` -> `cname.vercel-dns.com.`
+- Env alinhadas no projeto `prevlegal`:
+  - `NEXT_PUBLIC_APP_URL=https://app.prevlegal.com.br`
+  - `NEXT_PUBLIC_SITE_URL=https://www.prevlegal.com.br`
+  - `GOOGLE_REDIRECT_URI=https://app.prevlegal.com.br/api/google/callback`
+- Observacao operacional:
+  - `Preview` envs ficaram fora do corte final via CLI porque a Vercel exigiu branch especifica para esse target
+  - `Production` e `Development` ficaram alinhados
 
 ### Estrutura preparada para separação em dois projetos Vercel
 

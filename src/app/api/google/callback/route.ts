@@ -43,9 +43,9 @@ export async function GET(request: NextRequest) {
         .insert({ google_calendar_token: tokens })
     }
 
-    return NextResponse.redirect(`${process.env.NEXT_PUBLIC_APP_URL}/configuracoes?google=conectado`)
+    return NextResponse.redirect(`${process.env.NEXT_PUBLIC_APP_URL || 'https://app.prevlegal.com.br'}/configuracoes?google=conectado`)
   } catch (err) {
     console.error('Google OAuth error:', err)
-    return NextResponse.redirect(`${process.env.NEXT_PUBLIC_APP_URL}/configuracoes?google=erro`)
+    return NextResponse.redirect(`${process.env.NEXT_PUBLIC_APP_URL || 'https://app.prevlegal.com.br'}/configuracoes?google=erro`)
   }
 }

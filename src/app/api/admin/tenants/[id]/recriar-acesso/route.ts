@@ -107,7 +107,7 @@ export async function POST(
     return NextResponse.json({ error: convitesDeleteError.message }, { status: 500 })
   }
 
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://prevlegal.vercel.app'
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://app.prevlegal.com.br'
   const senhaTemporaria = gerarSenhaTemporaria()
   const nomeResponsavel = tenant?.responsavel_nome || usuarioResponsavel?.nome || tenant?.nome || email
   const precisaReaproveitarUsuario = Boolean(usuarioResponsavel)

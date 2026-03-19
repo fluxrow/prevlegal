@@ -18,14 +18,20 @@ Objetivo:
 
 ## Estado Atual Confirmado
 
-Data da ultima revisao: 2026-03-18
+Data da ultima revisao: 2026-03-19
 
 - Repositorio local em `main`
-- `HEAD` commitado atual: `87122de0`
-- Existe um conjunto local nao commitado da Fase 25 (`Session Security Hardening`)
+- Existe um conjunto local de fechamento da migracao de dominio e alinhamento de URLs ainda a ser commitado nesta sessao
 - O projeto esta vinculado a Vercel pelo arquivo `.vercel/project.json`
-- `npm run build` executado com sucesso apos o hardening de sessao
+- `npm run build` executado com sucesso apos o fechamento da Fase 5 da migracao de dominio
 - `README.md` e docs de sessao continuam sendo a base de memoria do projeto
+
+Estado de producao hoje:
+- `https://www.prevlegal.com.br` -> LP/site
+- `https://prevlegal.com.br` -> redirect para `www`
+- `https://app.prevlegal.com.br` -> plataforma
+- `https://admin.prevlegal.com.br` -> admin
+- `https://prevlegal.vercel.app` -> fallback tecnico
 
 ## Mapa Atual do Sistema
 
@@ -238,6 +244,37 @@ Pontos que precisam ser preservados durante a implementacao:
 2026-03-19 - Fluxo de recriacao de acesso do responsavel
 - Criada a rota `src/app/api/admin/tenants/[id]/recriar-acesso/route.ts`
 - O fluxo remove usuarios auth antigos associados ao email do responsavel, limpa convites pendentes e gera um novo link de aceite
+
+2026-03-19 - Fechamento da Fase 5 da migracao de dominio
+- O projeto `prevlegal-site` passou a servir a LP publica em `https://www.prevlegal.com.br`
+- O apex `https://prevlegal.com.br` passou a redirecionar para `https://www.prevlegal.com.br/`
+- O projeto `prevlegal` ficou responsavel apenas por:
+  - `https://app.prevlegal.com.br`
+  - `https://admin.prevlegal.com.br`
+  - `https://prevlegal.vercel.app`
+- Ajustes de codigo aplicados para refletir os domínios canônicos:
+  - `src/app/layout.tsx`
+  - `src/app/robots.ts`
+  - `src/app/sitemap.ts`
+  - `src/app/admin/[id]/page.tsx`
+  - `src/app/api/admin/tenants/[id]/reset-senha/route.ts`
+  - `src/app/api/admin/tenants/[id]/recriar-acesso/route.ts`
+  - `src/app/api/portal/link/[leadId]/route.ts`
+  - `src/app/api/usuarios/convidar/route.ts`
+  - `src/app/api/google/callback/route.ts`
+  - `public/demo.html`
+  - `.env.example`
+- Env alinhadas na Vercel:
+  - `NEXT_PUBLIC_APP_URL=https://app.prevlegal.com.br` (`Production` e `Development`)
+  - `NEXT_PUBLIC_SITE_URL=https://www.prevlegal.com.br` (`Production` e `Development`)
+  - `GOOGLE_REDIRECT_URI=https://app.prevlegal.com.br/api/google/callback` (`Production`)
+- Observacao importante:
+  - a CLI da Vercel exigiu branch especifica para `Preview`, entao o corte final de env foi fechado em `Production` e `Development`
+- Validacoes HTTP confirmadas:
+  - `https://www.prevlegal.com.br` -> `200`
+  - `https://prevlegal.com.br` -> `307`
+  - `https://app.prevlegal.com.br/login` -> `200`
+  - `https://admin.prevlegal.com.br/admin/login` -> `200`
 - `src/app/api/usuarios/aceitar-convite/route.ts` agora reaproveita o registro existente em `usuarios` quando o email ja existir, atualizando `auth_id` em vez de falhar por conflito
 - O modal de edicao do tenant ganhou a acao `Gerar acesso do responsavel` com link copiavel
 - Objetivo: permitir recriar o acesso sem perder o historico do usuario na tabela `usuarios`

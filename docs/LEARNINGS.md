@@ -346,3 +346,15 @@ export async function GET(
 **Causa:** `alexandrini.com.br` nao recebe email (`MX 0 .`), enquanto o dominio real de caixa postal e `alexandrini.adv.br`
 **Correcao:** Atualizar o responsavel para `jessica@alexandrini.adv.br` e reprovisionar o acesso do responsavel
 **Regra pratica:** Antes de concluir que o erro e do fluxo de auth, validar se o dominio do email do escritorio realmente possui MX funcional; dominio de site e dominio de email podem ser diferentes
+
+### 49. Quando site e app compartilham o mesmo projeto Vercel, o host publico pode acabar herdando redirects errados
+**Problema:** `www.prevlegal.com.br` chegou a cair no `/login`, porque estava apontando para o mesmo projeto do app, cuja raiz redireciona para autenticacao
+**Causa:** Marketing/site e plataforma estavam disputando o mesmo deploy e o mesmo comportamento de rota raiz
+**Correcao:** Separar a LP em um projeto Vercel dedicado (`prevlegal-site`, `Root Directory = site`) e deixar o projeto principal apenas com `app.prevlegal.com.br` e `admin.prevlegal.com.br`
+**Regra pratica:** No PrevLegal, `www` deve servir o site em projeto proprio; `app` e `admin` ficam no projeto da plataforma. Nao reutilizar o mesmo host/projeto para LP e produto autenticado
+
+### 50. Vercel CLI pode exigir branch especifica para env de Preview
+**Problema:** Ao tentar alinhar `NEXT_PUBLIC_APP_URL` e `NEXT_PUBLIC_SITE_URL` no ambiente `Preview`, a CLI retornou `git_branch_required`
+**Causa:** Neste projeto/time, a Vercel esta tratando `Preview` como env branch-specific no fluxo da CLI atual
+**Correcao:** Fechar o cutover em `Production` e `Development`, registrar a limitacao no handoff e tratar `Preview` explicitamente por branch quando necessario
+**Regra pratica:** Ao atualizar envs de dominio na Vercel via CLI, nao assumir que `Preview` aceita valor global; validar o comportamento do projeto antes de marcar a migracao como totalmente alinhada em todos os ambientes

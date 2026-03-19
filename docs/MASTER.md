@@ -18,8 +18,8 @@
 **Nome:** PrevLegal
 **Categoria:** SaaS B2B para operações de captação previdenciária
 **Repositório:** https://github.com/fluxrow/prevlegal
-**Produção atual:** https://prevlegal.vercel.app
-**LP atual:** https://prevlegal.vercel.app/lp.html
+**Produção atual:** https://app.prevlegal.com.br
+**LP atual:** https://www.prevlegal.com.br
 **Domínio próprio adquirido:** `prevlegal.com.br`
 
 ### Arquitetura de domínio aprovada
@@ -39,6 +39,14 @@
 4. Atualizar URLs canônicas, CTAs e links absolutos do sistema
 5. Revisar login, portal, notificações e links enviados automaticamente
 6. Validar redirects e HTTPS em produção
+
+### Estado confirmado em 2026-03-19
+
+- `https://www.prevlegal.com.br` -> LP pública canônica
+- `https://prevlegal.com.br` -> `307` para `https://www.prevlegal.com.br/`
+- `https://app.prevlegal.com.br` -> plataforma principal
+- `https://admin.prevlegal.com.br` -> admin principal
+- `https://prevlegal.vercel.app` -> host técnico de fallback, não mais canônico
 
 Checklist detalhado em: [[DOMAIN_MIGRATION]]
 

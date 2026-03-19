@@ -1,8 +1,8 @@
 import type { MetadataRoute } from 'next'
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://prevlegal.vercel.app'
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://prevlegal.vercel.app'
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.prevlegal.com.br'
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://app.prevlegal.com.br'
 
   return [
     { url: siteUrl, lastModified: new Date(), changeFrequency: 'weekly', priority: 1 },

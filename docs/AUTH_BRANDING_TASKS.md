@@ -25,7 +25,7 @@ Checklist para executar depois que `prevlegal.com.br` e `www.prevlegal.com.br` e
 
 ## Prioridade 3 — Links e dominio
 
-- [ ] Confirmar `NEXT_PUBLIC_APP_URL=https://app.prevlegal.com.br`
+- [x] Confirmar `NEXT_PUBLIC_APP_URL=https://app.prevlegal.com.br`
 - [ ] Garantir que emails auth apontem para a tela correta de definicao de senha
 - [ ] Avaliar custom domain do Auth
   - sugestao: `auth.prevlegal.com.br`
@@ -51,15 +51,10 @@ Checklist para executar depois que `prevlegal.com.br` e `www.prevlegal.com.br` e
 - [ ] Testar email antigo/obsoleto sendo bloqueado
 - [ ] Testar spam score basico em Gmail
 
-## Bloqueio atual
-
-- [ ] Resolver `DEPLOYMENT_NOT_FOUND` em:
-  - [ ] `https://prevlegal.com.br`
-  - [ ] `https://www.prevlegal.com.br`
-
 ## Estado confirmado em 2026-03-19
 
+- `https://www.prevlegal.com.br` -> OK
+- `https://prevlegal.com.br` -> redirect para `www`
 - `https://app.prevlegal.com.br/login` -> OK
 - `https://admin.prevlegal.com.br/admin/login` -> OK
-- `https://prevlegal.com.br` -> `DEPLOYMENT_NOT_FOUND`
-- `https://www.prevlegal.com.br` -> `DEPLOYMENT_NOT_FOUND`
+- Proxima camada: branding do email e custom SMTP/Auth

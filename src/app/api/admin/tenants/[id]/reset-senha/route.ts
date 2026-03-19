@@ -56,7 +56,7 @@ export async function POST(
     }, { status: 409 })
   }
 
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://prevlegal.vercel.app'
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://app.prevlegal.com.br'
   const { error } = await adminSupabase.auth.resetPasswordForEmail(email, {
     redirectTo: `${baseUrl}/auth/redefinir-senha`,
   })

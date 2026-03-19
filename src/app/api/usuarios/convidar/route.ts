@@ -29,7 +29,7 @@ export async function POST(request: Request) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://prevlegal.vercel.app'
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://app.prevlegal.com.br'
   const urlConvite = `${baseUrl}/auth/aceitar-convite?token=${data.token}`
 
   return NextResponse.json({ convite: data, url: urlConvite })

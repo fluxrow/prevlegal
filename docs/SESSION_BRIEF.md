@@ -26,17 +26,18 @@ Ultima atualizacao: 2026-03-19
 
 - Branch principal: `main`
 - Linha atual do produto no Obsidian: Fases 21, 22, 23, 24 e 25 concluidas
-- Fase atual: estabilizacao do fluxo de acesso/admin e provisionamento do responsavel
-- Producao atual: `https://prevlegal.vercel.app`
+- Fase atual: fechamento da migracao de dominio e alinhamento final de URLs/envs
+- Producao atual: `https://app.prevlegal.com.br`
+- LP canônica: `https://www.prevlegal.com.br`
 - Dominio comprado: `prevlegal.com.br`
 
 ## Proximo Passo Recomendado
 
-Fechar a validacao funcional do acesso:
-- confirmar com a Jessica o recebimento do email de definicao de senha
-- concluir a criacao da senha em `/auth/redefinir-senha`
-- validar login em `/login`
-- depois seguir com o fluxo certo: admin do sistema cria escritorio -> responsavel ativa a conta -> admin do escritorio convida os demais usuarios
+Fechar a validacao final da migracao:
+- validar convites, portal e reset de senha apontando para `app.prevlegal.com.br`
+- validar callback do Google no dominio `app`
+- manter o `prevlegal-site` como projeto do `www`
+- depois executar o checklist de branding dos emails Auth
 
 ## Bloqueios e Cuidados
 
@@ -44,6 +45,7 @@ Fechar a validacao funcional do acesso:
 - Sempre atualizar `docs/CODEX_HANDOFF.md`, `docs/ROADMAP.md` e `docs/LEARNINGS.md`
 - Sempre sincronizar os docs com o Obsidian ao final da sessao
 - Ao mexer em produto, considerar `SITE_URL` separado de `APP_URL`
+- Na Vercel CLI atual, env de `Preview` pode exigir branch especifica; registrar isso antes de assumir que o projeto esta 100% alinhado
 - O modelo atual ainda tem trechos single-tenant; nao assumir multi-tenant real sem revisar
 
 ## Caminhos Importantes
