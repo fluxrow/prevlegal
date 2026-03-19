@@ -365,3 +365,16 @@ export async function GET(
 **Correcao aplicada no produto:** criar um caminho de contingencia com link manual em `app.prevlegal.com.br/auth/confirm`, gerado no admin por `src/app/api/admin/tenants/[id]/link-acesso/route.ts`
 **Correcao externa ainda necessaria:** ajustar no painel do Supabase Auth a URL base/allowlist para o dominio `app.prevlegal.com.br`
 **Regra pratica:** Se o email de recovery/primeiro acesso abrir `localhost`, o problema esta no Auth URL Configuration do Supabase, nao no `redirectTo` do codigo
+
+### 52. O produto ainda nao tem isolamento real por escritorio no banco operacional
+**Problema:** Um novo escritorio logado passou a enxergar leads, conversas, listas, financeiro, configuracoes e outros dados da Jessica
+**Causa confirmada:** O banco operacional e as APIs principais continuam sem `tenant_id` funcional nas tabelas de negocio e sem filtros de isolamento por escritorio; o modelo atual se comporta como single-tenant
+**Impacto:** Risco critico de LGPD, quebra de sigilo operacional e violacao etica entre escritorios
+**Contencao recomendada:** Nao onboardar mais de um escritorio real no mesmo banco/app sem isolamento; tratar como incidente P0
+**Regra pratica:** Multiusuario com roles nao significa multi-tenant. Antes de cadastrar um segundo escritorio em producao, todas as superficies de negocio precisam filtrar por tenant/escritorio
+
+### 53. Google OAuth em mudanca de dominio precisa ser ajustado no Google Cloud Console, nao so no codigo
+**Problema:** Ao tentar conectar Google Calendar, a tela exibiu `Erro 400: invalid_request` com bloqueio de autorizacao
+**Causa mais provavel no contexto atual:** O dominio/callback mudou para `app.prevlegal.com.br`, mas o OAuth Client do Google nao foi alinhado no Console com os novos redirect URIs/origins e possivelmente com a tela de consentimento
+**Correcao operacional:** Revisar o OAuth Client no Google Cloud Console usando navegador autenticado e garantir os redirect URIs do dominio `app`
+**Regra pratica:** Sempre que APP_URL muda, revisar imediatamente Google OAuth Client e tela de consentimento; so mudar env no app nao conclui a integracao

@@ -26,18 +26,18 @@ Ultima atualizacao: 2026-03-19
 
 - Branch principal: `main`
 - Linha atual do produto no Obsidian: Fases 21, 22, 23, 24 e 25 concluidas
-- Fase atual: fechamento da migracao de dominio e alinhamento final de URLs/envs
+- Fase atual: incidente critico de isolamento de dados entre escritorios + ajuste do Google OAuth
 - Producao atual: `https://app.prevlegal.com.br`
 - LP canônica: `https://www.prevlegal.com.br`
 - Dominio comprado: `prevlegal.com.br`
 
 ## Proximo Passo Recomendado
 
-Fechar a validacao final da migracao:
-- validar convites, portal e reset de senha apontando para `app.prevlegal.com.br`
-- validar callback do Google no dominio `app`
-- manter o `prevlegal-site` como projeto do `www`
-- depois executar o checklist de branding dos emails Auth
+Conter e corrigir o risco de multi-tenant:
+- confirmar e mapear todas as superficies vazando dados entre escritorios
+- bloquear onboarding multi-escritorio no mesmo banco enquanto nao houver isolamento real
+- implementar ou planejar tenant isolation antes de continuar com rollout
+- em paralelo, corrigir o Google OAuth no Console para `app.prevlegal.com.br`
 
 ## Bloqueios e Cuidados
 
@@ -46,7 +46,7 @@ Fechar a validacao final da migracao:
 - Sempre sincronizar os docs com o Obsidian ao final da sessao
 - Ao mexer em produto, considerar `SITE_URL` separado de `APP_URL`
 - Na Vercel CLI atual, env de `Preview` pode exigir branch especifica; registrar isso antes de assumir que o projeto esta 100% alinhado
-- O modelo atual ainda tem trechos single-tenant; nao assumir multi-tenant real sem revisar
+- O modelo atual tem comportamento single-tenant em varias tabelas e APIs; nao subir novos escritorios sem revisar isolamento de dados
 
 ## Caminhos Importantes
 

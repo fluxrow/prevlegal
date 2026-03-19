@@ -292,6 +292,36 @@ Pontos que precisam ser preservados durante a implementacao:
   - permitir onboarding do responsavel mesmo se o email do Supabase continuar vindo com host errado
 - Correcao externa ainda pendente:
   - alinhar `Site URL` / `Redirect URLs` do Supabase Auth para `app.prevlegal.com.br`
+
+2026-03-19 - Incidente critico de isolamento de dados entre escritorios
+- Depois de criar um novo escritorio e concluir o onboarding do responsavel, o usuario do novo escritorio conseguiu ver dados da Jessica
+- Superficies reportadas como vazando dados:
+  - leads
+  - caixa de entrada / conversas do portal
+  - listas
+  - financeiro
+  - configuracoes
+- Superficie reportada como aparentemente correta:
+  - perfil mostrou apenas os dados do proprio usuario
+- Diagnostico tecnico atual:
+  - o modelo de negocio do banco operacional ainda se comporta como single-tenant
+  - tabelas principais nao tem `tenant_id` funcional nem filtros por escritorio
+  - varias APIs usam `service_role` ou consultas sem escopo de tenant
+- Severidade:
+  - P0 / LGPD / sigilo entre escritorios
+- Regra operacional imediata:
+  - nao onboardar novos escritorios reais no mesmo ambiente operacional ate existir isolamento de dados
+- Proximo trabalho necessario:
+  - auditoria completa das superficies vazando dados
+  - estrategia de tenant isolation
+  - contencao imediata antes de qualquer rollout multi-escritorio
+
+2026-03-19 - Google OAuth ainda pendente apos mudanca de dominio
+- Ao conectar Google Calendar, a tela exibiu erro `400 invalid_request`
+- Isso precisa ser corrigido no Google Cloud Console com navegador autenticado
+- Alinhamento esperado:
+  - origem e redirect URI do OAuth Client apontando para `app.prevlegal.com.br`
+  - callback do app permanece em `src/app/api/google/callback/route.ts`
 - `src/app/api/usuarios/aceitar-convite/route.ts` agora reaproveita o registro existente em `usuarios` quando o email ja existir, atualizando `auth_id` em vez de falhar por conflito
 - O modal de edicao do tenant ganhou a acao `Gerar acesso do responsavel` com link copiavel
 - Objetivo: permitir recriar o acesso sem perder o historico do usuario na tabela `usuarios`
