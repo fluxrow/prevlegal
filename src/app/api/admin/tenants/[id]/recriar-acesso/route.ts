@@ -46,7 +46,7 @@ export async function POST(
 
   const { data: usuariosExistentes, error: usuariosError } = await adminSupabase
     .from('usuarios')
-    .select('id, auth_id, email, nome, role, ativo, tenant_id, convidado_por')
+    .select('id, auth_id, email, nome, role, ativo, convidado_por')
     .eq('email', email)
 
   if (usuariosError) {
@@ -55,7 +55,7 @@ export async function POST(
 
   const { data: adminsExistentes, error: adminsError } = await adminSupabase
     .from('usuarios')
-    .select('id, auth_id, email, nome, role, ativo, tenant_id, convidado_por')
+    .select('id, auth_id, email, nome, role, ativo, convidado_por')
     .eq('role', 'admin')
     .order('convidado_em', { ascending: true })
 
@@ -125,7 +125,6 @@ export async function POST(
     nome: tenant?.responsavel_nome || usuarioResponsavel?.nome || tenant?.nome || email,
     role: 'admin',
     ativo: true,
-    tenant_id: usuarioResponsavel?.tenant_id || null,
     convidado_por: usuarioResponsavel?.convidado_por || null,
     convidado_em: new Date().toISOString(),
   }

@@ -26,16 +26,9 @@ export async function POST(request: Request) {
 
   const email = convite.email.toLowerCase()
 
-  // Pega tenant_id do primeiro usuário existente (single-tenant)
-  const { data: usuarioExistente } = await adminSupabase
-    .from('usuarios')
-    .select('tenant_id')
-    .limit(1)
-    .single()
-
   const { data: usuarioPorEmail } = await adminSupabase
     .from('usuarios')
-    .select('id, tenant_id')
+    .select('id')
     .eq('email', email)
     .limit(1)
     .single()
@@ -56,7 +49,6 @@ export async function POST(request: Request) {
     nome,
     role: convite.role,
     ativo: true,
-    tenant_id: usuarioPorEmail?.tenant_id || usuarioExistente?.tenant_id || null,
     convidado_por: convite.convidado_por,
     convidado_em: new Date().toISOString(),
   }

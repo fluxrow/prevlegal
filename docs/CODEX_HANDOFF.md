@@ -258,6 +258,12 @@ Pontos que precisam ser preservados durante a implementacao:
 - Criada a tela `src/app/auth/redefinir-senha/page.tsx` para concluir a troca de senha dentro do produto
 - Objetivo: permitir primeiro acesso e redefinicao sem depender do convite customizado para o responsavel principal
 
+2026-03-19 - Correcao do bloqueio Jessica / `tenant_id`
+- O fluxo de reprovisionamento da Jessica falhou em producao porque `src/app/api/admin/tenants/[id]/recriar-acesso/route.ts` ainda selecionava `usuarios.tenant_id`
+- `src/app/api/usuarios/aceitar-convite/route.ts` tambem ainda carregava e persistia `tenant_id`, embora a tabela `usuarios` atual nao tenha essa coluna
+- Correcao aplicada: ambos os fluxos agora sincronizam apenas por `email`, `auth_id`, `role`, `ativo` e metadados de convite
+- Objetivo imediato desta sessao: publicar essa correcao, reprovisionar `jessica@alexandrini.com.br` e validar o envio real do email de definicao de senha
+
 ## Arquivos Alterados Nesta Sessao
 
 - `supabase/migrations/029_financeiro.sql`

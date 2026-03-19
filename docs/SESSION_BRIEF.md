@@ -22,22 +22,21 @@ Ordem de leitura:
 
 ## Estado Atual
 
-Ultima atualizacao: 2026-03-18
+Ultima atualizacao: 2026-03-19
 
 - Branch principal: `main`
-- Linha atual do produto no Obsidian: Fases 21, 22, 23 e 24 concluidas
-- Fase atual: `Fase 25 — Session Security Hardening` implementada localmente e validada por build
+- Linha atual do produto no Obsidian: Fases 21, 22, 23, 24 e 25 concluidas
+- Fase atual: estabilizacao do fluxo de acesso/admin e provisionamento do responsavel
 - Producao atual: `https://prevlegal.vercel.app`
 - Dominio comprado: `prevlegal.com.br`
 
 ## Proximo Passo Recomendado
 
-Validar e publicar o hardening de sessao:
-- testar timeout por inatividade no app: `45 min`
-- testar timeout por inatividade no admin: `15 min`
-- testar reautenticacao do financeiro
-- testar reautenticacao do admin
-- depois commitar, sincronizar docs e publicar
+Fechar o fluxo correto de acesso do responsavel:
+- publicar a correcao que remove a dependencia de `tenant_id` em `usuarios`
+- reprovisionar `jessica@alexandrini.com.br` pelo admin
+- validar o email de definicao/reset de senha
+- depois seguir com o fluxo certo: admin do sistema cria escritorio -> responsavel ativa a conta -> admin do escritorio convida os demais usuarios
 
 ## Bloqueios e Cuidados
 
