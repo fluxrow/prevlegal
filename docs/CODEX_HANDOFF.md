@@ -117,6 +117,10 @@ Proximo passo recomendado:
   - `src/app/api/import/route.ts` grava `listas.tenant_id` e `leads.tenant_id`
   - `src/app/api/leads/route.ts` grava `tenant_id` e cria lista manual por tenant
   - contencao agora permite bootstrap do primeiro tenant fora da allowlist apenas enquanto `usuarios = 0`
+- correcao aplicada no admin para cadastro do primeiro escritorio:
+  - `src/app/api/admin/tenants/route.ts` agora normaliza payload e gera `slug` automaticamente quando vazio
+  - `src/app/api/admin/tenants/[id]/route.ts` agora normaliza update e evita colisao silenciosa de `slug`
+  - `src/app/admin/page.tsx` agora mostra erro real de salvamento no modal
 - depois substituir o escopo temporario por usuario por `tenant_id` canonico
 - revisar RLS com tenant isolation real
 

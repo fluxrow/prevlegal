@@ -99,6 +99,7 @@ export default function AdminPage() {
   const [editId, setEditId] = useState<string | null>(null)
   const [form, setForm] = useState<typeof FORM0>(FORM0)
   const [salvando, setSalvando] = useState(false)
+  const [saveMsg, setSaveMsg] = useState('')
   const [resetandoSenha, setResetandoSenha] = useState(false)
   const [resetMsg, setResetMsg] = useState('')
   const [recriandoAcesso, setRecriandoAcesso] = useState(false)
@@ -125,12 +126,16 @@ export default function AdminPage() {
 
   async function salvar() {
     setSalvando(true)
+    setSaveMsg('')
     const url = editId ? `/api/admin/tenants/${editId}` : '/api/admin/tenants'
     const method = editId ? 'PATCH' : 'POST'
     const body = { ...form, trial_expira_em: form.trial_expira_em || null }
     const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+    const data = await res.json().catch(() => ({}))
+    if (res.status === 401) { setSalvando(false); router.push('/admin/login'); return }
     if (res.status === 428) { setSalvando(false); router.push(`/admin/reauth?next=${encodeURIComponent('/admin')}`); return }
-    if (res.ok) { fetchData(); fecharForm() }
+    if (res.ok) { fetchData(); fecharForm(); return }
+    setSaveMsg(data.error || 'Não foi possível salvar o escritório.')
     setSalvando(false)
   }
 
@@ -284,6 +289,7 @@ export default function AdminPage() {
       trial_expira_em: t.trial_expira_em ? t.trial_expira_em.split('T')[0] : '',
     })
     setEditId(t.id)
+    setSaveMsg('')
     setResetMsg('')
     setResetandoSenha(false)
     setAcessoMsg('')
@@ -298,6 +304,7 @@ export default function AdminPage() {
     setShowForm(false)
     setEditId(null)
     setForm(FORM0)
+    setSaveMsg('')
     setResetMsg('')
     setResetandoSenha(false)
     setAcessoMsg('')
@@ -599,6 +606,11 @@ export default function AdminPage() {
                   style={{ ...inputStyle, resize: 'vertical' }}
                 />
               </div>
+              {!editId && (
+                <p style={{ gridColumn: '1 / -1', margin: '-4px 0 0', fontSize: '12px', color: '#6b7280' }}>
+                  Se o slug ficar vazio, o sistema gera um identificador automaticamente.
+                </p>
+              )}
               {editId && (
                 <div style={{ gridColumn: '1 / -1' }}>
                   <div style={{ height: '1px', background: '#1f2937', margin: '8px 0 16px' }} />
@@ -741,6 +753,20 @@ export default function AdminPage() {
                 </div>
               )}
             </div>
+            {saveMsg && (
+              <p style={{
+                marginTop: '14px',
+                marginBottom: 0,
+                fontSize: '12px',
+                padding: '10px 12px',
+                borderRadius: '8px',
+                background: 'rgba(255,87,87,0.08)',
+                color: '#ff5757',
+                border: '1px solid rgba(255,87,87,0.2)',
+              }}>
+                Erro: {saveMsg}
+              </p>
+            )}
             <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '22px' }}>
               <button onClick={fecharForm} style={{ fontSize: '13px', color: '#9ca3af', background: 'none', border: '1px solid #1f2937', borderRadius: '8px', padding: '9px 16px', cursor: 'pointer' }}>
                 Cancelar

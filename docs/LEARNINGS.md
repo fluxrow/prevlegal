@@ -219,6 +219,12 @@ export async function GET(
 
 ### 33. Migração de domínio precisa começar pelo inventário de URLs absolutas e fallbacks
 
+### 34. Cadastro de escritório no admin não pode falhar em silêncio
+**Problema:** Depois do reset operacional, o modal de novo escritório podia falhar sem salvar e sem mostrar motivo ao admin
+**Causa:** O frontend ignorava respostas não-`ok` do `POST /api/admin/tenants`, e o backend aceitava `slug` vazio/sem normalização
+**Correção:** Normalizar payload no backend, gerar `slug` automaticamente a partir do nome quando vazio, evitar colisões de slug no update e exibir a mensagem real de erro no modal do admin
+**Regra prática:** Fluxos de bootstrap do tenant nunca podem depender de campo técnico manual sem fallback automático, e todo erro de persistência no admin precisa aparecer na UI
+
 ### 34. Contenção por allowlist sozinha não basta quando o tenant piloto ainda tem múltiplos usuários
 **Cenário:** Mesmo após bloquear novos escritórios no app, algumas superfícies continuavam amplas demais para o modelo legado compartilhado
 **Causa:** O banco operacional ainda não tem `tenant_id`, então várias rotas liam dados globais ou dependiam de permissões abertas herdadas do modelo `um banco por tenant`

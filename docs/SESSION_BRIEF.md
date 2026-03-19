@@ -35,7 +35,8 @@ Ultima atualizacao: 2026-03-19
   - projeto central preservado: `zjelgobexwhhfoisuilm`
   - `supabase/reset/combined_apply_031_and_reset.sql` executado com sucesso direto no operacional
   - contagens finais zeradas em `tenants`, `usuarios`, `listas`, `leads`, `conversas`, `mensagens_inbound`, `portal_mensagens`, `configuracoes`, `contratos` e `parcelas`
-  - bootstrap tenant-aware iniciado no codigo para responsavel, convites, importacao e lead manual
+- bootstrap tenant-aware iniciado no codigo para responsavel, convites, importacao e lead manual
+- cadastro do primeiro escritorio no admin endurecido com geracao automatica de slug e feedback de erro no modal
 - Contencao atual:
   - allowlist do app continua ativa
   - onboarding fora do piloto continua bloqueado

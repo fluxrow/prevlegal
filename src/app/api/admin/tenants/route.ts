@@ -2,6 +2,69 @@ import { NextResponse } from 'next/server'
 import { verificarAdminAuth, verificarAdminReauthRecente } from '@/lib/admin-auth'
 import { createClient } from '@supabase/supabase-js'
 
+function slugify(value: string) {
+  return value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .replace(/-{2,}/g, '-')
+}
+
+async function buildUniqueSlug(adminSupabase: any, baseValue: string) {
+  const base = slugify(baseValue) || `escritorio-${Date.now()}`
+  const { data: existing } = await adminSupabase
+    .from('tenants')
+    .select('slug')
+    .like('slug', `${base}%`)
+
+  const used = new Set(((existing || []) as Array<{ slug: string }>).map(item => item.slug))
+  if (!used.has(base)) return base
+
+  let suffix = 2
+  while (used.has(`${base}-${suffix}`)) suffix += 1
+  return `${base}-${suffix}`
+}
+
+async function normalizeTenantPayload(
+  adminSupabase: any,
+  body: Record<string, unknown>
+) {
+  const nome = String(body.nome || '').trim()
+  const responsavelEmail = String(body.responsavel_email || '').trim().toLowerCase()
+
+  if (!nome) {
+    return { error: 'Nome do escritório é obrigatório' }
+  }
+
+  if (!responsavelEmail) {
+    return { error: 'Email do responsável é obrigatório' }
+  }
+
+  const providedSlug = String(body.slug || '').trim()
+  const slug = await buildUniqueSlug(adminSupabase, providedSlug || nome)
+
+  return {
+    payload: {
+      ...body,
+      nome,
+      slug,
+      cnpj: String(body.cnpj || '').trim() || null,
+      responsavel_nome: String(body.responsavel_nome || '').trim() || null,
+      responsavel_email: responsavelEmail,
+      responsavel_telefone: String(body.responsavel_telefone || '').trim() || null,
+      oab_estado: String(body.oab_estado || '').trim().toUpperCase() || null,
+      oab_numero: String(body.oab_numero || '').trim() || null,
+      notas: String(body.notas || '').trim() || null,
+      trial_expira_em: body.trial_expira_em || null,
+      twilio_account_sid: String(body.twilio_account_sid || '').trim() || null,
+      twilio_auth_token: String(body.twilio_auth_token || '').trim() || null,
+      twilio_whatsapp_number: String(body.twilio_whatsapp_number || '').trim() || null,
+    },
+  }
+}
+
 export async function GET() {
   if (!await verificarAdminAuth()) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   if (!await verificarAdminReauthRecente()) return NextResponse.json({ error: 'Reauthentication required' }, { status: 428 })
@@ -35,12 +98,18 @@ export async function POST(request: Request) {
   )
 
   const body = await request.json()
-  const { data, error } = await adminSupabase.from('tenants').insert({
-    ...body,
-    twilio_account_sid: body.twilio_account_sid || null,
-    twilio_auth_token: body.twilio_auth_token || null,
-    twilio_whatsapp_number: body.twilio_whatsapp_number || null,
-  }).select().single()
+  const normalized = await normalizeTenantPayload(adminSupabase, body)
+
+  if ('error' in normalized) {
+    return NextResponse.json({ error: normalized.error }, { status: 400 })
+  }
+
+  const { data, error } = await adminSupabase
+    .from('tenants')
+    .insert(normalized.payload)
+    .select()
+    .single()
+
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json(data)
 }
