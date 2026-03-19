@@ -253,6 +253,8 @@ Pontos que precisam ser preservados durante a implementacao:
   - `https://admin.prevlegal.com.br`
   - `https://prevlegal.vercel.app`
 - Ajustes de codigo aplicados para refletir os domínios canônicos:
+  - `site/robots.txt`
+  - `site/sitemap.xml`
   - `src/app/layout.tsx`
   - `src/app/robots.ts`
   - `src/app/sitemap.ts`

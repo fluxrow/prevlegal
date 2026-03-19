@@ -48,6 +48,7 @@ Migrar o projeto para domínio próprio com separação clara entre:
 - Projeto `prevlegal-site` criado na Vercel com `Root Directory = site`
 - `www.prevlegal.com.br` ligado ao projeto `prevlegal-site`
 - `prevlegal.com.br` configurado na Vercel com redirect para `www.prevlegal.com.br`
+- `prevlegal-site` ganhou `robots.txt` e `sitemap.xml` estaticos para o host publico
 - `app.prevlegal.com.br` e `admin.prevlegal.com.br` preservados no projeto `prevlegal`
 - DNS final no GoDaddy:
   - `@` -> `A` -> `216.198.79.1`
