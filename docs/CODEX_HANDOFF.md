@@ -277,6 +277,21 @@ Pontos que precisam ser preservados durante a implementacao:
   - `https://prevlegal.com.br` -> `307`
   - `https://app.prevlegal.com.br/login` -> `200`
   - `https://admin.prevlegal.com.br/admin/login` -> `200`
+
+2026-03-19 - Contingencia para primeiro acesso do responsavel
+- Incidente reproduzido: email de acesso chegou, mas o clique abriu `http://localhost:3000/#error=access_denied...`
+- Causa comprovada via `auth.admin.generateLink({ type: 'recovery' })`:
+  - `redirect_to` observado no Supabase = `http://localhost:3000`
+  - ou seja, o problema esta na configuracao do Supabase Auth, nao na rota do app
+- Contingencia segura implementada sem mexer no fluxo principal:
+  - nova rota `src/app/api/admin/tenants/[id]/link-acesso/route.ts`
+  - nova pagina `src/app/auth/confirm/page.tsx`
+  - modal admin ganhou botao `Copiar link manual`
+- Objetivo do fallback:
+  - gerar um link direto em `https://app.prevlegal.com.br/auth/confirm?...`
+  - permitir onboarding do responsavel mesmo se o email do Supabase continuar vindo com host errado
+- Correcao externa ainda pendente:
+  - alinhar `Site URL` / `Redirect URLs` do Supabase Auth para `app.prevlegal.com.br`
 - `src/app/api/usuarios/aceitar-convite/route.ts` agora reaproveita o registro existente em `usuarios` quando o email ja existir, atualizando `auth_id` em vez de falhar por conflito
 - O modal de edicao do tenant ganhou a acao `Gerar acesso do responsavel` com link copiavel
 - Objetivo: permitir recriar o acesso sem perder o historico do usuario na tabela `usuarios`

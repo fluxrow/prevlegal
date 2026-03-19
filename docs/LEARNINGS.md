@@ -358,3 +358,10 @@ export async function GET(
 **Causa:** Neste projeto/time, a Vercel esta tratando `Preview` como env branch-specific no fluxo da CLI atual
 **Correcao:** Fechar o cutover em `Production` e `Development`, registrar a limitacao no handoff e tratar `Preview` explicitamente por branch quando necessario
 **Regra pratica:** Ao atualizar envs de dominio na Vercel via CLI, nao assumir que `Preview` aceita valor global; validar o comportamento do projeto antes de marcar a migracao como totalmente alinhada em todos os ambientes
+
+### 51. Supabase Auth pode ignorar `redirectTo` e cair em `localhost` quando a URL de Auth do projeto esta desatualizada
+**Problema:** O email de primeiro acesso chegou, mas ao clicar abriu `http://localhost:3000/#error=access_denied...`
+**Causa confirmada:** A geracao real de link no Supabase retornou `redirect_to=http://localhost:3000`, mesmo quando o app pediu `https://app.prevlegal.com.br/auth/redefinir-senha`
+**Correcao aplicada no produto:** criar um caminho de contingencia com link manual em `app.prevlegal.com.br/auth/confirm`, gerado no admin por `src/app/api/admin/tenants/[id]/link-acesso/route.ts`
+**Correcao externa ainda necessaria:** ajustar no painel do Supabase Auth a URL base/allowlist para o dominio `app.prevlegal.com.br`
+**Regra pratica:** Se o email de recovery/primeiro acesso abrir `localhost`, o problema esta no Auth URL Configuration do Supabase, nao no `redirectTo` do codigo

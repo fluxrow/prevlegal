@@ -103,6 +103,10 @@ export default function AdminPage() {
   const [resetMsg, setResetMsg] = useState('')
   const [recriandoAcesso, setRecriandoAcesso] = useState(false)
   const [acessoMsg, setAcessoMsg] = useState('')
+  const [gerandoLinkManual, setGerandoLinkManual] = useState(false)
+  const [linkManual, setLinkManual] = useState('')
+  const [linkManualMsg, setLinkManualMsg] = useState('')
+  const [copiadoLinkManual, setCopiadoLinkManual] = useState(false)
   const [togglingId, setTogglingId] = useState<string | null>(null)
   const router = useRouter()
 
@@ -181,6 +185,9 @@ export default function AdminPage() {
     if (!editId) return
     setRecriandoAcesso(true)
     setAcessoMsg('')
+    setLinkManual('')
+    setLinkManualMsg('')
+    setCopiadoLinkManual(false)
 
     const res = await fetch(`/api/admin/tenants/${editId}/recriar-acesso`, { method: 'POST' })
     const data = await res.json()
@@ -198,6 +205,45 @@ export default function AdminPage() {
     }
 
     setRecriandoAcesso(false)
+  }
+
+  async function gerarLinkManualAcesso() {
+    if (!editId) return
+    setGerandoLinkManual(true)
+    setLinkManualMsg('')
+    setCopiadoLinkManual(false)
+
+    const res = await fetch(`/api/admin/tenants/${editId}/link-acesso`, { method: 'POST' })
+    const data = await res.json()
+
+    if (res.status === 428) {
+      setGerandoLinkManual(false)
+      router.push(`/admin/reauth?next=${encodeURIComponent('/admin')}`)
+      return
+    }
+
+    if (!res.ok) {
+      setLinkManual('')
+      setLinkManualMsg(`Erro: ${data.error || 'Erro ao gerar link manual'}`)
+      setGerandoLinkManual(false)
+      return
+    }
+
+    setLinkManual(data.url)
+    setLinkManualMsg(
+      data.supabase_config_invalida
+        ? 'Atenção: o Supabase ainda está montando links com localhost. Use este link manual enquanto corrigimos a URL do Auth.'
+        : 'Link manual gerado com sucesso.'
+    )
+
+    try {
+      await navigator.clipboard.writeText(data.url)
+      setCopiadoLinkManual(true)
+    } catch {
+      setCopiadoLinkManual(false)
+    }
+
+    setGerandoLinkManual(false)
   }
 
   async function logout() {
@@ -223,6 +269,9 @@ export default function AdminPage() {
     setResetandoSenha(false)
     setAcessoMsg('')
     setRecriandoAcesso(false)
+    setLinkManual('')
+    setLinkManualMsg('')
+    setCopiadoLinkManual(false)
     setShowForm(true)
   }
 
@@ -234,6 +283,9 @@ export default function AdminPage() {
     setResetandoSenha(false)
     setAcessoMsg('')
     setRecriandoAcesso(false)
+    setLinkManual('')
+    setLinkManualMsg('')
+    setCopiadoLinkManual(false)
   }
   function setField(field: keyof typeof FORM0) {
     return (v: string) => setForm(f => ({ ...f, [field]: v }))
@@ -559,6 +611,34 @@ export default function AdminPage() {
                         {recriandoAcesso ? 'Gerando...' : 'Enviar acesso do responsavel'}
                       </button>
                     </div>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
+                      <div>
+                        <p style={{ fontSize: '13px', fontWeight: '600', color: '#d1d5db', margin: '0 0 3px' }}>
+                          Link manual de contingencia
+                        </p>
+                        <p style={{ fontSize: '12px', color: '#6b7280', margin: 0 }}>
+                          Gera um link direto no dominio do app para contornar email mal configurado no Supabase Auth.
+                        </p>
+                      </div>
+                      <button
+                        onClick={gerarLinkManualAcesso}
+                        disabled={gerandoLinkManual}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: '6px',
+                          padding: '8px 16px', borderRadius: '8px',
+                          background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.25)',
+                          color: '#10b981', fontSize: '12px', fontWeight: '600',
+                          cursor: gerandoLinkManual ? 'not-allowed' : 'pointer',
+                          opacity: gerandoLinkManual ? 0.6 : 1, transition: 'all 0.15s',
+                          whiteSpace: 'nowrap',
+                        }}
+                        onMouseEnter={e => { if (!gerandoLinkManual) (e.currentTarget as HTMLElement).style.background = 'rgba(16,185,129,0.18)' }}
+                        onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'rgba(16,185,129,0.1)'}
+                      >
+                        {copiadoLinkManual ? <Check size={13} /> : <Copy size={13} />}
+                        {gerandoLinkManual ? 'Gerando...' : copiadoLinkManual ? 'Link copiado' : 'Copiar link manual'}
+                      </button>
+                    </div>
                     {acessoMsg && (
                       <div>
                         <p style={{
@@ -570,6 +650,34 @@ export default function AdminPage() {
                         }}>
                           {acessoMsg}
                         </p>
+                      </div>
+                    )}
+                    {(linkManualMsg || linkManual) && (
+                      <div>
+                        {linkManualMsg && (
+                          <p style={{
+                            marginTop: 0, marginBottom: linkManual ? '8px' : 0, fontSize: '12px', padding: '8px 12px',
+                            borderRadius: '6px',
+                            background: linkManualMsg.startsWith('Erro:') ? 'rgba(255,87,87,0.08)' : 'rgba(245,166,35,0.08)',
+                            color: linkManualMsg.startsWith('Erro:') ? '#ff5757' : '#f5a623',
+                            border: `1px solid ${linkManualMsg.startsWith('Erro:') ? 'rgba(255,87,87,0.2)' : 'rgba(245,166,35,0.2)'}`,
+                          }}>
+                            {linkManualMsg}
+                          </p>
+                        )}
+                        {linkManual && (
+                          <div style={{
+                            padding: '10px 12px',
+                            borderRadius: '8px',
+                            background: '#080b14',
+                            border: '1px solid #1f2937',
+                            wordBreak: 'break-all',
+                            fontSize: '12px',
+                            color: '#9ca3af',
+                          }}>
+                            {linkManual}
+                          </div>
+                        )}
                       </div>
                     )}
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
