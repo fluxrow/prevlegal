@@ -242,6 +242,16 @@ Pontos que precisam ser preservados durante a implementacao:
 - O modal de edicao do tenant ganhou a acao `Gerar acesso do responsavel` com link copiavel
 - Objetivo: permitir recriar o acesso sem perder o historico do usuario na tabela `usuarios`
 
+2026-03-19 - Operacao aplicada em producao para Alexandrini
+- Tenant `Alexandrini Advogados` (`ad01e4ec-509b-4bf0-976e-c17bc2e53373`) estava com `responsavel_email = fbcfarias@icloud.com`
+- Com base no `MASTER.md` e nos scripts legados, o email correto da Jessica foi ajustado para `jessica@alexandrini.com.br`
+- Depois do deploy do commit `9630154f`, a rota de `recriar-acesso` foi executada em producao para esse tenant
+- Resultado:
+  - `responsavel_email` atualizado para `jessica@alexandrini.com.br`
+  - novo convite gerado para a Jessica
+  - URL emitida: `https://prevlegal.vercel.app/auth/aceitar-convite?token=d87e828911ca82a53551aedfdb173bd82b3bbcb8395d2f02cbcecec5cc7539a5`
+  - expiracao do convite: `2026-03-26T11:43:12.919293+00:00`
+
 ## Arquivos Alterados Nesta Sessao
 
 - `supabase/migrations/029_financeiro.sql`
