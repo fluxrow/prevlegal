@@ -235,6 +235,13 @@ Pontos que precisam ser preservados durante a implementacao:
 - O modal de edicao em `src/app/admin/page.tsx` agora exibe uma secao dedicada para enviar o reset quando `editId` estiver presente
 - Feedback visual de sucesso/erro incluido no proprio modal
 
+2026-03-19 - Fluxo de recriacao de acesso do responsavel
+- Criada a rota `src/app/api/admin/tenants/[id]/recriar-acesso/route.ts`
+- O fluxo remove usuarios auth antigos associados ao email do responsavel, limpa convites pendentes e gera um novo link de aceite
+- `src/app/api/usuarios/aceitar-convite/route.ts` agora reaproveita o registro existente em `usuarios` quando o email ja existir, atualizando `auth_id` em vez de falhar por conflito
+- O modal de edicao do tenant ganhou a acao `Gerar acesso do responsavel` com link copiavel
+- Objetivo: permitir recriar o acesso sem perder o historico do usuario na tabela `usuarios`
+
 ## Arquivos Alterados Nesta Sessao
 
 - `supabase/migrations/029_financeiro.sql`

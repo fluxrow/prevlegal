@@ -24,6 +24,8 @@ export async function POST(request: Request) {
 
   if (!convite) return NextResponse.json({ error: 'Convite inválido ou expirado' }, { status: 404 })
 
+  const email = convite.email.toLowerCase()
+
   // Pega tenant_id do primeiro usuário existente (single-tenant)
   const { data: usuarioExistente } = await adminSupabase
     .from('usuarios')
@@ -31,9 +33,16 @@ export async function POST(request: Request) {
     .limit(1)
     .single()
 
+  const { data: usuarioPorEmail } = await adminSupabase
+    .from('usuarios')
+    .select('id, tenant_id')
+    .eq('email', email)
+    .limit(1)
+    .single()
+
   // Cria usuário no Supabase Auth
   const { data: authUser, error: authError } = await adminSupabase.auth.admin.createUser({
-    email: convite.email,
+    email,
     password: senha,
     email_confirm: true,
   })
@@ -41,18 +50,25 @@ export async function POST(request: Request) {
   if (authError) return NextResponse.json({ error: authError.message }, { status: 500 })
 
   // Cria registro em usuarios
-  const { error: userError } = await adminSupabase
-    .from('usuarios')
-    .insert({
-      auth_id: authUser.user.id,
-      email: convite.email,
-      nome,
-      role: convite.role,
-      ativo: true,
-      tenant_id: usuarioExistente?.tenant_id || null,
-      convidado_por: convite.convidado_por,
-      convidado_em: new Date().toISOString(),
-    })
+  const payload = {
+    auth_id: authUser.user.id,
+    email,
+    nome,
+    role: convite.role,
+    ativo: true,
+    tenant_id: usuarioPorEmail?.tenant_id || usuarioExistente?.tenant_id || null,
+    convidado_por: convite.convidado_por,
+    convidado_em: new Date().toISOString(),
+  }
+
+  const { error: userError } = usuarioPorEmail
+    ? await adminSupabase
+        .from('usuarios')
+        .update(payload)
+        .eq('id', usuarioPorEmail.id)
+    : await adminSupabase
+        .from('usuarios')
+        .insert(payload)
 
   if (userError) {
     // Rollback auth user
