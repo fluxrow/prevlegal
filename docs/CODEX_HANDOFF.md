@@ -244,7 +244,7 @@ Pontos que precisam ser preservados durante a implementacao:
 
 2026-03-19 - Operacao aplicada em producao para Alexandrini
 - Tenant `Alexandrini Advogados` (`ad01e4ec-509b-4bf0-976e-c17bc2e53373`) estava com `responsavel_email = fbcfarias@icloud.com`
-- Com base no `MASTER.md` e nos scripts legados, o email correto da Jessica foi ajustado para `jessica@alexandrini.com.br`
+- Com base no `MASTER.md` e nos scripts legados, o email da Jessica foi inicialmente ajustado para `jessica@alexandrini.com.br`
 - Depois do deploy do commit `9630154f`, a rota de `recriar-acesso` foi executada em producao para esse tenant
 - Resultado:
   - `responsavel_email` atualizado para `jessica@alexandrini.com.br`
@@ -262,7 +262,7 @@ Pontos que precisam ser preservados durante a implementacao:
 - O fluxo de reprovisionamento da Jessica falhou em producao porque `src/app/api/admin/tenants/[id]/recriar-acesso/route.ts` ainda selecionava `usuarios.tenant_id`
 - `src/app/api/usuarios/aceitar-convite/route.ts` tambem ainda carregava e persistia `tenant_id`, embora a tabela `usuarios` atual nao tenha essa coluna
 - Correcao aplicada: ambos os fluxos agora sincronizam apenas por `email`, `auth_id`, `role`, `ativo` e metadados de convite
-- Objetivo imediato desta sessao: publicar essa correcao, reprovisionar `jessica@alexandrini.com.br` e validar o envio real do email de definicao de senha
+- Objetivo imediato desta sessao: publicar essa correcao, reprovisionar o responsavel e validar o envio real do email de definicao de senha
 
 2026-03-19 - Trigger do Supabase no reprovisionamento
 - O erro `Database error creating new user` veio do trigger `public.handle_new_user()`, que insere automaticamente em `public.usuarios` quando nasce um registro em `auth.users`
@@ -287,6 +287,14 @@ Pontos que precisam ser preservados durante a implementacao:
 - `src/app/api/usuarios/convite/route.ts` agora invalida token de convite quando o email ja possui `auth_id` ativo em `usuarios`
 - `src/app/auth/aceitar-convite/page.tsx` passou a exibir estado `obsoleto`, orientando o uso do email mais recente de definicao de senha
 - `src/app/admin/page.tsx` removeu a exibicao/copia de URL para o fluxo do responsavel e reforcou a instrucao para ignorar convites antigos
+
+2026-03-19 - Correcao do dominio de email da Jessica
+- O email `jessica@alexandrini.com.br` estava errado para recebimento real de mensagens
+- Verificacao de DNS mostrou `MX 0 .` em `alexandrini.com.br`, ou seja, esse dominio nao recebe email
+- O dominio funcional de email do escritorio e `alexandrini.adv.br`
+- O tenant `Alexandrini Advogados` foi atualizado em producao para `jessica@alexandrini.adv.br`
+- O endpoint `POST /api/admin/tenants/ad01e4ec-509b-4bf0-976e-c17bc2e53373/recriar-acesso` foi executado novamente com sucesso:
+  - `{"ok":true,"email":"jessica@alexandrini.adv.br","mensagem":"Conta provisionada e email de definicao de senha enviado para jessica@alexandrini.adv.br"}`
 
 2026-03-19 - LP alinhada com dominio canonico
 - `public/lp.html` passou a apontar todos os CTAs de acesso para `https://app.prevlegal.com.br/login`

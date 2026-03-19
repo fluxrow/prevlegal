@@ -76,7 +76,7 @@ A empresa de captação NUNCA se identifica como vinculada ao escritório parcei
 **Jéssica Alexandrini** — advogada previdenciária
 **Escritório:** Alexandrini Advogados
 **Endereço:** Rua Paula Gomes, 853 — São Francisco — Curitiba/PR
-**Email:** jessica@alexandrini.com.br
+**Email:** jessica@alexandrini.adv.br
 **WhatsApp:** (41) 99984-4234
 **Site:** alexandrini.adv.br
 **OAB/PR**

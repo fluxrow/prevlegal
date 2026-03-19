@@ -340,3 +340,9 @@ export async function GET(
 **Causa:** O endpoint de validacao do convite aceitava qualquer token ainda valido sem checar se aquele email ja tinha `auth_id` ativo em `usuarios`
 **Correcao:** `src/app/api/usuarios/convite/route.ts` agora rejeita convites obsoletos para emails ja provisionados, e `src/app/auth/aceitar-convite/page.tsx` mostra mensagem clara para usar o email mais recente de definicao de senha ou fazer login
 **Regra pratica:** Para responsavel de escritorio, o fluxo oficial e `Gerar acesso do responsavel` + email de definicao de senha; convite antigo nao deve mais competir com esse caminho
+
+### 48. Dominio do site do escritorio nao garante dominio valido para email
+**Problema:** O tenant estava com `jessica@alexandrini.com.br`, mas o envio de acesso/reset falhava com email invalido
+**Causa:** `alexandrini.com.br` nao recebe email (`MX 0 .`), enquanto o dominio real de caixa postal e `alexandrini.adv.br`
+**Correcao:** Atualizar o responsavel para `jessica@alexandrini.adv.br` e reprovisionar o acesso do responsavel
+**Regra pratica:** Antes de concluir que o erro e do fluxo de auth, validar se o dominio do email do escritorio realmente possui MX funcional; dominio de site e dominio de email podem ser diferentes
