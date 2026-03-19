@@ -283,6 +283,11 @@ Pontos que precisam ser preservados durante a implementacao:
     - `{"ok":true,"email":"jessica@alexandrini.com.br","mensagem":"Conta provisionada e email de definicao de senha enviado para jessica@alexandrini.com.br"}`
 - Leitura operacional confirmada: para primeiro acesso do responsavel, usar `Gerar acesso do responsavel`; o botao `Resetar senha` fica como etapa posterior, apos a conta ja existir/estar ativada no fluxo do produto
 
+2026-03-19 - Blindagem contra convite antigo do responsavel
+- `src/app/api/usuarios/convite/route.ts` agora invalida token de convite quando o email ja possui `auth_id` ativo em `usuarios`
+- `src/app/auth/aceitar-convite/page.tsx` passou a exibir estado `obsoleto`, orientando o uso do email mais recente de definicao de senha
+- `src/app/admin/page.tsx` removeu a exibicao/copia de URL para o fluxo do responsavel e reforcou a instrucao para ignorar convites antigos
+
 ## Arquivos Alterados Nesta Sessao
 
 - `supabase/migrations/029_financeiro.sql`

@@ -16,5 +16,20 @@ export async function GET(request: Request) {
     .single()
 
   if (!data) return NextResponse.json({ error: 'Convite inválido ou expirado' }, { status: 404 })
+
+  const { data: usuarioExistente } = await supabase
+    .from('usuarios')
+    .select('id, auth_id, email')
+    .eq('email', data.email.toLowerCase())
+    .maybeSingle()
+
+  if (usuarioExistente?.auth_id) {
+    return NextResponse.json({
+      error: 'Este acesso ja foi provisionado. Use o email mais recente para definir a senha ou faca login.',
+      stale: true,
+      email: data.email,
+    }, { status: 409 })
+  }
+
   return NextResponse.json({ convite: data })
 }

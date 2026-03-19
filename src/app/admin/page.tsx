@@ -103,8 +103,6 @@ export default function AdminPage() {
   const [resetMsg, setResetMsg] = useState('')
   const [recriandoAcesso, setRecriandoAcesso] = useState(false)
   const [acessoMsg, setAcessoMsg] = useState('')
-  const [acessoUrl, setAcessoUrl] = useState('')
-  const [copiadoAcesso, setCopiadoAcesso] = useState(false)
   const [togglingId, setTogglingId] = useState<string | null>(null)
   const router = useRouter()
 
@@ -183,8 +181,6 @@ export default function AdminPage() {
     if (!editId) return
     setRecriandoAcesso(true)
     setAcessoMsg('')
-    setAcessoUrl('')
-    setCopiadoAcesso(false)
 
     const res = await fetch(`/api/admin/tenants/${editId}/recriar-acesso`, { method: 'POST' })
     const data = await res.json()
@@ -197,19 +193,11 @@ export default function AdminPage() {
 
     if (res.ok) {
       setAcessoMsg(`Sucesso: ${data.mensagem}`)
-      setAcessoUrl(data.url || '')
     } else {
       setAcessoMsg(`Erro: ${data.error || 'Erro ao recriar acesso'}`)
     }
 
     setRecriandoAcesso(false)
-  }
-
-  async function copiarAcessoUrl() {
-    if (!acessoUrl) return
-    await navigator.clipboard.writeText(acessoUrl)
-    setCopiadoAcesso(true)
-    setTimeout(() => setCopiadoAcesso(false), 2500)
   }
 
   async function logout() {
@@ -234,9 +222,7 @@ export default function AdminPage() {
     setResetMsg('')
     setResetandoSenha(false)
     setAcessoMsg('')
-    setAcessoUrl('')
     setRecriandoAcesso(false)
-    setCopiadoAcesso(false)
     setShowForm(true)
   }
 
@@ -247,9 +233,7 @@ export default function AdminPage() {
     setResetMsg('')
     setResetandoSenha(false)
     setAcessoMsg('')
-    setAcessoUrl('')
     setRecriandoAcesso(false)
-    setCopiadoAcesso(false)
   }
   function setField(field: keyof typeof FORM0) {
     return (v: string) => setForm(f => ({ ...f, [field]: v }))
@@ -361,7 +345,7 @@ export default function AdminPage() {
             </div>
           </div>
           <button
-            onClick={() => { setForm(FORM0); setEditId(null); setResetMsg(''); setResetandoSenha(false); setAcessoMsg(''); setAcessoUrl(''); setRecriandoAcesso(false); setCopiadoAcesso(false); setShowForm(true) }}
+            onClick={() => { setForm(FORM0); setEditId(null); setResetMsg(''); setResetandoSenha(false); setAcessoMsg(''); setRecriandoAcesso(false); setShowForm(true) }}
             style={{ display: 'flex', alignItems: 'center', gap: '7px', background: 'linear-gradient(135deg, #4f7aff, #7c3aed)', border: 'none', borderRadius: '10px', padding: '9px 18px', color: '#fff', fontSize: '13px', fontWeight: '600', cursor: 'pointer', whiteSpace: 'nowrap' }}
           >
             <Plus size={14} /> Novo escritório
@@ -554,7 +538,7 @@ export default function AdminPage() {
                           Acesso do responsavel
                         </p>
                         <p style={{ fontSize: '12px', color: '#6b7280', margin: 0 }}>
-                          Provisiona a conta do responsavel e envia email para definir a senha
+                          Provisiona a conta do responsavel e envia email novo para definir a senha. Ignore convites antigos.
                         </p>
                       </div>
                       <button
@@ -572,13 +556,13 @@ export default function AdminPage() {
                         onMouseEnter={e => { if (!recriandoAcesso) (e.currentTarget as HTMLElement).style.background = 'rgba(79,122,255,0.18)' }}
                         onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'rgba(79,122,255,0.1)'}
                       >
-                        {recriandoAcesso ? 'Gerando...' : 'Gerar acesso do responsavel'}
+                        {recriandoAcesso ? 'Gerando...' : 'Enviar acesso do responsavel'}
                       </button>
                     </div>
                     {acessoMsg && (
                       <div>
                         <p style={{
-                          marginTop: 0, marginBottom: acessoUrl ? '10px' : 0, fontSize: '12px', padding: '8px 12px',
+                          marginTop: 0, marginBottom: 0, fontSize: '12px', padding: '8px 12px',
                           borderRadius: '6px',
                           background: acessoMsg.startsWith('Sucesso:') ? 'rgba(34,197,94,0.08)' : 'rgba(255,87,87,0.08)',
                           color: acessoMsg.startsWith('Sucesso:') ? '#22c55e' : '#ff5757',
@@ -586,19 +570,6 @@ export default function AdminPage() {
                         }}>
                           {acessoMsg}
                         </p>
-                        {acessoUrl && (
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#080b14', border: '1px solid #1f2937', borderRadius: '8px', padding: '8px 10px' }}>
-                            <p style={{ fontSize: '11px', color: '#9ca3af', margin: 0, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                              {acessoUrl}
-                            </p>
-                            <button
-                              onClick={copiarAcessoUrl}
-                              style={{ display: 'flex', alignItems: 'center', gap: '5px', background: '#1f2937', border: '1px solid #374151', borderRadius: '6px', padding: '5px 9px', color: '#d1d5db', fontSize: '11px', cursor: 'pointer', whiteSpace: 'nowrap' }}
-                            >
-                              {copiadoAcesso ? <><Check size={11} /> Copiado</> : <><Copy size={11} /> Copiar link</>}
-                            </button>
-                          </div>
-                        )}
                       </div>
                     )}
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>

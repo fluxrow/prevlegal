@@ -14,11 +14,12 @@ function AceitarConviteForm() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const token = searchParams.get('token')
-  const [status, setStatus] = useState<'loading' | 'valido' | 'invalido' | 'registrando' | 'sucesso' | 'erro'>('loading')
+  const [status, setStatus] = useState<'loading' | 'valido' | 'invalido' | 'obsoleto' | 'registrando' | 'sucesso' | 'erro'>('loading')
   const [convite, setConvite] = useState<Convite | null>(null)
   const [nome, setNome] = useState('')
   const [senha, setSenha] = useState('')
   const [erro, setErro] = useState('')
+  const [staleEmail, setStaleEmail] = useState('')
 
   useEffect(() => {
     if (!token) { setStatus('invalido'); return }
@@ -26,6 +27,7 @@ function AceitarConviteForm() {
       .then(r => r.json())
       .then(d => {
         if (d.convite) { setConvite(d.convite); setStatus('valido') }
+        else if (d.stale) { setStaleEmail(d.email || ''); setStatus('obsoleto') }
         else setStatus('invalido')
       })
   }, [token])
@@ -66,6 +68,19 @@ function AceitarConviteForm() {
             <XCircle size={48} color="#ff5757" style={{ marginBottom: '16px' }} />
             <h2 style={{ color: '#fff', fontFamily: 'Syne, sans-serif', fontSize: '20px', margin: '0 0 8px' }}>Convite inválido</h2>
             <p style={{ color: '#6b7280', fontSize: '14px' }}>Este convite não existe, já foi usado ou expirou.</p>
+          </div>
+        )}
+
+        {status === 'obsoleto' && (
+          <div style={{ textAlign: 'center' }}>
+            <XCircle size={48} color="#f5a623" style={{ marginBottom: '16px' }} />
+            <h2 style={{ color: '#fff', fontFamily: 'Syne, sans-serif', fontSize: '20px', margin: '0 0 8px' }}>Link antigo</h2>
+            <p style={{ color: '#9ca3af', fontSize: '14px', margin: '0 0 8px' }}>
+              Este acesso ja foi provisionado para {staleEmail || 'este email'}.
+            </p>
+            <p style={{ color: '#6b7280', fontSize: '14px', margin: 0 }}>
+              Use o email mais recente de definicao de senha ou entre em <strong style={{ color: '#d1d5db' }}>/login</strong>.
+            </p>
           </div>
         )}
 
