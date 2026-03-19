@@ -1,12 +1,14 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { Suspense, useEffect, useRef, useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import type { EmailOtpType } from '@supabase/supabase-js'
 import { ShieldCheck } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
-export default function RedefinirSenhaPage() {
+function RedefinirSenhaContent() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const supabaseRef = useRef<ReturnType<typeof createClient> | null>(null)
   const [senha, setSenha] = useState('')
   const [confirmacao, setConfirmacao] = useState('')
@@ -18,12 +20,43 @@ export default function RedefinirSenhaPage() {
     const supabase = createClient()
     supabaseRef.current = supabase
     let ativo = true
+    let sessionTimer: ReturnType<typeof setTimeout> | null = null
 
-    const timer = setTimeout(async () => {
-      const { data } = await supabase.auth.getSession()
-      if (!ativo) return
-      setStatus(data.session ? 'ready' : 'invalid')
-    }, 400)
+    async function validarLink() {
+      const tokenHash = searchParams.get('token_hash')
+      const type = (searchParams.get('type') || 'recovery') as EmailOtpType
+      const code = searchParams.get('code')
+      const hash = typeof window !== 'undefined' ? window.location.hash : ''
+
+      if (hash.includes('error=')) {
+        if (ativo) setStatus('invalid')
+        return
+      }
+
+      if (tokenHash) {
+        const { error } = await supabase.auth.verifyOtp({
+          token_hash: tokenHash,
+          type,
+        })
+
+        if (!ativo) return
+        setStatus(error ? 'invalid' : 'ready')
+        return
+      }
+
+      if (code) {
+        const { error } = await supabase.auth.exchangeCodeForSession(code)
+        if (!ativo) return
+        setStatus(error ? 'invalid' : 'ready')
+        return
+      }
+
+      sessionTimer = setTimeout(async () => {
+        const { data } = await supabase.auth.getSession()
+        if (!ativo) return
+        setStatus(data.session ? 'ready' : 'invalid')
+      }, 400)
+    }
 
     const {
       data: { subscription },
@@ -34,12 +67,14 @@ export default function RedefinirSenhaPage() {
       }
     })
 
+    validarLink()
+
     return () => {
       ativo = false
-      clearTimeout(timer)
       subscription.unsubscribe()
+      if (sessionTimer) clearTimeout(sessionTimer)
     }
-  }, [])
+  }, [searchParams])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -129,5 +164,13 @@ export default function RedefinirSenhaPage() {
         )}
       </form>
     </div>
+  )
+}
+
+export default function RedefinirSenhaPage() {
+  return (
+    <Suspense fallback={null}>
+      <RedefinirSenhaContent />
+    </Suspense>
   )
 }

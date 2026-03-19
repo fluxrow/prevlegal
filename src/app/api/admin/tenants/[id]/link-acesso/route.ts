@@ -41,7 +41,7 @@ export async function POST(
     return NextResponse.json({ error: 'Email do responsavel nao encontrado para este tenant' }, { status: 404 })
   }
 
-  const canBootstrapPrimeiroTenant = await canProvisionOutsideContainment(adminSupabase)
+  const canBootstrapPrimeiroTenant = await canProvisionOutsideContainment(adminSupabase, id)
 
   if (!isAllowedByTenantContainment(email) && !canBootstrapPrimeiroTenant) {
     return NextResponse.json({

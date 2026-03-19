@@ -123,6 +123,8 @@ Proximo passo recomendado:
   - `src/app/admin/page.tsx` agora mostra erro real de salvamento no modal
   - `src/lib/supabase/middleware.ts` agora trata `/api/admin/*` como superficie admin autenticada por `admin_token`, sem desviar essas rotas para `/login` do app
   - `src/lib/supabase/middleware.ts` agora tambem deixa `/api/admin/reauth` publico, evitando que a reautenticacao do admin seja desviada para o `/login` do app
+  - `src/lib/tenant-containment.ts` agora permite onboarding/controlos do unico tenant operacional existente, mesmo apos o primeiro usuario ter sido criado
+  - `src/app/auth/redefinir-senha/page.tsx` agora aceita links de redefinicao com `token_hash` e `code`, alem de sessao ja estabelecida
 - validacao operacional concluida:
   - primeiro escritorio de teste foi criado com sucesso no admin apos o reset limpo
   - escritorio usado no teste: `Fluxrow`

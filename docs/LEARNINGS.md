@@ -237,6 +237,18 @@ export async function GET(
 **Correção:** Incluir `/api/admin/reauth` entre as rotas públicas do middleware
 **Regra prática:** Endpoints que estabelecem autenticação ou reautenticação não podem depender da sessão que eles próprios estão tentando renovar
 
+### 37. Contenção do tenant não pode travar o próprio primeiro tenant depois do bootstrap inicial
+**Problema:** Depois de criar o primeiro escritório e o primeiro usuário operacional, `Enviar acesso do responsável` e `Copiar link manual` voltaram a responder que o rollout estava pausado
+**Causa:** A contenção temporária liberava apenas `usuarios = 0`; assim que o primeiro usuário surgia, o único tenant operacional também ficava bloqueado
+**Correção:** Permitir as rotas de onboarding do único tenant existente quando todos os usuários atuais pertencem a esse mesmo tenant
+**Regra prática:** Em contenção multi-tenant, o bloqueio precisa impedir expansão para um segundo tenant, não quebrar o bootstrap do primeiro tenant real
+
+### 38. Tela de redefinição precisa aceitar os formatos reais de link enviados pelo Supabase Auth
+**Problema:** O email de acesso/redefinição podia abrir a página de nova senha e ainda assim cair como "link inválido ou expirou"
+**Causa:** A tela dependia quase só de uma sessão já estabelecida; ela não tratava explicitamente `token_hash` ou `code` na URL
+**Correção:** A página `/auth/redefinir-senha` agora processa `token_hash`, `type` e `code`, além do fluxo de sessão existente
+**Regra prática:** Páginas de auth do PrevLegal devem suportar os diferentes formatos de callback que o Supabase pode emitir em ambientes reais
+
 ### 34. Contenção por allowlist sozinha não basta quando o tenant piloto ainda tem múltiplos usuários
 **Cenário:** Mesmo após bloquear novos escritórios no app, algumas superfícies continuavam amplas demais para o modelo legado compartilhado
 **Causa:** O banco operacional ainda não tem `tenant_id`, então várias rotas liam dados globais ou dependiam de permissões abertas herdadas do modelo `um banco por tenant`
