@@ -38,6 +38,7 @@ Ultima atualizacao: 2026-03-19
 - bootstrap tenant-aware iniciado no codigo para responsavel, convites, importacao e lead manual
 - cadastro do primeiro escritorio no admin endurecido com geracao automatica de slug e feedback de erro no modal
 - middleware agora respeita `/api/admin/*` com `admin_token`, evitando redirecionamento indevido para `/login` do app durante o bootstrap
+- primeiro escritorio de teste ja foi criado com sucesso no operacional limpo (`Fluxrow`)
 - Contencao atual:
   - allowlist do app continua ativa
   - onboarding fora do piloto continua bloqueado
@@ -47,7 +48,7 @@ Ultima atualizacao: 2026-03-19
 
 Bootstrapar o operacional limpo:
 - recadastrar o primeiro escritorio real do zero no banco operacional
-- provisionar o responsavel real e validar o primeiro acesso no modelo novo
+- provisionar o responsavel do escritorio de teste/real e validar o primeiro acesso no modelo novo
 - manter o legado piloto descartado, sem backfill Alexandrini/Jessica
 - revisar a allowlist do app antes de liberar o primeiro escritorio real para uso operacional
 - depois substituir o escopo temporario por usuario por tenant isolation canonico

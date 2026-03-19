@@ -105,6 +105,10 @@ Incidente P0 de isolamento de dados entre escritorios.
   - `configuracoes = 0`
   - `contratos = 0`
   - `parcelas = 0`
+- bootstrap inicial confirmado apos o reset:
+  - primeiro escritorio de teste criado com sucesso no admin
+  - nome usado no teste: `Fluxrow`
+  - proximo passo operacional: provisionar acesso do responsavel e validar o primeiro login do tenant novo
 
 ## Fase 26B — Auditoria de schema
 
