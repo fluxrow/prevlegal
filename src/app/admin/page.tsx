@@ -184,23 +184,18 @@ export default function AdminPage() {
 
     if (res.ok) {
       setResetMsg(`Sucesso: ${data.mensagem}`)
-      const linkRes = await fetch(`/api/admin/tenants/${editId}/link-acesso`, { method: 'POST' })
-      const linkData = await linkRes.json().catch(() => ({}))
-
-      if (linkRes.ok && linkData.url) {
-        setLinkManual(linkData.url)
+      if (data.manual_url) {
+        setLinkManual(data.manual_url)
         setLinkManualMsg(
           'Reset enviado. Este link manual ja ficou pronto como contingencia caso o link do email falhe.'
         )
 
         try {
-          await navigator.clipboard.writeText(linkData.url)
+          await navigator.clipboard.writeText(data.manual_url)
           setCopiadoLinkManual(true)
         } catch {
           setCopiadoLinkManual(false)
         }
-      } else if (linkData?.error) {
-        setLinkManualMsg(`Atencao: ${linkData.error}`)
       }
     } else {
       if (res.status === 409 && data.acao_sugerida === 'recriar-acesso') {

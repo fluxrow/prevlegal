@@ -127,6 +127,8 @@ Proximo passo recomendado:
   - `src/app/auth/redefinir-senha/page.tsx` agora aceita links de redefinicao com `token_hash` e `code`, alem de sessao ja estabelecida
   - `src/app/admin/page.tsx` agora gera/copía automaticamente o link manual de contingencia logo apos `Enviar acesso do responsavel` responder sucesso
   - `src/app/admin/page.tsx` agora tambem gera/copía automaticamente o link manual de contingencia logo apos `Enviar reset de senha`
+  - `src/app/api/usuarios/reset-manual/route.ts` cria um caminho de reset manual via token proprio + `service_role`, sem depender da sessao recovery do Supabase
+  - `src/app/auth/redefinir-senha/page.tsx` agora suporta esse token manual de reset, alem dos formatos nativos do Supabase
 - validacao operacional concluida:
   - primeiro escritorio de teste foi criado com sucesso no admin apos o reset limpo
   - escritorio usado no teste: `Fluxrow`

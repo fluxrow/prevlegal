@@ -23,6 +23,7 @@ function RedefinirSenhaContent() {
     let sessionTimer: ReturnType<typeof setTimeout> | null = null
 
     async function validarLink() {
+      const manualToken = searchParams.get('token')
       const tokenHash = searchParams.get('token_hash')
       const type = (searchParams.get('type') || 'recovery') as EmailOtpType
       const code = searchParams.get('code')
@@ -30,6 +31,13 @@ function RedefinirSenhaContent() {
 
       if (hash.includes('error=')) {
         if (ativo) setStatus('invalid')
+        return
+      }
+
+      if (manualToken) {
+        const res = await fetch(`/api/usuarios/reset-manual?token=${encodeURIComponent(manualToken)}`)
+        if (!ativo) return
+        setStatus(res.ok ? 'ready' : 'invalid')
         return
       }
 
@@ -93,6 +101,27 @@ function RedefinirSenhaContent() {
     setMensagem('')
 
     const supabase = supabaseRef.current || createClient()
+    const manualToken = searchParams.get('token')
+
+    if (manualToken) {
+      const res = await fetch('/api/usuarios/reset-manual', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: manualToken, senha }),
+      })
+
+      const json = await res.json().catch(() => ({}))
+
+      if (!res.ok) {
+        setMensagem(json.error || 'Nao foi possivel redefinir a senha.')
+        setLoading(false)
+        return
+      }
+
+      router.replace('/login')
+      return
+    }
+
     const { error } = await supabase.auth.updateUser({ password: senha })
 
     if (error) {

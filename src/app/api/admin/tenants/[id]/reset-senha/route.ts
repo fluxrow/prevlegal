@@ -2,6 +2,11 @@ import { NextResponse } from 'next/server'
 import { verificarAdminAuth, verificarAdminReauthRecente } from '@/lib/admin-auth'
 import { createClient } from '@supabase/supabase-js'
 import { canProvisionOutsideContainment, isAllowedByTenantContainment } from '@/lib/tenant-containment'
+import { randomUUID } from 'crypto'
+
+function gerarTokenReset() {
+  return randomUUID().replace(/-/g, '') + randomUUID().replace(/-/g, '')
+}
 
 export async function POST(
   _request: Request,
@@ -66,6 +71,31 @@ export async function POST(
   }
 
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://app.prevlegal.com.br'
+  const token = gerarTokenReset()
+
+  await adminSupabase
+    .from('convites')
+    .delete()
+    .eq('email', email)
+    .eq('role', 'password_reset')
+    .eq('aceito', false)
+
+  const { error: insertResetTokenError } = await adminSupabase
+    .from('convites')
+    .insert({
+      email,
+      role: 'password_reset',
+      token,
+      aceito: false,
+      expires_at: new Date(Date.now() + 1000 * 60 * 30).toISOString(),
+      tenant_id: id,
+      convidado_por: null,
+    })
+
+  if (insertResetTokenError) {
+    return NextResponse.json({ error: insertResetTokenError.message }, { status: 500 })
+  }
+
   const { error } = await adminSupabase.auth.resetPasswordForEmail(email, {
     redirectTo: `${baseUrl}/auth/redefinir-senha`,
   })
@@ -78,5 +108,6 @@ export async function POST(
     ok: true,
     mensagem: `Email de redefinicao enviado para ${email}`,
     email,
+    manual_url: `${baseUrl}/auth/redefinir-senha?token=${token}`,
   })
 }

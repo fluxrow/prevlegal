@@ -261,6 +261,12 @@ export async function GET(
 **Correção:** Após sucesso em `Enviar reset de senha`, o admin agora também gera e copia automaticamente o link manual de contingência
 **Regra prática:** Sempre que um email de auth for opcionalmente instável, o operador deve sair da ação já com um link manual funcional em mãos
 
+### 41. Reset manual robusto é melhor do que depender da sessão recovery do Supabase
+**Problema:** Mesmo com link manual, o reset podia falhar com `User from sub claim in JWT does not exist`
+**Causa:** O fluxo ainda acabava dependendo da sessão recovery/JWT emitida pelo Supabase Auth
+**Correção:** Criar `reset-manual` via token próprio salvo em `convites` e aplicar a nova senha com `auth.admin.updateUserById`
+**Regra prática:** Para fluxos administrativos críticos do PrevLegal, preferir tokens próprios no backend quando a UX de recovery do provedor externo se mostrar inconsistente
+
 ### 34. Contenção por allowlist sozinha não basta quando o tenant piloto ainda tem múltiplos usuários
 **Cenário:** Mesmo após bloquear novos escritórios no app, algumas superfícies continuavam amplas demais para o modelo legado compartilhado
 **Causa:** O banco operacional ainda não tem `tenant_id`, então várias rotas liam dados globais ou dependiam de permissões abertas herdadas do modelo `um banco por tenant`

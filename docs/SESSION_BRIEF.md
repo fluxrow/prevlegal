@@ -43,6 +43,7 @@ Ultima atualizacao: 2026-03-19
 - onboarding do primeiro tenant agora pode seguir mesmo apos a criacao do primeiro usuario, e a tela de redefinicao aceita `token_hash`/`code`
 - `Enviar acesso do responsavel` agora ja devolve o link manual de contingencia no mesmo passo
 - `Enviar reset de senha` agora tambem devolve o link manual de contingencia no mesmo passo
+- reset manual agora usa token proprio no backend e nao depende mais da sessao recovery do Supabase
 - Contencao atual:
   - allowlist do app continua ativa
   - onboarding fora do piloto continua bloqueado
