@@ -121,6 +121,7 @@ Proximo passo recomendado:
   - `src/app/api/admin/tenants/route.ts` agora normaliza payload e gera `slug` automaticamente quando vazio
   - `src/app/api/admin/tenants/[id]/route.ts` agora normaliza update e evita colisao silenciosa de `slug`
   - `src/app/admin/page.tsx` agora mostra erro real de salvamento no modal
+  - `src/lib/supabase/middleware.ts` agora trata `/api/admin/*` como superficie admin autenticada por `admin_token`, sem desviar essas rotas para `/login` do app
 - depois substituir o escopo temporario por usuario por `tenant_id` canonico
 - revisar RLS com tenant isolation real
 

@@ -37,6 +37,7 @@ Ultima atualizacao: 2026-03-19
   - contagens finais zeradas em `tenants`, `usuarios`, `listas`, `leads`, `conversas`, `mensagens_inbound`, `portal_mensagens`, `configuracoes`, `contratos` e `parcelas`
 - bootstrap tenant-aware iniciado no codigo para responsavel, convites, importacao e lead manual
 - cadastro do primeiro escritorio no admin endurecido com geracao automatica de slug e feedback de erro no modal
+- middleware agora respeita `/api/admin/*` com `admin_token`, evitando redirecionamento indevido para `/login` do app durante o bootstrap
 - Contencao atual:
   - allowlist do app continua ativa
   - onboarding fora do piloto continua bloqueado

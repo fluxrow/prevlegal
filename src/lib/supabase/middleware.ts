@@ -62,6 +62,9 @@ export async function updateSession(request: NextRequest) {
     pathname.startsWith(p),
   ) || publicApiPrefixes.some((p) => pathname.startsWith(p));
   const isAdminRoute = pathname === '/admin' || pathname.startsWith('/admin/')
+  const isAdminApiRoute = pathname.startsWith('/api/admin/')
+    && pathname !== '/api/admin/auth'
+    && pathname !== '/api/admin/reauth'
   const isApiRoute = pathname.startsWith('/api/')
   const allowedBlockedApiPrefixes = [
     '/api/admin/',
@@ -73,11 +76,17 @@ export async function updateSession(request: NextRequest) {
     '/api/session/reauth',
   ]
 
-  if (isAdminRoute && pathname !== '/admin/login' && pathname !== '/admin/reauth') {
+  if ((isAdminRoute && pathname !== '/admin/login' && pathname !== '/admin/reauth') || isAdminApiRoute) {
     const adminToken = request.cookies.get('admin_token')?.value
     const adminLastActive = request.cookies.get(ADMIN_LAST_ACTIVE_COOKIE)?.value
 
     if (!adminToken || isTimestampExpired(adminLastActive, ADMIN_IDLE_MINUTES * 60 * 1000)) {
+      if (isAdminApiRoute) {
+        const response = NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        response.cookies.delete(ADMIN_LAST_ACTIVE_COOKIE)
+        return response
+      }
+
       const url = request.nextUrl.clone()
       url.pathname = '/admin/login'
       const response = NextResponse.redirect(url)
