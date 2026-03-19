@@ -74,6 +74,15 @@ Esse plano substitui o backfill do legado **se** a decisao de negocio for:
 8. Importar listas reais novamente
 9. Prosseguir com o tenant isolation definitivo no codigo/RLS
 
+## Arquivos prontos para execucao
+
+- foundation isolada:
+  - `supabase/migrations/031_tenant_isolation_foundation.sql`
+- reset isolado:
+  - `supabase/reset/operational_reset_after_031.sql`
+- execucao combinada no SQL Editor:
+  - `supabase/reset/combined_apply_031_and_reset.sql`
+
 ## Por que esse caminho e melhor aqui
 
 - evita backfill de dados sujos/de contexto

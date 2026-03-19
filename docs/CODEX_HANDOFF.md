@@ -92,6 +92,7 @@ Proximo passo recomendado:
 - referencias criadas:
   - `docs/TENANT_RESET_PLAN.md`
   - `supabase/reset/operational_reset_after_031.sql`
+  - `supabase/reset/combined_apply_031_and_reset.sql`
 - depois substituir o escopo temporario por usuario por `tenant_id` canonico
 - revisar RLS com tenant isolation real
 
