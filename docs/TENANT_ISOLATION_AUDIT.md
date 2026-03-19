@@ -47,6 +47,7 @@ No estado atual:
 - `audit_logs`
 - `lead_anotacoes`
 - `mensagens_inbound`
+- `portal_mensagens`
 - `notificacoes`
 - `lead_documentos`
 - `calculadora_prev`
@@ -145,6 +146,8 @@ Risco:
   - leitura agregada sem tenant funcional
 - `src/app/api/portal/mensagens/[leadId]/route.ts`
   - depende de `lead_id` sem tenant scope
+- `portal_mensagens`
+  - existe na base operacional e tambem precisa receber `tenant_id`
 
 Risco:
 - leitura de mensagens de outro escritorio
@@ -250,6 +253,7 @@ Assumir tenant logico no banco operacional compartilhado.
 - `audit_logs`
 - `lead_anotacoes`
 - `mensagens_inbound`
+- `portal_mensagens`
 - `notificacoes`
 - `lead_documentos`
 - `calculadora_prev`

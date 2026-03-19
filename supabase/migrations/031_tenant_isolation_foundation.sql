@@ -23,6 +23,7 @@ ALTER TABLE disparos ADD COLUMN IF NOT EXISTS tenant_id uuid REFERENCES tenants(
 ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS tenant_id uuid REFERENCES tenants(id);
 ALTER TABLE lead_anotacoes ADD COLUMN IF NOT EXISTS tenant_id uuid REFERENCES tenants(id);
 ALTER TABLE mensagens_inbound ADD COLUMN IF NOT EXISTS tenant_id uuid REFERENCES tenants(id);
+ALTER TABLE portal_mensagens ADD COLUMN IF NOT EXISTS tenant_id uuid REFERENCES tenants(id);
 ALTER TABLE notificacoes ADD COLUMN IF NOT EXISTS tenant_id uuid REFERENCES tenants(id);
 ALTER TABLE lead_documentos ADD COLUMN IF NOT EXISTS tenant_id uuid REFERENCES tenants(id);
 ALTER TABLE calculadora_prev ADD COLUMN IF NOT EXISTS tenant_id uuid REFERENCES tenants(id);
@@ -46,6 +47,7 @@ CREATE INDEX IF NOT EXISTS idx_disparos_tenant_id ON disparos(tenant_id);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_tenant_id ON audit_logs(tenant_id);
 CREATE INDEX IF NOT EXISTS idx_lead_anotacoes_tenant_id ON lead_anotacoes(tenant_id);
 CREATE INDEX IF NOT EXISTS idx_mensagens_inbound_tenant_id ON mensagens_inbound(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_portal_mensagens_tenant_id ON portal_mensagens(tenant_id);
 CREATE INDEX IF NOT EXISTS idx_notificacoes_tenant_id ON notificacoes(tenant_id);
 CREATE INDEX IF NOT EXISTS idx_lead_documentos_tenant_id ON lead_documentos(tenant_id);
 CREATE INDEX IF NOT EXISTS idx_calculadora_prev_tenant_id ON calculadora_prev(tenant_id);
