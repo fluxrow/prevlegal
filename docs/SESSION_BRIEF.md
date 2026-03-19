@@ -32,10 +32,10 @@ Ultima atualizacao: 2026-03-19
 
 ## Proximo Passo Recomendado
 
-Fechar o fluxo correto de acesso do responsavel:
-- publicar a correcao que remove a dependencia de `tenant_id` em `usuarios`
-- reprovisionar `jessica@alexandrini.com.br` pelo admin
-- validar o email de definicao/reset de senha
+Fechar a validacao funcional do acesso:
+- confirmar com a Jessica o recebimento do email de definicao de senha
+- concluir a criacao da senha em `/auth/redefinir-senha`
+- validar login em `/login`
 - depois seguir com o fluxo certo: admin do sistema cria escritorio -> responsavel ativa a conta -> admin do escritorio convida os demais usuarios
 
 ## Bloqueios e Cuidados

@@ -273,6 +273,16 @@ Pontos que precisam ser preservados durante a implementacao:
   - atualiza o usuario Auth para o email real
   - reaproveita a linha existente de `public.usuarios`
 
+2026-03-19 - Operacao real Jessica concluida
+- Commit publicado: `7e741e46` (`fix: reuse existing usuarios rows during reprovisioning`)
+- Deploy de producao publicado em `https://prevlegal-cxf4a3kyt-fluxrow.vercel.app` e alias em `https://app.prevlegal.com.br`
+- Fluxo administrativo executado com sucesso em producao:
+  - tenant `Alexandrini Advogados`
+  - `responsavel_email`: `jessica@alexandrini.com.br`
+  - resposta do endpoint `POST /api/admin/tenants/ad01e4ec-509b-4bf0-976e-c17bc2e53373/recriar-acesso`:
+    - `{"ok":true,"email":"jessica@alexandrini.com.br","mensagem":"Conta provisionada e email de definicao de senha enviado para jessica@alexandrini.com.br"}`
+- Leitura operacional confirmada: para primeiro acesso do responsavel, usar `Gerar acesso do responsavel`; o botao `Resetar senha` fica como etapa posterior, apos a conta ja existir/estar ativada no fluxo do produto
+
 ## Arquivos Alterados Nesta Sessao
 
 - `supabase/migrations/029_financeiro.sql`
