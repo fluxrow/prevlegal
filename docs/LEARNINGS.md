@@ -231,6 +231,12 @@ export async function GET(
 **Correção:** Tratar `/api/admin/*` como superfície administrativa no middleware, respeitando `admin_token` e retornando `401` JSON quando a autenticação do admin estiver ausente
 **Regra prática:** Toda rota `/api/admin/*` do PrevLegal deve ser autenticada pelo contexto do admin, não pelo contexto do app
 
+### 36. `/api/admin/reauth` precisa continuar pública para o próprio fluxo de reautenticação funcionar
+**Problema:** A tela de reautenticação do admin parecia rejeitar a senha correta
+**Causa:** O middleware protegia `/api/admin/reauth` como se fosse rota privada do app, então a chamada era redirecionada para `/login` antes de validar as credenciais
+**Correção:** Incluir `/api/admin/reauth` entre as rotas públicas do middleware
+**Regra prática:** Endpoints que estabelecem autenticação ou reautenticação não podem depender da sessão que eles próprios estão tentando renovar
+
 ### 34. Contenção por allowlist sozinha não basta quando o tenant piloto ainda tem múltiplos usuários
 **Cenário:** Mesmo após bloquear novos escritórios no app, algumas superfícies continuavam amplas demais para o modelo legado compartilhado
 **Causa:** O banco operacional ainda não tem `tenant_id`, então várias rotas liam dados globais ou dependiam de permissões abertas herdadas do modelo `um banco por tenant`

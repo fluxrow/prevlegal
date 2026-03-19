@@ -38,6 +38,7 @@ Ultima atualizacao: 2026-03-19
 - bootstrap tenant-aware iniciado no codigo para responsavel, convites, importacao e lead manual
 - cadastro do primeiro escritorio no admin endurecido com geracao automatica de slug e feedback de erro no modal
 - middleware agora respeita `/api/admin/*` com `admin_token`, evitando redirecionamento indevido para `/login` do app durante o bootstrap
+- middleware agora tambem respeita `/api/admin/reauth` como rota publica do admin
 - primeiro escritorio de teste ja foi criado com sucesso no operacional limpo (`Fluxrow`)
 - Contencao atual:
   - allowlist do app continua ativa
