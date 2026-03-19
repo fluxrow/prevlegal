@@ -288,6 +288,10 @@ Pontos que precisam ser preservados durante a implementacao:
 - `src/app/auth/aceitar-convite/page.tsx` passou a exibir estado `obsoleto`, orientando o uso do email mais recente de definicao de senha
 - `src/app/admin/page.tsx` removeu a exibicao/copia de URL para o fluxo do responsavel e reforcou a instrucao para ignorar convites antigos
 
+2026-03-19 - LP alinhada com dominio canonico
+- `public/lp.html` passou a apontar todos os CTAs de acesso para `https://app.prevlegal.com.br/login`
+- Nao havia links relativos para `/login` nem outras ocorrencias restantes de `https://prevlegal.vercel.app` nesse arquivo
+
 ## Arquivos Alterados Nesta Sessao
 
 - `supabase/migrations/029_financeiro.sql`
