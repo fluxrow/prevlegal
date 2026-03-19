@@ -1,19 +1,22 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
-
-function createAdminSupabase() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  )
-}
+import { createClient } from '@/lib/supabase/server'
+import { getTenantContext } from '@/lib/tenant-context'
 
 export async function GET() {
-  const supabase = createAdminSupabase()
-  const { data, error } = await supabase
+  const supabase = await createClient()
+  const context = await getTenantContext(supabase)
+  if (!context) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  let query = supabase
     .from('conversas')
-    .select('*, leads(nome, nb, status)')
+    .select('*, leads!inner(nome, nb, status, responsavel_id)')
     .order('ultima_mensagem_at', { ascending: false })
+
+  if (!context.isAdmin) {
+    query = query.eq('leads.responsavel_id', context.usuarioId)
+  }
+
+  const { data, error } = await query
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json(data || [])

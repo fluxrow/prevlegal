@@ -1,13 +1,14 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 import { criarEventoCalendar } from '@/lib/google-calendar'
+import { canAccessLeadId, getTenantContext } from '@/lib/tenant-context'
 
 export async function GET() {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const context = await getTenantContext(supabase)
+  if (!context) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { data, error } = await supabase
+  let query = supabase
     .from('agendamentos')
     .select(`
       *,
@@ -16,20 +17,31 @@ export async function GET() {
     `)
     .order('data_hora', { ascending: true })
 
+  if (!context.isAdmin) {
+    query = query.eq('usuario_id', context.usuarioId)
+  }
+
+  const { data, error } = await query
+
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json(data)
 }
 
 export async function POST(request: Request) {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const context = await getTenantContext(supabase)
+  if (!context) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const body = await request.json()
   const { lead_id, usuario_id, data_hora, duracao_minutos = 30, observacoes, honorario } = body
 
   if (!lead_id || !data_hora) {
     return NextResponse.json({ error: 'lead_id e data_hora são obrigatórios' }, { status: 400 })
+  }
+
+  if (!context.isAdmin) {
+    const allowed = await canAccessLeadId(supabase, context, lead_id)
+    if (!allowed) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
   // Busca email do lead (se tiver)
@@ -69,7 +81,7 @@ export async function POST(request: Request) {
     .from('agendamentos')
     .insert({
       lead_id,
-      usuario_id: usuario_id ?? user.id,
+      usuario_id: context.isAdmin ? (usuario_id ?? context.usuarioId) : context.usuarioId,
       data_hora,
       duracao_minutos,
       observacoes,

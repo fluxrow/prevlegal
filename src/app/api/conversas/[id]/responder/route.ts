@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { createClient as createServerClient } from '@/lib/supabase/server'
 import { getTwilioCredentials, sendWhatsApp } from '@/lib/twilio'
+import { getTenantContext } from '@/lib/tenant-context'
 
 function createAdminSupabase() {
   return createClient(
@@ -13,6 +15,10 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const authSupabase = await createServerClient()
+  const context = await getTenantContext(authSupabase)
+  if (!context) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
   const supabase = createAdminSupabase()
   const { id } = await params
   const { mensagem } = await request.json()
@@ -21,11 +27,15 @@ export async function POST(
     return NextResponse.json({ error: 'mensagem obrigatória' }, { status: 400 })
   }
 
-  const { data: conversa } = await supabase
+  let conversaQuery = supabase
     .from('conversas')
-    .select('telefone')
+    .select('telefone, lead_id, leads!inner(responsavel_id)')
     .eq('id', id)
-    .single()
+  if (!context.isAdmin) {
+    conversaQuery = conversaQuery.eq('leads.responsavel_id', context.usuarioId)
+  }
+
+  const { data: conversa } = await conversaQuery.single()
 
   if (!conversa) {
     return NextResponse.json({ error: 'Conversa não encontrada' }, { status: 404 })

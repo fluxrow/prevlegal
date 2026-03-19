@@ -3,21 +3,50 @@ import { redirect } from 'next/navigation'
 import { Users, TrendingUp, Calendar, DollarSign, ArrowUpRight, Clock, CheckCircle2, XCircle } from 'lucide-react'
 import RecentLeads from '@/components/recent-leads'
 import DashboardOnboardingTour from '@/components/dashboard-onboarding-tour'
+import { getTenantContext } from '@/lib/tenant-context'
 
 export default async function DashboardPage() {
     const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) redirect('/login')
+    const context = await getTenantContext(supabase)
+    if (!context) redirect('/login')
 
-    // Busca stats reais
-    const { data: stats } = await supabase.from('v_dashboard_stats').select('*').single()
-    const { data: recentLeads } = await supabase
+    let leadsQuery = supabase
         .from('leads')
         .select('id, nome, status, score, ganho_potencial, created_at')
+        .eq('lgpd_optout', false)
+
+    if (!context.isAdmin) {
+        leadsQuery = leadsQuery.eq('responsavel_id', context.usuarioId)
+    }
+
+    const { data: recentLeads } = await leadsQuery
         .order('created_at', { ascending: false })
         .limit(8)
 
-    const s = stats || {}
+    let statsLeadsQuery = supabase
+        .from('leads')
+        .select('status, score, ganho_potencial')
+        .eq('lgpd_optout', false)
+
+    if (!context.isAdmin) {
+        statsLeadsQuery = statsLeadsQuery.eq('responsavel_id', context.usuarioId)
+    }
+
+    const { data: statsLeads } = await statsLeadsQuery
+
+    const s = {
+        total_novos: statsLeads?.filter((lead) => lead.status === 'new').length || 0,
+        total_contatados: statsLeads?.filter((lead) => lead.status === 'contacted').length || 0,
+        total_aguardando: statsLeads?.filter((lead) => lead.status === 'awaiting').length || 0,
+        total_agendados: statsLeads?.filter((lead) => lead.status === 'scheduled').length || 0,
+        total_convertidos: statsLeads?.filter((lead) => lead.status === 'converted').length || 0,
+        total_perdidos: statsLeads?.filter((lead) => lead.status === 'lost').length || 0,
+        total_leads: statsLeads?.length || 0,
+        score_medio: statsLeads && statsLeads.length > 0
+            ? Math.round((statsLeads.reduce((acc, lead) => acc + Number(lead.score || 0), 0) / statsLeads.length) * 10) / 10
+            : 0,
+        potencial_total: statsLeads?.reduce((acc, lead) => acc + Number(lead.ganho_potencial || 0), 0) || 0,
+    }
 
     function fmt(v: number) {
         return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(v || 0)

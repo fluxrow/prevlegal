@@ -1,15 +1,27 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
+import { getAccessibleLeadIds, getTenantContext } from '@/lib/tenant-context'
 
 export async function GET() {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const context = await getTenantContext(supabase)
+  if (!context) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { data } = await supabase
+  const accessibleLeadIds = await getAccessibleLeadIds(supabase, context)
+
+  let query = supabase
     .from('portal_mensagens')
-    .select('lead_id, mensagem, remetente, lida, created_at, leads!inner(nome)')
+    .select('lead_id, mensagem, remetente, lida, created_at, leads!inner(nome, responsavel_id)')
     .order('created_at', { ascending: false })
+
+  if (!context.isAdmin) {
+    if (!accessibleLeadIds || accessibleLeadIds.length === 0) {
+      return NextResponse.json({ threads: [] })
+    }
+    query = query.in('lead_id', accessibleLeadIds)
+  }
+
+  const { data } = await query
 
   const map: Record<string, {
     lead_id: string

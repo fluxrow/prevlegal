@@ -4,17 +4,23 @@ import KanbanBoard from '@/components/kanban-board'
 import LeadsOnboardingTour from '@/components/leads-onboarding-tour'
 import LeadsNovoLeadButton from '@/components/leads-novo-lead-button'
 import { Users, DollarSign, TrendingUp } from 'lucide-react'
+import { getTenantContext } from '@/lib/tenant-context'
 
 export default async function LeadsPage() {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
+  const context = await getTenantContext(supabase)
+  if (!context) redirect('/login')
 
-  const { data: leads } = await supabase
+  let leadsQuery = supabase
     .from('leads')
     .select('id, nome, nb, telefone, status, score, ganho_potencial, tipo_beneficio, banco, origem')
     .eq('lgpd_optout', false)
-    .order('score', { ascending: false })
+
+  if (!context.isAdmin) {
+    leadsQuery = leadsQuery.eq('responsavel_id', context.usuarioId)
+  }
+
+  const { data: leads } = await leadsQuery.order('score', { ascending: false })
 
   const total = leads?.length || 0
   const potencial = leads?.reduce((s, l) => s + (l.ganho_potencial || 0), 0) || 0

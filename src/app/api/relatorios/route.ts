@@ -1,16 +1,67 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
+import { getAccessibleLeadIds, getTenantContext } from '@/lib/tenant-context'
 
 export async function GET() {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const context = await getTenantContext(supabase)
+  if (!context) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   try {
+    const accessibleLeadIds = await getAccessibleLeadIds(supabase, context)
+
     // 1. KPIs de leads
-    const { data: leads } = await supabase
+    let leadsQuery = supabase
       .from('leads')
       .select('status, ganho_potencial, tem_whatsapp, created_at')
+
+    if (accessibleLeadIds) {
+      if (accessibleLeadIds.length === 0) {
+        return NextResponse.json({
+          kpis: {
+            totalLeads: 0,
+            totalConvertidos: 0,
+            totalAgendados: 0,
+            totalContatados: 0,
+            totalComWhatsapp: 0,
+            ganhoTotal: 0,
+            ganhoConvertidos: 0,
+            taxaWhatsapp: 0,
+            taxaConversao: 0,
+          },
+          campanhas: {
+            totalEnviados: 0,
+            totalEntregues: 0,
+            totalLidos: 0,
+            totalRespondidos: 0,
+            totalFalhos: 0,
+            taxaEntrega: 0,
+            taxaLeitura: 0,
+            taxaResposta: 0,
+            lista: [],
+          },
+          funil: [
+            { etapa: 'Total Leads', valor: 0, cor: '#4f7aff' },
+            { etapa: 'Com WhatsApp', valor: 0, cor: '#2dd4a0' },
+            { etapa: 'Contatados', valor: 0, cor: '#f5c842' },
+            { etapa: 'Responderam', valor: 0, cor: '#ff8c42' },
+            { etapa: 'Agendados', valor: 0, cor: '#a78bfa' },
+            { etapa: 'Convertidos', valor: 0, cor: '#2dd4a0' },
+          ],
+          evolucao: [],
+          topBancos: [],
+          agente: {
+            totalMensagens: 0,
+            respondidoAgente: 0,
+            respondidoManual: 0,
+            taxaAutomacao: 0,
+          },
+        })
+      }
+      leadsQuery = leadsQuery.in('id', accessibleLeadIds)
+    }
+
+    const { data: leads } = await leadsQuery
 
     const totalLeads = leads?.length ?? 0
     const totalConvertidos = leads?.filter(l => l.status === 'converted').length ?? 0
@@ -21,9 +72,15 @@ export async function GET() {
     const ganhoConvertidos = leads?.filter(l => l.status === 'converted').reduce((acc, l) => acc + (l.ganho_potencial ?? 0), 0) ?? 0
 
     // 2. KPIs de campanhas
-    const { data: campanhas } = await supabase
+    let campanhasQuery = supabase
       .from('campanhas')
       .select('nome, status, total_enviados, total_entregues, total_lidos, total_respondidos, total_falhos, created_at')
+
+    if (!context.isAdmin) {
+      campanhasQuery = campanhasQuery.eq('responsavel_id', context.usuarioId)
+    }
+
+    const { data: campanhas } = await campanhasQuery
 
     const totalEnviados = campanhas?.reduce((acc, c) => acc + (c.total_enviados ?? 0), 0) ?? 0
     const totalEntregues = campanhas?.reduce((acc, c) => acc + (c.total_entregues ?? 0), 0) ?? 0
@@ -32,9 +89,15 @@ export async function GET() {
     const totalFalhos = campanhas?.reduce((acc, c) => acc + (c.total_falhos ?? 0), 0) ?? 0
 
     // 3. Agente IA
-    const { data: mensagensInbound } = await supabase
+    let mensagensInboundQuery = supabase
       .from('mensagens_inbound')
       .select('respondido_por_agente')
+
+    if (accessibleLeadIds) {
+      mensagensInboundQuery = mensagensInboundQuery.in('lead_id', accessibleLeadIds)
+    }
+
+    const { data: mensagensInbound } = await mensagensInboundQuery
 
     const totalMensagens = mensagensInbound?.length ?? 0
     const respondidoAgente = mensagensInbound?.filter(m => m.respondido_por_agente === true).length ?? 0
@@ -56,10 +119,16 @@ export async function GET() {
     }
 
     // 5. Top bancos por ganho potencial
-    const { data: leadsComBanco } = await supabase
+    let leadsComBancoQuery = supabase
       .from('leads')
       .select('banco, ganho_potencial')
       .not('banco', 'is', null)
+
+    if (accessibleLeadIds) {
+      leadsComBancoQuery = leadsComBancoQuery.in('id', accessibleLeadIds)
+    }
+
+    const { data: leadsComBanco } = await leadsComBancoQuery
 
     const bancosMap: Record<string, number> = {}
     leadsComBanco?.forEach(l => {

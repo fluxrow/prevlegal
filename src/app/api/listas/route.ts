@@ -1,18 +1,15 @@
 export const runtime = 'nodejs'
 import { NextResponse } from 'next/server'
-import { createClient as createAdmin } from '@supabase/supabase-js'
-
-function createAdminClient() {
-  return createAdmin(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  )
-}
+import { createClient } from '@/lib/supabase/server'
+import { getTenantContext } from '@/lib/tenant-context'
 
 export async function GET() {
   try {
-    const adminClient = createAdminClient()
-    const { data: listas, error } = await adminClient
+    const supabase = await createClient()
+    const context = await getTenantContext(supabase)
+    if (!context) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+    const { data: listas, error } = await supabase
       .from('listas')
       .select('*')
       .order('created_at', { ascending: false })
@@ -21,8 +18,8 @@ export async function GET() {
 
     const listasComTotal = await Promise.all(
       (listas || []).map(async (lista) => {
-        const { count } = await adminClient
-          .from('lista_leads')
+        const { count } = await supabase
+          .from('leads')
           .select('*', { count: 'exact', head: true })
           .eq('lista_id', lista.id)
         return { ...lista, total_leads: count || lista.total_leads || 0 }

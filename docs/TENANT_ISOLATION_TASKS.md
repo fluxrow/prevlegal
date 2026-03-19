@@ -55,6 +55,38 @@ Incidente P0 de isolamento de dados entre escritorios.
   - apenas o tenant piloto da Jessica permanece liberado no app
   - novos escritorios ficam restritos ao admin ate o tenant isolation real fechar
 
+## Fase 26A+ — Endurecimento temporario no app
+
+- [x] Criar helper temporario de contexto por usuario autenticado
+- [x] Exigir autenticacao nas rotas que ainda estavam publicas ou globais
+- [x] Limitar leituras por ownership de usuario nas superficies mais sensiveis
+- [x] Preservar admins do tenant piloto com visao total do legado atual
+- [ ] Aplicar a migration `031` no banco remoto
+- [ ] Fazer backfill de `tenant_id`
+- [ ] Trocar o escopo temporario por tenant isolation real
+
+### Endurecimento temporario aplicado
+
+- helper criado:
+  - `src/lib/tenant-context.ts`
+- regra temporaria:
+  - usuario autenticado vira ancora de escopo via `usuarios.auth_id`
+  - nao-admin so acessa leads onde `responsavel_id = usuario.id`
+  - admin do tenant piloto continua vendo a base legado enquanto a migracao nao entra
+- superficies endurecidas nesta onda:
+  - `dashboard`
+  - `leads`
+  - `conversas`
+  - `portal`
+  - `agendamentos`
+  - `relatorios`
+  - `financeiro`
+  - `configuracoes`
+  - `listas`
+- observacao critica:
+  - esta camada reduz superficie de vazamento dentro do app, mas ainda nao e isolamento real por tenant
+  - o fechamento definitivo continua dependendo de `tenant_id` + backfill + filtros canonicos + RLS
+
 ## Fase 26B — Auditoria de schema
 
 - [x] Inventariar tabelas sem `tenant_id`

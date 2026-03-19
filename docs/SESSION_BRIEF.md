@@ -27,21 +27,22 @@ Ultima atualizacao: 2026-03-19
 - Branch principal: `main`
 - Linha atual do produto no Obsidian: Fases 21, 22, 23, 24 e 25 concluidas
 - Fase atual: incidente critico de isolamento de dados entre escritorios + ajuste do Google OAuth
-- Fase atual: incidente critico de isolamento de dados entre escritorios + ajuste do Google OAuth
 - Producao atual: `https://app.prevlegal.com.br`
 - LP canônica: `https://www.prevlegal.com.br`
 - Dominio comprado: `prevlegal.com.br`
 - Contencao atual:
   - allowlist no app apenas para a Jessica
   - onboarding de responsavel bloqueado fora da allowlist
+  - endurecimento temporario no app por ownership de usuario em leads e superficies derivadas
 
 ## Proximo Passo Recomendado
 
 Conter e corrigir o risco de multi-tenant:
 - confirmar e mapear todas as superficies vazando dados entre escritorios
 - bloquear onboarding multi-escritorio no mesmo banco enquanto nao houver isolamento real
-- fechar o modelo canonico de tenancy antes de iniciar migration/backfill
-- atacar a primeira onda de correcao em leads, listas, conversas, portal, financeiro e configuracoes
+- aplicar a migration 031 no banco remoto
+- executar backfill seguro de `tenant_id`
+- substituir o escopo temporario por usuario por tenant isolation canonico
 - em paralelo, corrigir o Google OAuth no Console para `app.prevlegal.com.br`
 
 ## Bloqueios e Cuidados

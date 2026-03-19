@@ -2,24 +2,29 @@ import { createClient } from '@/lib/supabase/server'
 import { gerarParcelasContrato, normalizarNumero } from '@/lib/financeiro'
 import { hasRecentReauth } from '@/lib/session-security'
 import { NextResponse } from 'next/server'
+import { canAccessLeadId, getAccessibleLeadIds, getTenantContext } from '@/lib/tenant-context'
 
 export async function GET(request: Request) {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const context = await getTenantContext(supabase)
+  if (!context) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   if (!await hasRecentReauth('app')) return NextResponse.json({ error: 'Reauthentication required' }, { status: 428 })
 
   const { searchParams } = new URL(request.url)
   const leadId = searchParams.get('lead_id')
 
-  const query = supabase
+  let query = supabase
     .from('contratos')
     .select(`
       *,
-      leads(nome, cpf, telefone, status),
+      leads!inner(nome, cpf, telefone, status, responsavel_id),
       parcelas(id, numero, valor, data_vencimento, data_pagamento, status, forma_pagamento, observacao)
     `)
     .order('created_at', { ascending: false })
+
+  if (!context.isAdmin) {
+    query = query.eq('leads.responsavel_id', context.usuarioId)
+  }
 
   const { data, error } = await (leadId ? query.eq('lead_id', leadId) : query)
 
@@ -29,8 +34,8 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const context = await getTenantContext(supabase)
+  if (!context) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   if (!await hasRecentReauth('app')) return NextResponse.json({ error: 'Reauthentication required' }, { status: 428 })
 
   const body = await request.json()
@@ -52,6 +57,11 @@ export async function POST(request: Request) {
 
   if (!leadId || valorTotal <= 0) {
     return NextResponse.json({ error: 'lead_id e valor_total são obrigatórios' }, { status: 400 })
+  }
+
+  if (!context.isAdmin) {
+    const allowed = await canAccessLeadId(supabase, context, leadId)
+    if (!allowed) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
   const { data: contrato, error: contratoErr } = await supabase

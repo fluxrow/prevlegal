@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { createClient as createServerClient } from '@/lib/supabase/server'
+import { getTenantContext } from '@/lib/tenant-context'
 
 function createAdminSupabase() {
   return createClient(
@@ -9,6 +11,10 @@ function createAdminSupabase() {
 }
 
 export async function GET() {
+  const authSupabase = await createServerClient()
+  const context = await getTenantContext(authSupabase)
+  if (!context) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
   const supabase = createAdminSupabase()
   const { data, error } = await supabase
     .from('configuracoes')
@@ -22,6 +28,11 @@ export async function GET() {
 
 export async function PATCH(request: NextRequest) {
   try {
+    const authSupabase = await createServerClient()
+    const context = await getTenantContext(authSupabase)
+    if (!context) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (!context.isAdmin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+
     const supabase = createAdminSupabase()
     const body = await request.json()
     body.updated_at = new Date().toISOString()

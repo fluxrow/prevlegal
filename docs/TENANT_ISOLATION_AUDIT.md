@@ -13,6 +13,7 @@ Conclusao:
 - o vazamento nao esta em uma rota isolada
 - o problema atinge schema, RLS, helpers de auth e varias APIs
 - a contencao temporaria por allowlist foi correta e deve ser mantida ate a Fase 26 fechar
+- uma camada adicional de endurecimento por ownership de usuario foi aplicada no app como medida temporaria, sem substituir a migracao estrutural
 
 ## Causa arquitetural
 
@@ -106,6 +107,41 @@ Isso e aceitavel apenas quando o banco inteiro pertence a um unico escritorio. E
   - isso precisa ser redesenhado quando a modelagem de tenancy for corrigida
 
 ## Findings por superficie
+
+### Camada temporaria aplicada no app
+
+Enquanto a migration `031` nao entra no banco remoto, foi aplicada uma defesa adicional no codigo:
+
+- helper `src/lib/tenant-context.ts`
+  - resolve o usuario autenticado por `usuarios.auth_id`
+  - expoe `usuarioId`, `email`, `role` e `isAdmin`
+- regra temporaria de escopo:
+  - nao-admin so acessa entidades vinculadas aos seus proprios leads (`responsavel_id = usuario.id`)
+  - admins do tenant piloto continuam com visao total da base legado atual
+
+Superficies endurecidas nessa camada:
+- `src/app/(dashboard)/dashboard/page.tsx`
+- `src/app/(dashboard)/leads/page.tsx`
+- `src/app/api/agendamentos/route.ts`
+- `src/app/api/configuracoes/route.ts`
+- `src/app/api/conversas/route.ts`
+- `src/app/api/conversas/[id]/route.ts`
+- `src/app/api/conversas/[id]/responder/route.ts`
+- `src/app/api/financeiro/contratos/route.ts`
+- `src/app/api/financeiro/resumo/route.ts`
+- `src/app/api/google/status/route.ts`
+- `src/app/api/leads/[id]/route.ts`
+- `src/app/api/leads/[id]/status/route.ts`
+- `src/app/api/listas/route.ts`
+- `src/app/api/portal/threads/route.ts`
+- `src/app/api/portal/mensagens/[leadId]/route.ts`
+- `src/app/api/portal/responder/route.ts`
+- `src/app/api/relatorios/route.ts`
+
+Limite conhecido:
+- essa camada ainda se apoia em ownership de usuario e base piloto legado
+- nao substitui `tenant_id` canonico nas tabelas
+- nao elimina a necessidade de backfill e RLS por tenant
 
 ### P0 — vazamento confirmado em producao
 

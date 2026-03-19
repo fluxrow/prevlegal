@@ -218,6 +218,21 @@ export async function GET(
 **Regra prática:** Quando o produto sair do estágio de subdomínio temporário, migrar com ordem explícita: arquitetura -> Vercel -> DNS -> URLs canônicas -> links automáticos -> validação final
 
 ### 33. Migração de domínio precisa começar pelo inventário de URLs absolutas e fallbacks
+
+### 34. Contenção por allowlist sozinha não basta quando o tenant piloto ainda tem múltiplos usuários
+**Cenário:** Mesmo após bloquear novos escritórios no app, algumas superfícies continuavam amplas demais para o modelo legado compartilhado
+**Causa:** O banco operacional ainda não tem `tenant_id`, então várias rotas liam dados globais ou dependiam de permissões abertas herdadas do modelo `um banco por tenant`
+**Correção temporária:** Criar `src/lib/tenant-context.ts` e endurecer páginas/rotas principais para usar o usuário autenticado como âncora de escopo
+**Regra prática:** Em incidente multi-tenant sem migração aplicada, a ordem segura é:
+- 1. conter acesso por allowlist
+- 2. endurecer auth e ownership por usuário nas superfícies mais críticas
+- 3. só depois avançar para `tenant_id` + backfill + RLS
+
+### 35. Build limpo é obrigatório antes de chamar uma contenção temporária de "publicável"
+**Cenário:** A camada temporária de isolamento tocou muitas superfícies ao mesmo tempo (`dashboard`, `leads`, `conversas`, `portal`, `financeiro`, `relatorios`, `configuracoes`)
+**Risco:** Mudanças amplas de escopo podem parecer corretas em leitura, mas quebrar em tipos, joins Supabase ou páginas server-side
+**Correção:** Sempre fechar `npm run build` completo antes de publicar uma onda de contenção desse tipo
+**Regra prática:** Em PrevLegal, contenção P0 também precisa passar pelo mesmo ritual de qualidade: build, docs, handoff, Obsidian e só então push/deploy
 ### 34. Estrutura duplicada na raiz pode fazer a Vercel/Next publicar o app errado
 **Problema:** O deploy público passou a responder só `lp.html` e `404` nas rotas do app, mesmo com aliases corretos na Vercel
 **Causa:** Havia uma árvore `app/` vazia na raiz e um `next.config.js` residual competindo com a aplicação real em `src/app` e com `next.config.ts`

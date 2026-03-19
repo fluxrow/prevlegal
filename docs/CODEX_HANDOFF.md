@@ -75,19 +75,19 @@ Estado de producao hoje:
   - varias APIs e policies continuam globais
   - a leitura real do banco mostrou que os dados operacionais existentes ainda pertencem ao legado Alexandrini
   - o tenant `Fluxrow` existe cadastrado, mas ainda nao tem isolamento operacional real
+- Endurecimento temporario adicional aplicado no app:
+  - helper `src/lib/tenant-context.ts`
+  - rotas e paginas principais agora exigem auth e usam ownership por usuario como ancora temporaria
+  - nao-admin fica limitado aos proprios leads e derivados em varias superficies do app
+  - admins do tenant piloto continuam vendo a base legado atual
+  - build validado com sucesso apos essa onda
+  - isso reduz superficie de vazamento, mas nao substitui `tenant_id` + backfill + RLS
 
 Proximo passo recomendado:
-- fechar o modelo canonico de tenancy antes de iniciar migration grande
-- depois atacar a primeira onda de correcao em:
-  - leads
-  - listas
-  - conversas
-  - portal
-  - financeiro
-  - configuracoes
-- antes do deploy de filtros por tenant:
-  - aplicar a migration 031
-  - executar backfill seguro dos tenants existentes
+- aplicar a migration 031 no banco remoto
+- executar backfill seguro dos tenants existentes
+- depois substituir o escopo temporario por usuario por `tenant_id` canonico
+- revisar RLS com tenant isolation real
 
 ## Mapa Atual do Sistema
 
