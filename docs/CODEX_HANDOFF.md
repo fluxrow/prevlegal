@@ -122,6 +122,7 @@ Proximo passo recomendado:
   - `src/app/api/admin/tenants/[id]/route.ts` agora normaliza update e evita colisao silenciosa de `slug`
   - `src/app/admin/page.tsx` agora mostra erro real de salvamento no modal
   - `src/lib/supabase/middleware.ts` agora trata `/api/admin/*` como superficie admin autenticada por `admin_token`, sem desviar essas rotas para `/login` do app
+  - `src/lib/supabase/middleware.ts` agora tambem deixa `/api/admin/reauth` publico, evitando que a reautenticacao do admin seja desviada para o `/login` do app
 - validacao operacional concluida:
   - primeiro escritorio de teste foi criado com sucesso no admin apos o reset limpo
   - escritorio usado no teste: `Fluxrow`

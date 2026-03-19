@@ -52,6 +52,7 @@ export async function updateSession(request: NextRequest) {
   const publicPaths = ["/login", "/reauth", "/admin/login", "/admin/reauth", "/portal", "/auth/", "/lp.html", "/isolamento-em-andamento"];
   const publicApiPrefixes = [
     '/api/admin/auth',
+    '/api/admin/reauth',
     '/api/usuarios/aceitar-convite',
     '/api/usuarios/convite',
     '/api/webhooks/',
