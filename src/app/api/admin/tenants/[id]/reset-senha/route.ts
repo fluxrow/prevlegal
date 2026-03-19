@@ -35,9 +35,30 @@ export async function POST(
     return NextResponse.json({ error: 'Email nao encontrado para este tenant' }, { status: 404 })
   }
 
+  const email = tenant.responsavel_email.trim().toLowerCase()
+
+  const { data: authUsersPage, error: authUsersError } = await adminSupabase.auth.admin.listUsers({
+    page: 1,
+    perPage: 1000,
+  })
+
+  if (authUsersError) {
+    return NextResponse.json({ error: authUsersError.message }, { status: 500 })
+  }
+
+  const authUsers = authUsersPage?.users || []
+  const usuarioExisteNoAuth = authUsers.some((user) => user.email?.toLowerCase() === email)
+
+  if (!usuarioExisteNoAuth) {
+    return NextResponse.json({
+      error: 'Este responsavel ainda nao ativou a conta. Use "Gerar acesso do responsavel" primeiro.',
+      acao_sugerida: 'recriar-acesso',
+    }, { status: 409 })
+  }
+
   const { error } = await adminSupabase.auth.admin.generateLink({
     type: 'recovery',
-    email: tenant.responsavel_email,
+    email,
   })
 
   if (error) {
@@ -46,7 +67,7 @@ export async function POST(
 
   return NextResponse.json({
     ok: true,
-    mensagem: `Email de redefinicao enviado para ${tenant.responsavel_email}`,
-    email: tenant.responsavel_email,
+    mensagem: `Email de redefinicao enviado para ${email}`,
+    email,
   })
 }

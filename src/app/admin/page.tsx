@@ -169,7 +169,11 @@ export default function AdminPage() {
     if (res.ok) {
       setResetMsg(`Sucesso: ${data.mensagem}`)
     } else {
-      setResetMsg(`Erro: ${data.error || 'Erro ao enviar reset'}`)
+      if (res.status === 409 && data.acao_sugerida === 'recriar-acesso') {
+        setResetMsg(`Atenção: ${data.error}`)
+      } else {
+        setResetMsg(`Erro: ${data.error || 'Erro ao enviar reset'}`)
+      }
     }
 
     setResetandoSenha(false)
@@ -630,8 +634,8 @@ export default function AdminPage() {
                       marginTop: '10px', fontSize: '12px', padding: '8px 12px',
                       borderRadius: '6px',
                       background: resetMsg.startsWith('Sucesso:') ? 'rgba(34,197,94,0.08)' : 'rgba(255,87,87,0.08)',
-                      color: resetMsg.startsWith('Sucesso:') ? '#22c55e' : '#ff5757',
-                      border: `1px solid ${resetMsg.startsWith('Sucesso:') ? 'rgba(34,197,94,0.2)' : 'rgba(255,87,87,0.2)'}`,
+                      color: resetMsg.startsWith('Sucesso:') ? '#22c55e' : resetMsg.startsWith('Atenção:') ? '#f5a623' : '#ff5757',
+                      border: `1px solid ${resetMsg.startsWith('Sucesso:') ? 'rgba(34,197,94,0.2)' : resetMsg.startsWith('Atenção:') ? 'rgba(245,166,35,0.2)' : 'rgba(255,87,87,0.2)'}`,
                     }}>
                       {resetMsg}
                     </p>
