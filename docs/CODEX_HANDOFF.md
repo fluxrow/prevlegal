@@ -648,6 +648,8 @@ Pontos que precisam ser preservados durante a implementacao:
 
 - `npm run build` passou apos as correcoes
 - em `2026-03-20`, as duas listas orfas de teste do tenant `Fluxrow` (`NOMES RJ BNG.xlsx`, `total_leads = 0`) foram removidas manualmente para liberar a reimportacao limpa
+- apos o reteste, a lista `NOMES RJ BNG.xlsx` entrou no tenant `Fluxrow`, mas com diferenca entre `total_ativos = 78` e `total_leads = 55`
+- a rota agora devolve `falhas_insercao` e a tela de importacao mostra os warnings/linhas rejeitadas para o proximo reteste, permitindo identificar a causa exata dessas 23 linhas perdidas
 
 ## Regra Permanente de Continuidade
 

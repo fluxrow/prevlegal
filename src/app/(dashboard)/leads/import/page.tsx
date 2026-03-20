@@ -10,12 +10,14 @@ type ImportStats = {
   duplicatas_planilha: number
   duplicatas_banco: number
   inseridos: number
+  falhas_insercao?: number
   ganho_potencial_total: number
 }
 
 export default function ImportPage() {
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<ImportStats | null>(null)
+  const [warnings, setWarnings] = useState<string[]>([])
   const [error, setError] = useState('')
   const [nomeLista, setNomeLista] = useState('')
   const [fornecedor, setFornecedor] = useState('')
@@ -27,7 +29,7 @@ export default function ImportPage() {
   }
 
   async function handleImport(file: File) {
-    setLoading(true); setError(''); setResult(null)
+    setLoading(true); setError(''); setResult(null); setWarnings([])
     const formData = new FormData()
     formData.append('file', file)
     formData.append('nome', nomeLista || file.name.replace(/\.[^.]+$/, ''))
@@ -35,7 +37,10 @@ export default function ImportPage() {
     try {
       const res = await fetch('/api/import', { method: 'POST', body: formData })
       const data = await res.json()
-      if (data.success) setResult(data.stats)
+      if (data.success) {
+        setResult(data.stats)
+        setWarnings(data.warnings || [])
+      }
       else setError(data.error || 'Erro ao importar')
     } catch { setError('Erro de conexão') }
     finally { setLoading(false) }
@@ -99,6 +104,7 @@ export default function ImportPage() {
               { label: 'Cessados ignorados', value: result.total_cessados, color: 'var(--text-muted)' },
               { label: 'Duplicatas planilha', value: result.duplicatas_planilha, color: 'var(--yellow)' },
               { label: 'Duplicatas no banco', value: result.duplicatas_banco, color: 'var(--yellow)' },
+              { label: 'Falhas no insert', value: result.falhas_insercao || 0, color: 'var(--red)' },
               { label: 'Potencial total', value: fmt(result.ganho_potencial_total), color: 'var(--accent)' },
             ].map(({ label, value, color }) => (
               <div key={label} style={{ background: 'var(--bg-surface)', borderRadius: '8px', padding: '14px' }}>
@@ -107,6 +113,18 @@ export default function ImportPage() {
               </div>
             ))}
           </div>
+          {warnings.length > 0 && (
+            <div style={{ marginTop: '14px', padding: '12px 14px', borderRadius: '10px', background: 'rgba(245,166,35,0.08)', border: '1px solid rgba(245,166,35,0.2)' }}>
+              <div style={{ fontSize: '12px', fontWeight: '700', color: '#f5a623', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                Linhas rejeitadas na importacao
+              </div>
+              <div style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                {warnings.map((warning) => (
+                  <div key={warning}>- {warning}</div>
+                ))}
+              </div>
+            </div>
+          )}
           <div style={{ marginTop: '14px', textAlign: 'center' }}>
             <a href="/leads" style={{ color: 'var(--accent)', fontSize: '13px', textDecoration: 'none' }}>Ver Kanban atualizado →</a>
           </div>

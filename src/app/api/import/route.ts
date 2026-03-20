@@ -300,6 +300,7 @@ export async function POST(request: NextRequest) {
             duplicatas_planilha: totalDuplicados,
             duplicatas_banco: duplicatasNoBanco,
             inseridos,
+            falhas_insercao: Math.max(totalAtivos - inseridos - duplicatasNoBanco, 0),
             ganho_potencial_total: ganhoTotal
         },
         warnings: errosInsercao
