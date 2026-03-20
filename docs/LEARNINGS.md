@@ -533,3 +533,15 @@ export async function GET(
 **Causa:** Alem da necessidade de cadastrar a URI no Google Cloud Console, a env `GOOGLE_REDIRECT_URI` estava com quebra de linha no fim, o que pode gerar mismatch dificil de enxergar
 **Correcao aplicada:** Normalizar `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` e `GOOGLE_REDIRECT_URI` com `trim()` antes de criar o `OAuth2 client`
 **Regra pratica:** Em integrações OAuth, sempre sanitizar envs usadas em `redirect_uri`; um whitespace invisivel basta para o provedor devolver `invalid_request`
+
+### 59. A lista tecnica de cadastro manual nao deve disputar espaco com listas importadas
+**Problema:** O agrupador tecnico `Cadastro manual` aparecia na aba de listas como se fosse uma importacao operacional, poluindo a leitura do escritorio
+**Causa:** A API de listas retornava indiscriminadamente todas as `listas`, inclusive a lista interna criada para suportar leads avulsos
+**Correcao aplicada:** Excluir a lista tecnica da listagem padrao e orientar na UI que cadastros manuais ficam agrupados no Kanban de Leads
+**Regra pratica:** Estruturas tecnicas de apoio nao devem aparecer na mesma camada visual das entidades operacionais do usuario final
+
+### 60. Exclusao de lista precisa existir na plataforma para corrigir importacao ruim sem SQL manual
+**Problema:** Quando uma lista foi importada de forma errada, nao havia como removê-la pela plataforma
+**Causa:** Faltava endpoint de exclusao e acao na UI
+**Correcao aplicada:** Criar `DELETE /api/listas/[id]` para excluir a lista importada e os leads vinculados, com escopo por tenant e bloqueio da lista tecnica manual
+**Regra pratica:** Fluxos de importacao precisam ter um caminho de reversao operacional dentro do produto, sem depender de acesso ao banco

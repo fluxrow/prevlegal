@@ -1,11 +1,13 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { List, CheckCircle, XCircle, HelpCircle, Zap, Upload, Users } from 'lucide-react'
+import { List, CheckCircle, XCircle, HelpCircle, Zap, Upload, Users, Trash2, FolderPlus } from 'lucide-react'
 import ListasOnboardingTour from '@/components/listas-onboarding-tour'
 
 interface Lista {
   id: string
   nome: string
+  arquivo_original?: string | null
+  fornecedor?: string | null
   total_leads: number
   com_whatsapp: number
   sem_whatsapp: number
@@ -17,7 +19,9 @@ export default function ListasPage() {
   const [listas, setListas] = useState<Lista[]>([])
   const [loading, setLoading] = useState(true)
   const [verificando, setVerificando] = useState<string | null>(null)
+  const [excluindo, setExcluindo] = useState<string | null>(null)
   const [statsVerif, setStatsVerif] = useState<Record<string, any>>({})
+  const [acaoErro, setAcaoErro] = useState<string>('')
 
   useEffect(() => { fetchListas() }, [])
 
@@ -26,6 +30,30 @@ export default function ListasPage() {
     const res = await fetch('/api/listas')
     if (res.ok) { const data = await res.json(); setListas(data.listas || []) }
     setLoading(false)
+  }
+
+  async function excluirLista(lista: Lista) {
+    const confirmar = window.confirm(
+      `Excluir a lista "${lista.nome}"? Isso removerá também os leads vinculados a ela.`
+    )
+    if (!confirmar) return
+
+    setAcaoErro('')
+    setExcluindo(lista.id)
+
+    try {
+      const res = await fetch(`/api/listas/${lista.id}`, { method: 'DELETE' })
+      const data = await res.json()
+      if (!res.ok) {
+        setAcaoErro(data.error || 'Falha ao excluir a lista')
+      } else {
+        setListas(prev => prev.filter(item => item.id !== lista.id))
+      }
+    } catch {
+      setAcaoErro('Falha ao excluir a lista')
+    } finally {
+      setExcluindo(null)
+    }
   }
 
   async function verificarWhatsApp(listaId: string) {
@@ -92,6 +120,41 @@ export default function ListasPage() {
         ))}
       </div>
 
+      <div style={{
+        display: 'flex',
+        alignItems: 'flex-start',
+        gap: '10px',
+        background: 'var(--bg-surface)',
+        border: '1px solid var(--border)',
+        borderRadius: '12px',
+        padding: '14px 16px',
+        marginBottom: '18px'
+      }}>
+        <FolderPlus size={16} color="var(--accent)" style={{ marginTop: '1px', flexShrink: 0 }} />
+        <div>
+          <p style={{ margin: '0 0 4px', fontSize: '13px', fontWeight: '600', color: 'var(--text-primary)' }}>
+            Cadastros manuais ficam agrupados no Kanban de Leads
+          </p>
+          <p style={{ margin: 0, fontSize: '12px', color: 'var(--text-muted)', lineHeight: 1.5 }}>
+            A lista técnica de cadastro manual é interna do sistema e não aparece mais aqui para não misturar clientes avulsos com listas importadas.
+          </p>
+        </div>
+      </div>
+
+      {acaoErro && (
+        <div style={{
+          marginBottom: '16px',
+          padding: '12px 16px',
+          background: 'var(--red-bg)',
+          border: '1px solid rgba(255,87,87,0.2)',
+          borderRadius: '10px',
+          color: 'var(--red)',
+          fontSize: '13px'
+        }}>
+          {acaoErro}
+        </div>
+      )}
+
       {!loading && listas.length === 0 && (
         <div style={{
           textAlign: 'center', padding: '60px 20px',
@@ -126,16 +189,38 @@ export default function ListasPage() {
                     </span>
                   </div>
                 </div>
-                <button onClick={() => verificarWhatsApp(lista.id)} disabled={isVerificando} style={{
-                  display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px',
-                  borderRadius: '8px', background: isVerificando ? 'var(--bg-hover)' : 'var(--accent-glow)',
-                  color: isVerificando ? 'var(--text-muted)' : 'var(--accent)',
-                  border: '1px solid var(--border)', fontSize: '12px', fontWeight: '500',
-                  cursor: isVerificando ? 'not-allowed' : 'pointer'
-                }}>
-                  <Zap size={13} />
-                  {isVerificando ? 'Verificando...' : 'Verificar WhatsApp'}
-                </button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <button onClick={() => verificarWhatsApp(lista.id)} disabled={isVerificando || excluindo === lista.id} style={{
+                    display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px',
+                    borderRadius: '8px', background: isVerificando ? 'var(--bg-hover)' : 'var(--accent-glow)',
+                    color: isVerificando ? 'var(--text-muted)' : 'var(--accent)',
+                    border: '1px solid var(--border)', fontSize: '12px', fontWeight: '500',
+                    cursor: isVerificando ? 'not-allowed' : 'pointer'
+                  }}>
+                    <Zap size={13} />
+                    {isVerificando ? 'Verificando...' : 'Verificar WhatsApp'}
+                  </button>
+                  <button
+                    onClick={() => excluirLista(lista)}
+                    disabled={isVerificando || excluindo === lista.id}
+                    title="Excluir lista"
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      width: '36px',
+                      height: '36px',
+                      borderRadius: '8px',
+                      background: 'rgba(239,68,68,0.08)',
+                      color: '#ef4444',
+                      border: '1px solid rgba(239,68,68,0.18)',
+                      cursor: excluindo === lista.id ? 'not-allowed' : 'pointer',
+                      opacity: excluindo === lista.id ? 0.6 : 1,
+                    }}
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
               </div>
               <div style={{ display: 'flex', gap: '20px', marginBottom: total > 0 ? '14px' : 0 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>

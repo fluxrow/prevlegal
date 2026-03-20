@@ -647,6 +647,13 @@ Pontos que precisam ser preservados durante a implementacao:
   - sanitiza envs do OAuth com `trim()`
 - `src/app/api/google/callback/route.ts`
   - sanitiza envs do OAuth com `trim()`
+- `src/app/api/listas/route.ts`
+  - deixa de expor a lista tecnica `Cadastro manual` na listagem padrao
+- `src/app/api/listas/[id]/route.ts`
+  - novo endpoint para excluir lista importada e seus leads vinculados
+- `src/app/(dashboard)/listas/page.tsx`
+  - adiciona acao de excluir lista
+  - mostra aviso explicando que cadastros manuais ficam agrupados no Kanban de Leads
 
 ### Validacao
 
@@ -655,6 +662,7 @@ Pontos que precisam ser preservados durante a implementacao:
 - apos o reteste, a lista `NOMES RJ BNG.xlsx` entrou no tenant `Fluxrow`, mas com diferenca entre `total_ativos = 78` e `total_leads = 55`
 - a rota agora devolve `falhas_insercao` e a tela de importacao mostra os warnings/linhas rejeitadas para o proximo reteste, permitindo identificar a causa exata dessas 23 linhas perdidas
 - o fluxo do Google Calendar foi endurecido para nao carregar `redirect_uri` com whitespace invisivel
+- a tela `/listas` agora funciona como lista de importacoes operacionais, sem misturar o agrupador tecnico `Cadastro manual`
 
 ## Regra Permanente de Continuidade
 

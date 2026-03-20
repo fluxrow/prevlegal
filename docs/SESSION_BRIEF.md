@@ -48,6 +48,8 @@ Ultima atualizacao: 2026-03-19
   - bloqueio de duplicidade por nome/arquivo no mesmo tenant
   - erro real de insert nao e mais engolido
   - `/api/listas` agora mapeia os totais corretamente para a UI
+  - `/api/listas` deixa de exibir a lista tecnica `Cadastro manual` na visao padrao
+  - `/api/listas/[id]` agora permite excluir uma lista importada pela plataforma
   - `/api/whatsapp/verificar` agora usa `leads.lista_id` e nao mais a tabela legado `lista_leads`
   - listas orfas de teste com `0` leads no tenant `Fluxrow` foram removidas em `2026-03-20` para liberar o reteste
   - o reteste mostrou `78` ativos vs `55` leads inseridos; a UI de importacao agora exibe `falhas_insercao` e os warnings das linhas rejeitadas
