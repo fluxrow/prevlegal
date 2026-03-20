@@ -1,4 +1,7 @@
 # PrevLegal — LEARNINGS.md
+
+Contexto: [[SESSION_HISTORY_MASTER]]
+Mestra: [[MASTER_PREV_LEGAL]]
 > Erros encontrados, causas e correções aplicadas.
 > Atualizado a cada sessão.
 

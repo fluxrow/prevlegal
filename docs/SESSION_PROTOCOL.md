@@ -1,5 +1,8 @@
 # PrevLegal — SESSION_PROTOCOL.md
 
+Contexto: [[SESSION_HISTORY_MASTER]]
+Mestra: [[MASTER_PREV_LEGAL]]
+
 Protocolo operacional para nao perder contexto entre sessoes.
 
 ## Navegação

@@ -1,4 +1,7 @@
 # PrevLegal — MASTER.md
+
+Contexto: [[SESSION_HISTORY_MASTER]]
+Mestra: [[MASTER_PREV_LEGAL]]
 > Documento vivo. Atualizado a cada sessão de desenvolvimento.
 > Última atualização: 19/03/2026
 

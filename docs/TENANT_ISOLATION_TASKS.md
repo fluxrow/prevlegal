@@ -1,5 +1,8 @@
 # PrevLegal — Fase 26: Tenant Isolation Tasks
 
+Contexto: [[SESSION_HISTORY_MASTER]]
+Mestra: [[MASTER_PREV_LEGAL]]
+
 Incidente P0 de isolamento de dados entre escritorios.
 
 ## Status atual

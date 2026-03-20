@@ -1,5 +1,8 @@
 # PrevLegal - Handoff de Trabalho
 
+Contexto: [[SESSION_HISTORY_MASTER]]
+Mestra: [[MASTER_PREV_LEGAL]]
+
 Este documento registra o que foi analisado, alterado, validado e combinado durante a continuidade do desenvolvimento no Codex.
 
 ## Navegação

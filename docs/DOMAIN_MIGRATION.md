@@ -1,4 +1,7 @@
 # PrevLegal — Domain Migration Checklist
+
+Contexto: [[SESSION_HISTORY_MASTER]]
+Mestra: [[MASTER_PREV_LEGAL]]
 > Preparação para migrar de `prevlegal.vercel.app` para domínio próprio
 > Atualizado em: 19/03/2026
 

@@ -1,4 +1,7 @@
 # PrevLegal — INDEX.md
+
+Contexto: [[SESSION_HISTORY_MASTER]]
+Mestra: [[MASTER_PREV_LEGAL]]
 > Hub principal de navegacao do projeto no repositório e no Obsidian.
 
 ## Visao Geral

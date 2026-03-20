@@ -1,4 +1,7 @@
 # PrevLegal — ROADMAP.md
+
+Contexto: [[SESSION_HISTORY_MASTER]]
+Mestra: [[MASTER_PREV_LEGAL]]
 > Última atualização: 19/03/2026
 
 ## Navegação

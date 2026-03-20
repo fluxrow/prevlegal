@@ -1,5 +1,8 @@
 # PrevLegal — SESSION_BRIEF.md
 
+Contexto: [[SESSION_HISTORY_MASTER]]
+Mestra: [[MASTER_PREV_LEGAL]]
+
 Resumo curto para retomada rapida de contexto no inicio de qualquer sessao.
 
 ## Navegação

@@ -1,5 +1,8 @@
 # PrevLegal — Auth Branding Tasks
 
+Contexto: [[SESSION_HISTORY_MASTER]]
+Mestra: [[MASTER_PREV_LEGAL]]
+
 Checklist para executar depois que `prevlegal.com.br` e `www.prevlegal.com.br` estiverem estabilizados na Vercel.
 
 ## Prioridade 1 — Infra de email

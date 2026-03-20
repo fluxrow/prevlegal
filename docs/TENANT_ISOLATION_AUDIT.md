@@ -1,5 +1,8 @@
 # PrevLegal — Tenant Isolation Audit
 
+Contexto: [[SESSION_HISTORY_MASTER]]
+Mestra: [[MASTER_PREV_LEGAL]]
+
 Data: 2026-03-19
 
 ## Resumo executivo
