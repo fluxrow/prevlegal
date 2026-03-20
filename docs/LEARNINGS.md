@@ -527,3 +527,9 @@ export async function GET(
 **Causa:** Nao havia validacao previa por `tenant_id` + `nome`/`arquivo_original`
 **Correcao aplicada:** Bloquear a importacao se ja existir lista com o mesmo nome ou arquivo original no mesmo tenant
 **Regra pratica:** Em fluxos de importacao manual, sempre validar duplicidade de lote antes de criar a lista/pai
+
+### 58. Google OAuth pode quebrar por `redirect_uri` com whitespace invisivel
+**Problema:** O Google Calendar retornou `Erro 400: invalid_request` apontando para `redirect_uri=https://app.prevlegal.com.br/api/google/callback`
+**Causa:** Alem da necessidade de cadastrar a URI no Google Cloud Console, a env `GOOGLE_REDIRECT_URI` estava com quebra de linha no fim, o que pode gerar mismatch dificil de enxergar
+**Correcao aplicada:** Normalizar `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` e `GOOGLE_REDIRECT_URI` com `trim()` antes de criar o `OAuth2 client`
+**Regra pratica:** Em integrações OAuth, sempre sanitizar envs usadas em `redirect_uri`; um whitespace invisivel basta para o provedor devolver `invalid_request`

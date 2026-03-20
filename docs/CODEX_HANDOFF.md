@@ -643,6 +643,10 @@ Pontos que precisam ser preservados durante a implementacao:
   - deixa de depender de `lista_leads`
   - busca leads por `lista_id`
   - atualiza `total_com_whatsapp`, `total_sem_whatsapp` e `total_nao_verificado`
+- `src/app/api/google/auth/route.ts`
+  - sanitiza envs do OAuth com `trim()`
+- `src/app/api/google/callback/route.ts`
+  - sanitiza envs do OAuth com `trim()`
 
 ### Validacao
 
@@ -650,6 +654,7 @@ Pontos que precisam ser preservados durante a implementacao:
 - em `2026-03-20`, as duas listas orfas de teste do tenant `Fluxrow` (`NOMES RJ BNG.xlsx`, `total_leads = 0`) foram removidas manualmente para liberar a reimportacao limpa
 - apos o reteste, a lista `NOMES RJ BNG.xlsx` entrou no tenant `Fluxrow`, mas com diferenca entre `total_ativos = 78` e `total_leads = 55`
 - a rota agora devolve `falhas_insercao` e a tela de importacao mostra os warnings/linhas rejeitadas para o proximo reteste, permitindo identificar a causa exata dessas 23 linhas perdidas
+- o fluxo do Google Calendar foi endurecido para nao carregar `redirect_uri` com whitespace invisivel
 
 ## Regra Permanente de Continuidade
 

@@ -1,11 +1,15 @@
 import { NextResponse } from 'next/server'
 import { google } from 'googleapis'
 
+function getEnv(name: string) {
+  return process.env[name]?.trim()
+}
+
 function getOAuthClient() {
   return new google.auth.OAuth2(
-    process.env.GOOGLE_CLIENT_ID,
-    process.env.GOOGLE_CLIENT_SECRET,
-    process.env.GOOGLE_REDIRECT_URI
+    getEnv('GOOGLE_CLIENT_ID'),
+    getEnv('GOOGLE_CLIENT_SECRET'),
+    getEnv('GOOGLE_REDIRECT_URI')
   )
 }
 
