@@ -647,6 +647,7 @@ Pontos que precisam ser preservados durante a implementacao:
 ### Validacao
 
 - `npm run build` passou apos as correcoes
+- em `2026-03-20`, as duas listas orfas de teste do tenant `Fluxrow` (`NOMES RJ BNG.xlsx`, `total_leads = 0`) foram removidas manualmente para liberar a reimportacao limpa
 
 ## Regra Permanente de Continuidade
 
