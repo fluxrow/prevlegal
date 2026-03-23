@@ -548,3 +548,9 @@ export async function GET(
 **Causa:** Faltava endpoint de exclusao e acao na UI
 **Correcao aplicada:** Criar `DELETE /api/listas/[id]` para excluir a lista importada e os leads vinculados, com escopo por tenant e bloqueio da lista tecnica manual
 **Regra pratica:** Fluxos de importacao precisam ter um caminho de reversao operacional dentro do produto, sem depender de acesso ao banco
+
+### 61. Tema claro/escuro funciona melhor quando nasce das variaveis globais, nao de ajustes isolados por tela
+**Problema:** O dashboard inteiro operava apenas em modo escuro
+**Causa:** As telas dependiam de variaveis CSS globais, mas so existia uma paleta
+**Correcao aplicada:** Criar paletas `dark` e `light` em `globals.css`, inicializacao no `RootLayout` via `data-theme` e um toggle persistido em `localStorage`
+**Regra pratica:** Quando a UI ja usa CSS vars de tema, a forma menos invasiva de adicionar modo claro/escuro e trocar as variaveis globais, nao reescrever componente por componente

@@ -5,6 +5,7 @@ import NotificacoesBell from '@/components/notificacoes-bell'
 import BuscaGlobal from '@/components/busca-global'
 import UsuarioAvatar from '@/components/usuario-avatar'
 import SessionActivityTracker from '@/components/session-activity-tracker'
+import ThemeToggle from '@/components/theme-toggle'
 import { APP_IDLE_MINUTES } from '@/lib/session-config'
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -34,6 +35,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
                     flexShrink: 0,
                 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginLeft: 'auto' }}>
+                        <ThemeToggle />
                         <BuscaGlobal />
                         <UsuarioAvatar />
                         <NotificacoesBell />

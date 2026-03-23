@@ -657,6 +657,14 @@ Pontos que precisam ser preservados durante a implementacao:
 - `src/app/(dashboard)/listas/page.tsx`
   - adiciona acao de excluir lista
   - mostra aviso explicando que cadastros manuais ficam agrupados no Kanban de Leads
+- `src/app/globals.css`
+  - adiciona paletas `dark` e `light`
+- `src/app/layout.tsx`
+  - inicializa `data-theme` antes da hidratacao
+- `src/components/theme-toggle.tsx`
+  - novo toggle global de tema com persistencia em `localStorage`
+- `src/app/(dashboard)/layout.tsx`
+  - exibe o toggle no header do dashboard
 
 ### Validacao
 
@@ -666,6 +674,7 @@ Pontos que precisam ser preservados durante a implementacao:
 - a rota agora devolve `falhas_insercao` e a tela de importacao mostra os warnings/linhas rejeitadas para o proximo reteste, permitindo identificar a causa exata dessas 23 linhas perdidas
 - o fluxo do Google Calendar foi endurecido para nao carregar `redirect_uri` com whitespace invisivel
 - a tela `/listas` agora funciona como lista de importacoes operacionais, sem misturar o agrupador tecnico `Cadastro manual`
+- o dashboard agora suporta modo claro e modo escuro de forma global
 
 ## Regra Permanente de Continuidade
 
