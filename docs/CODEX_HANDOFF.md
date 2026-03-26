@@ -458,6 +458,14 @@ Pontos que precisam ser preservados durante a implementacao:
   - origem e redirect URI do OAuth Client apontando para `app.prevlegal.com.br`
   - callback do app permanece em `src/app/api/google/callback/route.ts`
 
+2026-03-26 - Ajuste de fluxo para validacao do Google Calendar em agendamentos
+- O callback de `src/app/api/google/callback/route.ts` passou a redirecionar para `/agendamentos?google=conectado|erro`
+- `src/lib/google-calendar.ts` passou a sanitizar `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` e `GOOGLE_REDIRECT_URI` com `trim()`
+- `npm run build` validado com sucesso apos o ajuste
+- O principal bloqueio restante para `redirect_uri_mismatch` continua sendo o Google Cloud Console:
+  - `Authorized redirect URI` deve conter exatamente `https://app.prevlegal.com.br/api/google/callback`
+  - `Authorized JavaScript origin` deve conter `https://app.prevlegal.com.br`
+
 2026-03-19 - Estruturacao inicial da Fase 26
 - Criado o quadro de tasks em `docs/TENANT_ISOLATION_TASKS.md`
 - A fase foi dividida em:

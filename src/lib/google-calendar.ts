@@ -1,6 +1,10 @@
 import { google } from 'googleapis'
 import { createClient } from '@/lib/supabase/server'
 
+function getEnv(name: string) {
+  return process.env[name]?.trim()
+}
+
 export async function getCalendarClient() {
   const supabase = await createClient()
 
@@ -14,9 +18,9 @@ export async function getCalendarClient() {
   }
 
   const oauth2Client = new google.auth.OAuth2(
-    process.env.GOOGLE_CLIENT_ID,
-    process.env.GOOGLE_CLIENT_SECRET,
-    process.env.GOOGLE_REDIRECT_URI
+    getEnv('GOOGLE_CLIENT_ID'),
+    getEnv('GOOGLE_CLIENT_SECRET'),
+    getEnv('GOOGLE_REDIRECT_URI')
   )
 
   oauth2Client.setCredentials(config.google_calendar_token as object)

@@ -537,6 +537,12 @@ export async function GET(
 **Correcao aplicada:** Normalizar `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` e `GOOGLE_REDIRECT_URI` com `trim()` antes de criar o `OAuth2 client`
 **Regra pratica:** Em integrações OAuth, sempre sanitizar envs usadas em `redirect_uri`; um whitespace invisivel basta para o provedor devolver `invalid_request`
 
+### 62. Se a conexao Google nasce na aba de agendamentos, o callback deve voltar para agendamentos
+**Problema:** O usuario iniciava `Conectar Google` em `/agendamentos`, mas ao concluir o consentimento era redirecionado para `/configuracoes`, enquanto o feedback visual de sucesso/erro estava implementado apenas na aba de agendamentos
+**Causa:** O callback do OAuth salvava o token corretamente, mas devolvia para uma tela diferente da que consumia `?google=conectado|erro`
+**Correcao aplicada:** Redirecionar o callback para `/agendamentos` e alinhar `src/lib/google-calendar.ts` ao mesmo `trim()` das envs usado nas rotas de auth/callback
+**Regra pratica:** Em integrações OAuth do PrevLegal, a tela que inicia a conexão deve ser a mesma que recebe o retorno e confirma o estado conectado para o usuário
+
 ### 59. A lista tecnica de cadastro manual nao deve disputar espaco com listas importadas
 **Problema:** O agrupador tecnico `Cadastro manual` aparecia na aba de listas como se fosse uma importacao operacional, poluindo a leitura do escritorio
 **Causa:** A API de listas retornava indiscriminadamente todas as `listas`, inclusive a lista interna criada para suportar leads avulsos

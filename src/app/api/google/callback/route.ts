@@ -6,6 +6,10 @@ function getEnv(name: string) {
   return process.env[name]?.trim()
 }
 
+function getAppUrl() {
+  return getEnv('NEXT_PUBLIC_APP_URL') || 'https://app.prevlegal.com.br'
+}
+
 function getOAuthClient() {
   return new google.auth.OAuth2(
     getEnv('GOOGLE_CLIENT_ID'),
@@ -19,7 +23,7 @@ export async function GET(request: NextRequest) {
   const code = searchParams.get('code')
 
   if (!code) {
-    return NextResponse.redirect('/configuracoes?google=erro')
+    return NextResponse.redirect(`${getAppUrl()}/agendamentos?google=erro`)
   }
 
   try {
@@ -47,9 +51,9 @@ export async function GET(request: NextRequest) {
         .insert({ google_calendar_token: tokens })
     }
 
-    return NextResponse.redirect(`${process.env.NEXT_PUBLIC_APP_URL || 'https://app.prevlegal.com.br'}/configuracoes?google=conectado`)
+    return NextResponse.redirect(`${getAppUrl()}/agendamentos?google=conectado`)
   } catch (err) {
     console.error('Google OAuth error:', err)
-    return NextResponse.redirect(`${process.env.NEXT_PUBLIC_APP_URL || 'https://app.prevlegal.com.br'}/configuracoes?google=erro`)
+    return NextResponse.redirect(`${getAppUrl()}/agendamentos?google=erro`)
   }
 }
