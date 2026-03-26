@@ -543,6 +543,12 @@ export async function GET(
 **Correcao aplicada:** Redirecionar o callback para `/agendamentos` e alinhar `src/lib/google-calendar.ts` ao mesmo `trim()` das envs usado nas rotas de auth/callback
 **Regra pratica:** Em integrações OAuth do PrevLegal, a tela que inicia a conexão deve ser a mesma que recebe o retorno e confirma o estado conectado para o usuário
 
+### 63. Google OAuth em producao pede paginas publicas reais de privacidade e termos no dominio do site
+**Problema:** Para sair de `Testing` no Google Auth Platform e publicar o consent screen, o app precisava de links publicos de homepage, privacidade e termos
+**Causa:** A LP tinha links legais no footer ainda apontando para `#`, o que nao resolve exigencias de consentimento/verificacao
+**Correcao aplicada:** Criar paginas publicas em `https://www.prevlegal.com.br/privacidade` e `https://www.prevlegal.com.br/termos`, ligar esses links no footer da LP e incluir ambas no sitemap do site
+**Regra pratica:** Sempre que o PrevLegal precisar publicar OAuth externo em producao, o dominio publico deve oferecer homepage, politica de privacidade e termos acessiveis e indexaveis
+
 ### 59. A lista tecnica de cadastro manual nao deve disputar espaco com listas importadas
 **Problema:** O agrupador tecnico `Cadastro manual` aparecia na aba de listas como se fosse uma importacao operacional, poluindo a leitura do escritorio
 **Causa:** A API de listas retornava indiscriminadamente todas as `listas`, inclusive a lista interna criada para suportar leads avulsos

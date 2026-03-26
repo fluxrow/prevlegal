@@ -466,6 +466,22 @@ Pontos que precisam ser preservados durante a implementacao:
   - `Authorized redirect URI` deve conter exatamente `https://app.prevlegal.com.br/api/google/callback`
   - `Authorized JavaScript origin` deve conter `https://app.prevlegal.com.br`
 
+2026-03-26 - Paginas publicas de privacidade e termos criadas para o site
+- Criadas as paginas estaticas do projeto `site/`:
+  - `site/privacidade/index.html`
+  - `site/termos/index.html`
+- Criados espelhos tecnicos no projeto principal:
+  - `public/privacidade/index.html`
+  - `public/termos/index.html`
+- O footer da LP foi atualizado para apontar para:
+  - `/privacidade`
+  - `/termos`
+- O sitemap estatico do site agora inclui:
+  - `https://www.prevlegal.com.br/privacidade`
+  - `https://www.prevlegal.com.br/termos`
+- Objetivo operacional:
+  - destravar homepage/privacy/terms no Google Auth Platform para publicar o consent screen em producao
+
 2026-03-19 - Estruturacao inicial da Fase 26
 - Criado o quadro de tasks em `docs/TENANT_ISOLATION_TASKS.md`
 - A fase foi dividida em:
