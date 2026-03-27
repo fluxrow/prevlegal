@@ -258,6 +258,18 @@ export async function GET(
 **Causa:** O `Account SID` e o `Auth Token` eram os mesmos entre local e producao, mas o `TWILIO_WHATSAPP_NUMBER` em producao apontava para um sender diferente do sandbox valido
 **Correcao:** Aplicar a migration `032`, registrar o primeiro canal em `whatsapp_numbers` e sincronizar o tenant `Fluxrow` com `whatsapp:+14155238886` como origem default
 **Regra pratica:** Quando o erro do provider aponta para `From address`, validar primeiro o sender configurado antes de concluir que o fluxo do produto quebrou
+
+### 40. Inbox WhatsApp nao pode ecoar outbound como se fosse resposta real
+**Problema:** Ao enviar uma mensagem manual pelo lead/inbox, a thread mostrava a mesma mensagem dos dois lados mesmo sem o lead responder
+**Causa:** O registro outbound estava sendo lido da tabela `mensagens_inbound`, e a UI da inbox sempre renderizava a bolha da esquerda antes de renderizar `resposta_agente`
+**Correcao:** Tratar como outbound os registros cujo `telefone_destinatario` bate com o telefone da conversa e renderizar apenas a bolha da direita nesses casos
+**Regra pratica:** Enquanto o historico WhatsApp ainda misturar eventos inbound e outbound na mesma origem, a UI precisa distinguir direcao pelo par `telefone_remetente`/`telefone_destinatario`, nao so pelos flags de resposta
+
+### 41. Send box da inbox precisa mostrar erro real do provider
+**Problema:** O operador podia clicar em enviar, ver a thread atualizada e concluir que a mensagem saiu mesmo quando o provider falhava depois
+**Causa:** O front da inbox limpava o texto e recarregava a conversa sem verificar `res.ok`
+**Correcao:** O composer da inbox agora preserva o texto em falha e mostra a mensagem de erro retornada pela API
+**Regra pratica:** Em fluxos operacionais do PrevLegal, nunca tratar tentativa de envio como sucesso sem validar explicitamente a resposta HTTP
 **Regra prática:** Endpoints que estabelecem autenticação ou reautenticação não podem depender da sessão que eles próprios estão tentando renovar
 
 ### 37. Contenção do tenant não pode travar o próprio primeiro tenant depois do bootstrap inicial

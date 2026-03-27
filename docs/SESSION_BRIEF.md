@@ -83,6 +83,13 @@ Ultima atualizacao: 2026-03-27
     - label: `Twilio Sandbox`
     - origem default no tenant: `whatsapp:+14155238886`
   - `whatsapp_numbers_count = 1` no operacional neste momento
+  - diagnostico do reteste em 27/03:
+    - a inbox estava ecoando outbound manual como se houvesse mensagem inbound + resposta
+    - isso foi corrigido na UI da `Caixa de Entrada`
+    - o ultimo envio real consultado na API da Twilio ficou com `status = failed`
+    - `sid`: `SM45b2678c110c8d4e870d618e68322290`
+    - `errorCode = 63015`
+    - conclusao: havia bug visual na thread, mas tambem houve falha real de entrega no provider
 - Contencao atual:
   - allowlist do app continua ativa
   - onboarding fora do piloto continua bloqueado
@@ -98,6 +105,7 @@ Validar o runtime WhatsApp no tenant limpo:
 - criar e disparar uma campanha de teste
 - observar `campanha_mensagens`, webhook de status e atualizacao de contadores
 - retestar agora o envio manual e o `Iniciar conversa` com o canal default do tenant
+- identificar a causa operacional do `errorCode 63015` no sandbox Twilio e confirmar a adesao correta do numero de destino
 - provocar uma inbound de resposta no mesmo numero para validar roteamento pelo tenant
 - conectar Z-API como segundo provider e validar um disparo de campanha ponta a ponta
 - depois retomar os testes operacionais do tenant isolation canonico por `tenant_id`

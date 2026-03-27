@@ -42,6 +42,7 @@ interface Mensagem {
   id: string
   mensagem: string
   telefone_remetente: string
+  telefone_destinatario?: string | null
   resposta_agente: string | null
   respondido_por_agente: boolean
   respondido_manualmente: boolean
@@ -94,6 +95,7 @@ export default function CaixaDeEntradaPage() {
   const [enviandoPortal, setEnviandoPortal] = useState(false)
   const [textoResposta, setTextoResposta] = useState('')
   const [enviando, setEnviando] = useState(false)
+  const [erroEnvio, setErroEnvio] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
@@ -204,13 +206,19 @@ export default function CaixaDeEntradaPage() {
   async function enviarResposta() {
     if (!textoResposta.trim() || !conversaSelecionada) return
     setEnviando(true)
-    await fetch(`/api/conversas/${conversaSelecionada.id}/responder`, {
+    setErroEnvio(null)
+    const res = await fetch(`/api/conversas/${conversaSelecionada.id}/responder`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ mensagem: textoResposta }),
     })
-    setTextoResposta('')
-    await fetchMensagens(conversaSelecionada.id)
+    if (res.ok) {
+      setTextoResposta('')
+      await fetchMensagens(conversaSelecionada.id)
+    } else {
+      const data = await res.json().catch(() => null)
+      setErroEnvio(data?.error || 'Nao foi possivel enviar a mensagem')
+    }
     setEnviando(false)
   }
 
@@ -238,6 +246,11 @@ export default function CaixaDeEntradaPage() {
   )
 
   const badgePortal = threadsPortal.reduce((a, t) => a + t.nao_lidas, 0)
+
+  function isMensagemOutbound(msg: Mensagem) {
+    if (!conversaSelecionada) return false
+    return samePhone(msg.telefone_destinatario || '', conversaSelecionada.telefone)
+  }
 
   const inputStyle: React.CSSProperties = {
     background: 'var(--bg-surface)',
@@ -493,21 +506,23 @@ export default function CaixaDeEntradaPage() {
           <div style={{ flex: 1, overflowY: 'auto', padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {mensagens.map(msg => (
               <div key={msg.id}>
-                <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: msg.resposta_agente ? '6px' : '0' }}>
-                  <div style={{ maxWidth: '70%' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
-                      <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: 'var(--bg-hover)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <User size={11} color="var(--text-muted)" />
+                {!isMensagemOutbound(msg) && (
+                  <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: msg.resposta_agente ? '6px' : '0' }}>
+                    <div style={{ maxWidth: '70%' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+                        <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: 'var(--bg-hover)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <User size={11} color="var(--text-muted)" />
+                        </div>
+                        <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'DM Sans, sans-serif' }}>{formatTime(msg.created_at)}</span>
                       </div>
-                      <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'DM Sans, sans-serif' }}>{formatTime(msg.created_at)}</span>
-                    </div>
-                    <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '12px 12px 12px 4px', padding: '10px 14px' }}>
-                      <p style={{ fontSize: '13px', color: 'var(--text-primary)', fontFamily: 'DM Sans, sans-serif', lineHeight: '1.5', margin: 0 }}>{msg.mensagem}</p>
+                      <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '12px 12px 12px 4px', padding: '10px 14px' }}>
+                        <p style={{ fontSize: '13px', color: 'var(--text-primary)', fontFamily: 'DM Sans, sans-serif', lineHeight: '1.5', margin: 0 }}>{msg.mensagem}</p>
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
 
-                {msg.resposta_agente && (
+                {(msg.resposta_agente || isMensagemOutbound(msg)) && (
                   <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
                     <div style={{ maxWidth: '70%' }}>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '6px', marginBottom: '4px' }}>
@@ -519,7 +534,7 @@ export default function CaixaDeEntradaPage() {
                         </div>
                       </div>
                       <div style={{ background: msg.respondido_manualmente ? '#2dd4a015' : '#4f7aff15', border: `1px solid ${msg.respondido_manualmente ? '#2dd4a030' : '#4f7aff30'}`, borderRadius: '12px 12px 4px 12px', padding: '10px 14px' }}>
-                        <p style={{ fontSize: '13px', color: 'var(--text-primary)', fontFamily: 'DM Sans, sans-serif', lineHeight: '1.5', margin: 0 }}>{msg.resposta_agente}</p>
+                        <p style={{ fontSize: '13px', color: 'var(--text-primary)', fontFamily: 'DM Sans, sans-serif', lineHeight: '1.5', margin: 0 }}>{msg.resposta_agente || msg.mensagem}</p>
                       </div>
                     </div>
                   </div>
@@ -531,21 +546,30 @@ export default function CaixaDeEntradaPage() {
 
           {conversaSelecionada.status === 'humano' && (
             <div style={{ padding: '16px 24px', borderTop: '1px solid var(--border)', background: 'var(--bg-surface)', display: 'flex', gap: '10px', alignItems: 'flex-end' }}>
-              <textarea
-                value={textoResposta}
-                onChange={e => setTextoResposta(e.target.value)}
-                onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); enviarResposta() } }}
-                placeholder="Digite sua resposta... (Enter para enviar)"
-                rows={1}
-                style={{ ...inputStyle, flex: 1, resize: 'none', minHeight: '44px', maxHeight: '120px', lineHeight: '1.5' }}
-              />
-              <button
-                onClick={enviarResposta}
-                disabled={enviando || !textoResposta.trim()}
-                style={{ padding: '10px 16px', background: textoResposta.trim() ? 'var(--accent)' : 'var(--bg-hover)', color: textoResposta.trim() ? '#fff' : 'var(--text-muted)', border: 'none', borderRadius: '8px', cursor: textoResposta.trim() ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: '600', fontFamily: 'DM Sans, sans-serif', transition: 'all 0.15s' }}
-              >
-                <Send size={14} /> {enviando ? '...' : 'Enviar'}
-              </button>
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-end' }}>
+                  <textarea
+                    value={textoResposta}
+                    onChange={e => setTextoResposta(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); enviarResposta() } }}
+                    placeholder="Digite sua resposta... (Enter para enviar)"
+                    rows={1}
+                    style={{ ...inputStyle, flex: 1, resize: 'none', minHeight: '44px', maxHeight: '120px', lineHeight: '1.5' }}
+                  />
+                  <button
+                    onClick={enviarResposta}
+                    disabled={enviando || !textoResposta.trim()}
+                    style={{ padding: '10px 16px', background: textoResposta.trim() ? 'var(--accent)' : 'var(--bg-hover)', color: textoResposta.trim() ? '#fff' : 'var(--text-muted)', border: 'none', borderRadius: '8px', cursor: textoResposta.trim() ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: '600', fontFamily: 'DM Sans, sans-serif', transition: 'all 0.15s' }}
+                  >
+                    <Send size={14} /> {enviando ? '...' : 'Enviar'}
+                  </button>
+                </div>
+                {erroEnvio ? (
+                  <p style={{ margin: 0, color: '#ff6b6b', fontSize: '12px', fontFamily: 'DM Sans, sans-serif' }}>
+                    {erroEnvio}
+                  </p>
+                ) : null}
+              </div>
             </div>
           )}
 
