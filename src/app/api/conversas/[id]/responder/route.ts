@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { createClient as createServerClient } from '@/lib/supabase/server'
-import { getTwilioCredentialsByTenantId, sendWhatsApp } from '@/lib/twilio'
 import { getTenantContext } from '@/lib/tenant-context'
+import { sendWhatsAppMessage } from '@/lib/whatsapp-provider'
 
 function createAdminSupabase() {
   return createClient(
@@ -42,27 +42,26 @@ export async function POST(
     return NextResponse.json({ error: 'Conversa não encontrada' }, { status: 404 })
   }
 
-  const creds = await getTwilioCredentialsByTenantId(context.tenantId)
-  const twilioTo = conversa.telefone.startsWith('whatsapp:')
-    ? conversa.telefone
-    : `whatsapp:${conversa.telefone}`
-
-  const result = await sendWhatsApp(twilioTo, mensagem, creds)
+  const result = await sendWhatsAppMessage({
+    tenantId: context.tenantId,
+    to: conversa.telefone,
+    body: mensagem,
+  })
   if (!result.success) {
-    return NextResponse.json({ error: result.error || 'Falha no envio Twilio' }, { status: 502 })
+    return NextResponse.json({ error: result.error || 'Falha no envio WhatsApp' }, { status: 502 })
   }
 
   // Registrar mensagem manual
   await supabase.from('mensagens_inbound').insert({
     tenant_id: context.tenantId,
     conversa_id: id,
-    telefone_remetente: creds.whatsappNumber,
+    telefone_remetente: result.from,
     telefone_destinatario: conversa.telefone,
     mensagem,
     respondido_por_agente: false,
     respondido_manualmente: true,
     resposta_agente: mensagem,
-    twilio_sid: result.sid,
+    twilio_sid: result.externalMessageId,
   })
 
   await supabase.from('conversas').update({

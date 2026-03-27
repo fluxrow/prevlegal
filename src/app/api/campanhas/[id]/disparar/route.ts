@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient as createAdmin } from "@supabase/supabase-js";
 import { createClient as createServerClient } from "@/lib/supabase/server";
 import { getTenantContext } from "@/lib/tenant-context";
-import { getTwilioCredentialsByTenantId, sendWhatsApp } from "@/lib/twilio";
+import { sendWhatsAppMessage } from "@/lib/whatsapp-provider";
 
 function createAdminClient() {
   return createAdmin(
@@ -124,8 +124,6 @@ export async function POST(
     const delayMax = campanha.delay_max_ms || 3500;
     const tamLote = campanha.tamanho_lote || 50;
     const pausaLote = (campanha.pausa_entre_lotes_s || 30) * 1000;
-    const creds = await getTwilioCredentialsByTenantId(context.tenantId);
-
     for (let i = 0; i < leadsParaEnviar.length; i++) {
       // Checar se campanha foi pausada/cancelada
       const { data: status } = await applyTenantFilter(
@@ -149,7 +147,11 @@ export async function POST(
         });
         falhos++;
       } else {
-        const result = await sendWhatsApp(phone, mensagem, creds);
+        const result = await sendWhatsAppMessage({
+          tenantId: context.tenantId,
+          to: phone,
+          body: mensagem,
+        });
         if (result.success) {
           await adminClient.from("campanha_mensagens").insert({
             campanha_id: campanhaId,
@@ -157,7 +159,7 @@ export async function POST(
             telefone: phone,
             mensagem: mensagem,
             status: "enviado",
-            twilio_sid: result.sid,
+            twilio_sid: result.externalMessageId,
             enviado_at: new Date().toISOString(),
           });
           enviados++;
@@ -168,7 +170,7 @@ export async function POST(
             telefone: phone,
             mensagem: mensagem,
             status: "falhou",
-            erro_detalhe: result.error || "Falha no envio Twilio",
+            erro_detalhe: result.error || "Falha no envio WhatsApp",
           });
           falhos++;
         }

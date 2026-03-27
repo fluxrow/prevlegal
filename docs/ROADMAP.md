@@ -76,6 +76,28 @@ Mestra: [[MASTER_PREV_LEGAL]]
   - criar/disparar campanha de teste e observar `campanha_mensagens` + webhook de status
   - validar o fluxo de `Iniciar conversa` no detalhe do lead e no drawer
 
+## Atualizacao WhatsApp Providers — 27/03/2026
+
+- foi criada a fundacao da camada de providers em `src/lib/whatsapp-provider.ts`
+- a resolucao de canal agora aceita dois caminhos:
+  - legado atual por credenciais Twilio do tenant/global
+  - novo registro em `whatsapp_numbers` por tenant
+- o envio operacional dos fluxos abaixo passou a usar essa camada:
+  - resposta manual em conversa
+  - `Iniciar conversa` a partir do lead
+  - resposta automatica do agente
+  - disparo de campanhas
+- a migration `032_whatsapp_provider_foundation.sql` prepara:
+  - tabela `whatsapp_numbers`
+  - provider `twilio | zapi`
+  - multiplos numeros por tenant
+  - referencia opcional de `whatsapp_number_id` em conversas, mensagens inbound, notificacoes e campanhas
+- o app continua com fallback para o modelo Twilio atual caso a tabela nova ainda nao exista ou nao esteja preenchida
+- proximo passo recomendado:
+  - construir tela/admin para cadastrar numeros WhatsApp por tenant
+  - conectar Z-API como primeiro provider alternativo para campanha e operacao humana
+  - depois permitir escolha explicita do numero de origem por campanha e por conversa humana
+
 ## Fases Concluídas
 
 | Fase | Feature | Commit |

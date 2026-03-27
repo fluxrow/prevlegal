@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import Anthropic from '@anthropic-ai/sdk'
 import { getConfiguracaoAtual } from '@/lib/configuracoes'
-import { getTwilioCredentialsByTenantId, sendWhatsApp } from '@/lib/twilio'
+import { sendWhatsAppMessage } from '@/lib/whatsapp-provider'
 
 function createAdminSupabase() {
   return createClient(
@@ -160,11 +160,14 @@ export async function POST(request: NextRequest) {
 
     // 8. Se resposta automática ativa, enviar via Twilio
     if (config.agente_resposta_automatica && mensagem.telefone_remetente) {
-      const creds = await getTwilioCredentialsByTenantId(tenantId)
-      const result = await sendWhatsApp(mensagem.telefone_remetente, respostaTexto, creds)
+      const result = await sendWhatsAppMessage({
+        tenantId,
+        to: mensagem.telefone_remetente,
+        body: respostaTexto,
+      })
 
       if (!result.success) {
-        console.error('Falha ao enviar resposta automática via Twilio:', result.error)
+        console.error('Falha ao enviar resposta automática via WhatsApp:', result.error)
       }
     }
 

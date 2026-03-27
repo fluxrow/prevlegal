@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { createClient as createServerClient } from '@/lib/supabase/server'
 import { canAccessLeadId, getTenantContext } from '@/lib/tenant-context'
-import { getTwilioCredentialsByTenantId, sendWhatsApp } from '@/lib/twilio'
+import { sendWhatsAppMessage } from '@/lib/whatsapp-provider'
 
 function createAdminSupabase() {
   return createAdminClient(
@@ -80,12 +80,11 @@ export async function POST(
     conversa = criada
   }
 
-  const creds = await getTwilioCredentialsByTenantId(context.tenantId)
-  const twilioTo = lead.telefone.startsWith('whatsapp:')
-    ? lead.telefone
-    : `whatsapp:${lead.telefone}`
-
-  const result = await sendWhatsApp(twilioTo, mensagem.trim(), creds)
+  const result = await sendWhatsAppMessage({
+    tenantId: context.tenantId,
+    to: lead.telefone,
+    body: mensagem.trim(),
+  })
   if (!result.success) {
     return NextResponse.json(
       { error: result.error || 'Falha no envio WhatsApp' },
@@ -99,13 +98,13 @@ export async function POST(
     tenant_id: context.tenantId,
     conversa_id: conversa.id,
     lead_id: lead.id,
-    telefone_remetente: creds.whatsappNumber,
+    telefone_remetente: result.from,
     telefone_destinatario: lead.telefone,
     mensagem: mensagem.trim(),
     respondido_por_agente: false,
     respondido_manualmente: true,
     resposta_agente: mensagem.trim(),
-    twilio_sid: result.sid,
+    twilio_sid: result.externalMessageId,
   })
 
   await supabase

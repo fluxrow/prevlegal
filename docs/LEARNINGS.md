@@ -238,6 +238,20 @@ export async function GET(
 **Problema:** A tela de reautenticação do admin parecia rejeitar a senha correta
 **Causa:** O middleware protegia `/api/admin/reauth` como se fosse rota privada do app, então a chamada era redirecionada para `/login` antes de validar as credenciais
 **Correção:** Incluir `/api/admin/reauth` entre as rotas públicas do middleware
+
+### 37. Camada de provider WhatsApp precisa nascer com fallback para o legado
+**Problema:** O produto precisa suportar Z-API e multiplos numeros por escritorio, mas o runtime atual ainda depende do modelo Twilio unico por tenant/env
+**Risco:** Se a aplicacao passar a depender de tabela nova antes da migration/base estarem prontas, o envio quebra em producao
+**Correcao:** Criar `src/lib/whatsapp-provider.ts` com resolucao em duas camadas:
+- primeiro tenta `whatsapp_numbers`
+- se a tabela nao existir ou nao houver numero ativo, faz fallback para `getTwilioCredentialsByTenantId`
+**Regra pratica:** Em transicoes de arquitetura no PrevLegal, a camada nova precisa conviver com o legado ate a base operacional estar populada
+
+### 38. Suporte a multiplos numeros deve entrar antes de acoplar Z-API direto nos fluxos
+**Problema:** Z-API e campanhas sugerem encaixar mais um provider rapidamente, mas o produto ja aponta para o cenario de um escritorio operar mais de um numero de prospeccao
+**Risco:** Integrar Z-API direto nas rotas atuais geraria retrabalho quando entrasse o segundo numero do mesmo tenant
+**Correcao:** Modelar `whatsapp_numbers` por tenant com `provider`, credenciais e `is_default`, e deixar campanhas/conversas prontas para futuramente apontar para `whatsapp_number_id`
+**Regra pratica:** Quando um integrador novo chega junto com necessidade de roteamento por origem, modelar primeiro o canal, depois o provider
 **Regra prática:** Endpoints que estabelecem autenticação ou reautenticação não podem depender da sessão que eles próprios estão tentando renovar
 
 ### 37. Contenção do tenant não pode travar o próprio primeiro tenant depois do bootstrap inicial

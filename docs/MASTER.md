@@ -119,7 +119,7 @@ Estratégia: entrar com R$ 1.997 para gerar cases, subir gradualmente.
 - **Banco:** Supabase (PostgreSQL)
 - **Auth:** Supabase Auth
 - **Deploy:** Vercel (auto-deploy no push para main)
-- **WhatsApp:** Twilio (sandbox atual — conta pessoal do Cauã)
+- **WhatsApp:** camada em transicao para providers (`Twilio` agora, `Z-API` a seguir) com suporte planejado a multiplos numeros por tenant
 - **IA:** Claude API (claude-sonnet-4-20250514)
 - **Agendamentos:** Google Calendar OAuth
 - **Charts:** Recharts
@@ -174,3 +174,17 @@ Estratégia: entrar com R$ 1.997 para gerar cases, subir gradualmente.
 - Campos necessários no tenant: twilio_account_sid, twilio_auth_token, twilio_number
 - APIs de disparo usarão credenciais do tenant em vez das globais
 - Onboarding: Fluxrow cria subconta e provisiona número para o cliente
+
+## WhatsApp Providers — Direcao atual
+
+- a camada `src/lib/whatsapp-provider.ts` passa a ser a fundacao canonica para envio outbound
+- o modelo novo admite:
+  - `provider = twilio`
+  - `provider = zapi`
+  - multiplos numeros por tenant
+- a tabela planejada para isso e `whatsapp_numbers`
+- o runtime continua com fallback seguro para o helper legado de Twilio enquanto a base nova nao estiver populada
+- objetivo de produto:
+  - permitir mais de um numero de prospeccao por escritorio
+  - escolher origem por campanha e, depois, por conversa humana
+  - reduzir dependencia de um unico sender ou provider global

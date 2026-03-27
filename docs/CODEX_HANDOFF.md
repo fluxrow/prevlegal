@@ -218,6 +218,41 @@ Pontos que precisam ser preservados durante a implementacao:
 
 ## Registro de Validacoes
 
+2026-03-27 - Foundation de providers para WhatsApp
+
+- Objetivo:
+  - preparar o produto para `Twilio + Z-API + multiplos numeros por tenant`
+  - sem quebrar o runtime atual que ainda depende do modelo Twilio unico por tenant/env
+- Arquivos principais:
+  - `src/lib/whatsapp-provider.ts`
+  - `src/app/api/conversas/[id]/responder/route.ts`
+  - `src/app/api/leads/[id]/iniciar-conversa/route.ts`
+  - `src/app/api/agente/responder/route.ts`
+  - `src/app/api/campanhas/[id]/disparar/route.ts`
+  - `supabase/migrations/032_whatsapp_provider_foundation.sql`
+- Decisao de arquitetura:
+  - o envio outbound deixa de depender conceitualmente de um helper Twilio unico
+  - `whatsapp-provider.ts` tenta resolver um numero ativo em `whatsapp_numbers`
+  - se a tabela nao existir ou nao houver configuracao, o app faz fallback para `getTwilioCredentialsByTenantId`
+- Cobertura ja conectada na camada nova:
+  - resposta manual em conversa
+  - `Iniciar conversa` no lead
+  - resposta automatica do agente
+  - disparo de campanhas
+- Migration 032 preparada para:
+  - criar `whatsapp_numbers`
+  - registrar `provider = twilio | zapi`
+  - suportar multiplos numeros por tenant
+  - introduzir `whatsapp_number_id` opcional em conversas, mensagens inbound, notificacoes e campanhas
+- Validacao:
+  - `npm run build` passou apos a integracao
+- Observacao operacional:
+  - o erro atual visto no Twilio sandbox (`could not find a Channel with the specified From address`) e de configuracao do sender/canal, nao de fluxo da aplicacao
+- Proximo passo recomendado:
+  - aplicar a migration 032 no operacional
+  - criar UI/admin para cadastro de numeros por tenant
+  - conectar Z-API como primeiro provider alternativo para campanha e operacao humana
+
 2026-03-16
 - Confirmado que o projeto local esta alinhado ao commit `2f79771`
 - Confirmado que o build atual passa

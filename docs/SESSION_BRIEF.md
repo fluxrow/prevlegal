@@ -74,6 +74,9 @@ Ultima atualizacao: 2026-03-27
   - `mensagens_inbound`, `conversas` e `notificacoes` do webhook agora carregam `tenant_id` coerente com o numero do escritorio
   - resposta manual na inbox e resposta automatica do agente agora usam credenciais/configuracoes do tenant certo
   - o detalhe do lead e o drawer agora oferecem `Iniciar conversa`, criando a thread humana mesmo sem conversa previa e levando o operador direto para a inbox
+  - a fundacao `src/lib/whatsapp-provider.ts` foi aberta para suportar `Twilio + Z-API + multiplos numeros por tenant`
+  - resposta manual, `Iniciar conversa`, agente automatico e disparo de campanha ja passam por essa camada nova com fallback para o Twilio legado
+  - a migration `032_whatsapp_provider_foundation.sql` prepara a tabela `whatsapp_numbers` e referencias opcionais de `whatsapp_number_id`
 - Contencao atual:
   - allowlist do app continua ativa
   - onboarding fora do piloto continua bloqueado
@@ -88,6 +91,8 @@ Validar o runtime WhatsApp no tenant limpo:
 - validar `Iniciar conversa` em um lead sem thread previa
 - criar e disparar uma campanha de teste
 - observar `campanha_mensagens`, webhook de status e atualizacao de contadores
+- cadastrar o primeiro numero em `whatsapp_numbers` quando a migration 032 estiver aplicada
+- conectar Z-API como segundo provider e validar um disparo de campanha ponta a ponta
 - depois retomar os testes operacionais do tenant isolation canonico por `tenant_id`
 
 ## Bloqueios e Cuidados
