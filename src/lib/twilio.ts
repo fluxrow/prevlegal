@@ -35,6 +35,20 @@ function normalizeWhatsAppAddress(value?: string | null) {
     .toLowerCase()
 }
 
+export function normalizeWhatsAppRecipient(value?: string | null) {
+  const digits = String(value || '').replace(/\D/g, '')
+
+  if (!digits) return ''
+  if (digits.length === 13 && digits.startsWith('55')) return `+${digits}`
+  if (digits.length === 12 && digits.startsWith('55')) {
+    return `+${digits.slice(0, 4)}9${digits.slice(4)}`
+  }
+  if (digits.length === 11) return `+55${digits}`
+  if (digits.length === 10) return `+55${digits.slice(0, 2)}9${digits.slice(2)}`
+
+  return digits.startsWith('+') ? digits : `+${digits}`
+}
+
 export async function getTwilioCredentials(tenantSlug?: string): Promise<TwilioCredentials> {
   const global = getGlobalTwilioCredentials()
 
@@ -145,7 +159,12 @@ export async function sendWhatsApp(
   body: string,
   credentials: TwilioCredentials
 ): Promise<{ sid: string; success: boolean; error?: string }> {
-  const toFormatted = to.startsWith('whatsapp:') ? to : `whatsapp:${to}`
+  const normalizedRecipient = normalizeWhatsAppRecipient(to)
+  if (!normalizedRecipient) {
+    return { sid: '', success: false, error: 'Numero de destino invalido' }
+  }
+
+  const toFormatted = `whatsapp:${normalizedRecipient}`
   const url = `https://api.twilio.com/2010-04-01/Accounts/${credentials.accountSid}/Messages.json`
   const auth = Buffer.from(`${credentials.accountSid}:${credentials.authToken}`).toString('base64')
 

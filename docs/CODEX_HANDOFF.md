@@ -814,6 +814,18 @@ Pontos que precisam ser preservados durante a implementacao:
   - testar lead sem conversa previa
   - testar lead com conversa previa em modo `agente` para confirmar que o fluxo assume como `humano`
 
+## Atualizacao de 2026-03-27 — Normalizacao de numero no envio WhatsApp
+
+- durante o teste real do fluxo `Iniciar conversa`, o provider devolveu erro de numero invalido porque o lead estava salvo como `(41) 99236-1868`
+- correcao aplicada:
+  - `src/lib/twilio.ts`
+    - `sendWhatsApp` agora normaliza o destinatario para formato E.164 brasileiro antes de chamar o provider
+    - isso cobre resposta manual, campanhas e o fluxo novo de iniciar conversa
+- validacao:
+  - `npm run build` passou
+- proximo passo:
+  - retestar o envio para numero proprio no sandbox atual
+
 ## Regra Permanente de Continuidade
 
 - toda sessao deve atualizar `docs/CODEX_HANDOFF.md`

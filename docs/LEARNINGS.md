@@ -579,6 +579,12 @@ export async function GET(
 **Correcao aplicada:** Adicionar um fluxo de `Iniciar conversa` no detalhe do lead e no drawer, com modal de primeira mensagem e backend dedicado em `src/app/api/leads/[id]/iniciar-conversa/route.ts` para criar/assumir a thread humana, enviar a mensagem inicial e redirecionar para a inbox na thread correta
 **Regra pratica:** No PrevLegal, o lead detail nao deve ser apenas leitura; se o operador decidiu agir sobre um lead especifico, ele precisa conseguir iniciar a conversa dali mesmo, sem friccao e sem depender de thread preexistente
 
+### 69. Runtime de WhatsApp precisa normalizar telefone visual antes de enviar ao provider
+**Problema:** O fluxo `Iniciar conversa` falhou com `The 'To' number whatsapp:(41) 99236-1868 is not a valid phone number`
+**Causa:** O lead guardava telefone em formato humano e o runtime repassava esse valor cru ao provider
+**Correcao aplicada:** Centralizar no `sendWhatsApp` a normalizacao do destinatario para E.164 brasileiro, aceitando formatos como `(41) 99236-1868`, `41992361868` e `+5541992361868`
+**Regra pratica:** No PrevLegal, todo envio WhatsApp deve normalizar o numero no backend; nao confiar que o cadastro do lead ja esta no formato tecnico correto
+
 ### 59. A lista tecnica de cadastro manual nao deve disputar espaco com listas importadas
 **Problema:** O agrupador tecnico `Cadastro manual` aparecia na aba de listas como se fosse uma importacao operacional, poluindo a leitura do escritorio
 **Causa:** A API de listas retornava indiscriminadamente todas as `listas`, inclusive a lista interna criada para suportar leads avulsos
