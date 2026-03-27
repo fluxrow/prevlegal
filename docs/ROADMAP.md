@@ -93,7 +93,13 @@ Mestra: [[MASTER_PREV_LEGAL]]
   - multiplos numeros por tenant
   - referencia opcional de `whatsapp_number_id` em conversas, mensagens inbound, notificacoes e campanhas
 - o app continua com fallback para o modelo Twilio atual caso a tabela nova ainda nao exista ou nao esteja preenchida
+- a migration `032_whatsapp_provider_foundation.sql` ja foi aplicada no banco operacional `lrqvvxmgimjlghpwavdb`
+- o primeiro canal padrao do tenant `Fluxrow` ja foi provisionado em `whatsapp_numbers`:
+  - `provider = twilio`
+  - `label = Twilio Sandbox`
+  - `phone = whatsapp:+14155238886`
 - proximo passo recomendado:
+  - retestar outbound manual no app publicado usando o canal default do tenant
   - construir tela/admin para cadastrar numeros WhatsApp por tenant
   - conectar Z-API como primeiro provider alternativo para campanha e operacao humana
   - depois permitir escolha explicita do numero de origem por campanha e por conversa humana

@@ -252,6 +252,12 @@ export async function GET(
 **Risco:** Integrar Z-API direto nas rotas atuais geraria retrabalho quando entrasse o segundo numero do mesmo tenant
 **Correcao:** Modelar `whatsapp_numbers` por tenant com `provider`, credenciais e `is_default`, e deixar campanhas/conversas prontas para futuramente apontar para `whatsapp_number_id`
 **Regra pratica:** Quando um integrador novo chega junto com necessidade de roteamento por origem, modelar primeiro o canal, depois o provider
+
+### 39. Sender global errado pode mascarar bug como falha de produto
+**Problema:** O fluxo de `Iniciar conversa` saiu do erro de numero invalido e passou para `Twilio could not find a Channel with the specified From address`
+**Causa:** O `Account SID` e o `Auth Token` eram os mesmos entre local e producao, mas o `TWILIO_WHATSAPP_NUMBER` em producao apontava para um sender diferente do sandbox valido
+**Correcao:** Aplicar a migration `032`, registrar o primeiro canal em `whatsapp_numbers` e sincronizar o tenant `Fluxrow` com `whatsapp:+14155238886` como origem default
+**Regra pratica:** Quando o erro do provider aponta para `From address`, validar primeiro o sender configurado antes de concluir que o fluxo do produto quebrou
 **Regra prática:** Endpoints que estabelecem autenticação ou reautenticação não podem depender da sessão que eles próprios estão tentando renovar
 
 ### 37. Contenção do tenant não pode travar o próprio primeiro tenant depois do bootstrap inicial

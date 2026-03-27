@@ -249,9 +249,21 @@ Pontos que precisam ser preservados durante a implementacao:
 - Observacao operacional:
   - o erro atual visto no Twilio sandbox (`could not find a Channel with the specified From address`) e de configuracao do sender/canal, nao de fluxo da aplicacao
 - Proximo passo recomendado:
-  - aplicar a migration 032 no operacional
-  - criar UI/admin para cadastro de numeros por tenant
-  - conectar Z-API como primeiro provider alternativo para campanha e operacao humana
+  - migration `032` aplicada com sucesso no operacional `lrqvvxmgimjlghpwavdb`
+  - tabela `whatsapp_numbers` criada no banco operacional
+  - tenant `Fluxrow` sincronizado com credenciais Twilio atuais e canal default:
+    - `provider = twilio`
+    - `label = Twilio Sandbox`
+    - `phone/twilio_whatsapp_number = whatsapp:+14155238886`
+  - contagem atual no operacional:
+    - `whatsapp_numbers = 1`
+    - `twilio_channels = 1`
+    - `zapi_channels = 0`
+  - proximo passo recomendado:
+    - retestar envio manual e `Iniciar conversa` no app publicado
+    - validar inbound/status com o tenant `Fluxrow`
+    - criar UI/admin para cadastro de numeros por tenant
+    - conectar Z-API como primeiro provider alternativo para campanha e operacao humana
 
 2026-03-16
 - Confirmado que o projeto local esta alinhado ao commit `2f79771`

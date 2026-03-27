@@ -77,6 +77,12 @@ Ultima atualizacao: 2026-03-27
   - a fundacao `src/lib/whatsapp-provider.ts` foi aberta para suportar `Twilio + Z-API + multiplos numeros por tenant`
   - resposta manual, `Iniciar conversa`, agente automatico e disparo de campanha ja passam por essa camada nova com fallback para o Twilio legado
   - a migration `032_whatsapp_provider_foundation.sql` prepara a tabela `whatsapp_numbers` e referencias opcionais de `whatsapp_number_id`
+  - a migration `032` ja foi aplicada no banco operacional `lrqvvxmgimjlghpwavdb`
+  - o tenant `Fluxrow` foi sincronizado com o primeiro canal WhatsApp padrao:
+    - provider: `twilio`
+    - label: `Twilio Sandbox`
+    - origem default no tenant: `whatsapp:+14155238886`
+  - `whatsapp_numbers_count = 1` no operacional neste momento
 - Contencao atual:
   - allowlist do app continua ativa
   - onboarding fora do piloto continua bloqueado
@@ -91,7 +97,8 @@ Validar o runtime WhatsApp no tenant limpo:
 - validar `Iniciar conversa` em um lead sem thread previa
 - criar e disparar uma campanha de teste
 - observar `campanha_mensagens`, webhook de status e atualizacao de contadores
-- cadastrar o primeiro numero em `whatsapp_numbers` quando a migration 032 estiver aplicada
+- retestar agora o envio manual e o `Iniciar conversa` com o canal default do tenant
+- provocar uma inbound de resposta no mesmo numero para validar roteamento pelo tenant
 - conectar Z-API como segundo provider e validar um disparo de campanha ponta a ponta
 - depois retomar os testes operacionais do tenant isolation canonico por `tenant_id`
 
