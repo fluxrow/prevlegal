@@ -788,6 +788,32 @@ Pontos que precisam ser preservados durante a implementacao:
   - testar automacao do agente em inbound real
   - criar/disparar campanha e observar ciclo completo ate status webhook
 
+## Atualizacao de 2026-03-27 — Iniciar conversa a partir do lead
+
+- o usuario pediu um fluxo ativo no detalhe do lead: nao apenas abrir thread existente, mas permitir que o advogado inicie o contato dali mesmo
+- correcao aplicada:
+  - novo endpoint `src/app/api/leads/[id]/iniciar-conversa/route.ts`
+    - valida acesso ao lead
+    - garante/recupera uma `conversa`
+    - assume a thread como `humano`
+    - envia a primeira mensagem via WhatsApp
+    - registra o envio e devolve `conversaId`
+  - `src/app/api/leads/[id]/route.ts`
+    - passa a devolver a conversa atual do lead quando existir
+  - novo componente `src/components/iniciar-conversa-modal.tsx`
+    - modal de primeira mensagem
+    - apos envio, redireciona para a `Caixa de Entrada` na thread correta
+  - `src/app/(dashboard)/leads/[id]/page.tsx`
+    - adiciona CTA `Iniciar conversa`
+    - mostra `Abrir conversa` apenas quando ja existe thread
+  - `src/components/lead-drawer.tsx`
+    - ganha o mesmo fluxo de `Iniciar conversa`
+- validacao:
+  - `npm run build` passou
+- proximo passo:
+  - testar lead sem conversa previa
+  - testar lead com conversa previa em modo `agente` para confirmar que o fluxo assume como `humano`
+
 ## Regra Permanente de Continuidade
 
 - toda sessao deve atualizar `docs/CODEX_HANDOFF.md`

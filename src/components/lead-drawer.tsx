@@ -6,6 +6,7 @@ import {
   X, User, FileText, CreditCard, Hash,
   MessageSquarePlus, Loader2, ChevronDown, AlertCircle, ExternalLink, MessageSquare, Send
 } from 'lucide-react'
+import IniciarConversaModal from '@/components/iniciar-conversa-modal'
 import { buildInboxHref, buildWhatsAppHref } from '@/lib/contact-shortcuts'
 
 type Lead = {
@@ -101,18 +102,24 @@ export default function LeadDrawer({
 }) {
   const [lead, setLead] = useState<Lead | null>(null)
   const [anotacoes, setAnotacoes] = useState<Anotacao[]>([])
+  const [conversaId, setConversaId] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [novaAnotacao, setNovaAnotacao] = useState('')
   const [salvando, setSalvando] = useState(false)
   const [showStatus, setShowStatus] = useState(false)
+  const [showStartConversation, setShowStartConversation] = useState(false)
   const router = useRouter()
 
   useEffect(() => {
-    if (!leadId) { setLead(null); return }
+    if (!leadId) { setLead(null); setConversaId(null); return }
     setLoading(true)
     fetch(`/api/leads/${leadId}`)
       .then(r => r.json())
-      .then(data => { setLead(data.lead); setAnotacoes(data.anotacoes || []) })
+      .then(data => {
+        setLead(data.lead)
+        setAnotacoes(data.anotacoes || [])
+        setConversaId(data.conversa?.id || null)
+      })
       .finally(() => setLoading(false))
   }, [leadId])
 
@@ -144,7 +151,7 @@ export default function LeadDrawer({
   }
 
   const statusAtual = STATUS_OPTIONS.find(s => s.id === lead?.status)
-  const inboxHref = buildInboxHref({ telefone: lead?.telefone })
+  const inboxHref = buildInboxHref({ conversaId, telefone: lead?.telefone })
   const whatsappHref = buildWhatsAppHref(lead?.telefone)
   if (!leadId) return null
 
@@ -215,18 +222,32 @@ export default function LeadDrawer({
                 )}
               </div>
               <div style={{ display: 'flex', gap: '8px', marginTop: '12px', flexWrap: 'wrap' }}>
-                <a
-                  href={inboxHref}
-                  onClick={onClose}
+                {conversaId ? (
+                  <a
+                    href={inboxHref}
+                    onClick={onClose}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: '6px',
+                      background: 'rgba(79,122,255,0.12)', border: '1px solid rgba(79,122,255,0.28)',
+                      borderRadius: '8px', padding: '7px 12px', color: 'var(--accent)',
+                      fontSize: '12px', fontWeight: '600', textDecoration: 'none', fontFamily: 'DM Sans, sans-serif',
+                    }}
+                  >
+                    <MessageSquare size={12} /> Abrir conversa
+                  </a>
+                ) : null}
+                <button
+                  onClick={() => setShowStartConversation(true)}
+                  disabled={!lead.telefone}
                   style={{
                     display: 'flex', alignItems: 'center', gap: '6px',
-                    background: 'rgba(79,122,255,0.12)', border: '1px solid rgba(79,122,255,0.28)',
-                    borderRadius: '8px', padding: '7px 12px', color: 'var(--accent)',
-                    fontSize: '12px', fontWeight: '600', textDecoration: 'none', fontFamily: 'DM Sans, sans-serif',
+                    background: lead.telefone ? 'var(--accent)' : 'var(--bg-hover)', border: '1px solid rgba(79,122,255,0.28)',
+                    borderRadius: '8px', padding: '7px 12px', color: lead.telefone ? '#fff' : 'var(--text-muted)',
+                    fontSize: '12px', fontWeight: '600', cursor: lead.telefone ? 'pointer' : 'not-allowed', fontFamily: 'DM Sans, sans-serif',
                   }}
                 >
-                  <MessageSquare size={12} /> Abrir conversa
-                </a>
+                  <MessageSquarePlus size={12} /> Iniciar conversa
+                </button>
                 {whatsappHref && (
                   <a
                     href={whatsappHref}
@@ -305,6 +326,17 @@ export default function LeadDrawer({
                 </div>
               </Section>
             </div>
+            <IniciarConversaModal
+              open={showStartConversation}
+              onClose={() => setShowStartConversation(false)}
+              leadId={lead.id}
+              leadNome={lead.nome}
+              telefone={lead.telefone}
+              onStarted={(newConversaId) => {
+                setConversaId(newConversaId)
+                onClose()
+              }}
+            />
           </>
         ) : (
           <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', fontSize: '13px' }}>Lead não encontrado</div>

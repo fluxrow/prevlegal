@@ -73,6 +73,7 @@ Ultima atualizacao: 2026-03-27
   - webhook inbound e webhook de status agora conseguem validar/rotear pelo tenant correto
   - `mensagens_inbound`, `conversas` e `notificacoes` do webhook agora carregam `tenant_id` coerente com o numero do escritorio
   - resposta manual na inbox e resposta automatica do agente agora usam credenciais/configuracoes do tenant certo
+  - o detalhe do lead e o drawer agora oferecem `Iniciar conversa`, criando a thread humana mesmo sem conversa previa e levando o operador direto para a inbox
 - Contencao atual:
   - allowlist do app continua ativa
   - onboarding fora do piloto continua bloqueado
@@ -84,6 +85,7 @@ Validar o runtime WhatsApp no tenant limpo:
 - responder uma conversa manualmente pela `Caixa de Entrada`
 - validar se a mensagem sai com o numero/origem do tenant correto
 - provocar uma inbound real e confirmar resposta automatica do agente
+- validar `Iniciar conversa` em um lead sem thread previa
 - criar e disparar uma campanha de teste
 - observar `campanha_mensagens`, webhook de status e atualizacao de contadores
 - depois retomar os testes operacionais do tenant isolation canonico por `tenant_id`

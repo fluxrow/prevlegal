@@ -74,6 +74,7 @@ Mestra: [[MASTER_PREV_LEGAL]]
   - responder uma conversa manualmente pela `Caixa de Entrada`
   - validar resposta automatica do agente em uma inbound real
   - criar/disparar campanha de teste e observar `campanha_mensagens` + webhook de status
+  - validar o fluxo de `Iniciar conversa` no detalhe do lead e no drawer
 
 ## Fases Concluídas
 
@@ -207,6 +208,7 @@ Mestra: [[MASTER_PREV_LEGAL]]
   - busca global de conversas
 - o runtime de campanhas deixou de depender das tabelas legado `lista_leads` e `numeros_whatsapp`
 - webhook inbound, webhook de status e resposta automatica do agente agora roteam Twilio/configuracoes pelo `tenant_id` ou pelo numero WhatsApp do tenant
+- o detalhe do lead e o drawer agora permitem iniciar uma conversa manual mesmo sem thread previa, criando a thread humana e levando direto para a inbox
 
 ### Documentação viva e rotina de sessão
 - `MASTER.md`, `ROADMAP.md` e `LEARNINGS.md` passaram a funcionar como memória viva do projeto

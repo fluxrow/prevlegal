@@ -573,6 +573,12 @@ export async function GET(
 **Correcao aplicada:** Expandir `src/lib/twilio.ts` com routing por numero WhatsApp, gravar `tenant_id` em `mensagens_inbound` e `notificacoes`, filtrar/upsert `conversas` por tenant e fazer `src/app/api/agente/responder/route.ts` e `src/app/api/webhooks/twilio*/route.ts` lerem `configuracoes`/auth no contexto do tenant certo
 **Regra pratica:** No PrevLegal multi-tenant, o numero Twilio do escritorio e a chave de roteamento do inbound; qualquer webhook ou automacao que ignore isso corre risco de quebrar assinatura, notificar o lugar errado ou vazar contexto entre escritorios
 
+### 68. O lead precisa permitir abordagem ativa sem depender de conversa previa
+**Problema:** O detalhe do lead ja ajudava a abrir uma thread existente, mas nao permitia ao advogado iniciar um contato manual quando ainda nao havia conversa aberta
+**Causa:** O fluxo operacional estava centrado na `Caixa de Entrada` como lugar de resposta, nao como ponto unico de criacao da conversa
+**Correcao aplicada:** Adicionar um fluxo de `Iniciar conversa` no detalhe do lead e no drawer, com modal de primeira mensagem e backend dedicado em `src/app/api/leads/[id]/iniciar-conversa/route.ts` para criar/assumir a thread humana, enviar a mensagem inicial e redirecionar para a inbox na thread correta
+**Regra pratica:** No PrevLegal, o lead detail nao deve ser apenas leitura; se o operador decidiu agir sobre um lead especifico, ele precisa conseguir iniciar a conversa dali mesmo, sem friccao e sem depender de thread preexistente
+
 ### 59. A lista tecnica de cadastro manual nao deve disputar espaco com listas importadas
 **Problema:** O agrupador tecnico `Cadastro manual` aparecia na aba de listas como se fosse uma importacao operacional, poluindo a leitura do escritorio
 **Causa:** A API de listas retornava indiscriminadamente todas as `listas`, inclusive a lista interna criada para suportar leads avulsos

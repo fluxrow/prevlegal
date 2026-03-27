@@ -2,12 +2,13 @@
 
 import { useEffect, useState, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { ArrowLeft, User, FileText, CreditCard, MessageSquare, Upload, Trash2, File, ExternalLink, Send } from 'lucide-react'
+import { ArrowLeft, User, FileText, CreditCard, MessageSquare, Upload, Trash2, File, ExternalLink, Send, MessageSquarePlus } from 'lucide-react'
 import CalculadoraPrev from '@/components/calculadora-prev'
 import GeradorDocumentosIA from '@/components/gerador-documentos-ia'
 import PortalLead from '@/components/portal-lead'
 import ContratoLead from '@/components/contrato-lead'
 import LeadDetalheOnboardingTour from '@/components/lead-detalhe-onboarding-tour'
+import IniciarConversaModal from '@/components/iniciar-conversa-modal'
 import { buildInboxHref, buildWhatsAppHref } from '@/lib/contact-shortcuts'
 
 interface Lead {
@@ -113,8 +114,10 @@ export default function LeadDetailPage() {
   const { id } = useParams<{ id: string }>()
   const router = useRouter()
   const [lead, setLead] = useState<Lead | null>(null)
+  const [conversaId, setConversaId] = useState<string | null>(null)
   const [anotacoes, setAnotacoes] = useState<Anotacao[]>([])
   const [loading, setLoading] = useState(true)
+  const [showStartConversation, setShowStartConversation] = useState(false)
 
   const [documentos, setDocumentos] = useState<Documento[]>([])
   const [uploadingDoc, setUploadingDoc] = useState(false)
@@ -129,6 +132,7 @@ export default function LeadDetailPage() {
       if (res.ok) {
         const data = await res.json()
         setLead(data.lead)
+        setConversaId(data.conversa?.id || null)
         setAnotacoes(data.anotacoes || [])
       }
       setLoading(false)
@@ -203,7 +207,7 @@ export default function LeadDetailPage() {
   }
 
   const status = STATUS_LABEL[lead.status] || { label: lead.status, color: '#888' }
-  const inboxHref = buildInboxHref({ telefone: lead.telefone })
+  const inboxHref = buildInboxHref({ conversaId, telefone: lead.telefone })
   const whatsappHref = buildWhatsAppHref(lead.telefone)
 
   return (
@@ -227,18 +231,33 @@ export default function LeadDetailPage() {
             {lead.nb && <span style={{ color: 'var(--text-muted)', fontSize: '13px', fontFamily: 'DM Sans, sans-serif' }}>NB {lead.nb}</span>}
           </div>
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '14px' }}>
-            <a
-              href={inboxHref}
+            {conversaId ? (
+              <a
+                href={inboxHref}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '6px',
+                  padding: '8px 14px', borderRadius: '8px',
+                  background: 'rgba(79,122,255,0.12)', border: '1px solid rgba(79,122,255,0.28)',
+                  color: 'var(--accent)', textDecoration: 'none', fontSize: '12px', fontWeight: '600',
+                  fontFamily: 'DM Sans, sans-serif',
+                }}
+              >
+                <MessageSquare size={13} /> Abrir conversa
+              </a>
+            ) : null}
+            <button
+              onClick={() => setShowStartConversation(true)}
+              disabled={!lead.telefone}
               style={{
                 display: 'flex', alignItems: 'center', gap: '6px',
                 padding: '8px 14px', borderRadius: '8px',
-                background: 'rgba(79,122,255,0.12)', border: '1px solid rgba(79,122,255,0.28)',
-                color: 'var(--accent)', textDecoration: 'none', fontSize: '12px', fontWeight: '600',
-                fontFamily: 'DM Sans, sans-serif',
+                background: lead.telefone ? 'var(--accent)' : 'var(--bg-hover)', border: '1px solid rgba(79,122,255,0.28)',
+                color: lead.telefone ? '#fff' : 'var(--text-muted)', fontSize: '12px', fontWeight: '600',
+                fontFamily: 'DM Sans, sans-serif', cursor: lead.telefone ? 'pointer' : 'not-allowed',
               }}
             >
-              <MessageSquare size={13} /> Abrir conversa
-            </a>
+              <MessageSquarePlus size={13} /> Iniciar conversa
+            </button>
             {whatsappHref && (
               <a
                 href={whatsappHref}
@@ -461,6 +480,14 @@ export default function LeadDetailPage() {
       </div>
 
       <LeadDetalheOnboardingTour />
+      <IniciarConversaModal
+        open={showStartConversation}
+        onClose={() => setShowStartConversation(false)}
+        leadId={lead.id}
+        leadNome={lead.nome}
+        telefone={lead.telefone}
+        onStarted={setConversaId}
+      />
     </div>
   )
 }
