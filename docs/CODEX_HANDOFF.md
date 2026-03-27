@@ -700,6 +700,26 @@ Pontos que precisam ser preservados durante a implementacao:
 - a tela `/listas` agora funciona como lista de importacoes operacionais, sem misturar o agrupador tecnico `Cadastro manual`
 - o dashboard agora suporta modo claro e modo escuro de forma global
 
+## Atualizacao de 2026-03-27 — Google Calendar pos-reset multi-tenant
+
+- o sintoma em runtime era: usuario concluia o OAuth, via toast de sucesso em `/agendamentos` e segundos depois a UI voltava a exibir Google desconectado
+- a causa confirmada estava na persistencia de `configuracoes`
+  - `src/app/api/google/callback/route.ts` podia tentar criar a primeira linha de `configuracoes` sem `nome_escritorio`
+  - o erro de insert nao era tratado antes do redirect de sucesso
+  - leitura e escrita de `configuracoes` ainda estavam sem filtro por `tenant_id`
+- correcao aplicada:
+  - novo helper `src/lib/configuracoes.ts` para buscar/garantir a configuracao atual do tenant
+  - `src/app/api/google/callback/route.ts` agora garante a linha de configuracao do tenant e so retorna sucesso se o update do token realmente passar
+  - `src/app/api/google/status/route.ts` agora le a configuracao do tenant atual
+  - `src/lib/google-calendar.ts` agora usa `tenant_id` para ler e atualizar o token
+  - `src/app/api/configuracoes/route.ts` e `src/app/api/agente/config/route.ts` tambem deixaram de tratar `configuracoes` como singleton global
+- validacao:
+  - `npm run build` passou apos as correcoes
+- proximo passo:
+  - reconectar o Google em producao
+  - confirmar persistencia do estado conectado apos refresh
+  - criar um agendamento real e validar `google_event_id`/`meet_link`
+
 ## Regra Permanente de Continuidade
 
 - toda sessao deve atualizar `docs/CODEX_HANDOFF.md`

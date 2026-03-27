@@ -1,5 +1,7 @@
 import { google } from 'googleapis'
+import { getConfiguracaoAtual } from '@/lib/configuracoes'
 import { createClient } from '@/lib/supabase/server'
+import { getTenantContext } from '@/lib/tenant-context'
 
 function getEnv(name: string) {
   return process.env[name]?.trim()
@@ -7,11 +9,17 @@ function getEnv(name: string) {
 
 export async function getCalendarClient() {
   const supabase = await createClient()
+  const context = await getTenantContext(supabase)
 
-  const { data: config } = await supabase
-    .from('configuracoes')
-    .select('google_calendar_token')
-    .single()
+  if (!context) {
+    throw new Error('Tenant não identificado')
+  }
+
+  const { data: config } = await getConfiguracaoAtual(
+    supabase,
+    context.tenantId,
+    'id, google_calendar_token',
+  )
 
   if (!config?.google_calendar_token) {
     throw new Error('Google Calendar não conectado')
@@ -27,13 +35,12 @@ export async function getCalendarClient() {
 
   // Auto-refresh: se o token expirou, atualiza no banco
   oauth2Client.on('tokens', async (tokens) => {
-    const { data: cfg } = await supabase.from('configuracoes').select('id').single()
-    if (cfg) {
+    if (config?.id) {
       const current = config.google_calendar_token as Record<string, unknown>
       await supabase
         .from('configuracoes')
         .update({ google_calendar_token: { ...current, ...tokens } })
-        .eq('id', cfg.id)
+        .eq('id', config.id)
     }
   })
 

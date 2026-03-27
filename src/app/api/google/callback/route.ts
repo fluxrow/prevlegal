@@ -1,4 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
+import { getTenantContext } from '@/lib/tenant-context'
+import { ensureConfiguracaoAtual } from '@/lib/configuracoes'
 import { NextRequest, NextResponse } from 'next/server'
 import { google } from 'googleapis'
 
@@ -31,24 +33,30 @@ export async function GET(request: NextRequest) {
     const { tokens } = await oauth2Client.getToken(code)
 
     const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return NextResponse.redirect('/auth/login')
+    const context = await getTenantContext(supabase)
+    if (!context) {
+      return NextResponse.redirect(`${getAppUrl()}/login`)
+    }
 
-    // Salva token em configuracoes
-    const { data: config } = await supabase
+    const { data: config, error: configError } = await ensureConfiguracaoAtual(
+      supabase,
+      context.tenantId,
+    )
+
+    if (configError || !config) {
+      throw new Error(configError?.message || 'Falha ao preparar configuracoes')
+    }
+
+    const { error: updateError } = await supabase
       .from('configuracoes')
-      .select('id')
-      .single()
+      .update({
+        google_calendar_token: tokens,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', config.id)
 
-    if (config) {
-      await supabase
-        .from('configuracoes')
-        .update({ google_calendar_token: tokens, updated_at: new Date().toISOString() })
-        .eq('id', config.id)
-    } else {
-      await supabase
-        .from('configuracoes')
-        .insert({ google_calendar_token: tokens })
+    if (updateError) {
+      throw new Error(updateError.message)
     }
 
     return NextResponse.redirect(`${getAppUrl()}/agendamentos?google=conectado`)

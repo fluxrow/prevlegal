@@ -549,6 +549,12 @@ export async function GET(
 **Correcao aplicada:** Criar paginas publicas em `https://www.prevlegal.com.br/privacidade` e `https://www.prevlegal.com.br/termos`, ligar esses links no footer da LP e incluir ambas no sitemap do site
 **Regra pratica:** Sempre que o PrevLegal precisar publicar OAuth externo em producao, o dominio publico deve oferecer homepage, politica de privacidade e termos acessiveis e indexaveis
 
+### 64. Google Calendar pode “conectar e desconectar” quando o callback redireciona sucesso sem persistir o token
+**Problema:** O usuario concluia o OAuth, voltava para `/agendamentos` com toast de sucesso, mas a UI em seguida mostrava Google desconectado
+**Causa confirmada:** A rota `src/app/api/google/callback/route.ts` podia cair no branch de insert da tabela `configuracoes` logo apos o reset operacional; esse insert nao enviava `nome_escritorio`, ignorava erro e redirecionava como sucesso mesmo sem gravar `google_calendar_token`. Alem disso, leitura e escrita de `configuracoes` ainda estavam sem filtro por `tenant_id`
+**Correcao aplicada:** Criar helper de configuracoes por tenant em `src/lib/configuracoes.ts`, garantir a existencia de uma linha valida com `nome_escritorio` default antes de salvar o token e ancorar `callback`, `status`, `google-calendar`, `/api/configuracoes` e `/api/agente/config` no `tenant_id` atual
+**Regra pratica:** No PrevLegal pos-reset multi-tenant, qualquer fluxo que leia ou escreva `configuracoes` precisa ser tenant-aware e nunca pode sinalizar sucesso ao usuario sem conferir o resultado real da persistencia
+
 ### 59. A lista tecnica de cadastro manual nao deve disputar espaco com listas importadas
 **Problema:** O agrupador tecnico `Cadastro manual` aparecia na aba de listas como se fosse uma importacao operacional, poluindo a leitura do escritorio
 **Causa:** A API de listas retornava indiscriminadamente todas as `listas`, inclusive a lista interna criada para suportar leads avulsos

@@ -38,6 +38,19 @@ Mestra: [[MASTER_PREV_LEGAL]]
   - provisionar o responsavel real
   - continuar o tenant isolation definitivo com `tenant_id`, filtros canonicos e RLS
 
+## Atualizacao Rapida — 27/03/2026
+
+- o fluxo de conexao do Google Calendar foi corrigido para o contexto pos-reset multi-tenant
+- `configuracoes` deixou de ser tratada como singleton global nos pontos criticos do app
+- a persistencia do `google_calendar_token` agora:
+  - garante uma linha valida de `configuracoes` antes do update
+  - respeita o `tenant_id` do usuario atual
+  - falha de forma explicita se a gravacao nao acontecer
+- proximos testes operacionais:
+  - reconectar o Google em `/agendamentos`
+  - confirmar que o status conectado persiste apos recarregar a pagina
+  - criar um agendamento real e validar `google_event_id` + `meet_link`
+
 ## Fases Concluídas
 
 | Fase | Feature | Commit |

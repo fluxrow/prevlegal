@@ -57,6 +57,10 @@ Ultima atualizacao: 2026-03-19
   - listas orfas de teste com `0` leads no tenant `Fluxrow` foram removidas em `2026-03-20` para liberar o reteste
   - o reteste mostrou `78` ativos vs `55` leads inseridos; a UI de importacao agora exibe `falhas_insercao` e os warnings das linhas rejeitadas
 - dashboard agora suporta modo claro/escuro global com persistencia local
+- Google Calendar pos-reset operacional:
+  - a conexao podia voltar como “sucesso” sem gravar o token em `configuracoes`
+  - o fluxo foi endurecido com helper tenant-aware de `configuracoes`
+  - callback, status e leitura do calendar agora usam a configuracao do `tenant_id` atual
 - Contencao atual:
   - allowlist do app continua ativa
   - onboarding fora do piloto continua bloqueado
@@ -64,11 +68,11 @@ Ultima atualizacao: 2026-03-19
 
 ## Proximo Passo Recomendado
 
-Validar o primeiro tenant real/limpo:
-- reimportar a lista no tenant `Fluxrow` e confirmar que os leads entram
-- confirmar que a segunda importacao da mesma lista e bloqueada
-- validar a pagina `/listas` com os totais corretos
-- depois seguir para tenant isolation canonico por `tenant_id`
+Validar o tenant limpo em runtime:
+- reconectar o Google Calendar em `/agendamentos`
+- confirmar que o estado conectado persiste apos refresh
+- criar um agendamento e validar `google_event_id` + `meet_link`
+- depois retomar os testes operacionais do tenant isolation canonico por `tenant_id`
 
 ## Bloqueios e Cuidados
 
