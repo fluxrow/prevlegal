@@ -561,6 +561,18 @@ export async function GET(
 **Correcao aplicada:** Criar helper compartilhado de atalhos em `src/lib/contact-shortcuts.ts`, adicionar links para `Caixa de Entrada` e `WhatsApp` em `lead drawer`, detalhe do lead, modal de mensagens e agendamentos, e fazer a inbox aceitar deep-link por `conversaId`/`telefone`
 **Regra pratica:** No PrevLegal, superficies operacionais que exibem um lead precisam oferecer pelo menos um atalho de contato imediato; ver dado sem conseguir agir gera friccao e reduz conversao operacional
 
+### 66. Runtime de campanhas WhatsApp nao pode depender de tabelas legado fora do schema operacional atual
+**Problema:** O disparo de campanhas ainda buscava leads em `lista_leads`, tentava reservar numero em `numeros_whatsapp` e usava status que nao existem mais no enum atual
+**Causa:** O fluxo de campanhas preservou fragmentos de um modelo antigo, anterior ao schema consolidado em `leads.lista_id`, credenciais por tenant e enum `campanha_status` com `encerrada`
+**Correcao aplicada:** Reancorar `src/app/api/campanhas/route.ts` e `src/app/api/campanhas/[id]/disparar/route.ts` no schema operacional vigente: validar `lista_id` dentro do tenant, contar/envia leads a partir de `leads`, resolver Twilio por `tenant_id` e finalizar campanhas com `encerrada`
+**Regra pratica:** Quando houver reset operacional ou transicao de modelo, o runtime de campanhas precisa refletir exatamente o schema ativo do banco; manter referencia a tabela legado e uma fonte comum de bug silencioso
+
+### 67. Webhook e automacao Twilio precisam rotear por tenant a partir do numero WhatsApp de destino
+**Problema:** Mesmo com credenciais Twilio por tenant, inbound webhook, resposta manual e automacao do agente ainda podiam ler `configuracoes` globais ou validar assinatura com token incorreto
+**Causa:** O envio multi-tenant foi centralizado antes do recebimento e da automacao; faltava usar o numero WhatsApp do tenant como ancora de roteamento para webhook, conversa, notificacao e prompt do agente
+**Correcao aplicada:** Expandir `src/lib/twilio.ts` com routing por numero WhatsApp, gravar `tenant_id` em `mensagens_inbound` e `notificacoes`, filtrar/upsert `conversas` por tenant e fazer `src/app/api/agente/responder/route.ts` e `src/app/api/webhooks/twilio*/route.ts` lerem `configuracoes`/auth no contexto do tenant certo
+**Regra pratica:** No PrevLegal multi-tenant, o numero Twilio do escritorio e a chave de roteamento do inbound; qualquer webhook ou automacao que ignore isso corre risco de quebrar assinatura, notificar o lugar errado ou vazar contexto entre escritorios
+
 ### 59. A lista tecnica de cadastro manual nao deve disputar espaco com listas importadas
 **Problema:** O agrupador tecnico `Cadastro manual` aparecia na aba de listas como se fosse uma importacao operacional, poluindo a leitura do escritorio
 **Causa:** A API de listas retornava indiscriminadamente todas as `listas`, inclusive a lista interna criada para suportar leads avulsos

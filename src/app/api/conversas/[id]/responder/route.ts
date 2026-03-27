@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { createClient as createServerClient } from '@/lib/supabase/server'
-import { getTwilioCredentials, sendWhatsApp } from '@/lib/twilio'
+import { getTwilioCredentialsByTenantId, sendWhatsApp } from '@/lib/twilio'
 import { getTenantContext } from '@/lib/tenant-context'
 
 function createAdminSupabase() {
@@ -29,8 +29,9 @@ export async function POST(
 
   let conversaQuery = supabase
     .from('conversas')
-    .select('telefone, lead_id, leads!inner(responsavel_id)')
+    .select('telefone, lead_id, tenant_id, leads!inner(responsavel_id)')
     .eq('id', id)
+    .eq('tenant_id', context.tenantId)
   if (!context.isAdmin) {
     conversaQuery = conversaQuery.eq('leads.responsavel_id', context.usuarioId)
   }
@@ -41,7 +42,7 @@ export async function POST(
     return NextResponse.json({ error: 'Conversa não encontrada' }, { status: 404 })
   }
 
-  const creds = await getTwilioCredentials(process.env.TENANT_SLUG)
+  const creds = await getTwilioCredentialsByTenantId(context.tenantId)
   const twilioTo = conversa.telefone.startsWith('whatsapp:')
     ? conversa.telefone
     : `whatsapp:${conversa.telefone}`
@@ -53,6 +54,7 @@ export async function POST(
 
   // Registrar mensagem manual
   await supabase.from('mensagens_inbound').insert({
+    tenant_id: context.tenantId,
     conversa_id: id,
     telefone_remetente: creds.whatsappNumber,
     telefone_destinatario: conversa.telefone,

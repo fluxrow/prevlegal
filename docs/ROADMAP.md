@@ -2,7 +2,7 @@
 
 Contexto: [[SESSION_HISTORY_MASTER]]
 Mestra: [[MASTER_PREV_LEGAL]]
-> Última atualização: 19/03/2026
+> Última atualização: 27/03/2026
 
 ## Navegação
 
@@ -51,6 +51,29 @@ Mestra: [[MASTER_PREV_LEGAL]]
   - confirmar que o status conectado persiste apos recarregar a pagina
   - criar um agendamento real e validar `google_event_id` + `meet_link`
   - validar os novos atalhos operacionais de contato em leads, agendamentos e inbox
+  - endurecer o runtime WhatsApp/campanhas no schema tenant-aware atual
+
+## Atualizacao WhatsApp — 27/03/2026
+
+- o bloco operacional de WhatsApp avancou de “atalhos na UI” para “runtime tenant-aware”
+- campanhas:
+  - `POST /api/campanhas` agora valida `lista_id` dentro do tenant atual antes de criar a campanha
+  - contagem e disparo deixam de depender de `lista_leads` e passam a usar `leads.lista_id`
+  - o disparo deixa de depender de `numeros_whatsapp`
+  - status final alinhado ao enum atual: `encerrada`
+- credenciais Twilio:
+  - `src/lib/twilio.ts` agora resolve credenciais por `tenant_id`
+  - webhook/status tambem conseguem rotear pelo numero WhatsApp do tenant
+- inbound e automacao:
+  - webhook Twilio agora grava `tenant_id` em `mensagens_inbound` e `notificacoes`
+  - upsert de `conversas` passa a respeitar `tenant_id`
+  - resposta manual e agente automatico usam credenciais/configuracoes do tenant correto
+- validacao:
+  - `npm run build` passou apos esse endurecimento
+- proximos testes operacionais:
+  - responder uma conversa manualmente pela `Caixa de Entrada`
+  - validar resposta automatica do agente em uma inbound real
+  - criar/disparar campanha de teste e observar `campanha_mensagens` + webhook de status
 
 ## Fases Concluídas
 
@@ -182,6 +205,8 @@ Mestra: [[MASTER_PREV_LEGAL]]
   - modal de mensagens do lead
   - agendamentos
   - busca global de conversas
+- o runtime de campanhas deixou de depender das tabelas legado `lista_leads` e `numeros_whatsapp`
+- webhook inbound, webhook de status e resposta automatica do agente agora roteam Twilio/configuracoes pelo `tenant_id` ou pelo numero WhatsApp do tenant
 
 ### Documentação viva e rotina de sessão
 - `MASTER.md`, `ROADMAP.md` e `LEARNINGS.md` passaram a funcionar como memória viva do projeto

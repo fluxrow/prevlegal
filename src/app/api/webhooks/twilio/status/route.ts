@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import twilio from 'twilio'
+import { getTwilioRoutingContextByWhatsAppNumber } from '@/lib/twilio'
 
 function createAdminSupabase() {
   return createClient(
@@ -22,15 +23,16 @@ const STATUS_MAP: Record<string, string> = {
 
 export async function POST(request: NextRequest) {
   const supabase = createAdminSupabase()
+  const body = await request.text()
+  const params = Object.fromEntries(new URLSearchParams(body))
+  const routing = await getTwilioRoutingContextByWhatsAppNumber(params.From || null)
+
   // 1. Validar assinatura Twilio
   const twilioSignature = request.headers.get('x-twilio-signature') || ''
   const url = `${process.env.NEXT_PUBLIC_APP_URL}/api/webhooks/twilio/status`
 
-  const body = await request.text()
-  const params = Object.fromEntries(new URLSearchParams(body))
-
   const isValid = twilio.validateRequest(
-    process.env.TWILIO_AUTH_TOKEN!,
+    routing.credentials.authToken,
     twilioSignature,
     url,
     params

@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import Anthropic from '@anthropic-ai/sdk'
-import { getTwilioCredentials, sendWhatsApp } from '@/lib/twilio'
+import { getConfiguracaoAtual } from '@/lib/configuracoes'
+import { getTwilioCredentialsByTenantId, sendWhatsApp } from '@/lib/twilio'
 
 function createAdminSupabase() {
   return createClient(
@@ -54,7 +55,7 @@ export async function POST(request: NextRequest) {
         telefone_remetente,
         lead_id,
         leads (
-          nome, nb, banco, valor_rma, ganho_potencial, status, campanha_id
+          nome, nb, banco, valor_rma, ganho_potencial, status, campanha_id, tenant_id
         )
       `)
       .eq('id', mensagem_id)
@@ -65,11 +66,12 @@ export async function POST(request: NextRequest) {
     }
 
     // 2. Buscar configurações do agente
-    const { data: config } = await supabase
-      .from('configuracoes')
-      .select('agente_ativo, agente_nome, agente_prompt_sistema, agente_modelo, agente_max_tokens, agente_resposta_automatica, agente_horario_inicio, agente_horario_fim, agente_apenas_dias_uteis, agente_fluxo_qualificacao, agente_exemplos_dialogo, agente_gatilhos_escalada, agente_frases_proibidas, agente_objeccoes, agente_fallback')
-      .limit(1)
-      .single()
+    const tenantId = (mensagem.leads as any)?.tenant_id || null
+    const { data: config } = await getConfiguracaoAtual(
+      supabase,
+      tenantId,
+      'agente_ativo, agente_nome, agente_prompt_sistema, agente_modelo, agente_max_tokens, agente_resposta_automatica, agente_horario_inicio, agente_horario_fim, agente_apenas_dias_uteis, agente_fluxo_qualificacao, agente_exemplos_dialogo, agente_gatilhos_escalada, agente_frases_proibidas, agente_objeccoes, agente_fallback',
+    )
 
     if (!config?.agente_ativo) {
       return NextResponse.json({ error: 'Agente não está ativo' }, { status: 403 })
@@ -158,7 +160,7 @@ export async function POST(request: NextRequest) {
 
     // 8. Se resposta automática ativa, enviar via Twilio
     if (config.agente_resposta_automatica && mensagem.telefone_remetente) {
-      const creds = await getTwilioCredentials(process.env.TENANT_SLUG)
+      const creds = await getTwilioCredentialsByTenantId(tenantId)
       const result = await sendWhatsApp(mensagem.telefone_remetente, respostaTexto, creds)
 
       if (!result.success) {

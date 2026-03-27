@@ -21,7 +21,7 @@ Objetivo:
 
 ## Estado Atual Confirmado
 
-Data da ultima revisao: 2026-03-19
+Data da ultima revisao: 2026-03-27
 
 - Repositorio local em `main`
 - Banco operacional alvo confirmado: `lrqvvxmgimjlghpwavdb`
@@ -746,6 +746,47 @@ Pontos que precisam ser preservados durante a implementacao:
 - proximo passo:
   - validar no browser os novos atalhos
   - revisar se vale adicionar CTA semelhante em campanhas e relatorios de lead qualificado
+
+## Atualizacao de 2026-03-27 — Runtime WhatsApp tenant-aware
+
+- depois dos atalhos, a auditoria do bloco WhatsApp mostrou que o runtime de envio/recebimento ainda misturava schema legado e contexto global
+- problemas confirmados:
+  - `src/app/api/campanhas/route.ts` e `src/app/api/campanhas/[id]/disparar/route.ts` ainda dependiam de `lista_leads`, `numeros_whatsapp` e de status antigos (`concluida`/`cancelada`)
+  - resposta manual e agente automatico ainda podiam resolver Twilio por contexto global ou incompleto
+  - webhook inbound/status validava assinatura com token global e ainda gravava/lia entidades sem amarrar o `tenant_id` correto
+- correcao aplicada:
+  - `src/lib/twilio.ts`
+    - novo helper de credenciais por `tenant_id`
+    - novo routing por numero WhatsApp do tenant para webhook/status
+  - `src/app/api/conversas/[id]/responder/route.ts`
+    - resposta manual passa a filtrar conversa por `tenant_id` e grava `mensagens_inbound.tenant_id`
+  - `src/app/api/agente/responder/route.ts`
+    - configuracao do agente passa a ser lida via helper tenant-aware de `configuracoes`
+    - resposta automatica usa credenciais Twilio do tenant do lead
+  - `src/app/api/webhooks/twilio/route.ts`
+    - resolve tenant a partir do numero `To`
+    - grava `tenant_id` em `mensagens_inbound`
+    - upsert de `conversas` respeita `tenant_id`
+    - notificacoes/gatilhos de escalada passam a nascer no tenant correto
+  - `src/app/api/webhooks/twilio/status/route.ts`
+    - validacao da assinatura passa a usar o auth token do tenant do numero `From`
+  - `src/app/api/campanhas/route.ts`
+    - valida `lista_id` dentro do tenant
+    - conta leads em `leads.lista_id`
+    - grava campanha com `tenant_id`
+  - `src/app/api/campanhas/[id]/disparar/route.ts`
+    - disparo usa `leads.lista_id`
+    - nao depende mais de `numeros_whatsapp`
+    - resolve Twilio por `tenant_id`
+    - finaliza com `encerrada`
+  - `src/app/admin/[id]/page.tsx`
+    - status visual do admin passa a tratar `encerrada` como campanha finalizada
+- validacao:
+  - `npm run build` passou apos o endurecimento
+- proximo passo:
+  - testar resposta manual em inbox
+  - testar automacao do agente em inbound real
+  - criar/disparar campanha e observar ciclo completo ate status webhook
 
 ## Regra Permanente de Continuidade
 

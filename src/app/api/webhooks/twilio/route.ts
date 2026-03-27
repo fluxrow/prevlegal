@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import twilio from 'twilio'
+import { getConfiguracaoAtual } from '@/lib/configuracoes'
+import { getTwilioRoutingContextByWhatsAppNumber } from '@/lib/twilio'
 
 function createAdminSupabase() {
   return createClient(
@@ -9,17 +11,26 @@ function createAdminSupabase() {
   )
 }
 
+function applyTenantFilter(query: any, tenantId: string | null) {
+  return tenantId ? query.eq('tenant_id', tenantId) : query.is('tenant_id', null)
+}
+
 export async function POST(request: NextRequest) {
   const supabase = createAdminSupabase()
+  const body = await request.text()
+  const params = Object.fromEntries(new URLSearchParams(body))
+  const from = params.From        // ex: "whatsapp:+5541999999999"
+  const to = params.To            // ex: "whatsapp:+14155238886"
+  const body_msg = params.Body    // texto da mensagem
+  const messageSid = params.MessageSid
+  const routing = await getTwilioRoutingContextByWhatsAppNumber(to)
+
   // 1. Validar assinatura Twilio
   const twilioSignature = request.headers.get('x-twilio-signature') || ''
   const url = `${process.env.NEXT_PUBLIC_APP_URL}/api/webhooks/twilio`
 
-  const body = await request.text()
-  const params = Object.fromEntries(new URLSearchParams(body))
-
   const isValid = twilio.validateRequest(
-    process.env.TWILIO_AUTH_TOKEN!,
+    routing.credentials.authToken,
     twilioSignature,
     url,
     params
@@ -30,12 +41,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Assinatura inválida' }, { status: 403 })
   }
 
-  // 2. Extrair dados da mensagem
-  const from = params.From        // ex: "whatsapp:+5541999999999"
-  const to = params.To            // ex: "whatsapp:+14155238886"
-  const body_msg = params.Body    // texto da mensagem
-  const messageSid = params.MessageSid
-
   if (!from || !body_msg) {
     return NextResponse.json({ error: 'Payload inválido' }, { status: 400 })
   }
@@ -45,18 +50,26 @@ export async function POST(request: NextRequest) {
   // Remove +55 para buscar no banco (leads armazenados sem código do país ou com formatos variados)
   const telefone10ou11 = telefoneNormalizado.replace(/^\+55/, '')
 
-  // 4. Buscar lead pelo telefone
-  const { data: lead } = await supabase
+  // 4. Buscar lead pelo telefone dentro do tenant do numero de destino
+  let leadQuery = supabase
     .from('leads')
-    .select('id, nome, status, campanha_id')
+    .select('id, nome, status, campanha_id, tenant_id')
     .or(`telefone.eq.${telefone10ou11},telefone_enriquecido.eq.${telefone10ou11},telefone.eq.${telefoneNormalizado},telefone_enriquecido.eq.${telefoneNormalizado}`)
-    .limit(1)
-    .maybeSingle()
+    .limit(2)
+
+  if (routing.tenantId) {
+    leadQuery = applyTenantFilter(leadQuery, routing.tenantId)
+  }
+
+  const { data: leadMatches } = await leadQuery
+  const lead = (leadMatches || []).length === 1 ? leadMatches?.[0] : null
+  const tenantId = lead?.tenant_id || routing.tenantId || null
 
   // 5. Salvar mensagem inbound
   const { data: mensagemInserida, error: insertError } = await supabase
     .from('mensagens_inbound')
     .insert({
+      tenant_id: tenantId,
       lead_id: lead?.id || null,
       campanha_id: lead?.campanha_id || null,
       telefone_remetente: from,
@@ -76,11 +89,12 @@ export async function POST(request: NextRequest) {
   let conversaStatus: string = 'agente'
 
   if (mensagemInserida) {
-    const { data: conversaExistente } = await supabase
+    let conversaQuery = supabase
       .from('conversas')
       .select('id, nao_lidas, status')
       .eq('telefone', from)
-      .maybeSingle()
+    conversaQuery = applyTenantFilter(conversaQuery, tenantId)
+    const { data: conversaExistente } = await conversaQuery.maybeSingle()
 
     if (conversaExistente) {
       conversaId = conversaExistente.id
@@ -99,6 +113,7 @@ export async function POST(request: NextRequest) {
       const { data: novaConversa } = await supabase
         .from('conversas')
         .insert({
+          tenant_id: tenantId,
           telefone: from,
           lead_id: lead?.id || null,
           status: 'agente',
@@ -122,6 +137,7 @@ export async function POST(request: NextRequest) {
   if (conversaId) {
     const nomeRemetente = lead?.nome || telefoneNormalizado
     await supabase.from('notificacoes').insert({
+      tenant_id: tenantId,
       tipo: 'mensagem',
       titulo: `Nova mensagem de ${nomeRemetente}`,
       descricao: body_msg.slice(0, 100),
@@ -130,11 +146,11 @@ export async function POST(request: NextRequest) {
     })
 
     // 5d. Detectar gatilhos de escalada
-    const { data: config } = await supabase
-      .from('configuracoes')
-      .select('agente_gatilhos_escalada')
-      .limit(1)
-      .maybeSingle()
+    const { data: config } = await getConfiguracaoAtual(
+      supabase,
+      tenantId,
+      'agente_gatilhos_escalada',
+    )
 
     if (config?.agente_gatilhos_escalada) {
       const gatilhos = config.agente_gatilhos_escalada
@@ -147,6 +163,7 @@ export async function POST(request: NextRequest) {
 
       if (gatilhoAtivado) {
         await supabase.from('notificacoes').insert({
+          tenant_id: tenantId,
           tipo: 'escalada',
           titulo: `⚠️ Escalada detectada — ${nomeRemetente}`,
           descricao: `Gatilho: "${gatilhoAtivado}" — Mensagem: ${body_msg.slice(0, 80)}`,

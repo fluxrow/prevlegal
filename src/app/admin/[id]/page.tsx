@@ -233,7 +233,7 @@ export default function TenantDetailPage() {
                   </p>
                 </div>
                 <div style={{ textAlign: 'right' }}>
-                  <span style={{ fontSize: '10px', fontWeight: '600', color: campanha.status === 'concluida' ? '#22c55e' : campanha.status === 'ativa' ? '#4f7aff' : '#6b7280' }}>
+                  <span style={{ fontSize: '10px', fontWeight: '600', color: campanha.status === 'encerrada' || campanha.status === 'concluida' ? '#22c55e' : campanha.status === 'ativa' ? '#4f7aff' : '#6b7280' }}>
                     {campanha.status}
                   </span>
                   <p style={{ fontSize: '10px', color: '#6b7280', margin: '3px 0 0' }}>

@@ -119,6 +119,7 @@ const STATUS_LABEL: Record<
   rascunho: { label: "Rascunho", color: "#94a3b8", bg: "#94a3b820" },
   ativa: { label: "Ativa", color: "#22c55e", bg: "#22c55e20" },
   pausada: { label: "Pausada", color: "#f59e0b", bg: "#f59e0b20" },
+  encerrada: { label: "Encerrada", color: "#4f7aff", bg: "#4f7aff20" },
   concluida: { label: "Concluída", color: "#4f7aff", bg: "#4f7aff20" },
   cancelada: { label: "Cancelada", color: "#ef4444", bg: "#ef444420" },
 };

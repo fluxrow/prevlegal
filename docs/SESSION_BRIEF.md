@@ -25,11 +25,11 @@ Ordem de leitura:
 
 ## Estado Atual
 
-Ultima atualizacao: 2026-03-19
+Ultima atualizacao: 2026-03-27
 
 - Branch principal: `main`
 - Linha atual do produto no Obsidian: Fases 21, 22, 23, 24 e 25 concluidas
-- Fase atual: bootstrap multi-tenant apos reset limpo do operacional + ajuste pendente do Google OAuth
+- Fase atual: bootstrap multi-tenant no operacional limpo + Google Calendar validado + endurecimento do runtime WhatsApp
 - Producao atual: `https://app.prevlegal.com.br`
 - LP canônica: `https://www.prevlegal.com.br`
 - Dominio comprado: `prevlegal.com.br`
@@ -61,10 +61,18 @@ Ultima atualizacao: 2026-03-19
   - a conexao podia voltar como “sucesso” sem gravar o token em `configuracoes`
   - o fluxo foi endurecido com helper tenant-aware de `configuracoes`
   - callback, status e leitura do calendar agora usam a configuracao do `tenant_id` atual
+  - a validacao em runtime ja passou: a conexao foi concluida com sucesso em `https://app.prevlegal.com.br/agendamentos`
 - atalhos operacionais de contato:
   - `Caixa de Entrada` agora aceita deep-link por `conversaId`/`telefone`
   - detalhe do lead, drawer, modal de mensagens e agendamentos agora expõem CTA para `Abrir conversa`
   - detalhe do lead, drawer, modal e agendamentos agora também expõem CTA para `Abrir no WhatsApp`
+- WhatsApp/campanhas pos-reset operacional:
+  - `src/app/api/campanhas` e `src/app/api/campanhas/[id]/disparar` agora usam o schema operacional atual (`leads.lista_id`) em vez das tabelas legado `lista_leads` e `numeros_whatsapp`
+  - campanhas agora validam a `lista_id` dentro do tenant atual e fecham com status `encerrada`
+  - `src/lib/twilio.ts` passou a resolver Twilio por `tenant_id` e tambem por numero WhatsApp do tenant
+  - webhook inbound e webhook de status agora conseguem validar/rotear pelo tenant correto
+  - `mensagens_inbound`, `conversas` e `notificacoes` do webhook agora carregam `tenant_id` coerente com o numero do escritorio
+  - resposta manual na inbox e resposta automatica do agente agora usam credenciais/configuracoes do tenant certo
 - Contencao atual:
   - allowlist do app continua ativa
   - onboarding fora do piloto continua bloqueado
@@ -72,12 +80,12 @@ Ultima atualizacao: 2026-03-19
 
 ## Proximo Passo Recomendado
 
-Validar o tenant limpo em runtime:
-- reconectar o Google Calendar em `/agendamentos`
-- confirmar que o estado conectado persiste apos refresh
-- criar um agendamento e validar `google_event_id` + `meet_link`
-- validar que os atalhos de contato abrem a thread correta na `Caixa de Entrada`
-- validar que o `Abrir no WhatsApp` monta o numero corretamente no browser
+Validar o runtime WhatsApp no tenant limpo:
+- responder uma conversa manualmente pela `Caixa de Entrada`
+- validar se a mensagem sai com o numero/origem do tenant correto
+- provocar uma inbound real e confirmar resposta automatica do agente
+- criar e disparar uma campanha de teste
+- observar `campanha_mensagens`, webhook de status e atualizacao de contadores
 - depois retomar os testes operacionais do tenant isolation canonico por `tenant_id`
 
 ## Bloqueios e Cuidados

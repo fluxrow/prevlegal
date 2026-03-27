@@ -1,13 +1,19 @@
 export const runtime = "nodejs";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient as createAdmin } from "@supabase/supabase-js";
-import { getTwilioCredentials, sendWhatsApp } from "@/lib/twilio";
+import { createClient as createServerClient } from "@/lib/supabase/server";
+import { getTenantContext } from "@/lib/tenant-context";
+import { getTwilioCredentialsByTenantId, sendWhatsApp } from "@/lib/twilio";
 
 function createAdminClient() {
   return createAdmin(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
   );
+}
+
+function applyTenantFilter(query: any, tenantId: string | null) {
+  return tenantId ? query.eq("tenant_id", tenantId) : query.is("tenant_id", null);
 }
 
 function normalizePhone(cpf: string): string | null {
@@ -44,15 +50,25 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
+    const authSupabase = await createServerClient();
+    const context = await getTenantContext(authSupabase);
+    if (!context) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    if (!context.isAdmin) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
     const adminClient = createAdminClient();
     const { id: campanhaId } = await params;
 
     // Buscar campanha
-    const { data: campanha, error: campErr } = await adminClient
+    let campanhaQuery = adminClient
       .from("campanhas")
       .select("*")
-      .eq("id", campanhaId)
-      .single();
+      .eq("id", campanhaId);
+    campanhaQuery = applyTenantFilter(campanhaQuery, context.tenantId);
+    const { data: campanha, error: campErr } = await campanhaQuery.single();
     if (campErr || !campanha)
       return NextResponse.json(
         { error: "Campanha não encontrada" },
@@ -72,19 +88,19 @@ export async function POST(
       .eq("id", campanhaId);
 
     // Buscar leads da lista
-    const query = adminClient
-        .from("lista_leads")
-        .select(
-        "lead_id, leads(id, nome, nb, cpf, telefone, banco, valor_rma, ganho_potencial, tem_whatsapp)",
-      )
-      .eq("lista_id", campanha.lista_id);
+    let query = adminClient
+      .from("leads")
+      .select("id, nome, nb, cpf, telefone, banco, valor_rma, ganho_potencial, tem_whatsapp")
+      .eq("lista_id", campanha.lista_id)
+      .eq("lgpd_optout", false);
+    query = applyTenantFilter(query, context.tenantId);
 
-    const { data: listaLeads } = await query;
+    const { data: leadsDaLista } = await query;
 
-    if (!listaLeads || listaLeads.length === 0) {
+    if (!leadsDaLista || leadsDaLista.length === 0) {
       await adminClient
         .from("campanhas")
-        .update({ status: "concluida", concluido_em: new Date().toISOString() })
+        .update({ status: "encerrada", concluido_em: new Date().toISOString() })
         .eq("id", campanhaId);
       return NextResponse.json({
         success: true,
@@ -94,37 +110,12 @@ export async function POST(
     }
 
     // Filtrar leads: apenas com WhatsApp verificado se configurado
-    const leads = listaLeads
-      .map((ll: any) => ll.leads)
-      .filter(
-        (l: any) =>
-          l && (!campanha.apenas_verificados || l.tem_whatsapp === true),
-      );
+    const leads = leadsDaLista.filter(
+      (l: any) =>
+        l && (!campanha.apenas_verificados || l.tem_whatsapp === true),
+    );
 
-    // Verificar limite diário do número
-    const { data: numero } = await adminClient
-      .from("numeros_whatsapp")
-      .select("*")
-      .eq("ativo", true)
-      .eq("bloqueado", false)
-      .order("total_enviados_hoje", { ascending: true })
-      .limit(1)
-      .single();
-
-    if (!numero) {
-      await adminClient
-        .from("campanhas")
-        .update({ status: "rascunho" })
-        .eq("id", campanhaId);
-      return NextResponse.json(
-        { error: "Nenhum número WhatsApp ativo disponível" },
-        { status: 400 },
-      );
-    }
-
-    const limite = numero.limite_diario || campanha.limite_diario || 500;
-    const jaEnviados = numero.total_enviados_hoje || 0;
-    const disponivel = Math.max(0, limite - jaEnviados);
+    const disponivel = Math.max(0, campanha.limite_diario || 500);
     const leadsParaEnviar = leads.slice(0, disponivel);
 
     let enviados = 0,
@@ -133,16 +124,15 @@ export async function POST(
     const delayMax = campanha.delay_max_ms || 3500;
     const tamLote = campanha.tamanho_lote || 50;
     const pausaLote = (campanha.pausa_entre_lotes_s || 30) * 1000;
-    const creds = await getTwilioCredentials(process.env.TENANT_SLUG);
+    const creds = await getTwilioCredentialsByTenantId(context.tenantId);
 
     for (let i = 0; i < leadsParaEnviar.length; i++) {
       // Checar se campanha foi pausada/cancelada
-      const { data: status } = await adminClient
-        .from("campanhas")
-        .select("status")
-        .eq("id", campanhaId)
-        .single();
-      if (status?.status === "pausada" || status?.status === "cancelada") break;
+      const { data: status } = await applyTenantFilter(
+        adminClient.from("campanhas").select("status").eq("id", campanhaId),
+        context.tenantId,
+      ).single();
+      if (status?.status === "pausada" || status?.status === "encerrada") break;
 
       const lead = leadsParaEnviar[i];
       const phone = normalizePhone(lead.telefone || "");
@@ -152,7 +142,6 @@ export async function POST(
         await adminClient.from("campanha_mensagens").insert({
           campanha_id: campanhaId,
           lead_id: lead.id,
-          numero_whatsapp_id: numero.id,
           telefone: null,
           mensagem: mensagem,
           status: "falhou",
@@ -165,7 +154,6 @@ export async function POST(
           await adminClient.from("campanha_mensagens").insert({
             campanha_id: campanhaId,
             lead_id: lead.id,
-            numero_whatsapp_id: numero.id,
             telefone: phone,
             mensagem: mensagem,
             status: "enviado",
@@ -173,18 +161,10 @@ export async function POST(
             enviado_at: new Date().toISOString(),
           });
           enviados++;
-          await adminClient
-            .from("numeros_whatsapp")
-            .update({
-              total_enviados_hoje: jaEnviados + enviados,
-              ultimo_envio_at: new Date().toISOString(),
-            })
-            .eq("id", numero.id);
         } else {
           await adminClient.from("campanha_mensagens").insert({
             campanha_id: campanhaId,
             lead_id: lead.id,
-            numero_whatsapp_id: numero.id,
             telefone: phone,
             mensagem: mensagem,
             status: "falhou",
@@ -217,7 +197,7 @@ export async function POST(
     await adminClient
       .from("campanhas")
       .update({
-        status: "concluida",
+        status: "encerrada",
         total_enviados: enviados,
         total_falhos: falhos,
         total_contatados: enviados,

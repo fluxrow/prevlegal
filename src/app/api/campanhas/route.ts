@@ -1,6 +1,8 @@
 export const runtime = 'nodejs'
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient as createAdmin } from '@supabase/supabase-js'
+import { createClient as createServerClient } from '@/lib/supabase/server'
+import { getTenantContext } from '@/lib/tenant-context'
 
 function createAdminClient() {
   return createAdmin(
@@ -9,13 +11,23 @@ function createAdminClient() {
   )
 }
 
+function applyTenantFilter(query: any, tenantId: string | null) {
+  return tenantId ? query.eq('tenant_id', tenantId) : query.is('tenant_id', null)
+}
+
 export async function GET() {
   try {
+    const authSupabase = await createServerClient()
+    const context = await getTenantContext(authSupabase)
+    if (!context) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
     const adminClient = createAdminClient()
-    const { data, error } = await adminClient
+    let query = adminClient
       .from('campanhas')
       .select('*, listas(nome)')
       .order('created_at', { ascending: false })
+    query = applyTenantFilter(query, context.tenantId)
+    const { data, error } = await query
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
     return NextResponse.json({ campanhas: data || [] })
   } catch (err: any) {
@@ -25,6 +37,11 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
+    const authSupabase = await createServerClient()
+    const context = await getTenantContext(authSupabase)
+    if (!context) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (!context.isAdmin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+
     const adminClient = createAdminClient()
     const body = await request.json()
     const { nome, lista_id, mensagem_template, delay_min_ms, delay_max_ms, tamanho_lote, pausa_entre_lotes_s, limite_diario, apenas_verificados, agendado_para } = body
@@ -33,15 +50,30 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'nome, lista_id e mensagem_template são obrigatórios' }, { status: 400 })
     }
 
+    let listaQuery = adminClient
+      .from('listas')
+      .select('id')
+      .eq('id', lista_id)
+    listaQuery = applyTenantFilter(listaQuery, context.tenantId)
+    const { data: lista } = await listaQuery.maybeSingle()
+
+    if (!lista) {
+      return NextResponse.json({ error: 'Lista não encontrada para este tenant' }, { status: 404 })
+    }
+
     // contar leads da lista
-    const { count } = await adminClient
-      .from('lista_leads')
-      .select('*', { count: 'exact', head: true })
+    let countQuery = adminClient
+      .from('leads')
+      .select('id', { count: 'exact', head: true })
       .eq('lista_id', lista_id)
+      .eq('lgpd_optout', false)
+    countQuery = applyTenantFilter(countQuery, context.tenantId)
+    const { count } = await countQuery
 
     const { data, error } = await adminClient
       .from('campanhas')
       .insert({
+        tenant_id: context.tenantId,
         nome,
         lista_id,
         mensagem_template,
