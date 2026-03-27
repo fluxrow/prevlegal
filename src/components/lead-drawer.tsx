@@ -4,14 +4,16 @@ import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   X, User, FileText, CreditCard, Hash,
-  MessageSquarePlus, Loader2, ChevronDown, AlertCircle, ExternalLink
+  MessageSquarePlus, Loader2, ChevronDown, AlertCircle, ExternalLink, MessageSquare, Send
 } from 'lucide-react'
+import { buildInboxHref, buildWhatsAppHref } from '@/lib/contact-shortcuts'
 
 type Lead = {
   id: string
   nome: string
   nb: string
   cpf: string | null
+  telefone: string | null
   status: string
   score: number
   ganho_potencial: number | null
@@ -142,6 +144,8 @@ export default function LeadDrawer({
   }
 
   const statusAtual = STATUS_OPTIONS.find(s => s.id === lead?.status)
+  const inboxHref = buildInboxHref({ telefone: lead?.telefone })
+  const whatsappHref = buildWhatsAppHref(lead?.telefone)
   if (!leadId) return null
 
   return (
@@ -210,12 +214,42 @@ export default function LeadDrawer({
                   </div>
                 )}
               </div>
+              <div style={{ display: 'flex', gap: '8px', marginTop: '12px', flexWrap: 'wrap' }}>
+                <a
+                  href={inboxHref}
+                  onClick={onClose}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '6px',
+                    background: 'rgba(79,122,255,0.12)', border: '1px solid rgba(79,122,255,0.28)',
+                    borderRadius: '8px', padding: '7px 12px', color: 'var(--accent)',
+                    fontSize: '12px', fontWeight: '600', textDecoration: 'none', fontFamily: 'DM Sans, sans-serif',
+                  }}
+                >
+                  <MessageSquare size={12} /> Abrir conversa
+                </a>
+                {whatsappHref && (
+                  <a
+                    href={whatsappHref}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: '6px',
+                      background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.28)',
+                      borderRadius: '8px', padding: '7px 12px', color: '#22c55e',
+                      fontSize: '12px', fontWeight: '600', textDecoration: 'none', fontFamily: 'DM Sans, sans-serif',
+                    }}
+                  >
+                    <Send size={12} /> WhatsApp
+                  </a>
+                )}
+              </div>
             </div>
 
             {/* Body */}
             <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
               <Section title="Dados Pessoais" icon={User}>
                 <Row label="CPF" value={lead.cpf} mono />
+                <Row label="Telefone" value={lead.telefone} />
                 <Row label="Nascimento" value={fmtDate(lead.data_nascimento)} />
                 <Row label="Idade" value={calcIdade(lead.data_nascimento)} />
                 <Row label="Sexo" value={lead.sexo} />

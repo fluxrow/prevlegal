@@ -1,9 +1,11 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { MessageSquare, User, Bot, UserCheck, RotateCcw, Send } from 'lucide-react'
 import { useOnboarding } from '@/hooks/useOnboarding'
 import OnboardingTooltip from '@/components/onboarding-tooltip'
+import { samePhone } from '@/lib/contact-shortcuts'
 
 const TOUR_INBOX = [
   {
@@ -33,7 +35,7 @@ interface Conversa {
   ultima_mensagem: string
   ultima_mensagem_at: string
   nao_lidas: number
-  leads: { nome: string; nb: string; status: string } | null
+  leads: { id?: string; nome: string; nb: string; status: string } | null
 }
 
 interface Mensagem {
@@ -79,6 +81,7 @@ function formatTime(dt: string) {
 }
 
 export default function CaixaDeEntradaPage() {
+  const searchParams = useSearchParams()
   const { active: tourActive, step: tourStep, next: tourNext, finish: tourFinish } = useOnboarding('caixa-de-entrada')
   const [conversas, setConversas] = useState<Conversa[]>([])
   const [conversaSelecionada, setConversaSelecionada] = useState<Conversa | null>(null)
@@ -98,6 +101,25 @@ export default function CaixaDeEntradaPage() {
     fetchConversas()
     fetchThreadsPortal()
   }, [])
+
+  useEffect(() => {
+    if (abaAtiva === 'portal') return
+
+    const conversaId = searchParams.get('conversaId')
+    const telefone = searchParams.get('telefone')
+    if (!conversaId && !telefone) return
+
+    const encontrada = conversas.find((conversa) => {
+      if (conversaId && conversa.id === conversaId) return true
+      if (telefone && samePhone(conversa.telefone, telefone)) return true
+      return false
+    })
+
+    if (encontrada) {
+      setAbaAtiva('todas')
+      setConversaSelecionada((prev) => (prev?.id === encontrada.id ? prev : encontrada))
+    }
+  }, [abaAtiva, conversas, searchParams])
 
   useEffect(() => {
     if (conversaSelecionada && abaAtiva !== 'portal') fetchMensagens(conversaSelecionada.id)

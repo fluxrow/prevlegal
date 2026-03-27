@@ -61,6 +61,10 @@ Ultima atualizacao: 2026-03-19
   - a conexao podia voltar como “sucesso” sem gravar o token em `configuracoes`
   - o fluxo foi endurecido com helper tenant-aware de `configuracoes`
   - callback, status e leitura do calendar agora usam a configuracao do `tenant_id` atual
+- atalhos operacionais de contato:
+  - `Caixa de Entrada` agora aceita deep-link por `conversaId`/`telefone`
+  - detalhe do lead, drawer, modal de mensagens e agendamentos agora expõem CTA para `Abrir conversa`
+  - detalhe do lead, drawer, modal e agendamentos agora também expõem CTA para `Abrir no WhatsApp`
 - Contencao atual:
   - allowlist do app continua ativa
   - onboarding fora do piloto continua bloqueado
@@ -72,6 +76,8 @@ Validar o tenant limpo em runtime:
 - reconectar o Google Calendar em `/agendamentos`
 - confirmar que o estado conectado persiste apos refresh
 - criar um agendamento e validar `google_event_id` + `meet_link`
+- validar que os atalhos de contato abrem a thread correta na `Caixa de Entrada`
+- validar que o `Abrir no WhatsApp` monta o numero corretamente no browser
 - depois retomar os testes operacionais do tenant isolation canonico por `tenant_id`
 
 ## Bloqueios e Cuidados

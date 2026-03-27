@@ -50,6 +50,7 @@ Mestra: [[MASTER_PREV_LEGAL]]
   - reconectar o Google em `/agendamentos`
   - confirmar que o status conectado persiste apos recarregar a pagina
   - criar um agendamento real e validar `google_event_id` + `meet_link`
+  - validar os novos atalhos operacionais de contato em leads, agendamentos e inbox
 
 ## Fases Concluídas
 
@@ -175,6 +176,12 @@ Mestra: [[MASTER_PREV_LEGAL]]
 ### Integrações e mensageria
 - O envio WhatsApp agora usa helper centralizado com fallback global e suporte a credenciais Twilio por tenant
 - O portal do cliente passou a alimentar notificações globais e badges operacionais fora do detalhe do lead
+- o produto ganhou atalhos operacionais para cair na thread certa da `Caixa de Entrada` ou abrir o numero no WhatsApp diretamente a partir de:
+  - detalhe do lead
+  - drawer do lead
+  - modal de mensagens do lead
+  - agendamentos
+  - busca global de conversas
 
 ### Documentação viva e rotina de sessão
 - `MASTER.md`, `ROADMAP.md` e `LEARNINGS.md` passaram a funcionar como memória viva do projeto

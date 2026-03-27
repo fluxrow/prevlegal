@@ -720,6 +720,33 @@ Pontos que precisam ser preservados durante a implementacao:
   - confirmar persistencia do estado conectado apos refresh
   - criar um agendamento real e validar `google_event_id`/`meet_link`
 
+## Atualizacao de 2026-03-27 — Atalhos operacionais de contato
+
+- o usuario reportou falta de botoes/atalhos para acelerar contato com o lead em superficies operacionais
+- leitura do codigo confirmou que:
+  - existia historico/consulta de conversa
+  - mas a maioria das telas ainda obrigava navegacao manual ate a `Caixa de Entrada`
+  - a busca global de conversa caia apenas em `/caixa-de-entrada`, sem abrir a thread certa
+- correcao aplicada:
+  - novo helper `src/lib/contact-shortcuts.ts`
+  - `src/app/(dashboard)/caixa-de-entrada/page.tsx`
+    - aceita deep-link por `conversaId` e `telefone`
+  - `src/app/api/busca/route.ts`
+    - conversas agora apontam para a thread correta da inbox
+  - `src/app/(dashboard)/leads/[id]/page.tsx`
+    - adiciona `Abrir conversa` e `Abrir no WhatsApp`
+  - `src/components/lead-drawer.tsx`
+    - adiciona os mesmos atalhos no drawer
+  - `src/components/modal-msg-lead.tsx`
+    - footer do WhatsApp vira CTA operacional real, nao apenas instrução
+  - `src/app/(dashboard)/agendamentos/page.tsx`
+    - adiciona atalhos de contato por lead agendado
+- validacao:
+  - `npm run build` passou
+- proximo passo:
+  - validar no browser os novos atalhos
+  - revisar se vale adicionar CTA semelhante em campanhas e relatorios de lead qualificado
+
 ## Regra Permanente de Continuidade
 
 - toda sessao deve atualizar `docs/CODEX_HANDOFF.md`

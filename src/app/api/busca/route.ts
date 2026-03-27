@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
+import { buildInboxHref } from '@/lib/contact-shortcuts'
 
 export async function GET(request: Request) {
   const supabase = await createClient()
@@ -47,7 +48,7 @@ export async function GET(request: Request) {
       titulo: `Conversa — ${(c.leads as any)?.nome || 'Lead'}`,
       subtitulo: c.status === 'agente' ? 'Com agente IA' : c.status === 'humano' ? 'Com advogado' : 'Encerrada',
       badge: c.status,
-      href: `/caixa-de-entrada`,
+      href: buildInboxHref({ conversaId: c.id, telefone: (c.leads as any)?.telefone }),
     })),
     ...(documentos || []).map(d => ({
       tipo: 'documento' as const,

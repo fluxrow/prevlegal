@@ -4,9 +4,10 @@ import { useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { format, parseISO } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-import { Calendar, Video, Clock, User, RefreshCw, CheckCircle2, XCircle, AlertCircle } from 'lucide-react'
+import { Calendar, Video, Clock, User, RefreshCw, CheckCircle2, XCircle, AlertCircle, MessageSquare, Send } from 'lucide-react'
 import toast from 'react-hot-toast'
 import AgendamentosOnboardingTour from '@/components/agendamentos-onboarding-tour'
+import { buildInboxHref, buildWhatsAppHref } from '@/lib/contact-shortcuts'
 
 interface Agendamento {
   id: string
@@ -177,6 +178,8 @@ export default function AgendamentosPage() {
             {agendamentos.map(ag => {
               const statusInfo = STATUS_LABELS[ag.status] ?? { label: ag.status, color: 'text-slate-400 bg-slate-400/10' }
               const date = parseISO(ag.data_hora)
+              const inboxHref = buildInboxHref({ telefone: ag.leads?.telefone })
+              const whatsappHref = buildWhatsAppHref(ag.leads?.telefone)
 
               return (
                 <div
@@ -242,6 +245,29 @@ export default function AgendamentosPage() {
                           </span>
                         )}
                       </div>
+
+                      {ag.leads?.telefone && (
+                        <div className="flex items-center gap-2 mt-2 flex-wrap">
+                          <a
+                            href={inboxHref}
+                            className="inline-flex items-center gap-1.5 rounded-md border border-blue-500/20 bg-blue-500/10 px-2.5 py-1 text-[11px] font-medium text-blue-300 transition-colors hover:bg-blue-500/15"
+                          >
+                            <MessageSquare className="w-3 h-3" />
+                            Abrir conversa
+                          </a>
+                          {whatsappHref && (
+                            <a
+                              href={whatsappHref}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1.5 rounded-md border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-1 text-[11px] font-medium text-emerald-300 transition-colors hover:bg-emerald-500/15"
+                            >
+                              <Send className="w-3 h-3" />
+                              WhatsApp
+                            </a>
+                          )}
+                        </div>
+                      )}
 
                       {ag.observacoes && (
                         <p className="mt-1.5 text-xs text-slate-500">{ag.observacoes}</p>

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { X, MessageSquare, Link2, Send } from 'lucide-react'
+import { buildInboxHref, buildWhatsAppHref, samePhone } from '@/lib/contact-shortcuts'
 
 interface Props {
   lead: { id: string; nome: string; telefone: string }
@@ -31,25 +32,6 @@ interface Conversa {
   telefone: string
 }
 
-function normalizePhone(phone: string) {
-  return phone.replace(/\D/g, '')
-}
-
-function samePhone(a: string, b: string) {
-  const aa = normalizePhone(a)
-  const bb = normalizePhone(b)
-
-  if (!aa || !bb) return false
-
-  return (
-    aa === bb ||
-    aa === `55${bb}` ||
-    bb === `55${aa}` ||
-    aa.endsWith(bb) ||
-    bb.endsWith(aa)
-  )
-}
-
 export default function ModalMsgLead({ lead, onClose }: Props) {
   const [aba, setAba] = useState<'whatsapp' | 'portal'>('whatsapp')
   const [msgsWpp, setMsgsWpp] = useState<MsgWpp[]>([])
@@ -57,6 +39,8 @@ export default function ModalMsgLead({ lead, onClose }: Props) {
   const [texto, setTexto] = useState('')
   const [enviando, setEnviando] = useState(false)
   const [conversaId, setConversaId] = useState<string | null>(null)
+  const whatsappHref = buildWhatsAppHref(lead.telefone)
+  const inboxHref = buildInboxHref({ conversaId, telefone: lead.telefone })
 
   useEffect(() => {
     let ativo = true
@@ -282,10 +266,41 @@ export default function ModalMsgLead({ lead, onClose }: Props) {
         )}
 
         {aba === 'whatsapp' && (
-          <div style={{ padding: '10px 16px', borderTop: '1px solid var(--border)' }}>
-            <div style={{ fontSize: '11px', color: 'var(--text-muted)', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+          <div style={{ padding: '12px 16px', borderTop: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', flexWrap: 'wrap' }}>
+            <div style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '6px' }}>
               <Link2 size={11} />
-              Para responder no WhatsApp, use a Caixa de Entrada
+              Atalhos rápidos de contato
+            </div>
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+              <a
+                href={inboxHref}
+                onClick={onClose}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '6px',
+                  padding: '8px 12px', borderRadius: '8px',
+                  background: 'rgba(79,122,255,0.12)', border: '1px solid rgba(79,122,255,0.28)',
+                  color: 'var(--accent)', textDecoration: 'none', fontSize: '12px', fontWeight: '600',
+                }}
+              >
+                <MessageSquare size={12} />
+                Caixa de Entrada
+              </a>
+              {whatsappHref && (
+                <a
+                  href={whatsappHref}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '6px',
+                    padding: '8px 12px', borderRadius: '8px',
+                    background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.28)',
+                    color: '#22c55e', textDecoration: 'none', fontSize: '12px', fontWeight: '600',
+                  }}
+                >
+                  <Send size={12} />
+                  Abrir no WhatsApp
+                </a>
+              )}
             </div>
           </div>
         )}
