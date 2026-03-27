@@ -98,9 +98,16 @@ Mestra: [[MASTER_PREV_LEGAL]]
   - `provider = twilio`
   - `label = Twilio Sandbox`
   - `phone = whatsapp:+14155238886`
+- o admin do tenant agora ja permite operar `whatsapp_numbers` direto pela UI:
+  - listar canais do escritorio
+  - cadastrar `Twilio` e `Z-API`
+  - editar credenciais
+  - definir canal padrao
+  - ativar/pausar
+  - excluir
+- quando um canal `Twilio` ativo/padrao e salvo no admin, os campos legado do `tenant` sao sincronizados para manter compatibilidade com o restante do runtime
 - proximo passo recomendado:
-  - retestar outbound manual no app publicado usando o canal default do tenant
-  - construir tela/admin para cadastrar numeros WhatsApp por tenant
+  - cadastrar o primeiro canal `Z-API` pelo admin do tenant
   - conectar Z-API como primeiro provider alternativo para campanha e operacao humana
   - depois permitir escolha explicita do numero de origem por campanha e por conversa humana
 

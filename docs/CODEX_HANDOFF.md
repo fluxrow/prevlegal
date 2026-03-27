@@ -265,6 +265,30 @@ Pontos que precisam ser preservados durante a implementacao:
     - criar UI/admin para cadastro de numeros por tenant
     - conectar Z-API como primeiro provider alternativo para campanha e operacao humana
 
+2026-03-27 - Admin de canais WhatsApp por tenant
+
+- Superficie nova:
+  - `src/app/admin/[id]/page.tsx` agora inclui a secao `Canais WhatsApp`
+- Rotas novas:
+  - `src/app/api/admin/tenants/[id]/whatsapp-numbers/route.ts`
+  - `src/app/api/admin/tenants/[id]/whatsapp-numbers/[numberId]/route.ts`
+- Capacidades entregues:
+  - listar canais por tenant
+  - cadastrar canal `Twilio`
+  - cadastrar canal `Z-API`
+  - editar credenciais
+  - marcar canal padrao
+  - ativar/pausar
+  - excluir
+- Decisao importante:
+  - a UI administra `whatsapp_numbers`, mas o runtime legado ainda consulta `tenants.twilio_*` em alguns pontos
+  - por isso, o backend do admin sincroniza automaticamente o canal `Twilio` padrao com os campos legado do tenant
+- Validacao:
+  - `npm run build` passou apos adicionar a UI e as rotas
+- Proximo passo recomendado:
+  - usar essa nova UI para cadastrar o primeiro canal `Z-API`
+  - depois ligar a escolha de origem por campanha e por conversa humana
+
 2026-03-16
 - Confirmado que o projeto local esta alinhado ao commit `2f79771`
 - Confirmado que o build atual passa

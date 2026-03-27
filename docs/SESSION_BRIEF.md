@@ -90,6 +90,13 @@ Ultima atualizacao: 2026-03-27
     - `sid`: `SM45b2678c110c8d4e870d618e68322290`
     - `errorCode = 63015`
     - conclusao: havia bug visual na thread, mas tambem houve falha real de entrega no provider
+  - admin WhatsApp por tenant:
+    - o detalhe do tenant em `/admin/[id]` agora expõe a secao `Canais WhatsApp`
+    - rotas novas:
+      - `GET/POST /api/admin/tenants/[id]/whatsapp-numbers`
+      - `PATCH/DELETE /api/admin/tenants/[id]/whatsapp-numbers/[numberId]`
+    - a UI ja permite cadastrar e editar canais `Twilio` e `Z-API`
+    - o canal `Twilio` padrao sincroniza os campos legado do tenant para manter compatibilidade
 - Contencao atual:
   - allowlist do app continua ativa
   - onboarding fora do piloto continua bloqueado
@@ -107,7 +114,7 @@ Validar o runtime WhatsApp no tenant limpo:
 - retestar agora o envio manual e o `Iniciar conversa` com o canal default do tenant
 - identificar a causa operacional do `errorCode 63015` no sandbox Twilio e confirmar a adesao correta do numero de destino
 - provocar uma inbound de resposta no mesmo numero para validar roteamento pelo tenant
-- conectar Z-API como segundo provider e validar um disparo de campanha ponta a ponta
+- cadastrar o primeiro canal `Z-API` na nova UI do admin e validar um disparo de campanha ponta a ponta
 - depois retomar os testes operacionais do tenant isolation canonico por `tenant_id`
 
 ## Bloqueios e Cuidados

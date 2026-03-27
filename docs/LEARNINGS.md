@@ -270,6 +270,12 @@ export async function GET(
 **Causa:** O front da inbox limpava o texto e recarregava a conversa sem verificar `res.ok`
 **Correcao:** O composer da inbox agora preserva o texto em falha e mostra a mensagem de erro retornada pela API
 **Regra pratica:** Em fluxos operacionais do PrevLegal, nunca tratar tentativa de envio como sucesso sem validar explicitamente a resposta HTTP
+
+### 42. Cadastro de canais WhatsApp por tenant precisa sincronizar com o legado durante a transicao
+**Problema:** A nova camada `whatsapp_numbers` convive com partes do runtime que ainda consultam `tenants.twilio_*`
+**Risco:** Cadastrar ou trocar o canal padrao no admin e deixar os campos legado desatualizados criaria comportamento incoerente entre envio, webhook e fallback
+**Correcao:** O admin agora gerencia canais em `/api/admin/tenants/[id]/whatsapp-numbers*` e, sempre que um canal `Twilio` ativo/padrao muda, sincroniza `twilio_account_sid`, `twilio_auth_token` e `twilio_whatsapp_number` no `tenant`
+**Regra pratica:** Em migracoes de integracao, a UI nova deve atualizar a fonte canônica nova e manter a fonte legada coerente ate o corte definitivo
 **Regra prática:** Endpoints que estabelecem autenticação ou reautenticação não podem depender da sessão que eles próprios estão tentando renovar
 
 ### 37. Contenção do tenant não pode travar o próprio primeiro tenant depois do bootstrap inicial
