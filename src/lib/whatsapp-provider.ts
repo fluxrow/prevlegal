@@ -25,6 +25,7 @@ type WhatsAppNumberRow = {
   zapi_client_token: string | null
   zapi_base_url: string | null
   zapi_connected_phone: string | null
+  metadata: Record<string, unknown> | null
 }
 
 export interface ResolvedWhatsAppChannel {
@@ -34,6 +35,7 @@ export interface ResolvedWhatsAppChannel {
   label: string | null
   from: string
   purpose: string | null
+  metadata: Record<string, unknown> | null
   credentials?: TwilioCredentials
   zapi?: {
     instanceId: string
@@ -93,6 +95,7 @@ function mapTwilioRowToChannel(row: WhatsAppNumberRow): ResolvedWhatsAppChannel 
     label: row.label,
     from,
     purpose: row.purpose,
+    metadata: row.metadata || null,
     credentials: {
       accountSid: row.twilio_account_sid,
       authToken: row.twilio_auth_token,
@@ -120,6 +123,7 @@ function mapZApiRowToChannel(row: WhatsAppNumberRow): ResolvedWhatsAppChannel | 
     label: row.label,
     from,
     purpose: row.purpose,
+    metadata: row.metadata || null,
     zapi: {
       instanceId: row.zapi_instance_id,
       instanceToken: row.zapi_instance_token,
@@ -155,7 +159,8 @@ async function getWhatsAppNumberRow(
         zapi_instance_token,
         zapi_client_token,
         zapi_base_url,
-        zapi_connected_phone
+        zapi_connected_phone,
+        metadata
       `)
       .eq('tenant_id', tenantId)
       .eq('ativo', true)
@@ -198,6 +203,7 @@ export async function resolveWhatsAppChannel(
     label: null,
     from: legacyTwilio.whatsappNumber,
     purpose: 'ambos',
+    metadata: null,
     credentials: legacyTwilio,
   }
 }

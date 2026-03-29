@@ -728,6 +728,24 @@ export default function CampanhasPage() {
 
               <div
                 style={{
+                  marginTop: "-4px",
+                  marginBottom: "16px",
+                  padding: "10px 12px",
+                  borderRadius: "10px",
+                  background: "rgba(245, 200, 66, 0.08)",
+                  border: "1px solid rgba(245, 200, 66, 0.18)",
+                  color: "var(--text-secondary)",
+                  fontSize: "12px",
+                  lineHeight: 1.5,
+                }}
+              >
+                Canais novos em warm-up podem impor caps automaticos no backend,
+                mesmo que esta campanha tenha parametros mais altos. Isso evita
+                blast acidental em numero novo.
+              </div>
+
+              <div
+                style={{
                   display: "flex",
                   alignItems: "center",
                   gap: "8px",

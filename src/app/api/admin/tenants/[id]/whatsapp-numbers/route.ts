@@ -96,7 +96,7 @@ async function normalizeChannelPayload(
       tenant?.twilio_whatsapp_number ||
       null
 
-    if (!accountSid || !authToken || !whatsappNumber) {
+    if (ativo && (!accountSid || !authToken || !whatsappNumber)) {
       return { error: 'Twilio exige Account SID, Auth Token e numero WhatsApp.' }
     }
 
@@ -114,7 +114,7 @@ async function normalizeChannelPayload(
   if (provider === 'zapi') {
     const instanceId = normalizeString(body.zapi_instance_id)
     const instanceToken = normalizeString(body.zapi_instance_token)
-    if (!instanceId || !instanceToken) {
+    if (ativo && (!instanceId || !instanceToken)) {
       return { error: 'Z-API exige Instance ID e Instance Token.' }
     }
 

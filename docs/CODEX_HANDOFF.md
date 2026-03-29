@@ -897,6 +897,62 @@ Pontos que precisam ser preservados durante a implementacao:
 - proximo passo:
   - retestar o envio para numero proprio no sandbox atual
 
+## Atualizacao de 2026-03-29 — Warm-up automatico para numero novo e rascunho Z-API
+
+- o usuario comprou um chip novo para testar `Z-API` e antes de plugar pediu endurecimento anti-block no produto
+- leitura do codigo confirmou que o motor de campanhas ja possuia freios reais:
+  - `lgpd_optout = false`
+  - `apenas_verificados`
+  - `limite_diario`
+  - `tamanho_lote`
+  - `pausa_entre_lotes_s`
+  - delay randômico entre mensagens
+- problema confirmado:
+  - os defaults atuais (`500/dia`, lote `50`, pausa `30s`, delay `1.5s-3.5s`) sao agressivos demais para numero novo em `Z-API`
+- correcao aplicada:
+  - novo helper `src/lib/whatsapp-warmup.ts`
+    - interpreta `metadata.warmup_*` do canal
+    - reaplica caps conservadores em criacao e disparo de campanhas
+  - `src/lib/whatsapp-provider.ts`
+    - `resolveWhatsAppChannel` agora expõe `metadata`
+  - `src/app/api/campanhas/route.ts`
+    - salva `whatsapp_number_id` na campanha na hora da criacao
+    - ja clampa os parametros usando a politica de warm-up do canal default
+  - `src/app/api/campanhas/[id]/disparar/route.ts`
+    - relê o canal da campanha
+    - reaplica caps de warm-up no backend
+    - grava `whatsapp_number_id` em `campanha_mensagens`
+  - `src/app/(dashboard)/campanhas/page.tsx`
+    - ganhou aviso explicando que o backend pode impor caps de warm-up automaticamente
+  - `supabase/migrations/033_whatsapp_warmup_and_drafts.sql`
+    - relaxa constraints de `whatsapp_numbers` para permitir canal `Twilio`/`Z-API` inativo sem credenciais completas
+  - `src/app/api/admin/tenants/[id]/whatsapp-numbers*.ts`
+    - passaram a aceitar canal rascunho quando `ativo = false`
+  - `src/app/admin/[id]/page.tsx`
+    - mostra badge `Warm-up`
+    - documenta que canal pausado pode ficar em rascunho enquanto as credenciais nao foram plugadas
+- politica conservadora embutida no metadata de warm-up:
+  - `limite_diario = 15`
+  - `tamanho_lote = 5`
+  - `pausa_entre_lotes_s = 600`
+  - `delay_min_ms = 60000`
+  - `delay_max_ms = 180000`
+- operacional:
+  - migration `033` aplicada diretamente no operacional `lrqvvxmgimjlghpwavdb`
+  - canal rascunho criado para o tenant `Fluxrow`:
+    - `id = 95e644e6-5b1b-4add-982a-2e9172ee3798`
+    - `label = Z-API Warm-up 41984233554`
+    - `phone = +5541984233554`
+    - `provider = zapi`
+    - `ativo = false`
+    - `is_default = false`
+    - metadata de warm-up preenchida
+- proximo passo:
+  - amanha, preencher `instance_id` e `instance_token` no canal rascunho do admin
+  - ativar o canal `Z-API`
+  - testar envio humano primeiro
+  - so depois disparar campanha curta com o warm-up ativo
+
 ## Regra Permanente de Continuidade
 
 - toda sessao deve atualizar `docs/CODEX_HANDOFF.md`

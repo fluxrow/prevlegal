@@ -623,6 +623,18 @@ export async function GET(
 **Correcao aplicada:** Centralizar no `sendWhatsApp` a normalizacao do destinatario para E.164 brasileiro, aceitando formatos como `(41) 99236-1868`, `41992361868` e `+5541992361868`
 **Regra pratica:** No PrevLegal, todo envio WhatsApp deve normalizar o numero no backend; nao confiar que o cadastro do lead ja esta no formato tecnico correto
 
+### 70. Numero novo em provider nao-oficial precisa de warm-up enforce no backend, nao apenas “boa vontade” operacional
+**Problema:** O produto ja tinha delays, lotes e limite diario, mas os defaults (`500/dia`, lote `50`, pausa `30s`, delay `1.5s-3.5s`) ainda permitiam blast agressivo demais para um numero novo de `Z-API`
+**Causa:** Os freios existentes foram pensados para um sender mais estabelecido e nao havia politica de warm-up por canal
+**Correcao aplicada:** Criar `src/lib/whatsapp-warmup.ts`, ler `metadata.warmup_*` do canal em `whatsapp_numbers`, clampando campanhas na criacao e no disparo com caps conservadores (`15/dia`, lote `5`, pausa `600s`, delay `60s-180s`)
+**Regra pratica:** Se o canal estiver em warm-up, o backend deve impor caps conservadores automaticamente; isso nao pode depender de o operador lembrar de baixar os numeros manualmente
+
+### 71. Canais WhatsApp precisam aceitar estado de rascunho antes de ficarem ativos
+**Problema:** O schema de `whatsapp_numbers` exigia credenciais completas mesmo para canais ainda nao plugados, o que impedia registrar hoje um numero de amanha sem usar placeholder feio
+**Causa:** As constraints iniciais de `032` validavam credenciais por provider sem considerar se o canal estava `ativo`
+**Correcao aplicada:** A migration `033_whatsapp_warmup_and_drafts.sql` relaxa as constraints para exigir credenciais apenas quando o canal esta ativo, e as rotas admin passaram a aceitar `Twilio`/`Z-API` pausados como rascunho
+**Regra pratica:** No PrevLegal, um canal WhatsApp pode existir em modo rascunho/inativo antes das credenciais finais; ativacao e que deve exigir completude tecnica
+
 ### 59. A lista tecnica de cadastro manual nao deve disputar espaco com listas importadas
 **Problema:** O agrupador tecnico `Cadastro manual` aparecia na aba de listas como se fosse uma importacao operacional, poluindo a leitura do escritorio
 **Causa:** A API de listas retornava indiscriminadamente todas as `listas`, inclusive a lista interna criada para suportar leads avulsos

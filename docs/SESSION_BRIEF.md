@@ -97,6 +97,25 @@ Ultima atualizacao: 2026-03-27
       - `PATCH/DELETE /api/admin/tenants/[id]/whatsapp-numbers/[numberId]`
     - a UI ja permite cadastrar e editar canais `Twilio` e `Z-API`
     - o canal `Twilio` padrao sincroniza os campos legado do tenant para manter compatibilidade
+  - warm-up Z-API em 29/03:
+    - `src/lib/whatsapp-warmup.ts` centraliza uma politica conservadora para numero novo
+    - campanhas agora salvam `whatsapp_number_id` do canal resolvido na criacao
+    - o disparo volta a ler o canal da campanha e reaplica caps de warm-up no backend
+    - caps conservadores atuais para canal em warm-up:
+      - `limite_diario = 15`
+      - `tamanho_lote = 5`
+      - `pausa_entre_lotes_s = 600`
+      - `delay_min_ms = 60000`
+      - `delay_max_ms = 180000`
+    - `src/app/admin/[id]/page.tsx` agora destaca badge `Warm-up` no canal quando `metadata.warmup_enabled = true`
+    - a migration `033_whatsapp_warmup_and_drafts.sql` relaxa as constraints para permitir canal rascunho inativo sem credenciais completas
+    - o tenant `Fluxrow` ganhou um canal `Z-API` ja reservado no operacional:
+      - label: `Z-API Warm-up 41984233554`
+      - phone: `+5541984233554`
+      - provider: `zapi`
+      - ativo: `false`
+      - is_default: `false`
+      - metadata de warm-up ja aplicada
 - Contencao atual:
   - allowlist do app continua ativa
   - onboarding fora do piloto continua bloqueado
@@ -115,6 +134,11 @@ Validar o runtime WhatsApp no tenant limpo:
 - identificar a causa operacional do `errorCode 63015` no sandbox Twilio e confirmar a adesao correta do numero de destino
 - provocar uma inbound de resposta no mesmo numero para validar roteamento pelo tenant
 - cadastrar o primeiro canal `Z-API` na nova UI do admin e validar um disparo de campanha ponta a ponta
+- amanha:
+  - plugar o chip `41984233554` na instancia Z-API
+  - preencher `instance_id` / `instance_token` no canal rascunho ja criado
+  - ativar o canal e manter warm-up ligado
+  - testar envio humano primeiro e so depois campanha curta
 - depois retomar os testes operacionais do tenant isolation canonico por `tenant_id`
 
 ## Bloqueios e Cuidados

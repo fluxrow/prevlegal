@@ -3,7 +3,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient as createAdmin } from "@supabase/supabase-js";
 import { createClient as createServerClient } from "@/lib/supabase/server";
 import { getTenantContext } from "@/lib/tenant-context";
-import { sendWhatsAppMessage } from "@/lib/whatsapp-provider";
+import { resolveWhatsAppChannel, sendWhatsAppMessage } from "@/lib/whatsapp-provider";
+import {
+  applyWarmupPolicyToThrottleSettings,
+  getWhatsAppWarmupPolicy,
+} from "@/lib/whatsapp-warmup";
 
 function createAdminClient() {
   return createAdmin(
@@ -115,15 +119,30 @@ export async function POST(
         l && (!campanha.apenas_verificados || l.tem_whatsapp === true),
     );
 
-    const disponivel = Math.max(0, campanha.limite_diario || 500);
+    const channel = await resolveWhatsAppChannel(
+      context.tenantId,
+      campanha.whatsapp_number_id || null,
+    );
+    const throttleSettings = applyWarmupPolicyToThrottleSettings(
+      {
+        limitDaily: campanha.limite_diario,
+        batchSize: campanha.tamanho_lote,
+        pauseBetweenBatchesS: campanha.pausa_entre_lotes_s,
+        delayMinMs: campanha.delay_min_ms,
+        delayMaxMs: campanha.delay_max_ms,
+      },
+      getWhatsAppWarmupPolicy(channel.metadata),
+    );
+
+    const disponivel = Math.max(0, throttleSettings.limitDaily);
     const leadsParaEnviar = leads.slice(0, disponivel);
 
     let enviados = 0,
       falhos = 0;
-    const delayMin = campanha.delay_min_ms || 1500;
-    const delayMax = campanha.delay_max_ms || 3500;
-    const tamLote = campanha.tamanho_lote || 50;
-    const pausaLote = (campanha.pausa_entre_lotes_s || 30) * 1000;
+    const delayMin = throttleSettings.delayMinMs;
+    const delayMax = throttleSettings.delayMaxMs;
+    const tamLote = throttleSettings.batchSize;
+    const pausaLote = throttleSettings.pauseBetweenBatchesS * 1000;
     for (let i = 0; i < leadsParaEnviar.length; i++) {
       // Checar se campanha foi pausada/cancelada
       const { data: status } = await applyTenantFilter(
@@ -140,6 +159,7 @@ export async function POST(
         await adminClient.from("campanha_mensagens").insert({
           campanha_id: campanhaId,
           lead_id: lead.id,
+          whatsapp_number_id: channel.id,
           telefone: null,
           mensagem: mensagem,
           status: "falhou",
@@ -151,11 +171,13 @@ export async function POST(
           tenantId: context.tenantId,
           to: phone,
           body: mensagem,
+          preferredNumberId: channel.id,
         });
         if (result.success) {
           await adminClient.from("campanha_mensagens").insert({
             campanha_id: campanhaId,
             lead_id: lead.id,
+            whatsapp_number_id: channel.id,
             telefone: phone,
             mensagem: mensagem,
             status: "enviado",
@@ -167,6 +189,7 @@ export async function POST(
           await adminClient.from("campanha_mensagens").insert({
             campanha_id: campanhaId,
             lead_id: lead.id,
+            whatsapp_number_id: channel.id,
             telefone: phone,
             mensagem: mensagem,
             status: "falhou",

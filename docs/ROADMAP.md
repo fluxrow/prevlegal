@@ -244,6 +244,12 @@ Mestra: [[MASTER_PREV_LEGAL]]
 - o runtime de campanhas deixou de depender das tabelas legado `lista_leads` e `numeros_whatsapp`
 - webhook inbound, webhook de status e resposta automatica do agente agora roteam Twilio/configuracoes pelo `tenant_id` ou pelo numero WhatsApp do tenant
 - o detalhe do lead e o drawer agora permitem iniciar uma conversa manual mesmo sem thread previa, criando a thread humana e levando direto para a inbox
+- `whatsapp_numbers` agora aceita canais rascunho inativos sem credenciais finais, o que permite preparar `Twilio` e `Z-API` antes da ativacao
+- campanhas agora salvam `whatsapp_number_id` e respeitam warm-up automatico por canal quando `metadata.warmup_enabled = true`
+- o tenant `Fluxrow` ja tem um canal reservado para o chip novo:
+  - `Z-API Warm-up 41984233554`
+  - phone `+5541984233554`
+  - pausado, nao-padrao, aguardando `instance_id` e `instance_token`
 
 ### Documentação viva e rotina de sessão
 - `MASTER.md`, `ROADMAP.md` e `LEARNINGS.md` passaram a funcionar como memória viva do projeto
@@ -288,6 +294,7 @@ Status atual em 18/03/2026:
 ### Fase 31 — Campanhas inteligentes
 - Comparar templates, horários e listas por performance
 - Exibir falhas de envio, resposta e conversão em uma camada de otimização
+- Incluir política de warm-up por canal como camada operacional nativa de campanha
 
 ### Fase 32 — Migração para domínio próprio
 - Colocar `prevlegal.com.br` como domínio principal do site

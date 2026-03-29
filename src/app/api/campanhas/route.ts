@@ -3,6 +3,11 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient as createAdmin } from '@supabase/supabase-js'
 import { createClient as createServerClient } from '@/lib/supabase/server'
 import { getTenantContext } from '@/lib/tenant-context'
+import { resolveWhatsAppChannel } from '@/lib/whatsapp-provider'
+import {
+  applyWarmupPolicyToThrottleSettings,
+  getWhatsAppWarmupPolicy,
+} from '@/lib/whatsapp-warmup'
 
 function createAdminClient() {
   return createAdmin(
@@ -70,10 +75,23 @@ export async function POST(request: NextRequest) {
     countQuery = applyTenantFilter(countQuery, context.tenantId)
     const { count } = await countQuery
 
+    const channel = await resolveWhatsAppChannel(context.tenantId)
+    const throttleSettings = applyWarmupPolicyToThrottleSettings(
+      {
+        limitDaily: limite_diario,
+        batchSize: tamanho_lote,
+        pauseBetweenBatchesS: pausa_entre_lotes_s,
+        delayMinMs: delay_min_ms,
+        delayMaxMs: delay_max_ms,
+      },
+      getWhatsAppWarmupPolicy(channel.metadata),
+    )
+
     const { data, error } = await adminClient
       .from('campanhas')
       .insert({
         tenant_id: context.tenantId,
+        whatsapp_number_id: channel.id,
         nome,
         lista_id,
         mensagem_template,
@@ -89,11 +107,11 @@ export async function POST(request: NextRequest) {
         total_lidos: 0,
         total_respondidos: 0,
         total_falhos: 0,
-        delay_min_ms: delay_min_ms || 1500,
-        delay_max_ms: delay_max_ms || 3500,
-        tamanho_lote: tamanho_lote || 50,
-        pausa_entre_lotes_s: pausa_entre_lotes_s || 30,
-        limite_diario: limite_diario || 500,
+        delay_min_ms: throttleSettings.delayMinMs,
+        delay_max_ms: throttleSettings.delayMaxMs,
+        tamanho_lote: throttleSettings.batchSize,
+        pausa_entre_lotes_s: throttleSettings.pauseBetweenBatchesS,
+        limite_diario: throttleSettings.limitDaily,
         apenas_verificados: apenas_verificados ?? true,
         agendado_para: agendado_para || null,
       })

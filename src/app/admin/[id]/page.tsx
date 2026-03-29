@@ -76,6 +76,7 @@ interface WhatsAppNumber {
   purpose: string | null
   ativo: boolean
   is_default: boolean
+  metadata?: Record<string, unknown> | null
   twilio_account_sid?: string | null
   twilio_auth_token?: string | null
   twilio_whatsapp_number?: string | null
@@ -556,6 +557,7 @@ export default function TenantDetailPage() {
               </h3>
               <p style={{ fontSize: '13px', color: '#9ca3af', margin: 0, lineHeight: '1.5' }}>
                 Cadastre multiplos numeros por escritorio, escolha o provider (`Twilio` ou `Z-API`) e defina qual canal sera o padrao operacional.
+                Canais pausados podem ficar como rascunho enquanto as credenciais ainda nao foram plugadas.
               </p>
             </div>
             <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
@@ -585,6 +587,9 @@ export default function TenantDetailPage() {
                         <span style={badgeStyle(channel.provider === 'twilio' ? '#4f7aff' : '#2dd4a0')}>{formatProvider(channel.provider)}</span>
                         <span style={badgeStyle(channel.ativo ? '#22c55e' : '#6b7280')}>{channel.ativo ? 'Ativo' : 'Pausado'}</span>
                         {channel.is_default ? <span style={badgeStyle('#f5c842')}>Padrão</span> : null}
+                        {Boolean(channel.metadata?.warmup_enabled) ? (
+                          <span style={badgeStyle('#f97316')}>Warm-up</span>
+                        ) : null}
                         <span style={badgeStyle('#9ca3af')}>{formatPurpose(channel.purpose)}</span>
                       </div>
 
