@@ -641,6 +641,12 @@ export async function GET(
 **Correcao aplicada:** Criar `PATCH /api/leads/[id]` com whitelist de campos editaveis e adicionar o CTA `Editar dados` no detalhe e no drawer usando um modal compartilhado
 **Regra pratica:** No PrevLegal, qualquer superficie operacional que concentra contexto do lead tambem deve permitir editar o cadastro basico; obrigar nova importacao ou SQL para complementar dados mata autonomia do operador
 
+### 73. Inbox humana vira operacao de verdade quando conversa tem estado, ownership e reabertura automatica
+**Problema:** A `Caixa de Entrada` ja permitia assumir uma conversa, mas ainda tratava quase tudo como binario entre `agente` e `humano`, sem fila operacional real
+**Causa:** A UI ignorava parte do potencial da modelagem (`assumido_por`, `assumido_em`) e o webhook inbound nao sabia reabrir threads que estavam aguardando cliente ou resolvidas
+**Correcao aplicada:** Expandir a inbox com estados `aguardando_cliente` e `resolvido`, usar `assumido_em` na leitura operacional, sanitizar `PATCH /api/conversas/[id]` com acoes explicitas (`assume`, `awaiting_customer`, `resolve`, `reopen`, `return_to_agent`, `mark_read`) e fazer o webhook Twilio reabrir para `humano` quando o cliente responde nessas filas
+**Regra pratica:** No PrevLegal, fila humana nao pode ser apenas um badge; conversa assumida precisa ter ownership explicito, estados operacionais claros e reabertura automatica quando o cliente volta a falar
+
 ### 59. A lista tecnica de cadastro manual nao deve disputar espaco com listas importadas
 **Problema:** O agrupador tecnico `Cadastro manual` aparecia na aba de listas como se fosse uma importacao operacional, poluindo a leitura do escritorio
 **Causa:** A API de listas retornava indiscriminadamente todas as `listas`, inclusive a lista interna criada para suportar leads avulsos

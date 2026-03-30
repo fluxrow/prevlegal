@@ -60,6 +60,14 @@ interface ConversaResumo {
   status: string
 }
 
+const CONVERSA_STATUS_ADMIN: Record<string, { label: string; color: string }> = {
+  agente: { label: '🤖 Agente', color: '#4f7aff' },
+  humano: { label: '👤 Humano', color: '#22c55e' },
+  aguardando_cliente: { label: '⏳ Aguardando', color: '#f59e0b' },
+  resolvido: { label: '✅ Resolvido', color: '#14b8a6' },
+  encerrado: { label: '✓ Enc.', color: '#6b7280' },
+}
+
 interface CampanhaResumo {
   nome: string
   status: string
@@ -768,8 +776,8 @@ export default function TenantDetailPage() {
                   <p style={{ fontSize: '11px', color: '#6b7280', margin: 0, maxWidth: '220px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{conversa.ultima_mensagem || '—'}</p>
                 </div>
                 <div style={{ textAlign: 'right' }}>
-                  <span style={{ fontSize: '10px', color: conversa.status === 'humano' ? '#22c55e' : conversa.status === 'agente' ? '#4f7aff' : '#6b7280', fontWeight: '600' }}>
-                    {conversa.status === 'humano' ? '👤 Humano' : conversa.status === 'agente' ? '🤖 Agente' : '✓ Enc.'}
+                  <span style={{ fontSize: '10px', color: (CONVERSA_STATUS_ADMIN[conversa.status] || CONVERSA_STATUS_ADMIN.encerrado).color, fontWeight: '600' }}>
+                    {(CONVERSA_STATUS_ADMIN[conversa.status] || CONVERSA_STATUS_ADMIN.encerrado).label}
                   </span>
                   {conversa.ultima_mensagem_at && (
                     <p style={{ fontSize: '10px', color: '#6b7280', margin: '3px 0 0' }}>

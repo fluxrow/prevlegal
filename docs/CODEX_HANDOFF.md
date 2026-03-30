@@ -1010,6 +1010,55 @@ Pontos que precisam ser preservados durante a implementacao:
 - leitura pratica:
   - se o WhatsApp estiver operacional, o bloco mais bonito de produto a seguir e a `Inbox Humana Avançada`
 
+## Atualizacao de 2026-03-30 — Inbox humana com estados operacionais
+
+- enquanto o chip da `Z-API` nao chegava, o usuario pediu para seguir com o restante do produto
+- foi atacado o primeiro ganho grande fora do WhatsApp: transformar a `Caixa de Entrada` em fila humana mais real
+- mudancas aplicadas:
+  - `src/app/(dashboard)/caixa-de-entrada/page.tsx`
+    - filtros novos:
+      - `Todas`
+      - `Agente`
+      - `Atendimento`
+      - `Aguardando`
+      - `Resolvidas`
+      - `Portal`
+    - badge/status agora reconhece:
+      - `agente`
+      - `humano`
+      - `aguardando_cliente`
+      - `resolvido`
+      - `encerrado`
+    - card da conversa mostra quando a thread esta em fila humana e desde quando
+    - painel ganhou acoes:
+      - `Assumir conversa`
+      - `Aguardar cliente`
+      - `Resolver`
+      - `Retomar atendimento`
+      - `Reabrir conversa`
+      - `Devolver ao agente`
+    - mensagem manual fica disponivel apenas em `humano`; `aguardando_cliente` e `resolvido` passam a ser estados operacionais de fila, nao apenas variacoes cosmeticas
+    - ao abrir uma conversa com nao lidas, a inbox zera `nao_lidas` via `mark_read`
+  - `src/app/api/conversas/[id]/route.ts`
+    - `PATCH` deixou de aceitar `body` cru
+    - agora sanitiza acoes explicitas e controla `assumido_por`, `assumido_em` e `nao_lidas`
+  - `src/app/api/webhooks/twilio/route.ts`
+    - se o cliente responder a uma thread em `aguardando_cliente` ou `resolvido`, a conversa volta automaticamente para `humano`
+  - `src/app/api/admin/tenants/[id]/metricas/route.ts`
+    - contagem de conversas humanas agora inclui `aguardando_cliente`
+  - `src/app/admin/[id]/page.tsx`
+    - resumo de ultimas conversas ganhou label correta para `aguardando_cliente` e `resolvido`
+- validacao:
+  - `npm run build` passou
+- proximo passo:
+  - testar no browser o ciclo completo:
+    - assumir
+    - responder
+    - marcar aguardando cliente
+    - responder pelo WhatsApp
+    - confirmar reabertura automatica para `humano`
+  - depois retomar a ativacao real do canal `Z-API`
+
 ## Regra Permanente de Continuidade
 
 - toda sessao deve atualizar `docs/CODEX_HANDOFF.md`

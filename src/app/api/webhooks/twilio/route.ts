@@ -99,8 +99,11 @@ export async function POST(request: NextRequest) {
     if (conversaExistente) {
       conversaId = conversaExistente.id
       conversaStatus = conversaExistente.status || 'agente'
+      const shouldResumeHuman =
+        conversaStatus === 'aguardando_cliente' || conversaStatus === 'resolvido'
 
       await supabase.from('conversas').update({
+        status: shouldResumeHuman ? 'humano' : conversaStatus,
         ultima_mensagem: body_msg,
         ultima_mensagem_at: new Date().toISOString(),
         nao_lidas: (conversaExistente.nao_lidas || 0) + 1,

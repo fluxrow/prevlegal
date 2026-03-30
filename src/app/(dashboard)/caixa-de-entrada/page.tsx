@@ -31,10 +31,12 @@ const TOUR_INBOX = [
 interface Conversa {
   id: string
   telefone: string
-  status: 'agente' | 'humano' | 'encerrado'
+  status: 'agente' | 'humano' | 'aguardando_cliente' | 'resolvido' | 'encerrado'
   ultima_mensagem: string
   ultima_mensagem_at: string
   nao_lidas: number
+  assumido_por?: string | null
+  assumido_em?: string | null
   leads: { id?: string; nome: string; nb: string; status: string } | null
 }
 
@@ -67,9 +69,14 @@ interface PortalMensagem {
 
 const STATUS_CONVERSA = {
   agente: { label: 'Agente', color: '#4f7aff', bg: '#4f7aff20', icon: '🤖' },
-  humano: { label: 'Humano', color: '#2dd4a0', bg: '#2dd4a020', icon: '👤' },
+  humano: { label: 'Em atendimento', color: '#2dd4a0', bg: '#2dd4a020', icon: '👤' },
+  aguardando_cliente: { label: 'Aguardando cliente', color: '#f59e0b', bg: '#f59e0b20', icon: '⏳' },
+  resolvido: { label: 'Resolvido', color: '#14b8a6', bg: '#14b8a620', icon: '✅' },
   encerrado: { label: 'Encerrado', color: '#4a5060', bg: '#4a506020', icon: '✓' },
 }
+
+const STATUS_HUMANOS = new Set(['humano', 'aguardando_cliente', 'resolvido'])
+type AbaInbox = 'todas' | 'agente' | 'humano' | 'aguardando_cliente' | 'resolvido' | 'portal'
 
 function formatTime(dt: string) {
   const d = new Date(dt)
@@ -87,7 +94,7 @@ export default function CaixaDeEntradaPage() {
   const [conversas, setConversas] = useState<Conversa[]>([])
   const [conversaSelecionada, setConversaSelecionada] = useState<Conversa | null>(null)
   const [mensagens, setMensagens] = useState<Mensagem[]>([])
-  const [abaAtiva, setAbaAtiva] = useState<'todas' | 'agente' | 'humano' | 'portal'>('todas')
+  const [abaAtiva, setAbaAtiva] = useState<AbaInbox>('todas')
   const [threadsPortal, setThreadsPortal] = useState<ThreadPortal[]>([])
   const [threadSelecionada, setThreadSelecionada] = useState<ThreadPortal | null>(null)
   const [msgsPortal, setMsgsPortal] = useState<PortalMensagem[]>([])
@@ -119,7 +126,7 @@ export default function CaixaDeEntradaPage() {
 
     if (encontrada) {
       setAbaAtiva('todas')
-      setConversaSelecionada((prev) => (prev?.id === encontrada.id ? prev : encontrada))
+      void selecionarConversa(encontrada)
     }
   }, [abaAtiva, conversas, searchParams])
 
@@ -165,7 +172,12 @@ export default function CaixaDeEntradaPage() {
   async function fetchConversas() {
     const res = await fetch('/api/conversas')
     if (res.ok) {
-      setConversas(await res.json())
+      const data = await res.json()
+      setConversas(data)
+      setConversaSelecionada((prev) => {
+        if (!prev) return prev
+        return data.find((conversa: Conversa) => conversa.id === prev.id) || prev
+      })
       setLoading(false)
     }
   }
@@ -173,6 +185,49 @@ export default function CaixaDeEntradaPage() {
   async function fetchMensagens(conversaId: string) {
     const res = await fetch(`/api/conversas/${conversaId}`)
     if (res.ok) setMensagens(await res.json())
+  }
+
+  function aplicarConversaAtualizada(atualizada: Conversa) {
+    setConversas((prev) => prev.map((conversa) => (conversa.id === atualizada.id ? { ...conversa, ...atualizada } : conversa)))
+    setConversaSelecionada((prev) => (prev?.id === atualizada.id ? { ...prev, ...atualizada } : prev))
+  }
+
+  async function atualizarConversa(
+    conversaId: string,
+    payload: Record<string, unknown>,
+    optimistic?: Partial<Conversa>,
+  ) {
+    if (optimistic) {
+      setConversas((prev) => prev.map((conversa) => (conversa.id === conversaId ? { ...conversa, ...optimistic } : conversa)))
+      setConversaSelecionada((prev) => (prev?.id === conversaId ? { ...prev, ...optimistic } : prev))
+    }
+
+    const res = await fetch(`/api/conversas/${conversaId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    })
+
+    if (res.ok) {
+      const atualizada = await res.json()
+      aplicarConversaAtualizada(atualizada)
+      return atualizada as Conversa
+    }
+
+    await fetchConversas()
+    return null
+  }
+
+  async function selecionarConversa(conversa: Conversa) {
+    setConversaSelecionada(conversa)
+
+    if (conversa.nao_lidas > 0) {
+      await atualizarConversa(
+        conversa.id,
+        { action: 'mark_read' },
+        { nao_lidas: 0 },
+      )
+    }
   }
 
   async function fetchThreadsPortal() {
@@ -184,23 +239,43 @@ export default function CaixaDeEntradaPage() {
   }
 
   async function assumirConversa(conversaId: string) {
-    await fetch(`/api/conversas/${conversaId}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: 'humano' }),
-    })
-    setConversas(prev => prev.map(c => c.id === conversaId ? { ...c, status: 'humano' } : c))
-    setConversaSelecionada(prev => prev?.id === conversaId ? { ...prev, status: 'humano' } : prev)
+    await atualizarConversa(
+      conversaId,
+      { action: 'assume' },
+      { status: 'humano', nao_lidas: 0, assumido_em: new Date().toISOString() },
+    )
   }
 
   async function devolverAoAgente(conversaId: string) {
-    await fetch(`/api/conversas/${conversaId}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: 'agente' }),
-    })
-    setConversas(prev => prev.map(c => c.id === conversaId ? { ...c, status: 'agente' } : c))
-    setConversaSelecionada(prev => prev?.id === conversaId ? { ...prev, status: 'agente' } : prev)
+    await atualizarConversa(
+      conversaId,
+      { action: 'return_to_agent' },
+      { status: 'agente', nao_lidas: 0, assumido_por: null, assumido_em: null },
+    )
+  }
+
+  async function marcarAguardandoCliente(conversaId: string) {
+    await atualizarConversa(
+      conversaId,
+      { action: 'awaiting_customer' },
+      { status: 'aguardando_cliente', assumido_em: conversaSelecionada?.assumido_em || new Date().toISOString() },
+    )
+  }
+
+  async function marcarResolvido(conversaId: string) {
+    await atualizarConversa(
+      conversaId,
+      { action: 'resolve' },
+      { status: 'resolvido', nao_lidas: 0, assumido_em: conversaSelecionada?.assumido_em || new Date().toISOString() },
+    )
+  }
+
+  async function reabrirConversa(conversaId: string) {
+    await atualizarConversa(
+      conversaId,
+      { action: 'reopen' },
+      { status: 'humano', nao_lidas: 0, assumido_em: conversaSelecionada?.assumido_em || new Date().toISOString() },
+    )
   }
 
   async function enviarResposta() {
@@ -246,6 +321,8 @@ export default function CaixaDeEntradaPage() {
   )
 
   const badgePortal = threadsPortal.reduce((a, t) => a + t.nao_lidas, 0)
+  const conversaGeridaPorHumano = conversaSelecionada ? STATUS_HUMANOS.has(conversaSelecionada.status) : false
+  const podeResponderManual = conversaSelecionada?.status === 'humano'
 
   function isMensagemOutbound(msg: Mensagem) {
     if (!conversaSelecionada) return false
@@ -269,32 +346,34 @@ export default function CaixaDeEntradaPage() {
           <h1 style={{ fontFamily: 'Syne, sans-serif', fontSize: '18px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '12px', marginTop: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
             <MessageSquare size={18} color="var(--accent)" /> Caixa de Entrada
           </h1>
-          <div data-tour="inbox-filtros" style={{ display: 'flex', borderBottom: '1px solid var(--border)', marginBottom: '12px' }}>
+          <div data-tour="inbox-filtros" style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '2px', marginBottom: '12px' }}>
             {[
               { id: 'todas', label: 'Todas' },
               { id: 'agente', label: '🤖 Agente' },
-              { id: 'humano', label: '👤 Humano' },
+              { id: 'humano', label: '👤 Atendimento' },
+              { id: 'aguardando_cliente', label: '⏳ Aguardando' },
+              { id: 'resolvido', label: '✅ Resolvidas' },
               { id: 'portal', label: '🔗 Portal', badge: badgePortal },
             ].map(aba => (
               <button
                 key={aba.id}
-                onClick={() => setAbaAtiva(aba.id as 'todas' | 'agente' | 'humano' | 'portal')}
+                onClick={() => setAbaAtiva(aba.id as AbaInbox)}
                 style={{
-                  flex: 1,
-                  padding: '9px 4px',
+                  flexShrink: 0,
+                  padding: '8px 10px',
                   fontSize: '12px',
                   fontWeight: abaAtiva === aba.id ? '600' : '400',
-                  color: abaAtiva === aba.id ? 'var(--accent)' : 'var(--text-muted)',
-                  background: 'none',
-                  border: 'none',
-                  borderBottom: abaAtiva === aba.id ? '2px solid var(--accent)' : '2px solid transparent',
+                  color: abaAtiva === aba.id ? '#fff' : 'var(--text-muted)',
+                  background: abaAtiva === aba.id ? 'var(--accent)' : 'var(--bg-card)',
+                  border: abaAtiva === aba.id ? '1px solid var(--accent)' : '1px solid var(--border)',
+                  borderRadius: '999px',
                   cursor: 'pointer',
                   fontFamily: 'DM Sans, sans-serif',
-                  marginBottom: '-1px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   gap: '5px',
+                  whiteSpace: 'nowrap',
                 }}
               >
                 {aba.label}
@@ -363,7 +442,7 @@ export default function CaixaDeEntradaPage() {
                 return (
                   <div
                     key={conversa.id}
-                    onClick={() => setConversaSelecionada(conversa)}
+                    onClick={() => void selecionarConversa(conversa)}
                     style={{
                       padding: '14px 16px',
                       borderBottom: '1px solid var(--border)',
@@ -399,6 +478,11 @@ export default function CaixaDeEntradaPage() {
                     {conversa.leads?.nb && (
                       <p style={{ fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'DM Sans, sans-serif', marginTop: '2px', marginBottom: 0 }}>
                         NB {conversa.leads.nb}
+                      </p>
+                    )}
+                    {STATUS_HUMANOS.has(conversa.status) && conversa.assumido_em && (
+                      <p style={{ fontSize: '10px', color: 'var(--text-muted)', fontFamily: 'DM Sans, sans-serif', marginTop: '4px', marginBottom: 0 }}>
+                        Em fila humana desde {formatTime(conversa.assumido_em)}
                       </p>
                     )}
                   </div>
@@ -483,18 +567,53 @@ export default function CaixaDeEntradaPage() {
                 {conversaSelecionada.telefone}
                 {conversaSelecionada.leads?.nb && ` • NB ${conversaSelecionada.leads.nb}`}
               </p>
+              {conversaGeridaPorHumano && conversaSelecionada.assumido_em ? (
+                <p style={{ fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'DM Sans, sans-serif', margin: '4px 0 0' }}>
+                  Fila humana ativa desde {new Date(conversaSelecionada.assumido_em).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                </p>
+              ) : null}
             </div>
             <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
               <span style={{ fontSize: '12px', padding: '4px 12px', borderRadius: '20px', background: (STATUS_CONVERSA[conversaSelecionada.status] || STATUS_CONVERSA.agente).bg, color: (STATUS_CONVERSA[conversaSelecionada.status] || STATUS_CONVERSA.agente).color, fontWeight: '600' }}>
                 {(STATUS_CONVERSA[conversaSelecionada.status] || STATUS_CONVERSA.agente).icon} {(STATUS_CONVERSA[conversaSelecionada.status] || STATUS_CONVERSA.agente).label}
               </span>
-              {conversaSelecionada.status !== 'humano' && (
+              {conversaSelecionada.status === 'agente' && (
                 <button onClick={() => assumirConversa(conversaSelecionada.id)}
                   style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 14px', background: '#2dd4a020', color: '#2dd4a0', border: '1px solid #2dd4a040', borderRadius: '8px', fontSize: '12px', fontWeight: '600', fontFamily: 'DM Sans, sans-serif', cursor: 'pointer' }}>
                   <UserCheck size={13} /> Assumir conversa
                 </button>
               )}
               {conversaSelecionada.status === 'humano' && (
+                <>
+                  <button onClick={() => marcarAguardandoCliente(conversaSelecionada.id)}
+                    style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 14px', background: '#f59e0b20', color: '#f59e0b', border: '1px solid #f59e0b40', borderRadius: '8px', fontSize: '12px', fontWeight: '600', fontFamily: 'DM Sans, sans-serif', cursor: 'pointer' }}>
+                    ⏳ Aguardar cliente
+                  </button>
+                  <button onClick={() => marcarResolvido(conversaSelecionada.id)}
+                    style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 14px', background: '#14b8a620', color: '#14b8a6', border: '1px solid #14b8a640', borderRadius: '8px', fontSize: '12px', fontWeight: '600', fontFamily: 'DM Sans, sans-serif', cursor: 'pointer' }}>
+                    ✅ Resolver
+                  </button>
+                </>
+              )}
+              {conversaSelecionada.status === 'aguardando_cliente' && (
+                <>
+                  <button onClick={() => reabrirConversa(conversaSelecionada.id)}
+                    style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 14px', background: '#2dd4a020', color: '#2dd4a0', border: '1px solid #2dd4a040', borderRadius: '8px', fontSize: '12px', fontWeight: '600', fontFamily: 'DM Sans, sans-serif', cursor: 'pointer' }}>
+                    <UserCheck size={13} /> Retomar atendimento
+                  </button>
+                  <button onClick={() => marcarResolvido(conversaSelecionada.id)}
+                    style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 14px', background: '#14b8a620', color: '#14b8a6', border: '1px solid #14b8a640', borderRadius: '8px', fontSize: '12px', fontWeight: '600', fontFamily: 'DM Sans, sans-serif', cursor: 'pointer' }}>
+                    ✅ Resolver
+                  </button>
+                </>
+              )}
+              {conversaSelecionada.status === 'resolvido' && (
+                <button onClick={() => reabrirConversa(conversaSelecionada.id)}
+                  style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 14px', background: '#2dd4a020', color: '#2dd4a0', border: '1px solid #2dd4a040', borderRadius: '8px', fontSize: '12px', fontWeight: '600', fontFamily: 'DM Sans, sans-serif', cursor: 'pointer' }}>
+                  <UserCheck size={13} /> Reabrir conversa
+                </button>
+              )}
+              {conversaGeridaPorHumano && (
                 <button onClick={() => devolverAoAgente(conversaSelecionada.id)}
                   style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 14px', background: '#4f7aff20', color: '#4f7aff', border: '1px solid #4f7aff40', borderRadius: '8px', fontSize: '12px', fontWeight: '600', fontFamily: 'DM Sans, sans-serif', cursor: 'pointer' }}>
                   <RotateCcw size={13} /> Devolver ao agente
@@ -504,6 +623,16 @@ export default function CaixaDeEntradaPage() {
           </div>
 
           <div style={{ flex: 1, overflowY: 'auto', padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {conversaSelecionada.status === 'aguardando_cliente' && (
+              <div style={{ padding: '10px 12px', borderRadius: '10px', background: '#f59e0b12', border: '1px solid #f59e0b35', color: '#f5d48b', fontSize: '12px', fontFamily: 'DM Sans, sans-serif' }}>
+                Esta conversa está aguardando retorno do cliente. Se ele responder, ela volta automaticamente para <strong>Em atendimento</strong>.
+              </div>
+            )}
+            {conversaSelecionada.status === 'resolvido' && (
+              <div style={{ padding: '10px 12px', borderRadius: '10px', background: '#14b8a612', border: '1px solid #14b8a635', color: '#8de7db', fontSize: '12px', fontFamily: 'DM Sans, sans-serif' }}>
+                Esta conversa foi marcada como resolvida. Se o cliente responder, a thread reaparece como <strong>Em atendimento</strong>.
+              </div>
+            )}
             {mensagens.map(msg => (
               <div key={msg.id}>
                 {!isMensagemOutbound(msg) && (
@@ -544,7 +673,7 @@ export default function CaixaDeEntradaPage() {
             <div ref={messagesEndRef} />
           </div>
 
-          {conversaSelecionada.status === 'humano' && (
+          {podeResponderManual && (
             <div style={{ padding: '16px 24px', borderTop: '1px solid var(--border)', background: 'var(--bg-surface)', display: 'flex', gap: '10px', alignItems: 'flex-end' }}>
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-end' }}>
@@ -573,11 +702,27 @@ export default function CaixaDeEntradaPage() {
             </div>
           )}
 
-          {conversaSelecionada.status !== 'humano' && (
+          {!podeResponderManual && conversaSelecionada.status === 'agente' && (
             <div style={{ padding: '12px 24px', borderTop: '1px solid var(--border)', background: 'var(--bg-surface)', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <Bot size={14} color="var(--accent)" />
               <p style={{ fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'DM Sans, sans-serif', margin: 0 }}>
                 Agente IA respondendo automaticamente — clique em <strong style={{ color: 'var(--text-secondary)' }}>Assumir conversa</strong> para responder manualmente
+              </p>
+            </div>
+          )}
+          {!podeResponderManual && conversaSelecionada.status === 'aguardando_cliente' && (
+            <div style={{ padding: '12px 24px', borderTop: '1px solid var(--border)', background: 'var(--bg-surface)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <UserCheck size={14} color="#f59e0b" />
+              <p style={{ fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'DM Sans, sans-serif', margin: 0 }}>
+                A thread está em espera. Clique em <strong style={{ color: 'var(--text-secondary)' }}>Retomar atendimento</strong> para voltar a responder manualmente.
+              </p>
+            </div>
+          )}
+          {!podeResponderManual && conversaSelecionada.status === 'resolvido' && (
+            <div style={{ padding: '12px 24px', borderTop: '1px solid var(--border)', background: 'var(--bg-surface)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <UserCheck size={14} color="#14b8a6" />
+              <p style={{ fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'DM Sans, sans-serif', margin: 0 }}>
+                A conversa está concluída. Use <strong style={{ color: 'var(--text-secondary)' }}>Reabrir conversa</strong> se precisar voltar ao atendimento.
               </p>
             </div>
           )}

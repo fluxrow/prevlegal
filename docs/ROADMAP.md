@@ -275,6 +275,8 @@ Mestra: [[MASTER_PREV_LEGAL]]
   - reduzir o restante do comportamento “piloto unico” antes de escalar novos escritorios
 
 2. Inbox humana avancada
+- status atual:
+  - primeira camada operacional ja entrou na `Caixa de Entrada` com estados `aguardando_cliente` e `resolvido`, ownership via `assumido_em` e reabertura automatica no inbound
 - introduzir estados operacionais na conversa:
   - `novo`
   - `assumido`
