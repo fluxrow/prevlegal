@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { ArrowLeft, User, FileText, CreditCard, MessageSquare, Upload, Trash2, File, ExternalLink, Send, MessageSquarePlus, Pencil } from 'lucide-react'
+import { ArrowLeft, User, FileText, CreditCard, MessageSquare, Upload, Trash2, File, ExternalLink, Send, MessageSquarePlus, Pencil, CalendarClock } from 'lucide-react'
 import CalculadoraPrev from '@/components/calculadora-prev'
 import GeradorDocumentosIA from '@/components/gerador-documentos-ia'
 import PortalLead from '@/components/portal-lead'
@@ -10,6 +10,7 @@ import ContratoLead from '@/components/contrato-lead'
 import LeadDetalheOnboardingTour from '@/components/lead-detalhe-onboarding-tour'
 import IniciarConversaModal from '@/components/iniciar-conversa-modal'
 import EditarLeadModal from '@/components/editar-lead-modal'
+import NovoAgendamentoModal from '@/components/novo-agendamento-modal'
 import { buildInboxHref, buildWhatsAppHref } from '@/lib/contact-shortcuts'
 
 interface Lead {
@@ -125,6 +126,7 @@ export default function LeadDetailPage() {
   const [loading, setLoading] = useState(true)
   const [showStartConversation, setShowStartConversation] = useState(false)
   const [showEditLead, setShowEditLead] = useState(false)
+  const [showNovoAgendamento, setShowNovoAgendamento] = useState(false)
 
   const [documentos, setDocumentos] = useState<Documento[]>([])
   const [uploadingDoc, setUploadingDoc] = useState(false)
@@ -249,6 +251,18 @@ export default function LeadDetailPage() {
               }}
             >
               <Pencil size={13} /> Editar dados
+            </button>
+            <button
+              onClick={() => setShowNovoAgendamento(true)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '6px',
+                padding: '8px 14px', borderRadius: '8px',
+                background: 'rgba(79,122,255,0.12)', border: '1px solid rgba(79,122,255,0.28)',
+                color: 'var(--accent)', fontSize: '12px', fontWeight: '600',
+                fontFamily: 'DM Sans, sans-serif', cursor: 'pointer',
+              }}
+            >
+              <CalendarClock size={13} /> Agendar consulta
             </button>
             {conversaId ? (
               <a
@@ -515,6 +529,16 @@ export default function LeadDetailPage() {
         leadNome={lead.nome}
         telefone={lead.telefone}
         onStarted={setConversaId}
+      />
+      <NovoAgendamentoModal
+        open={showNovoAgendamento}
+        onClose={() => setShowNovoAgendamento(false)}
+        initialLead={{ id: lead.id, nome: lead.nome, telefone: lead.telefone, status: lead.status }}
+        lockLead
+        onCreated={() => {
+          setLead((current) => (current ? { ...current, status: 'scheduled' } : current))
+          setShowNovoAgendamento(false)
+        }}
       />
     </div>
   )

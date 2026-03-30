@@ -1,7 +1,55 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 import { criarEventoCalendar } from '@/lib/google-calendar'
-import { canAccessLeadId, getTenantContext } from '@/lib/tenant-context'
+import { getTenantContext } from '@/lib/tenant-context'
+
+async function getScopedLead(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  context: NonNullable<Awaited<ReturnType<typeof getTenantContext>>>,
+  leadId: string,
+) {
+  if (!context.tenantId) return null
+
+  let query = supabase
+    .from('leads')
+    .select('id, nome, email, tenant_id, responsavel_id')
+    .eq('id', leadId)
+    .eq('tenant_id', context.tenantId)
+
+  if (!context.isAdmin) {
+    query = query.eq('responsavel_id', context.usuarioId)
+  }
+
+  const { data, error } = await query.maybeSingle()
+
+  if (error) {
+    throw new Error(error.message)
+  }
+
+  return data
+}
+
+async function getScopedUsuario(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  context: NonNullable<Awaited<ReturnType<typeof getTenantContext>>>,
+  usuarioId: string | null | undefined,
+) {
+  const resolvedId = usuarioId || context.usuarioId
+  if (!context.tenantId || !resolvedId) return null
+
+  const { data, error } = await supabase
+    .from('usuarios')
+    .select('id, nome, email')
+    .eq('id', resolvedId)
+    .eq('tenant_id', context.tenantId)
+    .maybeSingle()
+
+  if (error) {
+    throw new Error(error.message)
+  }
+
+  return data
+}
 
 export async function GET() {
   const supabase = await createClient()
@@ -15,6 +63,7 @@ export async function GET() {
       leads (id, nome, telefone, banco, ganho_potencial),
       usuarios (id, nome, email)
     `)
+    .eq('tenant_id', context.tenantId)
     .order('data_hora', { ascending: true })
 
   if (!context.isAdmin) {
@@ -39,24 +88,15 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'lead_id e data_hora são obrigatórios' }, { status: 400 })
   }
 
-  if (!context.isAdmin) {
-    const allowed = await canAccessLeadId(supabase, context, lead_id)
-    if (!allowed) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  const lead = await getScopedLead(supabase, context, lead_id)
+  if (!lead) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
-  // Busca email do lead (se tiver)
-  const { data: lead } = await supabase
-    .from('leads')
-    .select('nome, email')
-    .eq('id', lead_id)
-    .single()
-
-  // Busca email do usuário responsável
-  const { data: usuario } = await supabase
-    .from('usuarios')
-    .select('nome, email')
-    .eq('id', usuario_id)
-    .maybeSingle()
+  const usuarioResponsavel = await getScopedUsuario(supabase, context, context.isAdmin ? usuario_id : context.usuarioId)
+  if (!usuarioResponsavel) {
+    return NextResponse.json({ error: 'Responsável inválido para este tenant' }, { status: 400 })
+  }
 
   let googleEventId: string | null = null
   let meetLink: string | null = null
@@ -69,7 +109,7 @@ export async function POST(request: Request) {
       dataHora: data_hora,
       duracaoMinutos: duracao_minutos,
       emailLead: (lead as { email?: string })?.email ?? undefined,
-      emailAdvogado: usuario?.email ?? undefined,
+      emailAdvogado: usuarioResponsavel?.email ?? undefined,
     })
     googleEventId = resultado.googleEventId
     meetLink = resultado.meetLink
@@ -80,8 +120,9 @@ export async function POST(request: Request) {
   const { data, error } = await supabase
     .from('agendamentos')
     .insert({
+      tenant_id: context.tenantId,
       lead_id,
-      usuario_id: context.isAdmin ? (usuario_id ?? context.usuarioId) : context.usuarioId,
+      usuario_id: usuarioResponsavel.id,
       data_hora,
       duracao_minutos,
       observacoes,

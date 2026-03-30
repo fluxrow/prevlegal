@@ -150,6 +150,17 @@ Ultima atualizacao: 2026-03-30
     - com agendamento
     - com agendamento realizado
     - maiores origens por valor contratado
+- agendamento manual em 30/03:
+  - o produto agora expõe criacao humana de consulta em tres pontos:
+    - botao `Novo agendamento` em `/agendamentos`
+    - CTA `Agendar consulta` no detalhe do lead
+    - CTA `Agendar` no `lead drawer`
+  - o fluxo usa um modal unico reutilizavel e reaproveita `POST /api/agendamentos`
+  - a rota de agendamentos foi endurecida para:
+    - filtrar listagem por `tenant_id`
+    - validar lead e responsavel dentro do tenant atual
+    - inserir `tenant_id` na criacao
+  - `GET /api/leads` agora tambem suporta busca curta tenant-aware para alimentar esse modal
 
 ## Proximo Passo Recomendado
 
@@ -177,6 +188,9 @@ Validar o runtime WhatsApp no tenant limpo:
   - reabrir manualmente
   - confirmar se uma inbound real reabre automaticamente de `aguardando_cliente` / `resolvido` para `humano`
 - testar os agendamentos operacionais:
+  - criar um agendamento manual pela tela `/agendamentos`
+  - criar um agendamento manual pelo detalhe do lead
+  - criar um agendamento manual pelo `lead drawer`
   - confirmar um agendamento
   - remarcar com nova data/hora
   - reatribuir responsável (admin)

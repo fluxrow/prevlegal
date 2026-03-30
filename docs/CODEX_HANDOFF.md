@@ -1219,3 +1219,35 @@ Pontos que precisam ser preservados durante a implementacao:
 - toda sessao deve preservar links cruzados entre `INDEX`, `MASTER`, `ROADMAP`, `LEARNINGS`, `SESSION_BRIEF` e `CODEX_HANDOFF`
 - ao final, deve rodar `scripts/sync-obsidian.sh "<tema>" "<proximo passo>"`
 - no inicio da proxima sessao, deve rodar `scripts/resume-context.sh`
+
+## Atualizacao de 2026-03-30 — Agendamento manual com entrada humana
+
+- foi corrigida uma lacuna de produto importante: a API ja permitia criar agendamento manual, mas a interface ainda nao dava esse caminho para o operador
+- mudancas aplicadas:
+  - `src/components/novo-agendamento-modal.tsx`
+    - modal unico de criacao manual com:
+      - selecao de lead
+      - data/hora
+      - duracao
+      - observacoes
+      - honorario
+      - responsavel
+  - `src/app/(dashboard)/agendamentos/page.tsx`
+    - novo CTA `Novo agendamento`
+  - `src/app/(dashboard)/leads/[id]/page.tsx`
+    - novo CTA `Agendar consulta`
+  - `src/components/lead-drawer.tsx`
+    - novo CTA `Agendar`
+  - `src/app/api/agendamentos/route.ts`
+    - `GET` agora filtra explicitamente por `tenant_id`
+    - `POST` agora valida lead e responsavel dentro do tenant atual
+    - novos agendamentos passam a gravar `tenant_id`
+  - `src/app/api/leads/route.ts`
+    - `GET` novo tenant-aware para busca curta de leads no modal global
+- impacto operacional:
+  - o humano consegue marcar consulta assim que a conversa avancar, sem depender do agente
+  - o fluxo lead -> agenda ficou direto dentro do sistema
+- validacao:
+  - `npm run build` passou
+- proximo passo:
+  - validar se o produto deve apenas sinalizar ou bloquear mais de um agendamento futuro ativo por lead

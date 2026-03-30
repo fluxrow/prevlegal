@@ -4,10 +4,11 @@ import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   X, User, FileText, CreditCard, Hash,
-  MessageSquarePlus, Loader2, ChevronDown, AlertCircle, ExternalLink, MessageSquare, Send, Pencil
+  MessageSquarePlus, Loader2, ChevronDown, AlertCircle, ExternalLink, MessageSquare, Send, Pencil, CalendarClock
 } from 'lucide-react'
 import IniciarConversaModal from '@/components/iniciar-conversa-modal'
 import EditarLeadModal from '@/components/editar-lead-modal'
+import NovoAgendamentoModal from '@/components/novo-agendamento-modal'
 import { buildInboxHref, buildWhatsAppHref } from '@/lib/contact-shortcuts'
 
 type Lead = {
@@ -110,6 +111,7 @@ export default function LeadDrawer({
   const [showStatus, setShowStatus] = useState(false)
   const [showStartConversation, setShowStartConversation] = useState(false)
   const [showEditLead, setShowEditLead] = useState(false)
+  const [showNovoAgendamento, setShowNovoAgendamento] = useState(false)
   const router = useRouter()
 
   useEffect(() => {
@@ -235,6 +237,17 @@ export default function LeadDrawer({
                 >
                   <Pencil size={12} /> Editar dados
                 </button>
+                <button
+                  onClick={() => setShowNovoAgendamento(true)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '6px',
+                    background: 'rgba(79,122,255,0.12)', border: '1px solid rgba(79,122,255,0.28)',
+                    borderRadius: '8px', padding: '7px 12px', color: 'var(--accent)',
+                    fontSize: '12px', fontWeight: '600', cursor: 'pointer', fontFamily: 'DM Sans, sans-serif',
+                  }}
+                >
+                  <CalendarClock size={12} /> Agendar
+                </button>
                 {conversaId ? (
                   <a
                     href={inboxHref}
@@ -348,6 +361,16 @@ export default function LeadDrawer({
               onStarted={(newConversaId) => {
                 setConversaId(newConversaId)
                 onClose()
+              }}
+            />
+            <NovoAgendamentoModal
+              open={showNovoAgendamento}
+              onClose={() => setShowNovoAgendamento(false)}
+              initialLead={{ id: lead.id, nome: lead.nome, telefone: lead.telefone, status: lead.status }}
+              lockLead
+              onCreated={() => {
+                setLead((current) => (current ? { ...current, status: 'scheduled' } : current))
+                setShowNovoAgendamento(false)
               }}
             />
             {showEditLead ? (

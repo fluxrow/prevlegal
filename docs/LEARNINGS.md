@@ -694,3 +694,21 @@ export async function GET(
 **Causa:** As telas dependiam de variaveis CSS globais, mas so existia uma paleta
 **Correcao aplicada:** Criar paletas `dark` e `light` em `globals.css`, inicializacao no `RootLayout` via `data-theme` e um toggle persistido em `localStorage`
 **Regra pratica:** Quando a UI ja usa CSS vars de tema, a forma menos invasiva de adicionar modo claro/escuro e trocar as variaveis globais, nao reescrever componente por componente
+
+### 76. Agendamento manual pode falhar como descoberta de produto mesmo quando a API ja existe
+**Problema:** O sistema parecia so permitir agendamento criado pelo agente, porque a interface nao oferecia CTA humano para marcar consulta manualmente
+**Causa:** `POST /api/agendamentos` ja existia, mas a tela de agendamentos e o contexto do lead nao expunham esse fluxo
+**Correcao aplicada:** Criar um modal unico de `Novo agendamento` e plugar o CTA em:
+- `/agendamentos`
+- detalhe do lead
+- `lead drawer`
+**Regra pratica:** Se a operacao humana precisa executar uma acao obvia depois da qualificacao, a capacidade nao pode ficar escondida so na API ou em automacao do agente
+
+### 77. Agendamentos precisam nascer tenant-aware, nao apenas serem editados tenant-aware
+**Problema:** A manutencao de agendamentos ja validava `tenant_id`, mas a criacao e a listagem ainda deixavam margem para leitura/insercao menos canonica
+**Causa:** A rota `POST /api/agendamentos` foi criada antes do endurecimento multi-tenant mais recente
+**Correcao aplicada:** `GET /api/agendamentos` passou a filtrar explicitamente por `tenant_id`, e `POST /api/agendamentos` agora:
+- valida o lead dentro do tenant atual
+- valida o usuario responsavel dentro do tenant atual
+- insere `tenant_id` no novo agendamento
+**Regra pratica:** Em transicoes para multi-tenant real, nao basta endurecer update/delete; a criacao e a listagem inicial tambem precisam carregar o escopo canonico

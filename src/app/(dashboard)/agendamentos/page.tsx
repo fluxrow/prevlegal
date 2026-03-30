@@ -4,9 +4,10 @@ import { useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { format, isPast, isToday, parseISO } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-import { Calendar, Video, Clock, User, RefreshCw, CheckCircle2, XCircle, AlertCircle, MessageSquare, Send, CalendarClock, CheckCheck, Pencil, Save, UserCog } from 'lucide-react'
+import { Calendar, Video, Clock, User, RefreshCw, CheckCircle2, XCircle, AlertCircle, MessageSquare, Send, CalendarClock, CheckCheck, Pencil, Save, UserCog, Plus } from 'lucide-react'
 import toast from 'react-hot-toast'
 import AgendamentosOnboardingTour from '@/components/agendamentos-onboarding-tour'
+import NovoAgendamentoModal from '@/components/novo-agendamento-modal'
 import { buildInboxHref, buildWhatsAppHref } from '@/lib/contact-shortcuts'
 
 interface Agendamento {
@@ -50,6 +51,7 @@ export default function AgendamentosPage() {
   const [editandoId, setEditandoId] = useState<string | null>(null)
   const [novaDataHora, setNovaDataHora] = useState('')
   const [novaDuracaoMinutos, setNovaDuracaoMinutos] = useState('30')
+  const [showNovoAgendamento, setShowNovoAgendamento] = useState(false)
 
   useEffect(() => {
     if (searchParams.get('google') === 'conectado') {
@@ -421,13 +423,22 @@ export default function AgendamentosPage() {
             Consultas sincronizadas com Google Calendar
           </p>
         </div>
-        <button
-          onClick={load}
-          className="p-2 rounded-lg text-slate-500 hover:text-white hover:bg-white/5 transition-colors"
-          title="Atualizar"
-        >
-          <RefreshCw className="w-4 h-4" />
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowNovoAgendamento(true)}
+            className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-500"
+          >
+            <Plus className="w-4 h-4" />
+            Novo agendamento
+          </button>
+          <button
+            onClick={load}
+            className="p-2 rounded-lg text-slate-500 hover:text-white hover:bg-white/5 transition-colors"
+            title="Atualizar"
+          >
+            <RefreshCw className="w-4 h-4" />
+          </button>
+        </div>
       </div>
 
       <div data-tour="agendamentos-google" className="mb-6">
@@ -488,7 +499,7 @@ export default function AgendamentosPage() {
           <div className="text-center py-16 text-slate-500">
             <Calendar className="w-10 h-10 mx-auto mb-3 opacity-30" />
             <p className="font-medium text-slate-400">Nenhum agendamento encontrado</p>
-            <p className="text-sm mt-1">Os agendamentos criados pelo agente aparecerão aqui</p>
+            <p className="text-sm mt-1">Os agendamentos criados pelo agente ou manualmente aparecerão aqui</p>
           </div>
         ) : (
           <div className="space-y-8">
@@ -512,6 +523,14 @@ export default function AgendamentosPage() {
       </div>
 
       <AgendamentosOnboardingTour />
+      <NovoAgendamentoModal
+        open={showNovoAgendamento}
+        onClose={() => setShowNovoAgendamento(false)}
+        onCreated={() => {
+          void load()
+          setShowNovoAgendamento(false)
+        }}
+      />
     </div>
   )
 }

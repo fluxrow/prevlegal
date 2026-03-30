@@ -152,6 +152,26 @@ Mestra: [[MASTER_PREV_LEGAL]]
 - proximo passo recomendado:
   - cruzar previsao financeira com campanhas e agendamentos para aproximar a leitura de pipeline real
 
+## Atualizacao Agendamento Manual — 30/03/2026
+
+- o backend ja aceitava `POST /api/agendamentos`, mas o produto ainda nao oferecia uma entrada humana obvia para criar consulta manualmente
+- a criacao manual agora ficou disponivel em tres pontos:
+  - botao `Novo agendamento` em `/agendamentos`
+  - CTA `Agendar consulta` no detalhe do lead
+  - CTA `Agendar` no `lead drawer`
+- o fluxo novo usa um modal unico de criacao e reaproveita a rota ja existente, sem duplicar regra de negocio
+- o endurecimento foi tambem de isolamento:
+  - `GET /api/agendamentos` agora filtra explicitamente por `tenant_id`
+  - `POST /api/agendamentos` valida o lead e o responsavel dentro do tenant atual antes de inserir
+  - novos agendamentos passam a nascer com `tenant_id` preenchido
+- para alimentar o modal global de busca, `GET /api/leads` agora suporta busca curta tenant-aware com payload leve
+- impacto operacional:
+  - o humano consegue marcar consulta quando a conversa avanca, mesmo sem depender do agente
+  - o fluxo lead -> agenda fica direto dentro do sistema
+- proximo passo recomendado:
+  - validar a criacao manual na tela de agendamentos, no detalhe do lead e no drawer
+  - decidir se o produto deve apenas sinalizar ou bloquear mais de um agendamento futuro ativo por lead
+
 ## Fases Concluídas
 
 | Fase | Feature | Commit |

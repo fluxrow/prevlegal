@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
+import { getTenantContext } from '@/lib/tenant-context'
 
 const LISTA_MANUAL_NOME = 'Cadastro manual'
 const LISTA_MANUAL_FORNECEDOR = 'sistema'
@@ -14,6 +15,48 @@ function criarNbManual(body: Record<string, unknown>) {
   const cpf = normalizarTexto(body.cpf).replace(/\D/g, '')
   const base = telefone || cpf || Date.now().toString()
   return `MANUAL-${base}`
+}
+
+export async function GET(request: Request) {
+  const supabase = await createClient()
+  const context = await getTenantContext(supabase)
+  if (!context) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!context.tenantId) return NextResponse.json({ leads: [] })
+
+  const { searchParams } = new URL(request.url)
+  const q = normalizarTexto(searchParams.get('q'))
+  const limit = Math.min(Number(searchParams.get('limit') || 20) || 20, 50)
+
+  let query = supabase
+    .from('leads')
+    .select('id, nome, telefone, status, email, banco, tenant_id, responsavel_id')
+    .eq('tenant_id', context.tenantId)
+    .eq('lgpd_optout', false)
+    .order('updated_at', { ascending: false })
+    .limit(limit)
+
+  if (!context.isAdmin) {
+    query = query.eq('responsavel_id', context.usuarioId)
+  }
+
+  if (q) {
+    const digits = q.replace(/\D/g, '')
+    const filters = [`nome.ilike.%${q}%`, `email.ilike.%${q}%`, `banco.ilike.%${q}%`]
+    if (digits) filters.push(`telefone.ilike.%${digits}%`)
+    query = query.or(filters.join(','))
+  }
+
+  const { data, error } = await query
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  return NextResponse.json({
+    leads: (data || []).map((lead) => ({
+      id: lead.id,
+      nome: lead.nome,
+      telefone: lead.telefone,
+      status: lead.status,
+    })),
+  })
 }
 
 export async function POST(request: Request) {
