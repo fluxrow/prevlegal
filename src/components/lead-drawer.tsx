@@ -4,9 +4,10 @@ import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   X, User, FileText, CreditCard, Hash,
-  MessageSquarePlus, Loader2, ChevronDown, AlertCircle, ExternalLink, MessageSquare, Send
+  MessageSquarePlus, Loader2, ChevronDown, AlertCircle, ExternalLink, MessageSquare, Send, Pencil
 } from 'lucide-react'
 import IniciarConversaModal from '@/components/iniciar-conversa-modal'
+import EditarLeadModal from '@/components/editar-lead-modal'
 import { buildInboxHref, buildWhatsAppHref } from '@/lib/contact-shortcuts'
 
 type Lead = {
@@ -108,6 +109,7 @@ export default function LeadDrawer({
   const [salvando, setSalvando] = useState(false)
   const [showStatus, setShowStatus] = useState(false)
   const [showStartConversation, setShowStartConversation] = useState(false)
+  const [showEditLead, setShowEditLead] = useState(false)
   const router = useRouter()
 
   useEffect(() => {
@@ -222,6 +224,17 @@ export default function LeadDrawer({
                 )}
               </div>
               <div style={{ display: 'flex', gap: '8px', marginTop: '12px', flexWrap: 'wrap' }}>
+                <button
+                  onClick={() => setShowEditLead(true)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '6px',
+                    background: 'var(--bg-surface)', border: '1px solid var(--border)',
+                    borderRadius: '8px', padding: '7px 12px', color: 'var(--text-secondary)',
+                    fontSize: '12px', fontWeight: '600', cursor: 'pointer', fontFamily: 'DM Sans, sans-serif',
+                  }}
+                >
+                  <Pencil size={12} /> Editar dados
+                </button>
                 {conversaId ? (
                   <a
                     href={inboxHref}
@@ -337,6 +350,15 @@ export default function LeadDrawer({
                 onClose()
               }}
             />
+            {showEditLead ? (
+              <EditarLeadModal
+                lead={lead}
+                onClose={() => setShowEditLead(false)}
+                onSaved={(updatedLead) =>
+                  setLead((current) => (current ? ({ ...current, ...updatedLead } as Lead) : (updatedLead as Lead)))
+                }
+              />
+            ) : null}
           </>
         ) : (
           <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', fontSize: '13px' }}>Lead não encontrado</div>

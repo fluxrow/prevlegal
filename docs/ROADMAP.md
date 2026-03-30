@@ -218,6 +218,7 @@ Mestra: [[MASTER_PREV_LEGAL]]
 - A sidebar passou a exibir badges por pendência operacional:
   - `Caixa de Entrada` soma portal + conversas humanas pendentes + agendamentos novos do agente
   - `Agendamentos` destaca reuniões criadas pelo agente ainda não visualizadas
+- o detalhe do lead e o drawer agora permitem editar os dados do cadastro sem sair do fluxo operacional
 
 ### Marketing site / LP
 - A LP foi reescrita com foco em operações de captação previdenciária

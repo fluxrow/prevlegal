@@ -2,13 +2,14 @@
 
 import { useEffect, useState, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { ArrowLeft, User, FileText, CreditCard, MessageSquare, Upload, Trash2, File, ExternalLink, Send, MessageSquarePlus } from 'lucide-react'
+import { ArrowLeft, User, FileText, CreditCard, MessageSquare, Upload, Trash2, File, ExternalLink, Send, MessageSquarePlus, Pencil } from 'lucide-react'
 import CalculadoraPrev from '@/components/calculadora-prev'
 import GeradorDocumentosIA from '@/components/gerador-documentos-ia'
 import PortalLead from '@/components/portal-lead'
 import ContratoLead from '@/components/contrato-lead'
 import LeadDetalheOnboardingTour from '@/components/lead-detalhe-onboarding-tour'
 import IniciarConversaModal from '@/components/iniciar-conversa-modal'
+import EditarLeadModal from '@/components/editar-lead-modal'
 import { buildInboxHref, buildWhatsAppHref } from '@/lib/contact-shortcuts'
 
 interface Lead {
@@ -20,7 +21,9 @@ interface Lead {
   status: string
   score: number
   ganho_potencial: number
+  valor_rma: number
   nb: string
+  nit: string
   tipo_beneficio: string
   dib: string
   der: string
@@ -29,9 +32,12 @@ interface Lead {
   idade: number
   sexo: string
   categoria: string
+  categoria_profissional?: string | null
   banco: string
   forma_pagamento: string
   isencao_ir: string
+  pensionista?: string | null
+  bloqueado?: boolean | null
   created_at: string
 }
 
@@ -118,6 +124,7 @@ export default function LeadDetailPage() {
   const [anotacoes, setAnotacoes] = useState<Anotacao[]>([])
   const [loading, setLoading] = useState(true)
   const [showStartConversation, setShowStartConversation] = useState(false)
+  const [showEditLead, setShowEditLead] = useState(false)
 
   const [documentos, setDocumentos] = useState<Documento[]>([])
   const [uploadingDoc, setUploadingDoc] = useState(false)
@@ -231,6 +238,18 @@ export default function LeadDetailPage() {
             {lead.nb && <span style={{ color: 'var(--text-muted)', fontSize: '13px', fontFamily: 'DM Sans, sans-serif' }}>NB {lead.nb}</span>}
           </div>
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '14px' }}>
+            <button
+              onClick={() => setShowEditLead(true)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '6px',
+                padding: '8px 14px', borderRadius: '8px',
+                background: 'var(--bg-surface)', border: '1px solid var(--border)',
+                color: 'var(--text-secondary)', fontSize: '12px', fontWeight: '600',
+                fontFamily: 'DM Sans, sans-serif', cursor: 'pointer',
+              }}
+            >
+              <Pencil size={13} /> Editar dados
+            </button>
             {conversaId ? (
               <a
                 href={inboxHref}
@@ -298,7 +317,7 @@ export default function LeadDetailPage() {
           <Field label="Data de Nascimento" value={lead.data_nascimento} />
           <Field label="Idade" value={lead.idade ? `${lead.idade} anos` : null} />
           <Field label="Sexo" value={lead.sexo} />
-          <Field label="Categoria" value={lead.categoria} />
+          <Field label="Categoria" value={lead.categoria_profissional || lead.categoria} />
           <Field label="Telefone" value={lead.telefone} />
           <Field label="E-mail" value={lead.email} />
         </Section>
@@ -480,6 +499,15 @@ export default function LeadDetailPage() {
       </div>
 
       <LeadDetalheOnboardingTour />
+      {showEditLead ? (
+        <EditarLeadModal
+          lead={lead}
+          onClose={() => setShowEditLead(false)}
+          onSaved={(updatedLead) =>
+            setLead((current) => (current ? ({ ...current, ...updatedLead } as Lead) : (updatedLead as Lead)))
+          }
+        />
+      ) : null}
       <IniciarConversaModal
         open={showStartConversation}
         onClose={() => setShowStartConversation(false)}

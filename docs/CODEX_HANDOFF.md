@@ -953,6 +953,38 @@ Pontos que precisam ser preservados durante a implementacao:
   - testar envio humano primeiro
   - so depois disparar campanha curta com o warm-up ativo
 
+## Atualizacao de 2026-03-30 — Edicao operacional do lead no detalhe e no drawer
+
+- o usuario reportou uma lacuna operacional: era possivel ver o lead em detalhe e no drawer, mas nao editar os dados diretamente quando novas informacoes chegavam pela conversa
+- leitura do codigo confirmou que:
+  - `src/app/api/leads/[id]/route.ts` expunha apenas `GET`
+  - o detalhe do lead e o drawer nao tinham qualquer CTA de edicao
+- correcao aplicada:
+  - `src/app/api/leads/[id]/route.ts`
+    - ganhou `PATCH`
+    - whitelist de campos editaveis
+    - validacao basica de `nome` e `status`
+    - persistencia direta no lead com `updated_at`
+  - novo componente `src/components/editar-lead-modal.tsx`
+    - modal compartilhado para editar:
+      - contato/CRM
+      - beneficio
+      - perfil
+      - pagamento
+      - potencial
+  - `src/app/(dashboard)/leads/[id]/page.tsx`
+    - novo CTA `Editar dados`
+    - atualiza a UI local com merge do retorno salvo
+  - `src/components/lead-drawer.tsx`
+    - novo CTA `Editar dados`
+    - reutiliza o mesmo modal compartilhado
+- validacao:
+  - `npm run build` passou
+- proximo passo:
+  - testar no browser a edicao pelo detalhe do lead
+  - testar no browser a mesma edicao pelo drawer
+  - confirmar se vale adicionar historico/audit trail campo-a-campo depois
+
 ## Regra Permanente de Continuidade
 
 - toda sessao deve atualizar `docs/CODEX_HANDOFF.md`

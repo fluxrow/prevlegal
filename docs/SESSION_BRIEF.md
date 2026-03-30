@@ -116,6 +116,11 @@ Ultima atualizacao: 2026-03-27
       - ativo: `false`
       - is_default: `false`
       - metadata de warm-up ja aplicada
+  - edicao de lead em 30/03:
+    - o detalhe do lead agora tem CTA `Editar dados`
+    - o `lead drawer` tambem ganhou o mesmo CTA
+    - a rota `PATCH /api/leads/[id]` foi criada para atualizar diretamente os campos operacionais do lead
+    - o objetivo e dar autonomia ao operador para complementar o cadastro conforme novas informacoes chegam pela conversa
 - Contencao atual:
   - allowlist do app continua ativa
   - onboarding fora do piloto continua bloqueado
@@ -139,6 +144,7 @@ Validar o runtime WhatsApp no tenant limpo:
   - preencher `instance_id` / `instance_token` no canal rascunho ja criado
   - ativar o canal e manter warm-up ligado
   - testar envio humano primeiro e so depois campanha curta
+- testar o fluxo de `Editar dados` no detalhe do lead e no drawer, validando persistencia imediata dos campos
 - depois retomar os testes operacionais do tenant isolation canonico por `tenant_id`
 
 ## Bloqueios e Cuidados

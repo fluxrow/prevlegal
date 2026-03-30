@@ -635,6 +635,12 @@ export async function GET(
 **Correcao aplicada:** A migration `033_whatsapp_warmup_and_drafts.sql` relaxa as constraints para exigir credenciais apenas quando o canal esta ativo, e as rotas admin passaram a aceitar `Twilio`/`Z-API` pausados como rascunho
 **Regra pratica:** No PrevLegal, um canal WhatsApp pode existir em modo rascunho/inativo antes das credenciais finais; ativacao e que deve exigir completude tecnica
 
+### 72. O lead detail nao pode ser so consulta; ele precisa permitir enriquecimento operacional do cadastro
+**Problema:** O advogado conseguia ver o lead e conversar com ele, mas nao conseguia corrigir ou complementar os dados quando o cliente trazia novas informacoes no meio do atendimento
+**Causa:** O detalhe do lead e o drawer tinham apenas leitura, e a API do lead expunha `GET` sem rota de atualizacao
+**Correcao aplicada:** Criar `PATCH /api/leads/[id]` com whitelist de campos editaveis e adicionar o CTA `Editar dados` no detalhe e no drawer usando um modal compartilhado
+**Regra pratica:** No PrevLegal, qualquer superficie operacional que concentra contexto do lead tambem deve permitir editar o cadastro basico; obrigar nova importacao ou SQL para complementar dados mata autonomia do operador
+
 ### 59. A lista tecnica de cadastro manual nao deve disputar espaco com listas importadas
 **Problema:** O agrupador tecnico `Cadastro manual` aparecia na aba de listas como se fosse uma importacao operacional, poluindo a leitura do escritorio
 **Causa:** A API de listas retornava indiscriminadamente todas as `listas`, inclusive a lista interna criada para suportar leads avulsos
