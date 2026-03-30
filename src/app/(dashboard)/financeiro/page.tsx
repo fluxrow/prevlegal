@@ -16,6 +16,13 @@ interface Resumo {
   totalSucumbenciaPendente: number
   totalSucumbenciaRecebida: number
   vencendoHoje: { id: string; valor: number; lead_nome: string }[]
+  previsto7d: number
+  previsto30d: number
+  recebivelAberto: number
+  ticketMedioContrato: number
+  proximasParcelas: { id: string; valor: number; data_vencimento: string; lead_nome: string }[]
+  riscoFinanceiro: 'baixo' | 'medio' | 'alto'
+  resumoCarteira: string
 }
 
 interface Parcela {
@@ -61,6 +68,12 @@ const STATUS_PARCELA: Record<string, { label: string; cor: string }> = {
   pago: { label: 'Pago', cor: '#2dd4a0' },
   atrasado: { label: 'Atrasado', cor: '#ff5757' },
   cancelado: { label: 'Cancelado', cor: '#6b7280' },
+}
+
+const RISCO_FINANCEIRO: Record<'baixo' | 'medio' | 'alto', { label: string; cor: string; bg: string; border: string }> = {
+  baixo: { label: 'Baixo risco', cor: '#2dd4a0', bg: 'rgba(45,212,160,0.08)', border: 'rgba(45,212,160,0.2)' },
+  medio: { label: 'Atenção', cor: '#f5c842', bg: 'rgba(245,200,66,0.08)', border: 'rgba(245,200,66,0.22)' },
+  alto: { label: 'Pressão financeira', cor: '#ff5757', bg: 'rgba(255,87,87,0.08)', border: 'rgba(255,87,87,0.22)' },
 }
 
 function moeda(v: number) {
@@ -147,6 +160,7 @@ export default function FinanceiroPage() {
     { label: 'Sucumbência pendente', value: moeda(resumo.totalSucumbenciaPendente), cor: '#f5c842', icon: <Clock size={16} /> },
     { label: 'Contratos ativos', value: resumo.totalAtivos, cor: '#a78bfa', icon: <CheckCircle size={16} /> },
   ] : []
+  const risco = resumo ? RISCO_FINANCEIRO[resumo.riscoFinanceiro] : null
 
   return (
     <div style={{ padding: '32px', maxWidth: '1100px' }}>
@@ -174,6 +188,61 @@ export default function FinanceiroPage() {
               </p>
             </div>
           ))}
+        </div>
+      )}
+
+      {resumo && (
+        <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '14px', padding: '18px 20px', marginBottom: '20px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px', marginBottom: '14px', flexWrap: 'wrap' }}>
+            <div>
+              <p style={{ fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 6px' }}>
+                Previsão de caixa
+              </p>
+              <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: 0 }}>
+                {resumo.resumoCarteira}
+              </p>
+            </div>
+            {risco && (
+              <span style={{ fontSize: '11px', fontWeight: '700', color: risco.cor, background: risco.bg, border: `1px solid ${risco.border}`, borderRadius: '999px', padding: '6px 10px' }}>
+                {risco.label}
+              </span>
+            )}
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px', marginBottom: resumo.proximasParcelas.length > 0 ? '14px' : 0 }}>
+            {[
+              { label: 'Previsto em 7 dias', value: moeda(resumo.previsto7d), color: '#4f7aff' },
+              { label: 'Previsto em 30 dias', value: moeda(resumo.previsto30d), color: '#2dd4a0' },
+              { label: 'Recebível em aberto', value: moeda(resumo.recebivelAberto), color: '#f5c842' },
+              { label: 'Ticket médio', value: moeda(resumo.ticketMedioContrato), color: '#a78bfa' },
+            ].map((item) => (
+              <div key={item.label} style={{ background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: '10px', padding: '14px 16px' }}>
+                <p style={{ fontSize: '10px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 8px' }}>
+                  {item.label}
+                </p>
+                <p style={{ fontSize: '20px', fontWeight: '700', color: item.color, fontFamily: 'Syne, sans-serif', margin: 0 }}>
+                  {item.value}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          {resumo.proximasParcelas.length > 0 && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <p style={{ fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', margin: 0 }}>
+                Próximos recebimentos
+              </p>
+              {resumo.proximasParcelas.map((parcela) => (
+                <div key={parcela.id} style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', alignItems: 'center', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: '10px', padding: '10px 14px', flexWrap: 'wrap' }}>
+                  <div>
+                    <p style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text-primary)', margin: '0 0 2px' }}>{parcela.lead_nome}</p>
+                    <p style={{ fontSize: '11px', color: 'var(--text-muted)', margin: 0 }}>Vence em {fmtData(parcela.data_vencimento)}</p>
+                  </div>
+                  <strong style={{ fontSize: '13px', color: 'var(--text-primary)' }}>{moeda(parcela.valor)}</strong>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 

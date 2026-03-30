@@ -244,6 +244,38 @@ Pontos que precisam ser preservados durante a implementacao:
 - Proximo passo recomendado:
   - levar essa mesma leitura tenant-aware para previsibilidade financeira e churn
 
+2026-03-30 - Financeiro preditivo tenant-aware
+
+- Objetivo:
+  - transformar o financeiro de leitura historica para leitura operacional de curto prazo
+  - endurecer as rotas sensiveis de contratos e parcelas com recorte tenant-aware
+- Arquivos principais:
+  - `src/app/api/financeiro/resumo/route.ts`
+  - `src/app/api/financeiro/contratos/route.ts`
+  - `src/app/api/financeiro/contratos/[id]/route.ts`
+  - `src/app/api/financeiro/parcelas/[id]/route.ts`
+  - `src/app/(dashboard)/financeiro/page.tsx`
+- Correcoes de backend:
+  - escopo de leitura financeira passou a nascer dos leads visiveis do tenant atual
+  - resumo financeiro agora calcula:
+    - `previsto7d`
+    - `previsto30d`
+    - `recebivelAberto`
+    - `ticketMedioContrato`
+    - `proximasParcelas`
+    - `riscoFinanceiro`
+    - `resumoCarteira`
+  - update/delete de contrato e update de parcela agora validam se o recurso pertence a um lead do tenant atual
+- Correcoes de frontend:
+  - nova secao `Previsão de caixa`
+  - cards de recebimento curto prazo e carteira
+  - badge de risco financeiro
+  - lista de proximos recebimentos no proprio dashboard
+- Validacao:
+  - `npm run build` passou
+- Proximo passo recomendado:
+  - ligar previsao financeira com origem comercial (campanha, inbox, agendamento) para leitura de pipeline ponta a ponta
+
 2026-03-27 - Foundation de providers para WhatsApp
 
 - Objetivo:

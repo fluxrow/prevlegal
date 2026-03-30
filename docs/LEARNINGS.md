@@ -265,6 +265,12 @@ export async function GET(
 **Correção:** Reescrever `GET /api/admin/tenants/[id]/metricas` para filtrar por `tenant_id`, adicionar sinais de saúde recentes (`usuariosAtivos7d`, `conversas7d`, `agendamentosPendentes`, `ultimoAcessoEquipe`) e resumir o risco operacional na própria UI
 **Regra prática:** No PrevLegal, qualquer métrica administrativa só deve virar badge, resumo ou diagnóstico quando estiver claramente `tenant-aware` e operacionalmente acionável
 
+### 41. Financeiro previsível exige recorte tenant-aware antes de qualquer “inteligência”
+**Problema:** Contratos e parcelas já alimentavam um dashboard útil, mas updates sensíveis ainda não confirmavam pertença ao tenant atual e a leitura financeira era quase toda retrovisora
+**Risco:** O módulo podia parecer maduro na superfície enquanto ainda deixava espaço para leitura cruzada e pouca orientação de curto prazo
+**Correção:** Endurecer `GET/POST/PATCH/DELETE` do bloco financeiro com validação de vínculo ao lead do tenant atual e adicionar sinais simples de previsão (`previsto7d`, `previsto30d`, `recebivelAberto`, `ticketMedioContrato`, `riscoFinanceiro`, `proximasParcelas`) no resumo
+**Regra prática:** No PrevLegal, previsibilidade financeira só vale quando nasce do mesmo recorte tenant-aware que protege a operação; primeiro segurança do dado, depois “inteligência”
+
 ### 40. Inbox WhatsApp nao pode ecoar outbound como se fosse resposta real
 **Problema:** Ao enviar uma mensagem manual pelo lead/inbox, a thread mostrava a mesma mensagem dos dois lados mesmo sem o lead responder
 **Causa:** O registro outbound estava sendo lido da tabela `mensagens_inbound`, e a UI da inbox sempre renderizava a bolha da esquerda antes de renderizar `resposta_agente`

@@ -2,7 +2,33 @@ import { createClient } from '@/lib/supabase/server'
 import { gerarParcelasContrato, normalizarNumero } from '@/lib/financeiro'
 import { hasRecentReauth } from '@/lib/session-security'
 import { NextResponse } from 'next/server'
-import { canAccessLeadId, getAccessibleLeadIds, getTenantContext } from '@/lib/tenant-context'
+import { getTenantContext } from '@/lib/tenant-context'
+
+async function getScopedLead(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  context: NonNullable<Awaited<ReturnType<typeof getTenantContext>>>,
+  leadId: string,
+) {
+  if (!context.tenantId) return null
+
+  let query = supabase
+    .from('leads')
+    .select('id')
+    .eq('id', leadId)
+    .eq('tenant_id', context.tenantId)
+
+  if (!context.isAdmin) {
+    query = query.eq('responsavel_id', context.usuarioId)
+  }
+
+  const { data, error } = await query.maybeSingle()
+
+  if (error) {
+    throw new Error(error.message)
+  }
+
+  return data
+}
 
 export async function GET(request: Request) {
   const supabase = await createClient()
@@ -17,10 +43,14 @@ export async function GET(request: Request) {
     .from('contratos')
     .select(`
       *,
-      leads!inner(nome, cpf, telefone, status, responsavel_id),
+      leads!inner(nome, cpf, telefone, status, responsavel_id, tenant_id),
       parcelas(id, numero, valor, data_vencimento, data_pagamento, status, forma_pagamento, observacao)
     `)
     .order('created_at', { ascending: false })
+
+  if (context.tenantId) {
+    query = query.eq('leads.tenant_id', context.tenantId)
+  }
 
   if (!context.isAdmin) {
     query = query.eq('leads.responsavel_id', context.usuarioId)
@@ -59,9 +89,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'lead_id e valor_total são obrigatórios' }, { status: 400 })
   }
 
-  if (!context.isAdmin) {
-    const allowed = await canAccessLeadId(supabase, context, leadId)
-    if (!allowed) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  const lead = await getScopedLead(supabase, context, leadId)
+  if (!lead) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
   const { data: contrato, error: contratoErr } = await supabase

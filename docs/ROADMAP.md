@@ -128,6 +128,24 @@ Mestra: [[MASTER_PREV_LEGAL]]
   - levar a mesma logica de leitura executiva para o financeiro
   - aproximar contratos, parcelas e previsibilidade de receita do mesmo recorte tenant-aware
 
+## Atualizacao Financeiro Preditivo — 30/03/2026
+
+- o modulo financeiro ganhou a primeira camada de previsibilidade operacional no proprio dashboard:
+  - previsto em `7 dias`
+  - previsto em `30 dias`
+  - recebivel em aberto
+  - ticket medio por contrato
+  - proximos recebimentos
+  - risco financeiro resumido da carteira
+- o backend de resumo financeiro agora calcula esses sinais em cima da carteira visivel do tenant atual
+- o endurecimento nao foi so visual:
+  - `PATCH/DELETE /api/financeiro/contratos/[id]` agora validam acesso tenant-aware ao contrato
+  - `PATCH /api/financeiro/parcelas/[id]` agora valida se a parcela pertence a um contrato do tenant atual
+  - `GET/POST /api/financeiro/contratos` passou a respeitar o tenant do lead mesmo para admin
+- isso reduz risco de leitura cruzada e deixa o financeiro mais util para operacao diaria
+- proximo passo recomendado:
+  - cruzar previsao financeira com campanhas e agendamentos para aproximar a leitura de pipeline real
+
 ## Fases Concluídas
 
 | Fase | Feature | Commit |

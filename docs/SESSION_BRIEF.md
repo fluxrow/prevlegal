@@ -135,6 +135,15 @@ Ultima atualizacao: 2026-03-30
     - conversas em 7 dias
     - agendamentos pendentes
   - isso tira a tela de detalhe do admin da zona “piloto confuso” e a aproxima de um painel executivo acionavel
+- financeiro preditivo em 30/03:
+  - o dashboard financeiro agora mostra previsao de caixa em `7 dias` e `30 dias`
+  - a tela tambem ganhou:
+    - recebivel em aberto
+    - ticket medio por contrato
+    - proximos recebimentos
+    - risco financeiro resumido da carteira
+  - `GET /api/financeiro/resumo` passou a calcular tudo isso com base no tenant atual
+  - `PATCH/DELETE /api/financeiro/contratos/[id]` e `PATCH /api/financeiro/parcelas/[id]` agora validam acesso tenant-aware antes de alterar dados
 
 ## Proximo Passo Recomendado
 
@@ -177,7 +186,7 @@ Validar o runtime WhatsApp no tenant limpo:
     - saúde do tenant no admin
     - preparação para campanhas inteligentes
   - proximo bloco sugerido:
-    - financeiro preditivo tenant-aware
+    - cruzar financeiro com campanhas e agendamentos para leitura de pipeline
 
 ## Bloqueios e Cuidados
 
