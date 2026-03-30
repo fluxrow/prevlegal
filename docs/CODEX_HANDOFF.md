@@ -276,6 +276,31 @@ Pontos que precisam ser preservados durante a implementacao:
 - Proximo passo recomendado:
   - ligar previsao financeira com origem comercial (campanha, inbox, agendamento) para leitura de pipeline ponta a ponta
 
+2026-03-30 - Origem comercial da carteira no financeiro
+
+- Objetivo:
+  - mostrar de onde os contratos estao vindo e quanto da carteira ja passou por agendamento
+- Arquivos principais:
+  - `src/app/api/financeiro/resumo/route.ts`
+  - `src/app/(dashboard)/financeiro/page.tsx`
+- Correcoes aplicadas:
+  - o resumo financeiro agora agrega a carteira por origem comercial do lead:
+    - `campanha`
+    - `lista`
+    - `manual`
+  - tambem calcula sinais de pipeline dentro da carteira:
+    - contratos via campanha
+    - contratos sem campanha
+    - contratos com agendamento
+    - contratos com agendamento realizado
+    - valor contratado vindo de campanha
+    - valor contratado via operacao direta
+  - o frontend ganhou a secao `Origem comercial da carteira`
+- Validacao:
+  - `npm run build` passou
+- Proximo passo recomendado:
+  - consolidar uma leitura unica de pipeline entre origem comercial, conversa humana, agendamento e contrato
+
 2026-03-27 - Foundation de providers para WhatsApp
 
 - Objetivo:

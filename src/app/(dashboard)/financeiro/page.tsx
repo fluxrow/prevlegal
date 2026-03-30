@@ -21,6 +21,15 @@ interface Resumo {
   recebivelAberto: number
   ticketMedioContrato: number
   proximasParcelas: { id: string; valor: number; data_vencimento: string; lead_nome: string }[]
+  origensCarteira: { chave: string; label: string; tipo: 'campanha' | 'lista' | 'manual'; contratos: number; valorTotal: number }[]
+  pipelineComercial: {
+    contratosComCampanha: number
+    contratosSemCampanha: number
+    contratosComAgendamento: number
+    contratosComAgendamentoRealizado: number
+    valorViaCampanha: number
+    valorViaOperacaoDireta: number
+  }
   riscoFinanceiro: 'baixo' | 'medio' | 'alto'
   resumoCarteira: string
 }
@@ -239,6 +248,103 @@ export default function FinanceiroPage() {
                     <p style={{ fontSize: '11px', color: 'var(--text-muted)', margin: 0 }}>Vence em {fmtData(parcela.data_vencimento)}</p>
                   </div>
                   <strong style={{ fontSize: '13px', color: 'var(--text-primary)' }}>{moeda(parcela.valor)}</strong>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {resumo && (
+        <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '14px', padding: '18px 20px', marginBottom: '20px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px', marginBottom: '14px', flexWrap: 'wrap' }}>
+            <div>
+              <p style={{ fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 6px' }}>
+                Origem comercial da carteira
+              </p>
+              <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: 0 }}>
+                Veja se a receita está vindo mais de campanha, operação direta ou leads que já passaram por agendamento.
+              </p>
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px', marginBottom: resumo.origensCarteira.length > 0 ? '14px' : 0 }}>
+            {[
+              { label: 'Contratos via campanha', value: resumo.pipelineComercial.contratosComCampanha, color: '#4f7aff' },
+              { label: 'Operação direta', value: resumo.pipelineComercial.contratosSemCampanha, color: '#a78bfa' },
+              { label: 'Com agendamento', value: resumo.pipelineComercial.contratosComAgendamento, color: '#2dd4a0' },
+              { label: 'Agendamento realizado', value: resumo.pipelineComercial.contratosComAgendamentoRealizado, color: '#f5c842' },
+            ].map((item) => (
+              <div key={item.label} style={{ background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: '10px', padding: '14px 16px' }}>
+                <p style={{ fontSize: '10px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 8px' }}>
+                  {item.label}
+                </p>
+                <p style={{ fontSize: '20px', fontWeight: '700', color: item.color, fontFamily: 'Syne, sans-serif', margin: 0 }}>
+                  {item.value}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px', marginBottom: resumo.origensCarteira.length > 0 ? '14px' : 0 }}>
+            <div style={{ background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: '10px', padding: '14px 16px' }}>
+              <p style={{ fontSize: '10px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 8px' }}>
+                Valor vindo de campanha
+              </p>
+              <p style={{ fontSize: '20px', fontWeight: '700', color: '#4f7aff', fontFamily: 'Syne, sans-serif', margin: 0 }}>
+                {moeda(resumo.pipelineComercial.valorViaCampanha)}
+              </p>
+            </div>
+            <div style={{ background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: '10px', padding: '14px 16px' }}>
+              <p style={{ fontSize: '10px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 8px' }}>
+                Valor via operação direta
+              </p>
+              <p style={{ fontSize: '20px', fontWeight: '700', color: '#a78bfa', fontFamily: 'Syne, sans-serif', margin: 0 }}>
+                {moeda(resumo.pipelineComercial.valorViaOperacaoDireta)}
+              </p>
+            </div>
+          </div>
+
+          {resumo.origensCarteira.length > 0 && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <p style={{ fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', margin: 0 }}>
+                Maiores origens da carteira
+              </p>
+              {resumo.origensCarteira.map((origem) => (
+                <div key={origem.chave} style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', alignItems: 'center', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: '10px', padding: '10px 14px', flexWrap: 'wrap' }}>
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '2px' }}>
+                      <p style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text-primary)', margin: 0 }}>{origem.label}</p>
+                      <span style={{
+                        fontSize: '10px',
+                        fontWeight: '700',
+                        borderRadius: '999px',
+                        padding: '3px 8px',
+                        background:
+                          origem.tipo === 'campanha'
+                            ? 'rgba(79,122,255,0.12)'
+                            : origem.tipo === 'lista'
+                              ? 'rgba(167,139,250,0.12)'
+                              : 'rgba(245,200,66,0.12)',
+                        color:
+                          origem.tipo === 'campanha'
+                            ? '#4f7aff'
+                            : origem.tipo === 'lista'
+                              ? '#a78bfa'
+                              : '#f5c842',
+                        border:
+                          origem.tipo === 'campanha'
+                            ? '1px solid rgba(79,122,255,0.22)'
+                            : origem.tipo === 'lista'
+                              ? '1px solid rgba(167,139,250,0.22)'
+                              : '1px solid rgba(245,200,66,0.22)',
+                      }}>
+                        {origem.tipo === 'campanha' ? 'Campanha' : origem.tipo === 'lista' ? 'Lista' : 'Manual'}
+                      </span>
+                    </div>
+                    <p style={{ fontSize: '11px', color: 'var(--text-muted)', margin: 0 }}>{origem.contratos} contrato(s)</p>
+                  </div>
+                  <strong style={{ fontSize: '13px', color: 'var(--text-primary)' }}>{moeda(origem.valorTotal)}</strong>
                 </div>
               ))}
             </div>

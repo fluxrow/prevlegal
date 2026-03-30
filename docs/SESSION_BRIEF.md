@@ -144,6 +144,12 @@ Ultima atualizacao: 2026-03-30
     - risco financeiro resumido da carteira
   - `GET /api/financeiro/resumo` passou a calcular tudo isso com base no tenant atual
   - `PATCH/DELETE /api/financeiro/contratos/[id]` e `PATCH /api/financeiro/parcelas/[id]` agora validam acesso tenant-aware antes de alterar dados
+  - a carteira financeira agora tambem mostra origem comercial:
+    - via campanha
+    - via operacao direta
+    - com agendamento
+    - com agendamento realizado
+    - maiores origens por valor contratado
 
 ## Proximo Passo Recomendado
 
@@ -186,7 +192,7 @@ Validar o runtime WhatsApp no tenant limpo:
     - saúde do tenant no admin
     - preparação para campanhas inteligentes
   - proximo bloco sugerido:
-    - cruzar financeiro com campanhas e agendamentos para leitura de pipeline
+    - ampliar isso para leitura consolidada de pipeline entre inbox, agendamentos e contratos
 
 ## Bloqueios e Cuidados
 

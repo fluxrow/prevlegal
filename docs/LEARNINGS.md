@@ -271,6 +271,12 @@ export async function GET(
 **Correção:** Endurecer `GET/POST/PATCH/DELETE` do bloco financeiro com validação de vínculo ao lead do tenant atual e adicionar sinais simples de previsão (`previsto7d`, `previsto30d`, `recebivelAberto`, `ticketMedioContrato`, `riscoFinanceiro`, `proximasParcelas`) no resumo
 **Regra prática:** No PrevLegal, previsibilidade financeira só vale quando nasce do mesmo recorte tenant-aware que protege a operação; primeiro segurança do dado, depois “inteligência”
 
+### 42. Pipeline financeiro fica muito mais acionável quando expõe origem comercial, não só recebimento
+**Problema:** Mesmo com previsão de caixa, o financeiro ainda dizia “quanto” sem dizer “de onde veio” a carteira que está sustentando esse caixa
+**Risco:** Fica difícil decidir se a operação está saudável por campanha, por lista ou por ação manual, e o time perde a ponte entre comercial e receita
+**Correção:** Cruzar contratos com `leads.campanha_id`, `leads.lista_id` e presença de `agendamentos`, expondo no dashboard a origem comercial da carteira e os contratos que já passaram por agendamento
+**Regra prática:** No PrevLegal, toda leitura de receita que influencia operação deve apontar para a origem comercial que a gerou
+
 ### 40. Inbox WhatsApp nao pode ecoar outbound como se fosse resposta real
 **Problema:** Ao enviar uma mensagem manual pelo lead/inbox, a thread mostrava a mesma mensagem dos dois lados mesmo sem o lead responder
 **Causa:** O registro outbound estava sendo lido da tabela `mensagens_inbound`, e a UI da inbox sempre renderizava a bolha da esquerda antes de renderizar `resposta_agente`

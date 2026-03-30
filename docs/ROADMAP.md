@@ -143,6 +143,12 @@ Mestra: [[MASTER_PREV_LEGAL]]
   - `PATCH /api/financeiro/parcelas/[id]` agora valida se a parcela pertence a um contrato do tenant atual
   - `GET/POST /api/financeiro/contratos` passou a respeitar o tenant do lead mesmo para admin
 - isso reduz risco de leitura cruzada e deixa o financeiro mais util para operacao diaria
+- o mesmo dashboard agora tambem cruza a carteira contratada com a origem comercial do lead:
+  - contratos via campanha
+  - operacao direta / cadastro manual
+  - contratos que ja passaram por agendamento
+  - contratos com agendamento realizado
+  - maiores origens da carteira por valor contratado
 - proximo passo recomendado:
   - cruzar previsao financeira com campanhas e agendamentos para aproximar a leitura de pipeline real
 

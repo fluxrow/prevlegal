@@ -11,6 +11,14 @@ interface VencimentoItem {
   data_vencimento: string
 }
 
+interface OrigemCarteiraItem {
+  chave: string
+  label: string
+  tipo: 'campanha' | 'lista' | 'manual'
+  contratos: number
+  valorTotal: number
+}
+
 async function getScopedLeadIds(
   supabase: Awaited<ReturnType<typeof createClient>>,
   context: NonNullable<Awaited<ReturnType<typeof getTenantContext>>>,
@@ -74,6 +82,15 @@ export async function GET() {
         recebivelAberto: 0,
         ticketMedioContrato: 0,
         proximasParcelas: [],
+        origensCarteira: [],
+        pipelineComercial: {
+          contratosComCampanha: 0,
+          contratosSemCampanha: 0,
+          contratosComAgendamento: 0,
+          contratosComAgendamentoRealizado: 0,
+          valorViaCampanha: 0,
+          valorViaOperacaoDireta: 0,
+        },
         riscoFinanceiro: 'baixo',
         resumoCarteira: 'Sem contratos ativos ou visiveis para este tenant no momento.',
       },
@@ -172,6 +189,62 @@ export async function GET() {
       leadsMap = new Map((leads || []).map((lead) => [lead.id, { nome: lead.nome }]))
     }
 
+    const contratoLeadIds = Array.from(new Set(contratos.map((contrato) => contrato.lead_id).filter(Boolean)))
+
+    let leadsOrigemMap = new Map<string, { campanha_id: string | null; lista_id: string | null }>()
+    if (contratoLeadIds.length > 0) {
+      const { data: leadsOrigem } = await supabase
+        .from('leads')
+        .select('id, campanha_id, lista_id')
+        .in('id', contratoLeadIds)
+
+      leadsOrigemMap = new Map((leadsOrigem || []).map((lead) => [
+        lead.id,
+        {
+          campanha_id: lead.campanha_id || null,
+          lista_id: lead.lista_id || null,
+        },
+      ]))
+    }
+
+    const campanhaIds = Array.from(new Set(Array.from(leadsOrigemMap.values()).map((lead) => lead.campanha_id).filter(Boolean))) as string[]
+    const listaIds = Array.from(new Set(Array.from(leadsOrigemMap.values()).map((lead) => lead.lista_id).filter(Boolean))) as string[]
+
+    let campanhasMap = new Map<string, string>()
+    if (campanhaIds.length > 0) {
+      const { data: campanhas } = await supabase
+        .from('campanhas')
+        .select('id, nome')
+        .in('id', campanhaIds)
+
+      campanhasMap = new Map((campanhas || []).map((campanha) => [campanha.id, campanha.nome || 'Campanha']))
+    }
+
+    let listasMap = new Map<string, string>()
+    if (listaIds.length > 0) {
+      const { data: listas } = await supabase
+        .from('listas')
+        .select('id, nome')
+        .in('id', listaIds)
+
+      listasMap = new Map((listas || []).map((lista) => [lista.id, lista.nome || 'Lista']))
+    }
+
+    const agendamentosMap = new Map<string, { total: number; realizados: number }>()
+    if (contratoLeadIds.length > 0) {
+      const { data: agendamentos } = await supabase
+        .from('agendamentos')
+        .select('lead_id, status')
+        .in('lead_id', contratoLeadIds)
+
+      for (const agendamento of agendamentos || []) {
+        const atual = agendamentosMap.get(agendamento.lead_id) || { total: 0, realizados: 0 }
+        atual.total += 1
+        if (agendamento.status === 'realizado') atual.realizados += 1
+        agendamentosMap.set(agendamento.lead_id, atual)
+      }
+    }
+
     const enrichParcelas = (items: VencimentoItem[]) => items.map((parcela: VencimentoItem) => {
       const contrato = contratos.find((item) => item.id === parcela.contrato_id)
       const lead = contrato?.lead_id ? leadsMap.get(contrato.lead_id) : null
@@ -215,6 +288,64 @@ export async function GET() {
             ? 'Carteira saudavel: ha previsao de caixa no curto prazo e baixo peso de inadimplencia.'
             : 'Carteira com baixo risco, mas sem previsao relevante de recebimento nos proximos 30 dias.'
 
+    const origensMap = new Map<string, OrigemCarteiraItem>()
+    let contratosComCampanha = 0
+    let contratosSemCampanha = 0
+    let contratosComAgendamento = 0
+    let contratosComAgendamentoRealizado = 0
+    let valorViaCampanha = 0
+    let valorViaOperacaoDireta = 0
+
+    for (const contrato of contratos) {
+      const origemLead = contrato.lead_id ? leadsOrigemMap.get(contrato.lead_id) : null
+      const agendamentoLead = contrato.lead_id ? agendamentosMap.get(contrato.lead_id) : null
+      const valorContrato = Number(contrato.valor_total || 0)
+
+      let chave = 'manual'
+      let label = 'Operação direta / cadastro manual'
+      let tipo: OrigemCarteiraItem['tipo'] = 'manual'
+
+      if (origemLead?.campanha_id) {
+        chave = `campanha:${origemLead.campanha_id}`
+        label = campanhasMap.get(origemLead.campanha_id) || 'Campanha'
+        tipo = 'campanha'
+        contratosComCampanha += 1
+        valorViaCampanha += valorContrato
+      } else if (origemLead?.lista_id) {
+        const listaNome = listasMap.get(origemLead.lista_id) || 'Lista'
+        const listaNormalizada = listaNome.trim().toLowerCase()
+        if (!listaNormalizada.includes('cadastro manual')) {
+          chave = `lista:${origemLead.lista_id}`
+          label = listaNome
+          tipo = 'lista'
+        }
+        contratosSemCampanha += 1
+        valorViaOperacaoDireta += valorContrato
+      } else {
+        contratosSemCampanha += 1
+        valorViaOperacaoDireta += valorContrato
+      }
+
+      if (agendamentoLead?.total) contratosComAgendamento += 1
+      if (agendamentoLead?.realizados) contratosComAgendamentoRealizado += 1
+
+      const atual = origensMap.get(chave) || {
+        chave,
+        label,
+        tipo,
+        contratos: 0,
+        valorTotal: 0,
+      }
+
+      atual.contratos += 1
+      atual.valorTotal += valorContrato
+      origensMap.set(chave, atual)
+    }
+
+    const origensCarteira = Array.from(origensMap.values())
+      .sort((a, b) => b.valorTotal - a.valorTotal)
+      .slice(0, 6)
+
     return NextResponse.json({
       resumo: {
         totalContratos,
@@ -233,6 +364,15 @@ export async function GET() {
         recebivelAberto: totalRecebivelAberto,
         ticketMedioContrato,
         proximasParcelas,
+        origensCarteira,
+        pipelineComercial: {
+          contratosComCampanha,
+          contratosSemCampanha,
+          contratosComAgendamento,
+          contratosComAgendamentoRealizado,
+          valorViaCampanha,
+          valorViaOperacaoDireta,
+        },
         riscoFinanceiro,
         resumoCarteira,
       },
@@ -257,6 +397,15 @@ export async function GET() {
       recebivelAberto: 0,
       ticketMedioContrato: 0,
       proximasParcelas: [],
+      origensCarteira: [],
+      pipelineComercial: {
+        contratosComCampanha: 0,
+        contratosSemCampanha: 0,
+        contratosComAgendamento: 0,
+        contratosComAgendamentoRealizado: 0,
+        valorViaCampanha: 0,
+        valorViaOperacaoDireta: 0,
+      },
       riscoFinanceiro: 'baixo',
       resumoCarteira: 'Sem contratos ativos ou visiveis para este tenant no momento.',
     },
