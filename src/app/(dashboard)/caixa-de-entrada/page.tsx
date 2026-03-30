@@ -346,7 +346,15 @@ export default function CaixaDeEntradaPage() {
           <h1 style={{ fontFamily: 'Syne, sans-serif', fontSize: '18px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '12px', marginTop: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
             <MessageSquare size={18} color="var(--accent)" /> Caixa de Entrada
           </h1>
-          <div data-tour="inbox-filtros" style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '2px', marginBottom: '12px' }}>
+          <div
+            data-tour="inbox-filtros"
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(112px, 1fr))',
+              gap: '8px',
+              marginBottom: '12px',
+            }}
+          >
             {[
               { id: 'todas', label: 'Todas' },
               { id: 'agente', label: '🤖 Agente' },
@@ -359,7 +367,8 @@ export default function CaixaDeEntradaPage() {
                 key={aba.id}
                 onClick={() => setAbaAtiva(aba.id as AbaInbox)}
                 style={{
-                  flexShrink: 0,
+                  width: '100%',
+                  minHeight: '36px',
                   padding: '8px 10px',
                   fontSize: '12px',
                   fontWeight: abaAtiva === aba.id ? '600' : '400',
@@ -373,7 +382,8 @@ export default function CaixaDeEntradaPage() {
                   alignItems: 'center',
                   justifyContent: 'center',
                   gap: '5px',
-                  whiteSpace: 'nowrap',
+                  textAlign: 'center',
+                  lineHeight: 1.2,
                 }}
               >
                 {aba.label}
