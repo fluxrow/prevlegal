@@ -306,6 +306,8 @@ Mestra: [[MASTER_PREV_LEGAL]]
 ### Semana 2 — Agendamentos e gestão executiva
 
 1. Agendamentos operacionais
+- status atual:
+  - primeira camada operacional ja entrou na tela com fila por status, confirmacao, remarcacao inline e reatribuicao de responsável no contexto admin
 - criar fila dedicada para reuniões geradas pelo agente
 - permitir:
   - confirmar

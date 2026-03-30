@@ -151,6 +151,11 @@ Validar o runtime WhatsApp no tenant limpo:
   - marcar `resolvido`
   - reabrir manualmente
   - confirmar se uma inbound real reabre automaticamente de `aguardando_cliente` / `resolvido` para `humano`
+- testar os agendamentos operacionais:
+  - confirmar um agendamento
+  - remarcar com nova data/hora
+  - reatribuir responsável (admin)
+  - cancelar e validar reflexo no status do lead
 - depois retomar os testes operacionais do tenant isolation canonico por `tenant_id`
 - plano fora do WhatsApp para as proximas 2 semanas:
   - semana 1:

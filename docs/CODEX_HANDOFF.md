@@ -1059,6 +1059,50 @@ Pontos que precisam ser preservados durante a implementacao:
     - confirmar reabertura automatica para `humano`
   - depois retomar a ativacao real do canal `Z-API`
 
+## Atualizacao de 2026-03-30 — Agendamentos operacionais como fila de trabalho
+
+- enquanto o usuario validava a inbox humana, foi atacado o proximo bloco fora do WhatsApp: `Agendamentos`
+- mudancas aplicadas:
+  - `src/app/(dashboard)/agendamentos/page.tsx`
+    - status reconhecidos:
+      - `agendado`
+      - `confirmado`
+      - `remarcado`
+      - `realizado`
+      - `cancelado`
+    - a tela deixou de ser uma lista unica e passou a separar:
+      - `Fila que precisa confirmacao`
+      - `Confirmados`
+      - `Histórico recente`
+    - quick actions novas:
+      - confirmar
+      - remarcar com `datetime-local` inline
+      - marcar como realizado
+      - cancelar
+    - para admin:
+      - reatribuicao inline do responsável do agendamento via `/api/usuarios`
+    - a card tambem destaca `Precisa atenção` para reunioes de hoje ou atrasadas que ainda nao foram concluidas/canceladas
+  - `src/app/api/agendamentos/[id]/route.ts`
+    - agora usa `getTenantContext`
+    - aplica filtro por `tenant_id`
+    - valida acesso ao lead para nao-admin
+    - aceita `usuario_id` para reatribuicao por admin
+    - se `data_hora` mudar sem status explicito, marca como `remarcado`
+    - sincroniza status do lead:
+      - `realizado` -> `converted`
+      - `agendado` / `confirmado` / `remarcado` -> `scheduled`
+      - `cancelado` -> `awaiting` quando o lead ainda estava `scheduled`
+    - `DELETE` tambem ficou tenant-aware e reverte o lead para `awaiting`
+- validacao:
+  - `npm run build` passou
+- proximo passo:
+  - testar no browser:
+    - confirmar um agendamento
+    - remarcar com data nova
+    - reatribuir responsável (como admin)
+    - cancelar e observar o reflexo no lead
+  - depois seguir para ativacao real do canal `Z-API`
+
 ## Regra Permanente de Continuidade
 
 - toda sessao deve atualizar `docs/CODEX_HANDOFF.md`

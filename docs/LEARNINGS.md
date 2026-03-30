@@ -647,6 +647,12 @@ export async function GET(
 **Correcao aplicada:** Expandir a inbox com estados `aguardando_cliente` e `resolvido`, usar `assumido_em` na leitura operacional, sanitizar `PATCH /api/conversas/[id]` com acoes explicitas (`assume`, `awaiting_customer`, `resolve`, `reopen`, `return_to_agent`, `mark_read`) e fazer o webhook Twilio reabrir para `humano` quando o cliente responde nessas filas
 **Regra pratica:** No PrevLegal, fila humana nao pode ser apenas um badge; conversa assumida precisa ter ownership explicito, estados operacionais claros e reabertura automatica quando o cliente volta a falar
 
+### 74. Agendamentos operacionais precisam ser fila de trabalho, nao apenas agenda cronologica
+**Problema:** A tela de `Agendamentos` mostrava os eventos em ordem temporal, mas faltava leitura de operacao: o que ainda precisa confirmar, o que ja esta validado e quem e o responsavel atual
+**Causa:** A UI tratava quase tudo como `agendado`/`realizado`/`cancelado`, e a API de update ainda nao reforcava tenant/access nem usava o enum completo (`confirmado`, `remarcado`)
+**Correcao aplicada:** Transformar a tela em fila operacional com secoes (`Fila que precisa confirmacao`, `Confirmados`, `Historico recente`), quick actions de `confirmar`, `remarcar`, `realizado` e `cancelar`, reatribuicao de responsavel para admin e endurecimento de `PATCH/DELETE /api/agendamentos/[id]` com `tenant_id`, validacao de acesso e sincronizacao do status do lead
+**Regra pratica:** No PrevLegal, agendamento gerado pelo agente precisa virar tarefa operacional com dono e proxima acao explicita; mostrar apenas a data da reuniao nao basta para a equipe executar bem
+
 ### 59. A lista tecnica de cadastro manual nao deve disputar espaco com listas importadas
 **Problema:** O agrupador tecnico `Cadastro manual` aparecia na aba de listas como se fosse uma importacao operacional, poluindo a leitura do escritorio
 **Causa:** A API de listas retornava indiscriminadamente todas as `listas`, inclusive a lista interna criada para suportar leads avulsos
