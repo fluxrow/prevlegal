@@ -712,3 +712,15 @@ export async function GET(
 - valida o usuario responsavel dentro do tenant atual
 - insere `tenant_id` no novo agendamento
 **Regra pratica:** Em transicoes para multi-tenant real, nao basta endurecer update/delete; a criacao e a listagem inicial tambem precisam carregar o escopo canonico
+
+### 78. Busca operacional nao pode esconder lead valido por filtro booleano estrito demais
+**Problema:** No modal de agendamento manual, o operador digitava nome ou telefone corretamente e nao encontrava o lead
+**Causa:** A busca curta filtrava com `lgpd_optout = false`, entao leads com valor nulo nesse campo sumiam da lista mesmo sendo operacionalmente validos
+**Correcao aplicada:** Trocar o filtro para `lgpd_optout != true` e reforcar a UX do modal com busca reativa + botao explicito `Buscar lead`
+**Regra pratica:** Em fluxos de busca operacional do PrevLegal, filtros booleanos devem tratar `null` como estado legivel quando esse valor ainda e comum na base
+
+### 79. Convite de reuniao precisa aceitar email operacional do momento, nao so o email historico do lead
+**Problema:** O lead pode avancar na conversa usando um email diferente do cadastro original, e o operador ficava preso ao email antigo na hora de marcar a consulta
+**Causa:** O agendamento reutilizava apenas `lead.email` para o Google Calendar
+**Correcao aplicada:** O modal manual ganhou o campo `E-mail da reunião`, e `POST /api/agendamentos` agora aceita `email_reuniao` para sobrescrever o `emailLead` enviado ao Google Calendar
+**Regra pratica:** No PrevLegal, dados de contato usados para operacionalizar a proxima acao precisam aceitar override humano quando a conversa trouxer informacao mais atual do que a base

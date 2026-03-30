@@ -533,7 +533,7 @@ export default function LeadDetailPage() {
       <NovoAgendamentoModal
         open={showNovoAgendamento}
         onClose={() => setShowNovoAgendamento(false)}
-        initialLead={{ id: lead.id, nome: lead.nome, telefone: lead.telefone, status: lead.status }}
+        initialLead={{ id: lead.id, nome: lead.nome, telefone: lead.telefone, status: lead.status, email: lead.email }}
         lockLead
         onCreated={() => {
           setLead((current) => (current ? { ...current, status: 'scheduled' } : current))

@@ -161,6 +161,10 @@ Ultima atualizacao: 2026-03-30
     - validar lead e responsavel dentro do tenant atual
     - inserir `tenant_id` na criacao
   - `GET /api/leads` agora tambem suporta busca curta tenant-aware para alimentar esse modal
+  - refinamento operacional:
+    - a busca do modal agora reage melhor ao texto digitado e ganhou CTA explicito `Buscar lead`
+    - o endpoint de busca passou a aceitar leads com `lgpd_optout` nulo, sem esconder a base valida por acidente
+    - o modal agora aceita `E-mail da reunião`, permitindo sobrescrever o e-mail atual do lead so para esse agendamento/Meet
 
 ## Proximo Passo Recomendado
 
@@ -191,6 +195,8 @@ Validar o runtime WhatsApp no tenant limpo:
   - criar um agendamento manual pela tela `/agendamentos`
   - criar um agendamento manual pelo detalhe do lead
   - criar um agendamento manual pelo `lead drawer`
+  - validar busca por nome e telefone dentro do modal manual
+  - validar se o `E-mail da reunião` sobrescreve corretamente o convite do Google Meet
   - confirmar um agendamento
   - remarcar com nova data/hora
   - reatribuir responsável (admin)

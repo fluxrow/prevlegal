@@ -31,7 +31,7 @@ export async function GET(request: Request) {
     .from('leads')
     .select('id, nome, telefone, status, email, banco, tenant_id, responsavel_id')
     .eq('tenant_id', context.tenantId)
-    .eq('lgpd_optout', false)
+    .neq('lgpd_optout', true)
     .order('updated_at', { ascending: false })
     .limit(limit)
 
@@ -55,6 +55,7 @@ export async function GET(request: Request) {
       nome: lead.nome,
       telefone: lead.telefone,
       status: lead.status,
+      email: lead.email,
     })),
   })
 }

@@ -17,6 +17,7 @@ type Lead = {
   nb: string
   cpf: string | null
   telefone: string | null
+  email?: string | null
   status: string
   score: number
   ganho_potencial: number | null
@@ -366,7 +367,7 @@ export default function LeadDrawer({
             <NovoAgendamentoModal
               open={showNovoAgendamento}
               onClose={() => setShowNovoAgendamento(false)}
-              initialLead={{ id: lead.id, nome: lead.nome, telefone: lead.telefone, status: lead.status }}
+              initialLead={{ id: lead.id, nome: lead.nome, telefone: lead.telefone, status: lead.status, email: lead.email }}
               lockLead
               onCreated={() => {
                 setLead((current) => (current ? { ...current, status: 'scheduled' } : current))

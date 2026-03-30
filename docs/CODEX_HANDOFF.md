@@ -1247,7 +1247,18 @@ Pontos que precisam ser preservados durante a implementacao:
 - impacto operacional:
   - o humano consegue marcar consulta assim que a conversa avancar, sem depender do agente
   - o fluxo lead -> agenda ficou direto dentro do sistema
+- refinamento aplicado em seguida:
+  - `src/components/novo-agendamento-modal.tsx`
+    - busca de lead passou a reagir ao texto digitado e ganhou CTA explicito de busca
+    - o select agora mostra tambem email quando disponivel
+    - novo campo `E-mail da reunião` permite sobrescrever o email do lead so para o convite/Meet
+  - `src/app/api/leads/route.ts`
+    - a busca curta passou a aceitar tambem leads com `lgpd_optout` nulo (`neq true`)
+    - payload leve agora retorna `email`
+  - `src/app/api/agendamentos/route.ts`
+    - `POST` passou a aceitar `email_reuniao` como override do `emailLead` enviado ao Google Calendar
 - validacao:
   - `npm run build` passou
 - proximo passo:
   - validar se o produto deve apenas sinalizar ou bloquear mais de um agendamento futuro ativo por lead
+  - validar no browser a busca por nome/telefone e o override de email do convite

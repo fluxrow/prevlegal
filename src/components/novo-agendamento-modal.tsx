@@ -9,6 +9,7 @@ type LeadOption = {
   nome: string
   telefone?: string | null
   status?: string | null
+  email?: string | null
 }
 
 type UsuarioOption = {
@@ -21,6 +22,7 @@ type InitialLead = {
   nome: string
   telefone?: string | null
   status?: string | null
+  email?: string | null
 }
 
 const overlayStyle: React.CSSProperties = {
@@ -108,6 +110,7 @@ export default function NovoAgendamentoModal({
   const [selectedLeadId, setSelectedLeadId] = useState(initialLead?.id || '')
   const [usuarios, setUsuarios] = useState<UsuarioOption[]>([])
   const [usuarioId, setUsuarioId] = useState('')
+  const [emailReuniao, setEmailReuniao] = useState(initialLead?.email || '')
   const [dataHora, setDataHora] = useState(toDateTimeLocalInput(new Date(Date.now() + 60 * 60 * 1000)))
   const [duracaoMinutos, setDuracaoMinutos] = useState('30')
   const [observacoes, setObservacoes] = useState('')
@@ -133,12 +136,38 @@ export default function NovoAgendamentoModal({
     setLeadQuery(initialLead?.nome || '')
     setSelectedLeadId(initialLead?.id || '')
     setLeadOptions(initialLead ? [initialLead] : [])
+    setEmailReuniao(initialLead?.email || '')
 
     void loadUsuarios()
     if (!initialLead) {
       void searchLeads('')
     }
   }, [open, initialLead])
+
+  useEffect(() => {
+    if (lockLead && initialLead) return
+
+    const query = leadQuery.trim()
+    const digits = query.replace(/\D/g, '')
+    const shouldSearch = query.length === 0 || query.length >= 2 || digits.length >= 3
+
+    if (!shouldSearch) {
+      setLeadOptions(initialLead ? [initialLead] : [])
+      return
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      void searchLeads(query)
+    }, 250)
+
+    return () => window.clearTimeout(timeoutId)
+  }, [leadQuery, lockLead, initialLead])
+
+  useEffect(() => {
+    if (selectedLead?.email) {
+      setEmailReuniao((current) => current || selectedLead.email || '')
+    }
+  }, [selectedLead?.email])
 
   async function loadUsuarios() {
     setLoadingUsuarios(true)
@@ -169,7 +198,14 @@ export default function NovoAgendamentoModal({
       const res = await fetch(`/api/leads?${params.toString()}`)
       if (!res.ok) throw new Error()
       const data = await res.json()
-      setLeadOptions(data.leads || [])
+      const leads = data.leads || []
+      setLeadOptions(leads)
+      setSelectedLeadId((current) => {
+        if (current && leads.some((lead: LeadOption) => lead.id === current)) {
+          return current
+        }
+        return leads.length === 1 ? leads[0].id : ''
+      })
     } catch {
       setLeadOptions(initialLead ? [initialLead] : [])
     } finally {
@@ -202,6 +238,7 @@ export default function NovoAgendamentoModal({
           duracao_minutos: Number(duracaoMinutos || 30),
           observacoes: observacoes.trim() || null,
           honorario: honorario ? Number(honorario) : null,
+          email_reuniao: emailReuniao.trim() || null,
         }),
       })
 
@@ -266,7 +303,6 @@ export default function NovoAgendamentoModal({
                     <input
                       value={leadQuery}
                       onChange={(e) => setLeadQuery(e.target.value)}
-                      onBlur={() => void searchLeads(leadQuery)}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter') {
                           e.preventDefault()
@@ -277,6 +313,28 @@ export default function NovoAgendamentoModal({
                       style={{ ...inputStyle, paddingLeft: '34px' }}
                     />
                   </div>
+                  <button
+                    type="button"
+                    onClick={() => void searchLeads(leadQuery)}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '6px',
+                      borderRadius: '10px',
+                      border: '1px solid var(--border)',
+                      background: 'var(--bg-card)',
+                      color: 'var(--text-secondary)',
+                      padding: '9px 12px',
+                      cursor: 'pointer',
+                      fontSize: '12px',
+                      fontWeight: '700',
+                      fontFamily: 'DM Sans, sans-serif',
+                    }}
+                  >
+                    <Search size={13} />
+                    Buscar lead
+                  </button>
                   <select
                     value={selectedLeadId}
                     onChange={(e) => setSelectedLeadId(e.target.value)}
@@ -285,7 +343,7 @@ export default function NovoAgendamentoModal({
                     <option value="">{loadingLeads ? 'Carregando leads...' : 'Selecione um lead'}</option>
                     {leadOptions.map((lead) => (
                       <option key={lead.id} value={lead.id}>
-                        {lead.nome}{lead.telefone ? ` · ${lead.telefone}` : ''}
+                        {lead.nome}{lead.telefone ? ` · ${lead.telefone}` : ''}{lead.email ? ` · ${lead.email}` : ''}
                       </option>
                     ))}
                   </select>
@@ -337,6 +395,16 @@ export default function NovoAgendamentoModal({
                 value={honorario}
                 onChange={(e) => setHonorario(e.target.value)}
                 placeholder="Opcional"
+                style={inputStyle}
+              />
+            </FormField>
+
+            <FormField label="E-mail da reunião">
+              <input
+                type="email"
+                value={emailReuniao}
+                onChange={(e) => setEmailReuniao(e.target.value)}
+                placeholder={selectedLead?.email || 'Opcional — pode sobrescrever o e-mail atual do lead'}
                 style={inputStyle}
               />
             </FormField>

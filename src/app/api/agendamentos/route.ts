@@ -82,7 +82,7 @@ export async function POST(request: Request) {
   if (!context) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const body = await request.json()
-  const { lead_id, usuario_id, data_hora, duracao_minutos = 30, observacoes, honorario } = body
+  const { lead_id, usuario_id, data_hora, duracao_minutos = 30, observacoes, honorario, email_reuniao } = body
 
   if (!lead_id || !data_hora) {
     return NextResponse.json({ error: 'lead_id e data_hora são obrigatórios' }, { status: 400 })
@@ -100,6 +100,11 @@ export async function POST(request: Request) {
 
   let googleEventId: string | null = null
   let meetLink: string | null = null
+  const emailReuniao =
+    typeof email_reuniao === 'string' && email_reuniao.trim()
+      ? email_reuniao.trim()
+      : undefined
+  const emailLead = emailReuniao || lead.email || undefined
 
   // Tenta criar no Google Calendar (não falha se não conectado)
   try {
@@ -108,7 +113,7 @@ export async function POST(request: Request) {
       descricao: observacoes ?? '',
       dataHora: data_hora,
       duracaoMinutos: duracao_minutos,
-      emailLead: (lead as { email?: string })?.email ?? undefined,
+      emailLead,
       emailAdvogado: usuarioResponsavel?.email ?? undefined,
     })
     googleEventId = resultado.googleEventId
