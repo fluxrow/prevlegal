@@ -730,3 +730,9 @@ export async function GET(
 **Causa:** A UI tinha uma boa camada operacional, mas faltava a representacao espacial do mes que usuarios acostumados ao Google Calendar esperam
 **Correcao aplicada:** Adicionar uma visao mensal na propria tela `/agendamentos`, com cores por status e clique no evento para abrir um painel/modal com as mesmas acoes operacionais da fila
 **Regra pratica:** No PrevLegal, agenda nao deve ser so lista de tarefas nem so calendario bonito; a melhor UX combina leitura temporal visual com acoes diretas de operacao
+
+### 81. Busca operacional de lead fica mais confiavel quando a normalizacao sai do PostgREST e vai para o servidor
+**Problema:** Mesmo digitando nome ou telefone corretamente, o modal de agendamento ainda podia nao encontrar o lead
+**Causa:** A busca curta dependia de `or(...)` com `ilike` no PostgREST, o que fica frágil com telefone formatado, acentos e combinacoes com `null`
+**Correcao aplicada:** Buscar um conjunto curto tenant-aware no banco e filtrar no servidor com normalizacao de texto e digitos de telefone antes de devolver os resultados
+**Regra pratica:** Em buscas operacionais pequenas do PrevLegal, confiabilidade vale mais do que “query esperta”; quando o matching ficar frágil demais no SQL, normalize no servidor e devolva um resultado mais previsível

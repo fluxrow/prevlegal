@@ -1287,3 +1287,19 @@ Pontos que precisam ser preservados durante a implementacao:
 - proximo passo:
   - validar no browser a experiencia do calendario em desktop e mobile
   - decidir depois se vale abrir tambem visoes de semana/dia
+
+## Atualizacao de 2026-03-30 — Busca do lead no agendamento manual
+
+- o modal de `Novo agendamento` ainda podia aparentar falha de busca mesmo com nome/telefone corretos
+- a rota `src/app/api/leads/route.ts` foi simplificada para a busca operacional:
+  - busca um conjunto curto tenant-aware no banco
+  - filtra no servidor com:
+    - normalizacao de acentos
+    - texto em lowercase
+    - telefone em digitos
+  - deixa de depender do `or(...ilike...)` mais fragil para esse caso
+- o filtro de opt-out tambem foi mantido seguro sem esconder leads com valor nulo por acidente
+- validacao:
+  - `npm run build` passou
+- proximo passo:
+  - retestar no browser a busca por nome e telefone no modal de agendamento

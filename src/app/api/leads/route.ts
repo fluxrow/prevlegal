@@ -10,6 +10,13 @@ function normalizarTexto(value: unknown) {
   return typeof value === 'string' ? value.trim() : ''
 }
 
+function normalizarBusca(value: unknown) {
+  return normalizarTexto(value)
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .toLowerCase()
+}
+
 function criarNbManual(body: Record<string, unknown>) {
   const telefone = normalizarTexto(body.telefone).replace(/\D/g, '')
   const cpf = normalizarTexto(body.cpf).replace(/\D/g, '')
@@ -25,32 +32,47 @@ export async function GET(request: Request) {
 
   const { searchParams } = new URL(request.url)
   const q = normalizarTexto(searchParams.get('q'))
+  const qNormalizada = normalizarBusca(q)
   const limit = Math.min(Number(searchParams.get('limit') || 20) || 20, 50)
+  const fetchLimit = q ? Math.max(limit * 4, 120) : limit
 
   let query = supabase
     .from('leads')
-    .select('id, nome, telefone, status, email, banco, tenant_id, responsavel_id')
+    .select('id, nome, telefone, status, email, banco, tenant_id, responsavel_id, lgpd_optout')
     .eq('tenant_id', context.tenantId)
-    .neq('lgpd_optout', true)
     .order('updated_at', { ascending: false })
-    .limit(limit)
+    .limit(fetchLimit)
 
   if (!context.isAdmin) {
     query = query.eq('responsavel_id', context.usuarioId)
   }
 
-  if (q) {
-    const digits = q.replace(/\D/g, '')
-    const filters = [`nome.ilike.%${q}%`, `email.ilike.%${q}%`, `banco.ilike.%${q}%`]
-    if (digits) filters.push(`telefone.ilike.%${digits}%`)
-    query = query.or(filters.join(','))
-  }
-
   const { data, error } = await query
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
+  const leadsFiltrados = (data || [])
+    .filter((lead) => lead.lgpd_optout !== true)
+    .filter((lead) => {
+      if (!qNormalizada) return true
+
+      const telefoneDigits = normalizarTexto(lead.telefone).replace(/\D/g, '')
+      const queryDigits = q.replace(/\D/g, '')
+      const haystack = [
+        normalizarBusca(lead.nome),
+        normalizarBusca(lead.email),
+        normalizarBusca(lead.banco),
+        normalizarBusca(lead.telefone),
+      ]
+
+      const matchTexto = haystack.some((field) => field.includes(qNormalizada))
+      const matchTelefone = queryDigits ? telefoneDigits.includes(queryDigits) : false
+
+      return matchTexto || matchTelefone
+    })
+    .slice(0, limit)
+
   return NextResponse.json({
-    leads: (data || []).map((lead) => ({
+    leads: leadsFiltrados.map((lead) => ({
       id: lead.id,
       nome: lead.nome,
       telefone: lead.telefone,

@@ -165,6 +165,7 @@ Ultima atualizacao: 2026-03-30
     - a busca do modal agora reage melhor ao texto digitado e ganhou CTA explicito `Buscar lead`
     - o endpoint de busca passou a aceitar leads com `lgpd_optout` nulo, sem esconder a base valida por acidente
     - o modal agora aceita `E-mail da reunião`, permitindo sobrescrever o e-mail atual do lead so para esse agendamento/Meet
+    - a busca curta de leads deixou de depender de filtros `or` frágeis do PostgREST e agora filtra no servidor com normalizacao de texto/telefone
 - calendario de agendamentos em 30/03:
   - a tela `/agendamentos` agora ganhou uma visao mensal de calendario
   - cada compromisso aparece com cor por status
@@ -213,6 +214,10 @@ Validar o runtime WhatsApp no tenant limpo:
     - cores por status
     - clique no evento
     - edicao pelo modal do calendario
+  - retestar a busca do lead no modal de novo agendamento com:
+    - nome acentuado
+    - telefone formatado
+    - telefone so com digitos
   - confirmar um agendamento
   - remarcar com nova data/hora
   - reatribuir responsável (admin)
