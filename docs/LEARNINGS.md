@@ -259,6 +259,12 @@ export async function GET(
 **Correcao:** Aplicar a migration `032`, registrar o primeiro canal em `whatsapp_numbers` e sincronizar o tenant `Fluxrow` com `whatsapp:+14155238886` como origem default
 **Regra pratica:** Quando o erro do provider aponta para `From address`, validar primeiro o sender configurado antes de concluir que o fluxo do produto quebrou
 
+### 40. Saúde do tenant no admin só serve para decisão quando as métricas são recortadas pelo tenant certo
+**Problema:** O detalhe do tenant no admin podia exibir leituras operacionais convincentes, mas parte das contagens ainda não filtrava por `tenant_id`
+**Risco:** A tela parecia executiva, mas podia induzir leitura errada de adoção, volume e risco de um escritório específico
+**Correção:** Reescrever `GET /api/admin/tenants/[id]/metricas` para filtrar por `tenant_id`, adicionar sinais de saúde recentes (`usuariosAtivos7d`, `conversas7d`, `agendamentosPendentes`, `ultimoAcessoEquipe`) e resumir o risco operacional na própria UI
+**Regra prática:** No PrevLegal, qualquer métrica administrativa só deve virar badge, resumo ou diagnóstico quando estiver claramente `tenant-aware` e operacionalmente acionável
+
 ### 40. Inbox WhatsApp nao pode ecoar outbound como se fosse resposta real
 **Problema:** Ao enviar uma mensagem manual pelo lead/inbox, a thread mostrava a mesma mensagem dos dois lados mesmo sem o lead responder
 **Causa:** O registro outbound estava sendo lido da tabela `mensagens_inbound`, e a UI da inbox sempre renderizava a bolha da esquerda antes de renderizar `resposta_agente`
@@ -652,6 +658,12 @@ export async function GET(
 **Causa:** A UI tratava quase tudo como `agendado`/`realizado`/`cancelado`, e a API de update ainda nao reforcava tenant/access nem usava o enum completo (`confirmado`, `remarcado`)
 **Correcao aplicada:** Transformar a tela em fila operacional com secoes (`Fila que precisa confirmacao`, `Confirmados`, `Historico recente`), quick actions de `confirmar`, `remarcar`, `realizado` e `cancelar`, reatribuicao de responsavel para admin e endurecimento de `PATCH/DELETE /api/agendamentos/[id]` com `tenant_id`, validacao de acesso e sincronizacao do status do lead
 **Regra pratica:** No PrevLegal, agendamento gerado pelo agente precisa virar tarefa operacional com dono e proxima acao explicita; mostrar apenas a data da reuniao nao basta para a equipe executar bem
+
+### 75. Saude do tenant no admin so serve para tomada de decisao quando as metricas estao filtradas pelo tenant certo
+**Problema:** O detalhe do tenant no admin exibia sinais de uso, mas a rota de metricas ainda fazia varias contagens sem ancora explicita em `tenant_id`, o que fragilizava a leitura executiva
+**Causa:** O painel cresceu primeiro como visao de produto e so depois virou ferramenta operacional de CS/comercial; faltava endurecer o recorte por tenant e adicionar sinais mais proximos de adocao real
+**Correcao aplicada:** Reancorar `src/app/api/admin/tenants/[id]/metricas/route.ts` em `tenant_id` para leads, conversas, campanhas, contratos, portal, agendamentos e usuarios; adicionar `ultimoAcessoEquipe`, `usuariosAtivos7d`, `conversas7d`, `agendamentosPendentes`, `riscoOperacional` e `resumoSaude`; e expor isso em `src/app/admin/[id]/page.tsx`
+**Regra pratica:** No PrevLegal, dashboard executivo sem filtro tenant-aware vira uma falsa sensação de controle; metrica de saúde precisa refletir uso real do escritório e não ruído global da base
 
 ### 59. A lista tecnica de cadastro manual nao deve disputar espaco com listas importadas
 **Problema:** O agrupador tecnico `Cadastro manual` aparecia na aba de listas como se fosse uma importacao operacional, poluindo a leitura do escritorio

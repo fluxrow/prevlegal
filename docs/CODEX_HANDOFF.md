@@ -218,6 +218,32 @@ Pontos que precisam ser preservados durante a implementacao:
 
 ## Registro de Validacoes
 
+2026-03-30 - Saude do tenant no admin com metricas tenant-aware
+
+- Objetivo:
+  - transformar o detalhe do tenant em leitura executiva real, sem misturar contagens globais do piloto
+- Arquivos principais:
+  - `src/app/api/admin/tenants/[id]/metricas/route.ts`
+  - `src/app/admin/[id]/page.tsx`
+- Correcoes aplicadas no backend:
+  - contagens e consultas passaram a filtrar por `tenant_id`
+  - foram adicionados sinais operacionais novos:
+    - `ultimoAcessoEquipe`
+    - `usuariosAtivos7d`
+    - `conversas7d`
+    - `agendamentosPendentes`
+    - `riscoOperacional`
+    - `resumoSaude`
+- Correcoes aplicadas no frontend:
+  - nova secao `Saúde do tenant`
+  - badge de risco operacional
+  - cards executivos com atividade recente, equipe ativa e carga pendente
+  - `Resumo operacional` e `Saúde da conta` passaram a refletir os novos sinais
+- Validacao:
+  - `npm run build` passou
+- Proximo passo recomendado:
+  - levar essa mesma leitura tenant-aware para previsibilidade financeira e churn
+
 2026-03-27 - Foundation de providers para WhatsApp
 
 - Objetivo:
@@ -1102,6 +1128,30 @@ Pontos que precisam ser preservados durante a implementacao:
     - reatribuir responsável (como admin)
     - cancelar e observar o reflexo no lead
   - depois seguir para ativacao real do canal `Z-API`
+
+## Atualizacao de 2026-03-30 — Saúde do tenant no admin com recorte tenant-aware
+
+- com a `Z-API` ainda sem conectar, o proximo bloco puxado foi a leitura executiva do tenant no admin
+- correcao importante feita junto:
+  - `src/app/api/admin/tenants/[id]/metricas/route.ts` agora ancora as metricas em `tenant_id`
+  - antes disso, varias contagens estavam vulneraveis a ruído global por nao filtrar corretamente
+- novas metricas expostas:
+  - `ultimoAcessoEquipe`
+  - `usuariosAtivos7d`
+  - `conversas7d`
+  - `agendamentosPendentes`
+  - `riscoOperacional`
+  - `resumoSaude`
+- `src/app/admin/[id]/page.tsx` ganhou:
+  - bloco `Saúde do tenant`
+  - badge de risco operacional
+  - cards de acesso/atividade recente
+  - resumo operacional com pendencias e adocao da equipe
+- validacao:
+  - `npm run build` passou
+- proximo passo:
+  - validar no browser se o tenant `Fluxrow` aparece com leitura coerente de ultimo acesso, usuarios ativos e conversas recentes
+  - depois retomar o trilho `Z-API`
 
 ## Regra Permanente de Continuidade
 

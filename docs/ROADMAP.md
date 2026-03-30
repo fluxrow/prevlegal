@@ -111,6 +111,23 @@ Mestra: [[MASTER_PREV_LEGAL]]
   - conectar Z-API como primeiro provider alternativo para campanha e operacao humana
   - depois permitir escolha explicita do numero de origem por campanha e por conversa humana
 
+## Atualizacao Admin / Saude do Tenant — 30/03/2026
+
+- o endpoint `GET /api/admin/tenants/[id]/metricas` deixou de misturar dados globais do piloto e passou a calcular sinais operacionais filtrando por `tenant_id`
+- o detalhe do tenant em `/admin/[id]` agora expõe uma leitura mais executiva e acionável de saúde:
+  - risco operacional (`baixo`, `medio`, `alto`)
+  - resumo textual do momento do tenant
+  - ultimo acesso identificado da equipe
+  - usuarios ativos nos ultimos 7 dias
+  - conversas dos ultimos 7 dias
+  - agendamentos pendentes
+- isso endurece a tela do admin em duas frentes:
+  - melhora tomada de decisao comercial/operacional
+  - reduz leituras erradas causadas por métricas ainda “aware”, mas nao realmente recortadas por tenant
+- proximo passo recomendado fora do WhatsApp:
+  - levar a mesma logica de leitura executiva para o financeiro
+  - aproximar contratos, parcelas e previsibilidade de receita do mesmo recorte tenant-aware
+
 ## Fases Concluídas
 
 | Fase | Feature | Commit |

@@ -34,6 +34,12 @@ interface Metricas {
   portalNaoLidas: number
   totalAgendamentos: number
   totalUsuarios: number
+  ultimoAcessoEquipe: string | null
+  usuariosAtivos7d: number
+  conversas7d: number
+  agendamentosPendentes: number
+  riscoOperacional: 'baixo' | 'medio' | 'alto'
+  resumoSaude: string
 }
 
 interface Tenant {
@@ -124,6 +130,12 @@ const PLANO: Record<string, { label: string; color: string }> = {
   profissional: { label: 'Profissional', color: '#4f7aff' },
   enterprise: { label: 'Enterprise', color: '#7c3aed' },
   basico: { label: 'Básico', color: '#6b7280' },
+}
+
+const RISCO_OPERACIONAL: Record<string, { label: string; color: string; bg: string }> = {
+  baixo: { label: 'Baixo risco', color: '#22c55e', bg: '#22c55e18' },
+  medio: { label: 'Atenção', color: '#f59e0b', bg: '#f59e0b18' },
+  alto: { label: 'Risco alto', color: '#ff5757', bg: '#ff575718' },
 }
 
 const inputStyle: React.CSSProperties = {
@@ -501,6 +513,7 @@ export default function TenantDetailPage() {
   const { tenant, metricas, ultimasConversas, ultimosCampanhas } = data
   const status = STATUS[tenant.status] || STATUS.trial
   const plano = PLANO[tenant.plano] || PLANO.profissional
+  const riscoOperacional = RISCO_OPERACIONAL[metricas.riscoOperacional] || RISCO_OPERACIONAL.medio
   const plataformaUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://app.prevlegal.com.br'
 
   return (
@@ -764,6 +777,56 @@ export default function TenantDetailPage() {
           <KpiCard label="Receita" value={fmt(metricas.receitaTotal)} color="#f5c842" icon={<DollarSign size={15} />} />
         </div>
 
+        <div style={{ background: '#111827', border: '1px solid #1f2937', borderRadius: '14px', padding: '18px 20px', marginBottom: '24px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '16px', marginBottom: '14px' }}>
+            <div>
+              <h3 style={{ fontSize: '13px', fontWeight: '600', color: '#fff', fontFamily: 'Syne, sans-serif', margin: '0 0 6px' }}>Saúde do tenant</h3>
+              <p style={{ fontSize: '12px', color: '#6b7280', margin: 0 }}>
+                {metricas.resumoSaude}
+              </p>
+            </div>
+            <span style={{ fontSize: '11px', fontWeight: '700', color: riscoOperacional.color, background: riscoOperacional.bg, border: `1px solid ${riscoOperacional.color}30`, borderRadius: '999px', padding: '6px 10px', whiteSpace: 'nowrap' }}>
+              {riscoOperacional.label}
+            </span>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px' }}>
+            {[
+              {
+                label: 'Último acesso da equipe',
+                value: metricas.ultimoAcessoEquipe
+                  ? new Date(metricas.ultimoAcessoEquipe).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
+                  : 'Sem acesso',
+                color: '#d1d5db',
+              },
+              {
+                label: 'Usuários ativos 7d',
+                value: metricas.usuariosAtivos7d,
+                color: '#4f7aff',
+              },
+              {
+                label: 'Conversas 7d',
+                value: metricas.conversas7d,
+                color: '#22c55e',
+              },
+              {
+                label: 'Agendamentos pendentes',
+                value: metricas.agendamentosPendentes,
+                color: '#f59e0b',
+              },
+            ].map((item) => (
+              <div key={item.label} style={{ background: '#0b1220', border: '1px solid #182131', borderRadius: '12px', padding: '14px' }}>
+                <p style={{ fontSize: '10px', fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 8px' }}>
+                  {item.label}
+                </p>
+                <p style={{ fontSize: '18px', fontWeight: '700', color: item.color, fontFamily: 'Syne, sans-serif', margin: 0 }}>
+                  {item.value}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
           <div style={{ background: '#111827', border: '1px solid #1f2937', borderRadius: '14px', padding: '20px' }}>
             <h3 style={{ fontSize: '13px', fontWeight: '600', color: '#fff', fontFamily: 'Syne, sans-serif', marginBottom: '16px' }}>Últimas conversas</h3>
@@ -818,9 +881,11 @@ export default function TenantDetailPage() {
             {[
               { label: 'Conversas com humano ativo', value: metricas.conversasHumano, color: '#22c55e' },
               { label: 'Msgs portal não lidas', value: metricas.portalNaoLidas, color: '#4f7aff' },
-              { label: 'Agendamentos', value: metricas.totalAgendamentos, color: '#a855f7' },
+              { label: 'Agendamentos totais', value: metricas.totalAgendamentos, color: '#a855f7' },
+              { label: 'Agendamentos pendentes', value: metricas.agendamentosPendentes, color: '#f59e0b' },
               { label: 'Contratos registrados', value: metricas.totalContratos, color: '#2dd4a0' },
               { label: 'Usuários do sistema', value: metricas.totalUsuarios, color: '#f97316' },
+              { label: 'Usuários ativos 7d', value: metricas.usuariosAtivos7d, color: '#4f7aff' },
             ].map((item) => (
               <div key={item.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid #1f2937' }}>
                 <span style={{ fontSize: '13px', color: '#9ca3af' }}>{item.label}</span>
@@ -835,8 +900,10 @@ export default function TenantDetailPage() {
               { label: 'Agente IA configurado', ok: metricas.totalConversas > 0, info: 'Baseado em conversas ativas' },
               { label: 'Leads importados', ok: metricas.totalLeads > 0, info: `${metricas.totalLeads} leads` },
               { label: 'Campanhas criadas', ok: metricas.totalCampanhas > 0, info: `${metricas.totalCampanhas} campanhas` },
+              { label: 'Equipe ativa na última semana', ok: metricas.usuariosAtivos7d > 0, info: `${metricas.usuariosAtivos7d} usuário(s)` },
+              { label: 'Conversas recentes', ok: metricas.conversas7d > 0, info: `${metricas.conversas7d} conversa(s) em 7d` },
               { label: 'Receita registrada', ok: metricas.receitaTotal > 0, info: fmt(metricas.receitaTotal) },
-              { label: 'Equipe configurada', ok: metricas.totalUsuarios > 0, info: `${metricas.totalUsuarios} usuário(s)` },
+              { label: 'Último acesso identificado', ok: Boolean(metricas.ultimoAcessoEquipe), info: metricas.ultimoAcessoEquipe ? new Date(metricas.ultimoAcessoEquipe).toLocaleDateString('pt-BR') : 'Sem registro' },
             ].map((item) => (
               <div key={item.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '9px 0', borderBottom: '1px solid #1f2937' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>

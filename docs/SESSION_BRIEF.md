@@ -25,7 +25,7 @@ Ordem de leitura:
 
 ## Estado Atual
 
-Ultima atualizacao: 2026-03-27
+Ultima atualizacao: 2026-03-30
 
 - Branch principal: `main`
 - Linha atual do produto no Obsidian: Fases 21, 22, 23, 24 e 25 concluidas
@@ -125,6 +125,16 @@ Ultima atualizacao: 2026-03-27
   - allowlist do app continua ativa
   - onboarding fora do piloto continua bloqueado
   - endurecimento temporario por ownership de usuario continua no codigo ate o tenant isolation definitivo
+- saude do tenant no admin em 30/03:
+  - `GET /api/admin/tenants/[id]/metricas` agora filtra leituras operacionais por `tenant_id`
+  - o detalhe do tenant passou a mostrar:
+    - risco operacional
+    - resumo de saude
+    - ultimo acesso da equipe
+    - usuarios ativos em 7 dias
+    - conversas em 7 dias
+    - agendamentos pendentes
+  - isso tira a tela de detalhe do admin da zona “piloto confuso” e a aproxima de um painel executivo acionavel
 
 ## Proximo Passo Recomendado
 
@@ -166,6 +176,8 @@ Validar o runtime WhatsApp no tenant limpo:
     - agendamentos operacionais
     - saúde do tenant no admin
     - preparação para campanhas inteligentes
+  - proximo bloco sugerido:
+    - financeiro preditivo tenant-aware
 
 ## Bloqueios e Cuidados
 
