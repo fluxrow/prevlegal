@@ -146,6 +146,15 @@ Validar o runtime WhatsApp no tenant limpo:
   - testar envio humano primeiro e so depois campanha curta
 - testar o fluxo de `Editar dados` no detalhe do lead e no drawer, validando persistencia imediata dos campos
 - depois retomar os testes operacionais do tenant isolation canonico por `tenant_id`
+- plano fora do WhatsApp para as proximas 2 semanas:
+  - semana 1:
+    - multi-tenant residual
+    - inbox humana avancada
+    - fluxo lead <-> inbox
+  - semana 2:
+    - agendamentos operacionais
+    - saúde do tenant no admin
+    - preparação para campanhas inteligentes
 
 ## Bloqueios e Cuidados
 

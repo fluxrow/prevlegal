@@ -261,6 +261,90 @@ Mestra: [[MASTER_PREV_LEGAL]]
 
 ## Próximas Fases Recomendadas
 
+## Plano de Execução — Próximas 2 Semanas
+
+### Semana 1 — Base operacional e atendimento humano
+
+1. Multi-tenant residual
+- revisar superficies ainda sensiveis que leem/gravam sem ancora canônica de `tenant_id`
+- priorizar:
+  - métricas do detalhe do tenant
+  - campanhas e contadores auxiliares
+  - notificações e consultas transversais
+- resultado esperado:
+  - reduzir o restante do comportamento “piloto unico” antes de escalar novos escritorios
+
+2. Inbox humana avancada
+- introduzir estados operacionais na conversa:
+  - `novo`
+  - `assumido`
+  - `aguardando_cliente`
+  - `resolvido`
+- separar visualmente:
+  - fila do agente
+  - fila humana ativa
+  - fila aguardando retorno
+  - fila resolvida
+- adicionar metadados operacionais:
+  - `assumido_por`
+  - `assumido_em`
+  - `resolvido_em`
+- resultado esperado:
+  - a inbox deixa de ser so uma thread e passa a funcionar como mesa operacional real
+
+3. Fluxo de lead <-> inbox
+- reforcar o ciclo:
+  - editar lead
+  - iniciar conversa
+  - assumir/devolver
+  - atualizar status do lead sem sair do atendimento
+- resultado esperado:
+  - o operador navega menos e resolve mais dentro da mesma sessão
+
+### Semana 2 — Agendamentos e gestão executiva
+
+1. Agendamentos operacionais
+- criar fila dedicada para reuniões geradas pelo agente
+- permitir:
+  - confirmar
+  - remarcar
+  - cancelar
+  - marcar visualizado
+  - atribuir responsável humano
+- resultado esperado:
+  - agendamento vira fila operacional, não apenas lista cronológica
+
+2. Saúde do tenant no admin
+- expandir o detalhe do tenant com sinais de uso:
+  - ultimo acesso
+  - volume recente de conversas
+  - ritmo de operação
+  - risco de churn / baixa adoção
+- resultado esperado:
+  - o admin passa a servir comercial, CS e operação da Fluxrow
+
+3. Preparação para campanhas inteligentes
+- começar a estruturar a camada analítica:
+  - melhor lista
+  - melhor copy
+  - melhor horário
+  - falhas por provider
+  - resposta por campanha
+- resultado esperado:
+  - abrir o caminho para otimização sem misturar isso com o hardening atual
+
+### Critério de prioridade
+
+- critico:
+  - multi-tenant residual
+  - provider WhatsApp real / oficial
+- maior ganho de UX:
+  - inbox humana avancada
+  - agendamentos operacionais
+- maior ganho executivo:
+  - saúde do tenant
+  - financeiro preditivo
+
 ### Fase 25 — Session Security Hardening
 - Expiração por inatividade na plataforma (`45 min`)
 - Expiração por inatividade no admin (`15 min`)

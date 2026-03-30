@@ -985,6 +985,31 @@ Pontos que precisam ser preservados durante a implementacao:
   - testar no browser a mesma edicao pelo drawer
   - confirmar se vale adicionar historico/audit trail campo-a-campo depois
 
+## Atualizacao de 2026-03-30 — Prioridade de produto fora do bloco WhatsApp
+
+- o usuario pediu uma leitura objetiva do que ainda falta fora do WhatsApp
+- consolidacao de prioridade:
+  - critico:
+    - multi-tenant residual / definitivo
+    - provider WhatsApp oficial/real bem governado
+  - maior ganho de UX:
+    - inbox humana avancada
+    - agendamentos operacionais
+  - maior ganho executivo:
+    - saúde do tenant no admin
+    - financeiro preditivo
+- plano de 2 semanas registrado no `ROADMAP.md`:
+  - semana 1:
+    - multi-tenant residual
+    - inbox humana avancada
+    - fluxo lead <-> inbox
+  - semana 2:
+    - agendamentos operacionais
+    - saúde do tenant
+    - preparação de campanhas inteligentes
+- leitura pratica:
+  - se o WhatsApp estiver operacional, o bloco mais bonito de produto a seguir e a `Inbox Humana Avançada`
+
 ## Regra Permanente de Continuidade
 
 - toda sessao deve atualizar `docs/CODEX_HANDOFF.md`
