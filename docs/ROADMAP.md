@@ -172,6 +172,28 @@ Mestra: [[MASTER_PREV_LEGAL]]
   - validar a criacao manual na tela de agendamentos, no detalhe do lead e no drawer
   - decidir se o produto deve apenas sinalizar ou bloquear mais de um agendamento futuro ativo por lead
 
+## Atualizacao Calendario de Agendamentos — 30/03/2026
+
+- a tela `/agendamentos` agora nao depende so da fila/lista cronologica
+- entrou uma visao mensal de calendario operacional com:
+  - navegacao de mes
+  - eventos categorizados por cor conforme status
+  - leitura diaria dentro de cada celula
+  - clique no agendamento para abrir um painel/modal de operacao
+- o painel do evento reaproveita as mesmas acoes da fila:
+  - confirmar
+  - remarcar
+  - marcar como realizado
+  - cancelar
+  - reatribuir responsavel
+  - abrir conversa / abrir WhatsApp / abrir Meet
+- impacto de produto:
+  - o usuario ganha uma leitura mais natural da agenda
+  - a tela fica mais proxima de um Google Calendar operacional, sem perder a fila acionavel abaixo
+- proximo passo recomendado:
+  - validar no browser a leitura mensal em desktop e mobile
+  - decidir se vale adicionar futuramente vistas `semana` e `dia`
+
 ## Fases Concluídas
 
 | Fase | Feature | Commit |

@@ -724,3 +724,9 @@ export async function GET(
 **Causa:** O agendamento reutilizava apenas `lead.email` para o Google Calendar
 **Correcao aplicada:** O modal manual ganhou o campo `E-mail da reunião`, e `POST /api/agendamentos` agora aceita `email_reuniao` para sobrescrever o `emailLead` enviado ao Google Calendar
 **Regra pratica:** No PrevLegal, dados de contato usados para operacionalizar a proxima acao precisam aceitar override humano quando a conversa trouxer informacao mais atual do que a base
+
+### 80. Agendamento vira muito mais legivel quando combina fila operacional com calendario visual
+**Problema:** Mesmo com a fila de confirmacao/remarcacao melhorada, a tela de agendamentos ainda exigia leitura linear demais para quem pensa em agenda como bloco visual de tempo
+**Causa:** A UI tinha uma boa camada operacional, mas faltava a representacao espacial do mes que usuarios acostumados ao Google Calendar esperam
+**Correcao aplicada:** Adicionar uma visao mensal na propria tela `/agendamentos`, com cores por status e clique no evento para abrir um painel/modal com as mesmas acoes operacionais da fila
+**Regra pratica:** No PrevLegal, agenda nao deve ser so lista de tarefas nem so calendario bonito; a melhor UX combina leitura temporal visual com acoes diretas de operacao

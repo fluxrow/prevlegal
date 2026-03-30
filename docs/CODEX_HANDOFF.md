@@ -1262,3 +1262,28 @@ Pontos que precisam ser preservados durante a implementacao:
 - proximo passo:
   - validar se o produto deve apenas sinalizar ou bloquear mais de um agendamento futuro ativo por lead
   - validar no browser a busca por nome/telefone e o override de email do convite
+
+## Atualizacao de 2026-03-30 — Calendario mensal na agenda operacional
+
+- a tela `src/app/(dashboard)/agendamentos/page.tsx` ganhou uma segunda camada de leitura:
+  - visao mensal de calendario
+  - navegacao de mes
+  - eventos com cor por status
+  - clique no evento para abrir um painel/modal
+- o modal do calendario reaproveita a operacao existente:
+  - confirmar
+  - remarcar
+  - marcar como realizado
+  - cancelar
+  - reatribuir responsável
+  - abrir conversa
+  - abrir WhatsApp
+  - abrir Meet
+- a fila operacional abaixo foi preservada, entao a pagina agora junta:
+  - leitura visual de agenda
+  - fila acionavel por status
+- validacao:
+  - `npm run build` passou
+- proximo passo:
+  - validar no browser a experiencia do calendario em desktop e mobile
+  - decidir depois se vale abrir tambem visoes de semana/dia

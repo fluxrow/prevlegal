@@ -2,9 +2,42 @@
 
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { format, isPast, isToday, parseISO } from 'date-fns'
+import {
+  addMonths,
+  eachDayOfInterval,
+  endOfMonth,
+  endOfWeek,
+  format,
+  isPast,
+  isSameDay,
+  isSameMonth,
+  isToday,
+  parseISO,
+  startOfMonth,
+  startOfWeek,
+  subMonths,
+} from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-import { Calendar, Video, Clock, User, RefreshCw, CheckCircle2, XCircle, AlertCircle, MessageSquare, Send, CalendarClock, CheckCheck, Pencil, Save, UserCog, Plus } from 'lucide-react'
+import {
+  AlertCircle,
+  Calendar,
+  CalendarClock,
+  CheckCheck,
+  CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
+  Clock,
+  MessageSquare,
+  Pencil,
+  Plus,
+  RefreshCw,
+  Save,
+  Send,
+  User,
+  UserCog,
+  Video,
+  XCircle,
+} from 'lucide-react'
 import toast from 'react-hot-toast'
 import AgendamentosOnboardingTour from '@/components/agendamentos-onboarding-tour'
 import NovoAgendamentoModal from '@/components/novo-agendamento-modal'
@@ -29,12 +62,22 @@ interface UsuarioOpcao {
 }
 
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
-  agendado:  { label: 'Agendado',  color: 'text-blue-400 bg-blue-400/10' },
-  confirmado:{ label: 'Confirmado', color: 'text-cyan-300 bg-cyan-400/10' },
+  agendado: { label: 'Agendado', color: 'text-blue-400 bg-blue-400/10' },
+  confirmado: { label: 'Confirmado', color: 'text-cyan-300 bg-cyan-400/10' },
   remarcado: { label: 'Remarcado', color: 'text-amber-300 bg-amber-400/10' },
   realizado: { label: 'Realizado', color: 'text-emerald-400 bg-emerald-400/10' },
   cancelado: { label: 'Cancelado', color: 'text-red-400 bg-red-400/10' },
 }
+
+const STATUS_CALENDAR_STYLES: Record<string, { badge: string; dot: string; border: string }> = {
+  agendado: { badge: 'bg-blue-500/12 text-blue-300', dot: 'bg-blue-400', border: 'border-blue-500/20' },
+  confirmado: { badge: 'bg-cyan-500/12 text-cyan-200', dot: 'bg-cyan-300', border: 'border-cyan-500/20' },
+  remarcado: { badge: 'bg-amber-500/12 text-amber-200', dot: 'bg-amber-300', border: 'border-amber-500/20' },
+  realizado: { badge: 'bg-emerald-500/12 text-emerald-200', dot: 'bg-emerald-400', border: 'border-emerald-500/20' },
+  cancelado: { badge: 'bg-red-500/12 text-red-200', dot: 'bg-red-400', border: 'border-red-500/20' },
+}
+
+const WEEKDAY_LABELS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab']
 
 function toLocalDateTimeValue(iso: string) {
   return format(parseISO(iso), "yyyy-MM-dd'T'HH:mm")
@@ -52,6 +95,8 @@ export default function AgendamentosPage() {
   const [novaDataHora, setNovaDataHora] = useState('')
   const [novaDuracaoMinutos, setNovaDuracaoMinutos] = useState('30')
   const [showNovoAgendamento, setShowNovoAgendamento] = useState(false)
+  const [currentMonth, setCurrentMonth] = useState(startOfMonth(new Date()))
+  const [selectedAgendamento, setSelectedAgendamento] = useState<Agendamento | null>(null)
 
   useEffect(() => {
     if (searchParams.get('google') === 'conectado') {
@@ -64,9 +109,9 @@ export default function AgendamentosPage() {
   }, [searchParams])
 
   useEffect(() => {
-    load()
-    checkGoogle()
-    loadUsuarios()
+    void load()
+    void checkGoogle()
+    void loadUsuarios()
   }, [])
 
   async function load() {
@@ -96,7 +141,11 @@ export default function AgendamentosPage() {
       const res = await fetch('/api/usuarios')
       if (!res.ok) return
       const data = await res.json()
-      setUsuarios((data.usuarios || []).filter((usuario: { ativo: boolean }) => usuario.ativo).map((usuario: { id: string; nome: string }) => ({ id: usuario.id, nome: usuario.nome })))
+      setUsuarios(
+        (data.usuarios || [])
+          .filter((usuario: { ativo: boolean }) => usuario.ativo)
+          .map((usuario: { id: string; nome: string }) => ({ id: usuario.id, nome: usuario.nome })),
+      )
       setRole(data.role || null)
     } catch {
       setUsuarios([])
@@ -154,6 +203,7 @@ export default function AgendamentosPage() {
     setEditandoId(ag.id)
     setNovaDataHora(toLocalDateTimeValue(ag.data_hora))
     setNovaDuracaoMinutos(String(ag.duracao_minutos))
+    setSelectedAgendamento(ag)
   }
 
   async function salvarRemarcacao(id: string) {
@@ -184,6 +234,228 @@ export default function AgendamentosPage() {
   const confirmados = agendamentos.filter((ag) => ag.status === 'confirmado')
   const finalizados = agendamentos.filter((ag) => ['realizado', 'cancelado'].includes(ag.status))
 
+  const calendarDays = eachDayOfInterval({
+    start: startOfWeek(startOfMonth(currentMonth), { weekStartsOn: 0 }),
+    end: endOfWeek(endOfMonth(currentMonth), { weekStartsOn: 0 }),
+  })
+
+  function agendamentosDoDia(day: Date) {
+    return agendamentos
+      .filter((ag) => isSameDay(parseISO(ag.data_hora), day))
+      .sort((a, b) => parseISO(a.data_hora).getTime() - parseISO(b.data_hora).getTime())
+  }
+
+  function renderAgendamentoDetail(ag: Agendamento, compact = false) {
+    const statusInfo = STATUS_LABELS[ag.status] ?? { label: ag.status, color: 'text-slate-400 bg-slate-400/10' }
+    const statusCalendar = STATUS_CALENDAR_STYLES[ag.status] ?? STATUS_CALENDAR_STYLES.agendado
+    const date = parseISO(ag.data_hora)
+    const urgente = ag.status !== 'realizado' && ag.status !== 'cancelado' && (isToday(date) || isPast(date))
+    const inboxHref = buildInboxHref({ telefone: ag.leads?.telefone })
+    const whatsappHref = buildWhatsAppHref(ag.leads?.telefone)
+
+    return (
+      <div
+        className={`rounded-xl border bg-[#13131f] ${compact ? 'p-4' : 'p-4'} transition-colors ${urgente ? 'border-amber-500/30' : 'border-[#1e1e30] hover:border-[#2e2e45]'}`}
+      >
+        <div className="flex items-start gap-4">
+          <div className="flex-shrink-0 text-center w-14">
+            <div className="text-2xl font-bold text-white leading-none">
+              {format(date, 'dd')}
+            </div>
+            <div className="text-xs text-slate-500 uppercase mt-0.5">
+              {format(date, 'MMM', { locale: ptBR })}
+            </div>
+            <div className="text-xs text-slate-600 mt-0.5">
+              {format(date, 'HH:mm')}
+            </div>
+          </div>
+
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${statusInfo.color}`}>
+                {statusInfo.label}
+              </span>
+              <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium ${statusCalendar.badge} ${statusCalendar.border}`}>
+                <span className={`h-1.5 w-1.5 rounded-full ${statusCalendar.dot}`} />
+                Calendário
+              </span>
+              {urgente ? (
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-medium text-amber-300 bg-amber-400/10">
+                  Precisa atenção
+                </span>
+              ) : null}
+              {ag.honorario ? (
+                <span className="text-xs text-slate-500">
+                  R$ {ag.honorario.toLocaleString('pt-BR')}
+                </span>
+              ) : null}
+            </div>
+
+            {ag.leads ? (
+              <div className="flex items-center gap-1 mt-1.5 text-sm font-medium text-slate-200">
+                <User className="w-3.5 h-3.5 text-slate-500" />
+                {ag.leads.nome}
+                {ag.leads.telefone ? (
+                  <span className="text-slate-500 font-normal text-xs ml-1">· {ag.leads.telefone}</span>
+                ) : null}
+              </div>
+            ) : null}
+
+            <div className="flex items-center gap-3 mt-1.5 flex-wrap">
+              <span className="flex items-center gap-1 text-xs text-slate-500">
+                <Clock className="w-3 h-3" />
+                {ag.duracao_minutos} min
+              </span>
+              {ag.meet_link ? (
+                <a
+                  href={ag.meet_link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300 transition-colors"
+                >
+                  <Video className="w-3 h-3" />
+                  Google Meet
+                </a>
+              ) : null}
+              {ag.usuarios ? (
+                <span className="text-xs text-slate-600">
+                  {ag.usuarios.nome}
+                </span>
+              ) : null}
+            </div>
+
+            {role === 'admin' && usuarios.length > 0 ? (
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <span className="inline-flex items-center gap-1 text-[11px] text-slate-500">
+                  <UserCog className="w-3 h-3" />
+                  Responsável
+                </span>
+                <select
+                  value={ag.usuarios?.id || ''}
+                  onChange={(e) => void reatribuirResponsavel(ag.id, e.target.value)}
+                  disabled={savingId === ag.id}
+                  className="rounded-md border border-white/10 bg-[#0d0f17] px-2.5 py-1.5 text-[11px] text-slate-200 outline-none"
+                >
+                  <option value="">Selecionar</option>
+                  {usuarios.map((usuario) => (
+                    <option key={usuario.id} value={usuario.id}>
+                      {usuario.nome}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ) : null}
+
+            {ag.leads?.telefone ? (
+              <div className="flex items-center gap-2 mt-3 flex-wrap">
+                <a
+                  href={inboxHref}
+                  className="inline-flex items-center gap-1.5 rounded-md border border-blue-500/20 bg-blue-500/10 px-2.5 py-1 text-[11px] font-medium text-blue-300 transition-colors hover:bg-blue-500/15"
+                >
+                  <MessageSquare className="w-3 h-3" />
+                  Abrir conversa
+                </a>
+                {whatsappHref ? (
+                  <a
+                    href={whatsappHref}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 rounded-md border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-1 text-[11px] font-medium text-emerald-300 transition-colors hover:bg-emerald-500/15"
+                  >
+                    <Send className="w-3 h-3" />
+                    WhatsApp
+                  </a>
+                ) : null}
+              </div>
+            ) : null}
+
+            {editandoId === ag.id ? (
+              <div className="mt-3 rounded-xl border border-white/10 bg-[#0d0f17] p-3">
+                <div className="mb-2 flex items-center gap-2 text-[11px] font-medium text-slate-400">
+                  <CalendarClock className="w-3.5 h-3.5" />
+                  Remarcar reunião
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <input
+                    type="datetime-local"
+                    value={novaDataHora}
+                    onChange={(e) => setNovaDataHora(e.target.value)}
+                    className="rounded-md border border-white/10 bg-[#13131f] px-3 py-2 text-xs text-slate-200 outline-none"
+                  />
+                  <input
+                    type="number"
+                    min={15}
+                    step={15}
+                    value={novaDuracaoMinutos}
+                    onChange={(e) => setNovaDuracaoMinutos(e.target.value)}
+                    className="w-28 rounded-md border border-white/10 bg-[#13131f] px-3 py-2 text-xs text-slate-200 outline-none"
+                  />
+                  <button
+                    onClick={() => void salvarRemarcacao(ag.id)}
+                    disabled={savingId === ag.id}
+                    className="inline-flex items-center gap-1 rounded-md bg-blue-600 px-3 py-2 text-xs font-medium text-white transition-colors hover:bg-blue-500 disabled:opacity-60"
+                  >
+                    <Save className="w-3.5 h-3.5" />
+                    Salvar
+                  </button>
+                  <button
+                    onClick={() => setEditandoId(null)}
+                    className="inline-flex items-center gap-1 rounded-md border border-white/10 bg-white/5 px-3 py-2 text-xs font-medium text-slate-300 transition-colors hover:bg-white/10"
+                  >
+                    Fechar
+                  </button>
+                </div>
+              </div>
+            ) : null}
+
+            {ag.observacoes ? (
+              <p className="mt-2 text-xs text-slate-500">{ag.observacoes}</p>
+            ) : null}
+          </div>
+
+          {!['realizado', 'cancelado'].includes(ag.status) ? (
+            <div className="flex items-center gap-1 flex-shrink-0">
+              {['agendado', 'remarcado'].includes(ag.status) ? (
+                <button
+                  onClick={() => void updateStatus(ag.id, 'confirmado')}
+                  disabled={savingId === ag.id}
+                  className="p-1.5 rounded-md text-slate-500 hover:text-cyan-300 hover:bg-cyan-400/10 transition-colors disabled:opacity-50"
+                  title="Confirmar"
+                >
+                  <CheckCheck className="w-4 h-4" />
+                </button>
+              ) : null}
+              <button
+                onClick={() => iniciarRemarcacao(ag)}
+                disabled={savingId === ag.id}
+                className="p-1.5 rounded-md text-slate-500 hover:text-amber-300 hover:bg-amber-400/10 transition-colors disabled:opacity-50"
+                title="Remarcar"
+              >
+                <Pencil className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => void updateStatus(ag.id, 'realizado')}
+                disabled={savingId === ag.id}
+                className="p-1.5 rounded-md text-slate-500 hover:text-emerald-400 hover:bg-emerald-400/10 transition-colors disabled:opacity-50"
+                title="Marcar como realizado"
+              >
+                <CheckCircle2 className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => void cancelar(ag.id)}
+                disabled={savingId === ag.id}
+                className="p-1.5 rounded-md text-slate-500 hover:text-red-400 hover:bg-red-400/10 transition-colors disabled:opacity-50"
+                title="Cancelar"
+              >
+                <XCircle className="w-4 h-4" />
+              </button>
+            </div>
+          ) : null}
+        </div>
+      </div>
+    )
+  }
+
   function renderLista(lista: Agendamento[], titulo: string, descricao: string) {
     if (lista.length === 0) return null
 
@@ -199,220 +471,18 @@ export default function AgendamentosPage() {
           </span>
         </div>
         <div className="space-y-3">
-          {lista.map((ag) => {
-            const statusInfo = STATUS_LABELS[ag.status] ?? { label: ag.status, color: 'text-slate-400 bg-slate-400/10' }
-            const date = parseISO(ag.data_hora)
-            const inboxHref = buildInboxHref({ telefone: ag.leads?.telefone })
-            const whatsappHref = buildWhatsAppHref(ag.leads?.telefone)
-            const urgente = ag.status !== 'realizado' && ag.status !== 'cancelado' && (isToday(date) || isPast(date))
-
-            return (
-              <div
-                key={ag.id}
-                className={`p-4 rounded-xl border bg-[#13131f] transition-colors ${urgente ? 'border-amber-500/30' : 'border-[#1e1e30] hover:border-[#2e2e45]'}`}
-              >
-                <div className="flex items-start gap-4">
-                  <div className="flex-shrink-0 text-center w-14">
-                    <div className="text-2xl font-bold text-white leading-none">
-                      {format(date, 'dd')}
-                    </div>
-                    <div className="text-xs text-slate-500 uppercase mt-0.5">
-                      {format(date, 'MMM', { locale: ptBR })}
-                    </div>
-                    <div className="text-xs text-slate-600 mt-0.5">
-                      {format(date, 'HH:mm')}
-                    </div>
-                  </div>
-
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${statusInfo.color}`}>
-                        {statusInfo.label}
-                      </span>
-                      {urgente && (
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-medium text-amber-300 bg-amber-400/10">
-                          Precisa atenção
-                        </span>
-                      )}
-                      {ag.honorario && (
-                        <span className="text-xs text-slate-500">
-                          R$ {ag.honorario.toLocaleString('pt-BR')}
-                        </span>
-                      )}
-                    </div>
-
-                    {ag.leads && (
-                      <div className="flex items-center gap-1 mt-1.5 text-sm font-medium text-slate-200">
-                        <User className="w-3.5 h-3.5 text-slate-500" />
-                        {ag.leads.nome}
-                        {ag.leads.telefone && (
-                          <span className="text-slate-500 font-normal text-xs ml-1">· {ag.leads.telefone}</span>
-                        )}
-                      </div>
-                    )}
-
-                    <div className="flex items-center gap-3 mt-1.5 flex-wrap">
-                      <span className="flex items-center gap-1 text-xs text-slate-500">
-                        <Clock className="w-3 h-3" />
-                        {ag.duracao_minutos} min
-                      </span>
-                      {ag.meet_link && (
-                        <a
-                          href={ag.meet_link}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300 transition-colors"
-                        >
-                          <Video className="w-3 h-3" />
-                          Google Meet
-                        </a>
-                      )}
-                      {ag.usuarios && (
-                        <span className="text-xs text-slate-600">
-                          {ag.usuarios.nome}
-                        </span>
-                      )}
-                    </div>
-
-                    {role === 'admin' && usuarios.length > 0 ? (
-                      <div className="mt-3 flex flex-wrap items-center gap-2">
-                        <span className="inline-flex items-center gap-1 text-[11px] text-slate-500">
-                          <UserCog className="w-3 h-3" />
-                          Responsável
-                        </span>
-                        <select
-                          value={ag.usuarios?.id || ''}
-                          onChange={(e) => void reatribuirResponsavel(ag.id, e.target.value)}
-                          disabled={savingId === ag.id}
-                          className="rounded-md border border-white/10 bg-[#0d0f17] px-2.5 py-1.5 text-[11px] text-slate-200 outline-none"
-                        >
-                          <option value="">Selecionar</option>
-                          {usuarios.map((usuario) => (
-                            <option key={usuario.id} value={usuario.id}>
-                              {usuario.nome}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    ) : null}
-
-                    {ag.leads?.telefone && (
-                      <div className="flex items-center gap-2 mt-3 flex-wrap">
-                        <a
-                          href={inboxHref}
-                          className="inline-flex items-center gap-1.5 rounded-md border border-blue-500/20 bg-blue-500/10 px-2.5 py-1 text-[11px] font-medium text-blue-300 transition-colors hover:bg-blue-500/15"
-                        >
-                          <MessageSquare className="w-3 h-3" />
-                          Abrir conversa
-                        </a>
-                        {whatsappHref && (
-                          <a
-                            href={whatsappHref}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1.5 rounded-md border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-1 text-[11px] font-medium text-emerald-300 transition-colors hover:bg-emerald-500/15"
-                          >
-                            <Send className="w-3 h-3" />
-                            WhatsApp
-                          </a>
-                        )}
-                      </div>
-                    )}
-
-                    {editandoId === ag.id ? (
-                      <div className="mt-3 rounded-xl border border-white/10 bg-[#0d0f17] p-3">
-                        <div className="mb-2 flex items-center gap-2 text-[11px] font-medium text-slate-400">
-                          <CalendarClock className="w-3.5 h-3.5" />
-                          Remarcar reunião
-                        </div>
-                        <div className="flex flex-wrap gap-2">
-                          <input
-                            type="datetime-local"
-                            value={novaDataHora}
-                            onChange={(e) => setNovaDataHora(e.target.value)}
-                            className="rounded-md border border-white/10 bg-[#13131f] px-3 py-2 text-xs text-slate-200 outline-none"
-                          />
-                          <input
-                            type="number"
-                            min={15}
-                            step={15}
-                            value={novaDuracaoMinutos}
-                            onChange={(e) => setNovaDuracaoMinutos(e.target.value)}
-                            className="w-28 rounded-md border border-white/10 bg-[#13131f] px-3 py-2 text-xs text-slate-200 outline-none"
-                          />
-                          <button
-                            onClick={() => void salvarRemarcacao(ag.id)}
-                            disabled={savingId === ag.id}
-                            className="inline-flex items-center gap-1 rounded-md bg-blue-600 px-3 py-2 text-xs font-medium text-white transition-colors hover:bg-blue-500 disabled:opacity-60"
-                          >
-                            <Save className="w-3.5 h-3.5" />
-                            Salvar
-                          </button>
-                          <button
-                            onClick={() => setEditandoId(null)}
-                            className="inline-flex items-center gap-1 rounded-md border border-white/10 bg-white/5 px-3 py-2 text-xs font-medium text-slate-300 transition-colors hover:bg-white/10"
-                          >
-                            Fechar
-                          </button>
-                        </div>
-                      </div>
-                    ) : null}
-
-                    {ag.observacoes && (
-                      <p className="mt-2 text-xs text-slate-500">{ag.observacoes}</p>
-                    )}
-                  </div>
-
-                  {!['realizado', 'cancelado'].includes(ag.status) && (
-                    <div className="flex items-center gap-1 flex-shrink-0">
-                      {['agendado', 'remarcado'].includes(ag.status) && (
-                        <button
-                          onClick={() => void updateStatus(ag.id, 'confirmado')}
-                          disabled={savingId === ag.id}
-                          className="p-1.5 rounded-md text-slate-500 hover:text-cyan-300 hover:bg-cyan-400/10 transition-colors disabled:opacity-50"
-                          title="Confirmar"
-                        >
-                          <CheckCheck className="w-4 h-4" />
-                        </button>
-                      )}
-                      <button
-                        onClick={() => iniciarRemarcacao(ag)}
-                        disabled={savingId === ag.id}
-                        className="p-1.5 rounded-md text-slate-500 hover:text-amber-300 hover:bg-amber-400/10 transition-colors disabled:opacity-50"
-                        title="Remarcar"
-                      >
-                        <Pencil className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => void updateStatus(ag.id, 'realizado')}
-                        disabled={savingId === ag.id}
-                        className="p-1.5 rounded-md text-slate-500 hover:text-emerald-400 hover:bg-emerald-400/10 transition-colors disabled:opacity-50"
-                        title="Marcar como realizado"
-                      >
-                        <CheckCircle2 className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => void cancelar(ag.id)}
-                        disabled={savingId === ag.id}
-                        className="p-1.5 rounded-md text-slate-500 hover:text-red-400 hover:bg-red-400/10 transition-colors disabled:opacity-50"
-                        title="Cancelar"
-                      >
-                        <XCircle className="w-4 h-4" />
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )
-          })}
+          {lista.map((ag) => (
+            <div key={ag.id} onClick={() => setSelectedAgendamento(ag)} className="cursor-pointer">
+              {renderAgendamentoDetail(ag)}
+            </div>
+          ))}
         </div>
       </div>
     )
   }
 
   return (
-    <div className="p-6 max-w-5xl mx-auto">
-      {/* Header */}
+    <div className="p-6 max-w-6xl mx-auto">
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-xl font-semibold text-white flex items-center gap-2">
@@ -432,7 +502,7 @@ export default function AgendamentosPage() {
             Novo agendamento
           </button>
           <button
-            onClick={load}
+            onClick={() => void load()}
             className="p-2 rounded-lg text-slate-500 hover:text-white hover:bg-white/5 transition-colors"
             title="Atualizar"
           >
@@ -442,7 +512,7 @@ export default function AgendamentosPage() {
       </div>
 
       <div data-tour="agendamentos-google" className="mb-6">
-        {googleConnected === false && (
+        {googleConnected === false ? (
           <div className="flex items-center justify-between p-4 rounded-xl border border-yellow-500/20 bg-yellow-500/5">
             <div className="flex items-center gap-3">
               <AlertCircle className="w-5 h-5 text-yellow-400 flex-shrink-0" />
@@ -461,20 +531,20 @@ export default function AgendamentosPage() {
               Conectar Google
             </a>
           </div>
-        )}
+        ) : null}
 
-        {googleConnected === true && (
+        {googleConnected === true ? (
           <div className="flex items-center gap-2 text-sm text-emerald-400">
             <CheckCircle2 className="w-4 h-4" />
             Google Calendar conectado
           </div>
-        )}
+        ) : null}
 
-        {googleConnected === null && (
+        {googleConnected === null ? (
           <div className="text-sm text-slate-500">
             Verificando integração com Google Calendar...
           </div>
-        )}
+        ) : null}
       </div>
 
       <div data-tour="agendamentos-status" className="mb-6 flex flex-wrap gap-2">
@@ -488,10 +558,115 @@ export default function AgendamentosPage() {
         ))}
       </div>
 
+      <div className="mb-8 overflow-hidden rounded-2xl border border-white/10 bg-[#11131b]">
+        <div className="flex items-center justify-between border-b border-white/10 px-4 py-4">
+          <div>
+            <h2 className="text-sm font-semibold text-white">Calendário operacional</h2>
+            <p className="mt-1 text-xs text-slate-500">
+              Visualize os agendamentos por cor e clique para operar como numa agenda de trabalho.
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setCurrentMonth((current) => subMonths(current, 1))}
+              className="rounded-lg border border-white/10 bg-white/5 p-2 text-slate-400 transition-colors hover:bg-white/10 hover:text-white"
+              title="Mês anterior"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <div className="min-w-40 text-center text-sm font-semibold capitalize text-slate-200">
+              {format(currentMonth, "MMMM 'de' yyyy", { locale: ptBR })}
+            </div>
+            <button
+              onClick={() => setCurrentMonth((current) => addMonths(current, 1))}
+              className="rounded-lg border border-white/10 bg-white/5 p-2 text-slate-400 transition-colors hover:bg-white/10 hover:text-white"
+              title="Próximo mês"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-7 border-b border-white/10 bg-white/[0.02]">
+          {WEEKDAY_LABELS.map((day) => (
+            <div key={day} className="px-3 py-2 text-center text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">
+              {day}
+            </div>
+          ))}
+        </div>
+
+        <div className="grid grid-cols-7">
+          {calendarDays.map((day) => {
+            const items = agendamentosDoDia(day)
+            const outside = !isSameMonth(day, currentMonth)
+            const isCurrentDay = isToday(day)
+
+            return (
+              <div
+                key={day.toISOString()}
+                className={`min-h-36 border-b border-r border-white/10 p-2 align-top ${outside ? 'bg-[#0b0d12]' : 'bg-[#11131b]'}`}
+              >
+                <div className="mb-2 flex items-center justify-between">
+                  <span
+                    className={`inline-flex h-7 w-7 items-center justify-center rounded-full text-xs font-semibold ${
+                      isCurrentDay
+                        ? 'bg-blue-500 text-white'
+                        : outside
+                          ? 'text-slate-600'
+                          : 'text-slate-300'
+                    }`}
+                  >
+                    {format(day, 'd')}
+                  </span>
+                  {items.length > 0 ? (
+                    <span className="text-[10px] font-medium text-slate-500">
+                      {items.length} ag.
+                    </span>
+                  ) : null}
+                </div>
+
+                <div className="space-y-1.5">
+                  {items.slice(0, 3).map((ag) => {
+                    const date = parseISO(ag.data_hora)
+                    const statusStyle = STATUS_CALENDAR_STYLES[ag.status] ?? STATUS_CALENDAR_STYLES.agendado
+
+                    return (
+                      <button
+                        key={ag.id}
+                        onClick={() => setSelectedAgendamento(ag)}
+                        className={`flex w-full items-start gap-2 rounded-lg border px-2 py-1.5 text-left transition-colors hover:bg-white/10 ${statusStyle.badge} ${statusStyle.border}`}
+                      >
+                        <span className={`mt-1 h-2 w-2 flex-shrink-0 rounded-full ${statusStyle.dot}`} />
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-[11px] font-semibold">
+                            {format(date, 'HH:mm')} · {ag.leads?.nome || 'Lead'}
+                          </span>
+                          <span className="block truncate text-[10px] opacity-80">
+                            {STATUS_LABELS[ag.status]?.label || ag.status}
+                          </span>
+                        </span>
+                      </button>
+                    )
+                  })}
+                  {items.length > 3 ? (
+                    <button
+                      onClick={() => setSelectedAgendamento(items[0])}
+                      className="w-full rounded-lg border border-dashed border-white/10 px-2 py-1 text-left text-[10px] font-medium text-slate-400 transition-colors hover:bg-white/5"
+                    >
+                      +{items.length - 3} mais agendamentos
+                    </button>
+                  ) : null}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
       <div data-tour="agendamentos-lista">
         {loading ? (
           <div className="space-y-3">
-            {[1, 2, 3].map(i => (
+            {[1, 2, 3].map((i) => (
               <div key={i} className="h-24 rounded-xl bg-[#13131f] animate-pulse" />
             ))}
           </div>
@@ -523,6 +698,41 @@ export default function AgendamentosPage() {
       </div>
 
       <AgendamentosOnboardingTour />
+      {selectedAgendamento ? (
+        <>
+          <div
+            className="fixed inset-0 z-[310] bg-black/70 backdrop-blur-sm"
+            onClick={() => setSelectedAgendamento(null)}
+          />
+          <div className="fixed inset-x-4 top-1/2 z-[311] mx-auto w-full max-w-3xl -translate-y-1/2">
+            <div className="overflow-hidden rounded-2xl border border-white/10 bg-[#0f1118] shadow-[0_28px_90px_rgba(0,0,0,0.55)]">
+              <div className="flex items-start justify-between border-b border-white/10 px-5 py-4">
+                <div>
+                  <div className="inline-flex items-center gap-2 rounded-full border border-blue-500/20 bg-blue-500/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-blue-300">
+                    <CalendarClock className="w-3.5 h-3.5" />
+                    Visão de calendário
+                  </div>
+                  <h3 className="mt-3 text-lg font-semibold text-white">
+                    {selectedAgendamento.leads?.nome || 'Agendamento'}
+                  </h3>
+                  <p className="mt-1 text-sm text-slate-500">
+                    Edite o compromisso sem sair da leitura mensal.
+                  </p>
+                </div>
+                <button
+                  onClick={() => setSelectedAgendamento(null)}
+                  className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-slate-300 transition-colors hover:bg-white/10"
+                >
+                  Fechar
+                </button>
+              </div>
+              <div className="max-h-[75vh] overflow-y-auto p-5">
+                {renderAgendamentoDetail(selectedAgendamento, true)}
+              </div>
+            </div>
+          </div>
+        </>
+      ) : null}
       <NovoAgendamentoModal
         open={showNovoAgendamento}
         onClose={() => setShowNovoAgendamento(false)}

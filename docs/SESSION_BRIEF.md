@@ -165,6 +165,17 @@ Ultima atualizacao: 2026-03-30
     - a busca do modal agora reage melhor ao texto digitado e ganhou CTA explicito `Buscar lead`
     - o endpoint de busca passou a aceitar leads com `lgpd_optout` nulo, sem esconder a base valida por acidente
     - o modal agora aceita `E-mail da reunião`, permitindo sobrescrever o e-mail atual do lead so para esse agendamento/Meet
+- calendario de agendamentos em 30/03:
+  - a tela `/agendamentos` agora ganhou uma visao mensal de calendario
+  - cada compromisso aparece com cor por status
+  - o clique em um evento abre um painel/modal de operacao com:
+    - confirmar
+    - remarcar
+    - realizado
+    - cancelar
+    - reatribuir responsavel
+    - abrir conversa / WhatsApp / Meet
+  - a fila operacional continua existindo abaixo, entao a tela passou a juntar leitura visual + execucao
 
 ## Proximo Passo Recomendado
 
@@ -197,6 +208,11 @@ Validar o runtime WhatsApp no tenant limpo:
   - criar um agendamento manual pelo `lead drawer`
   - validar busca por nome e telefone dentro do modal manual
   - validar se o `E-mail da reunião` sobrescreve corretamente o convite do Google Meet
+  - validar a visao mensal do calendario:
+    - troca de mes
+    - cores por status
+    - clique no evento
+    - edicao pelo modal do calendario
   - confirmar um agendamento
   - remarcar com nova data/hora
   - reatribuir responsável (admin)
