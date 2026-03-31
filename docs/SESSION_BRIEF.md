@@ -244,6 +244,14 @@ Validar o runtime WhatsApp no tenant limpo:
     - preparação para campanhas inteligentes
   - proximo bloco sugerido:
     - ampliar isso para leitura consolidada de pipeline entre inbox, agendamentos e contratos
+- atualizacao mais recente:
+  - esse bloco foi iniciado em 31/03/2026 com um pipeline operacional unificado em `/relatorios`
+  - a leitura agora cruza por `lead_id` o caminho:
+    - conversa
+    - fila humana
+    - agendamento
+    - contrato
+  - o `Dashboard` tambem foi endurecido para ler leads com `tenant_id` explicito
 
 ## Bloqueios e Cuidados
 

@@ -49,6 +49,19 @@ interface RelatorioData {
     respondidoManual: number
     taxaAutomacao: number
   }
+  pipelineOperacional: {
+    leadsComConversa: number
+    leadsEmFilaHumana: number
+    leadsAguardandoCliente: number
+    leadsResolvidos: number
+    leadsComAgendamento: number
+    leadsConfirmados: number
+    leadsRealizados: number
+    leadsComContrato: number
+    valorEmContratos: number
+    ticketMedioLeadContratado: number
+    resumo: string
+  }
 }
 
 function fmt(v: number) {
@@ -177,6 +190,64 @@ export default function RelatoriosPage() {
       {/* ABA 1 — Funil */}
       {aba === 1 && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+          <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: '12px', padding: '24px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px', marginBottom: '20px', flexWrap: 'wrap' }}>
+              <div>
+                <h3 style={{ fontFamily: 'Syne, sans-serif', fontSize: '15px', fontWeight: '600', color: 'var(--text-primary)', marginBottom: '8px' }}>
+                  Pipeline operacional unificado
+                </h3>
+                <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: 0 }}>
+                  {data.pipelineOperacional.resumo}
+                </p>
+              </div>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                <div style={{ background: 'rgba(79,122,255,0.08)', border: '1px solid rgba(79,122,255,0.18)', borderRadius: '999px', padding: '6px 10px', fontSize: '11px', fontWeight: '700', color: '#4f7aff' }}>
+                  {fmt(data.pipelineOperacional.valorEmContratos)} em contratos
+                </div>
+                <div style={{ background: 'rgba(167,139,250,0.08)', border: '1px solid rgba(167,139,250,0.18)', borderRadius: '999px', padding: '6px 10px', fontSize: '11px', fontWeight: '700', color: '#a78bfa' }}>
+                  Ticket médio {fmt(data.pipelineOperacional.ticketMedioLeadContratado)}
+                </div>
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '10px', marginBottom: '18px' }}>
+              {[
+                { label: 'Leads', value: data.kpis.totalLeads, color: '#4f7aff' },
+                { label: 'Com conversa', value: data.pipelineOperacional.leadsComConversa, color: '#2dd4a0' },
+                { label: 'Fila humana', value: data.pipelineOperacional.leadsEmFilaHumana, color: '#f5c842' },
+                { label: 'Agendados', value: data.pipelineOperacional.leadsComAgendamento, color: '#a78bfa' },
+                { label: 'Com contrato', value: data.pipelineOperacional.leadsComContrato, color: '#14b8a6' },
+              ].map((item) => (
+                <div key={item.label}>
+                  <div style={{ background: 'var(--bg)', border: `1px solid ${item.color}30`, borderRadius: '10px', padding: '14px 12px', textAlign: 'center' }}>
+                    <div style={{ fontSize: '22px', fontWeight: '700', fontFamily: 'Syne, sans-serif', color: item.color, letterSpacing: '-0.5px' }}>
+                      {item.value.toLocaleString('pt-BR')}
+                    </div>
+                    <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>{item.label}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '10px' }}>
+              {[
+                { label: 'Aguardando cliente', value: data.pipelineOperacional.leadsAguardandoCliente, color: '#f59e0b' },
+                { label: 'Resolvidos na inbox', value: data.pipelineOperacional.leadsResolvidos, color: '#14b8a6' },
+                { label: 'Confirmados', value: data.pipelineOperacional.leadsConfirmados, color: '#22c55e' },
+                { label: 'Realizados', value: data.pipelineOperacional.leadsRealizados, color: '#4f7aff' },
+              ].map((item) => (
+                <div key={item.label} style={{ background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: '10px', padding: '12px 14px' }}>
+                  <p style={{ fontSize: '10px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 8px' }}>
+                    {item.label}
+                  </p>
+                  <p style={{ fontSize: '20px', fontWeight: '700', color: item.color, fontFamily: 'Syne, sans-serif', margin: 0 }}>
+                    {item.value.toLocaleString('pt-BR')}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+
           <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: '12px', padding: '24px' }}>
             <h3 style={{ fontFamily: 'Syne, sans-serif', fontSize: '15px', fontWeight: '600', color: 'var(--text-primary)', marginBottom: '24px' }}>
               Funil de Conversão

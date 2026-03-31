@@ -748,3 +748,15 @@ export async function GET(
 **Causa:** `GET /api/leads` ainda montava o filtro `email.ilike...` quando havia texto digitado, mas `leads.email` ainda nao existe no schema operacional atual
 **Correcao aplicada:** Remover `email.ilike` da busca curta e alinhar o recorte tenant-aware de superfícies relacionadas (`tenant-context`, tela de leads, relatórios e portal threads)
 **Regra pratica:** Antes de enriquecer uma busca operacional com novos campos, confirmar que o schema remoto realmente contem essas colunas; se o schema ainda nao estiver alinhado, a busca deve degradar de forma segura em vez de quebrar so quando o usuario digita
+
+### 84. Status do lead sozinho nao conta o pipeline real da operacao
+**Problema:** O produto ja tinha lead, conversa, inbox humana, agendamento e contrato, mas a leitura executiva ainda ficava fragmentada e dependente demais do `status` do lead
+**Causa:** Cada modulo cresceu bem isoladamente, mas faltava uma camada que unificasse o funil operacional completo
+**Correcao aplicada:** Adicionar em `/api/relatorios` um `pipelineOperacional` que cruza conversas, fila humana, agendamentos e contratos por `lead_id`, e expor isso na aba `Funil` de `/relatorios`
+**Regra pratica:** Quando o PrevLegal evoluir um caso por mais de um modulo, os relatórios precisam mostrar a travessia inteira, nao apenas o último status gravado no lead
+
+### 85. Dashboard precisa filtrar por tenant explicitamente mesmo quando o restante do app ja endureceu
+**Problema:** A leitura rápida da home podia continuar vendo leads fora do tenant atual mesmo com outras áreas já tenant-aware
+**Causa:** O `Dashboard` ainda consultava `leads` só por `responsavel_id` / `lgpd_optout`, sem `tenant_id` explícito
+**Correcao aplicada:** Adicionar filtro por `tenant_id` nas queries de leads e stats do dashboard
+**Regra pratica:** Em transições de hardening multi-tenant, telas “resumo” costumam sobrar para trás; revisar sempre dashboard, relatórios e buscas globais depois de endurecer as rotas principais

@@ -13,6 +13,7 @@ export default async function DashboardPage() {
     let leadsQuery = supabase
         .from('leads')
         .select('id, nome, status, score, ganho_potencial, created_at')
+        .eq('tenant_id', context.tenantId)
         .eq('lgpd_optout', false)
 
     if (!context.isAdmin) {
@@ -26,6 +27,7 @@ export default async function DashboardPage() {
     let statsLeadsQuery = supabase
         .from('leads')
         .select('status, score, ganho_potencial')
+        .eq('tenant_id', context.tenantId)
         .eq('lgpd_optout', false)
 
     if (!context.isAdmin) {

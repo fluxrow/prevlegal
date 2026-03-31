@@ -1404,3 +1404,39 @@ Pontos que precisam ser preservados durante a implementacao:
   - `npm run build` passou
 - proximo passo:
   - retestar no browser a busca digitada no modal de `Novo agendamento` dentro da aba `/agendamentos`
+
+## Atualizacao de 2026-03-31 — Pipeline operacional unificado
+
+- enquanto o chip da Z-API ainda nao estava ativo, o bloco seguinte puxado foi a consolidacao do pipeline entre comercial e operacao
+- ajustes aplicados:
+  - `src/app/api/relatorios/route.ts`
+    - novo bloco `pipelineOperacional`
+    - cruza por `lead_id`:
+      - conversas
+      - fila humana
+      - agendamentos
+      - contratos
+    - retorna:
+      - leads com conversa
+      - leads em fila humana
+      - aguardando cliente
+      - resolvidos
+      - com agendamento
+      - confirmados
+      - realizados
+      - com contrato
+      - valor em contratos
+      - ticket medio por lead contratado
+      - resumo textual
+  - `src/app/(dashboard)/relatorios/page.tsx`
+    - a aba `Funil` agora tem uma secao de `Pipeline operacional unificado`
+  - `src/app/(dashboard)/dashboard/page.tsx`
+    - queries de leads e stats alinhadas com filtro explicito por `tenant_id`
+- impacto operacional:
+  - o time passa a enxergar no mesmo lugar quanto do lead ja virou conversa, fila humana, agenda e contrato
+  - o dashboard deixa de depender de leitura implicita do piloto para resumir o tenant atual
+- validacao:
+  - `npm run build` passou
+- proximo passo:
+  - validar no browser a aba `Funil` de `/relatorios`
+  - decidir depois se o pipeline vira tambem uma fila clicavel por etapa

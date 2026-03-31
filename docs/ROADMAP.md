@@ -152,6 +152,32 @@ Mestra: [[MASTER_PREV_LEGAL]]
 - proximo passo recomendado:
   - cruzar previsao financeira com campanhas e agendamentos para aproximar a leitura de pipeline real
 
+## Atualizacao Pipeline Unificado — 31/03/2026
+
+- os relatórios agora ganharam uma camada unica de pipeline entre:
+  - lead
+  - conversa
+  - fila humana
+  - agendamento
+  - contrato
+- a aba `Funil` em `/relatorios` passou a mostrar:
+  - leads com conversa
+  - leads em fila humana
+  - leads aguardando cliente
+  - leads resolvidos
+  - leads com agendamento
+  - leads confirmados
+  - leads realizados
+  - leads com contrato
+  - valor em contratos e ticket medio por lead contratado
+- o `Dashboard` tambem foi alinhado para consultar leads com filtro explicito por `tenant_id`, evitando leitura cruzada com outras bases do piloto
+- impacto operacional:
+  - a equipe passa a ler no mesmo lugar o quanto o comercial ja virou operacao humana e quanto a operacao ja virou agenda/contrato
+  - a leitura deixa de depender so do `status` do lead, que sozinho nao conta toda a historia
+- proximo passo recomendado:
+  - transformar essa leitura em filas acionaveis por etapa
+  - depois ligar esse pipeline ao canal WhatsApp de origem quando a Z-API estiver operacional
+
 ## Atualizacao Agendamento Manual — 30/03/2026
 
 - o backend ja aceitava `POST /api/agendamentos`, mas o produto ainda nao oferecia uma entrada humana obvia para criar consulta manualmente

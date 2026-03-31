@@ -55,6 +55,19 @@ export async function GET() {
           respondidoManual: 0,
           taxaAutomacao: 0,
         },
+        pipelineOperacional: {
+          leadsComConversa: 0,
+          leadsEmFilaHumana: 0,
+          leadsAguardandoCliente: 0,
+          leadsResolvidos: 0,
+          leadsComAgendamento: 0,
+          leadsConfirmados: 0,
+          leadsRealizados: 0,
+          leadsComContrato: 0,
+          valorEmContratos: 0,
+          ticketMedioLeadContratado: 0,
+          resumo: 'Sem leads visiveis para montar o pipeline operacional neste tenant.',
+        },
       })
     }
     leadsQuery = leadsQuery.in('id', accessibleLeadIds)
@@ -98,6 +111,59 @@ export async function GET() {
     const totalMensagens = mensagensInbound?.length ?? 0
     const respondidoAgente = mensagensInbound?.filter(m => m.respondido_por_agente === true).length ?? 0
     const respondidoManual = totalMensagens - respondidoAgente
+
+    const [conversasRes, agendamentosRes, contratosRes] = await Promise.all([
+      supabase
+        .from('conversas')
+        .select('lead_id, status')
+        .in('lead_id', accessibleLeadIds),
+      supabase
+        .from('agendamentos')
+        .select('lead_id, status')
+        .in('lead_id', accessibleLeadIds),
+      supabase
+        .from('contratos')
+        .select('lead_id, valor_total, status')
+        .in('lead_id', accessibleLeadIds),
+    ])
+
+    if (conversasRes.error) return NextResponse.json({ error: conversasRes.error.message }, { status: 500 })
+    if (agendamentosRes.error) return NextResponse.json({ error: agendamentosRes.error.message }, { status: 500 })
+    if (contratosRes.error) return NextResponse.json({ error: contratosRes.error.message }, { status: 500 })
+
+    const conversas = conversasRes.data || []
+    const agendamentos = agendamentosRes.data || []
+    const contratosPipeline = contratosRes.data || []
+
+    const uniqLeadCount = (items: Array<{ lead_id: string | null | undefined }>) =>
+      new Set(items.map((item) => item.lead_id).filter(Boolean)).size
+
+    const leadsComConversa = uniqLeadCount(conversas)
+    const leadsEmFilaHumana = uniqLeadCount(
+      conversas.filter((conversa) => ['humano', 'aguardando_cliente'].includes(conversa.status)),
+    )
+    const leadsAguardandoCliente = uniqLeadCount(
+      conversas.filter((conversa) => conversa.status === 'aguardando_cliente'),
+    )
+    const leadsResolvidos = uniqLeadCount(
+      conversas.filter((conversa) => conversa.status === 'resolvido'),
+    )
+    const leadsComAgendamento = uniqLeadCount(agendamentos)
+    const leadsConfirmados = uniqLeadCount(
+      agendamentos.filter((agendamento) => ['confirmado', 'realizado'].includes(agendamento.status)),
+    )
+    const leadsRealizados = uniqLeadCount(
+      agendamentos.filter((agendamento) => agendamento.status === 'realizado'),
+    )
+    const contratosAtivosOuQuitados = contratosPipeline.filter((contrato) => contrato.status !== 'cancelado')
+    const leadsComContrato = uniqLeadCount(contratosAtivosOuQuitados)
+    const valorEmContratos = contratosAtivosOuQuitados.reduce((acc, contrato) => acc + Number(contrato.valor_total || 0), 0)
+    const ticketMedioLeadContratado = leadsComContrato > 0 ? valorEmContratos / leadsComContrato : 0
+
+    const resumoPipeline =
+      leadsComContrato > 0
+        ? `${leadsComContrato} lead(s) ja viraram contrato, com ${leadsConfirmados} confirmados e ${leadsEmFilaHumana} ainda exigindo operacao humana.`
+        : `${leadsComAgendamento} lead(s) ja passaram por agendamento e ${leadsEmFilaHumana} ainda estao na fila humana.`
 
     // 4. Evolução mensal (últimos 6 meses)
     const agora = new Date()
@@ -181,6 +247,19 @@ export async function GET() {
         respondidoAgente,
         respondidoManual,
         taxaAutomacao: totalMensagens > 0 ? Math.round((respondidoAgente / totalMensagens) * 100) : 0,
+      },
+      pipelineOperacional: {
+        leadsComConversa,
+        leadsEmFilaHumana,
+        leadsAguardandoCliente,
+        leadsResolvidos,
+        leadsComAgendamento,
+        leadsConfirmados,
+        leadsRealizados,
+        leadsComContrato,
+        valorEmContratos,
+        ticketMedioLeadContratado,
+        resumo: resumoPipeline,
       },
     })
   } catch (error) {
