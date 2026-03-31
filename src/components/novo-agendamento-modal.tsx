@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
 import { CalendarClock, Loader2, Save, Search, Video, X } from 'lucide-react'
 
@@ -119,6 +119,7 @@ export default function NovoAgendamentoModal({
   const [loadingUsuarios, setLoadingUsuarios] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const latestSearchRef = useRef(0)
 
   const selectedLead = useMemo(
     () => leadOptions.find((lead) => lead.id === selectedLeadId) || initialLead || null,
@@ -190,6 +191,8 @@ export default function NovoAgendamentoModal({
   async function searchLeads(query: string) {
     if (lockLead && initialLead) return
 
+    const requestId = latestSearchRef.current + 1
+    latestSearchRef.current = requestId
     setLoadingLeads(true)
     setError('')
     try {
@@ -227,6 +230,8 @@ export default function NovoAgendamentoModal({
       }
 
       const leads = Array.from(merged.values())
+      if (latestSearchRef.current !== requestId) return
+
       setLeadOptions(leads)
       setSelectedLeadId((current) => {
         if (current && leads.some((lead: LeadOption) => lead.id === current)) {
@@ -235,9 +240,12 @@ export default function NovoAgendamentoModal({
         return leads.length === 1 ? leads[0].id : ''
       })
     } catch {
+      if (latestSearchRef.current !== requestId) return
       setLeadOptions(initialLead ? [initialLead] : [])
     } finally {
-      setLoadingLeads(false)
+      if (latestSearchRef.current === requestId) {
+        setLoadingLeads(false)
+      }
     }
   }
 

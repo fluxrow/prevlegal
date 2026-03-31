@@ -1332,3 +1332,6 @@ Pontos que precisam ser preservados durante a implementacao:
   - `src/app/api/leads/route.ts`
     - quando existe `q`, a rota agora faz busca real no banco com `ilike` antes do filtro final no servidor
     - isso evita depender apenas da amostra recente por `updated_at`, que podia esconder leads antigos/importados no modal global de agendamento
+  - `src/components/novo-agendamento-modal.tsx`
+    - a busca agora ignora respostas antigas de requests anteriores
+    - isso evita que a resposta do carregamento inicial ou de um termo parcial sobrescreva o resultado correto digitado pelo operador na aba de agendamentos
