@@ -25,7 +25,7 @@ Ordem de leitura:
 
 ## Estado Atual
 
-Ultima atualizacao: 2026-03-30
+Ultima atualizacao: 2026-03-31
 
 - Branch principal: `main`
 - Linha atual do produto no Obsidian: Fases 21, 22, 23, 24 e 25 concluidas
@@ -116,8 +116,14 @@ Ultima atualizacao: 2026-03-30
       - ativo: `false`
       - is_default: `false`
       - metadata de warm-up ja aplicada
-  - edicao de lead em 30/03:
-    - o detalhe do lead agora tem CTA `Editar dados`
+- edicao de lead em 30/03:
+  - o detalhe do lead agora tem CTA `Editar dados`
+ - busca de lead no agendamento manual em 31/03:
+   - o problema nao era ausencia de email no cadastro do lead
+   - `src/app/api/leads/route.ts` agora aceita `scope=scheduling` e usa service role com filtro explicito por `tenant_id`
+   - a busca operacional do modal deixa de depender do recorte por `responsavel_id` para usuario nao-admin
+   - `src/app/api/busca/route.ts` ficou explicitamente tenant-aware para leads, documentos e conversas
+   - o modal `src/components/novo-agendamento-modal.tsx` agora combina `/api/leads` + `/api/busca` e exibe lista clicavel de resultados em vez de depender de select nativo
     - o `lead drawer` tambem ganhou o mesmo CTA
     - a rota `PATCH /api/leads/[id]` foi criada para atualizar diretamente os campos operacionais do lead
     - o objetivo e dar autonomia ao operador para complementar o cadastro conforme novas informacoes chegam pela conversa

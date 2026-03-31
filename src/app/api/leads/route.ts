@@ -30,20 +30,27 @@ export async function GET(request: Request) {
   if (!context) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   if (!context.tenantId) return NextResponse.json({ leads: [] })
 
+  const adminSupabase = createAdminClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+
   const { searchParams } = new URL(request.url)
   const q = normalizarTexto(searchParams.get('q'))
   const qNormalizada = normalizarBusca(q)
   const limit = Math.min(Number(searchParams.get('limit') || 20) || 20, 50)
   const fetchLimit = q ? Math.max(limit * 4, 120) : limit
+  const scope = normalizarTexto(searchParams.get('scope'))
+  const allowTenantWideSearch = scope === 'operational' || scope === 'scheduling'
 
-  let query = supabase
+  let query = adminSupabase
     .from('leads')
-    .select('id, nome, telefone, status, email, banco, tenant_id, responsavel_id, lgpd_optout')
+    .select('id, nome, telefone, status, email, banco, tenant_id, responsavel_id, lgpd_optout, updated_at')
     .eq('tenant_id', context.tenantId)
     .order('updated_at', { ascending: false })
     .limit(fetchLimit)
 
-  if (!context.isAdmin) {
+  if (!context.isAdmin && !allowTenantWideSearch) {
     query = query.eq('responsavel_id', context.usuarioId)
   }
 

@@ -1303,3 +1303,26 @@ Pontos que precisam ser preservados durante a implementacao:
   - `npm run build` passou
 - proximo passo:
   - retestar no browser a busca por nome e telefone no modal de agendamento
+
+## Atualizacao de 2026-03-31 — Picker de lead no agendamento manual
+
+- a busca do modal ainda podia falhar no produto mesmo com lead existente e nome correto
+- a ausencia de email no lead nao era a causa raiz
+- ajustes aplicados:
+  - `src/app/api/leads/route.ts`
+    - `GET` agora aceita `scope=scheduling`
+    - usa service role com filtro explicito por `tenant_id`
+    - em `scope=scheduling`, deixa de restringir a busca por `responsavel_id` para usuarios nao-admin
+  - `src/app/api/busca/route.ts`
+    - passou a usar `tenant_id` explicito para leads, documentos e conversas
+  - `src/components/novo-agendamento-modal.tsx`
+    - a busca agora consulta tanto `/api/leads` quanto `/api/busca`
+    - os resultados sao mesclados e exibidos em lista clicavel com nome, telefone, email e status
+    - o fluxo deixa de depender do `select` nativo
+- impacto operacional:
+  - o agendamento manual fica livre da suposicao de que o lead precisa ter email para aparecer
+  - o picker de lead fica mais previsivel para nome com acento, telefone e leads importados/manuals dentro do mesmo tenant
+- validacao:
+  - `npm run build` passou
+- proximo passo:
+  - retestar no browser o picker de lead no modal de agendamento manual

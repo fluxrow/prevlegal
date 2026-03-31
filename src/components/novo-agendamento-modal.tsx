@@ -191,14 +191,42 @@ export default function NovoAgendamentoModal({
     if (lockLead && initialLead) return
 
     setLoadingLeads(true)
+    setError('')
     try {
-      const params = new URLSearchParams()
-      if (query.trim()) params.set('q', query.trim())
-      params.set('limit', '20')
-      const res = await fetch(`/api/leads?${params.toString()}`)
-      if (!res.ok) throw new Error()
-      const data = await res.json()
-      const leads = data.leads || []
+      const trimmedQuery = query.trim()
+      const [recentRes, buscaRes] = await Promise.all([
+        fetch(`/api/leads?${new URLSearchParams({ ...(trimmedQuery ? { q: trimmedQuery } : {}), limit: '20', scope: 'scheduling' }).toString()}`),
+        trimmedQuery.length >= 2
+          ? fetch(`/api/busca?${new URLSearchParams({ q: trimmedQuery }).toString()}`)
+          : Promise.resolve(null),
+      ])
+
+      if (!recentRes.ok) throw new Error()
+      const recentData = await recentRes.json()
+      const recentLeads = (recentData.leads || []) as LeadOption[]
+
+      const buscaData = buscaRes && buscaRes.ok ? await buscaRes.json() : { resultados: [] }
+      const buscaLeads = ((buscaData.resultados || []) as Array<{
+        tipo: string
+        id: string
+        titulo: string
+        subtitulo?: string
+      }>)
+        .filter((resultado) => resultado.tipo === 'lead')
+        .map((resultado) => ({
+          id: resultado.id,
+          nome: resultado.titulo,
+          telefone: resultado.subtitulo || null,
+        }))
+
+      const merged = new Map<string, LeadOption>()
+      for (const lead of [...recentLeads, ...buscaLeads]) {
+        if (!merged.has(lead.id)) {
+          merged.set(lead.id, lead)
+        }
+      }
+
+      const leads = Array.from(merged.values())
       setLeadOptions(leads)
       setSelectedLeadId((current) => {
         if (current && leads.some((lead: LeadOption) => lead.id === current)) {
@@ -335,18 +363,57 @@ export default function NovoAgendamentoModal({
                     <Search size={13} />
                     Buscar lead
                   </button>
-                  <select
-                    value={selectedLeadId}
-                    onChange={(e) => setSelectedLeadId(e.target.value)}
-                    style={inputStyle}
+                  <div
+                    style={{
+                      border: '1px solid var(--border)',
+                      borderRadius: '12px',
+                      background: 'var(--bg-card)',
+                      padding: '8px',
+                      maxHeight: '220px',
+                      overflowY: 'auto',
+                    }}
                   >
-                    <option value="">{loadingLeads ? 'Carregando leads...' : 'Selecione um lead'}</option>
-                    {leadOptions.map((lead) => (
-                      <option key={lead.id} value={lead.id}>
-                        {lead.nome}{lead.telefone ? ` · ${lead.telefone}` : ''}{lead.email ? ` · ${lead.email}` : ''}
-                      </option>
-                    ))}
-                  </select>
+                    {loadingLeads ? (
+                      <div style={{ padding: '12px', fontSize: '12px', color: 'var(--text-muted)' }}>
+                        Buscando leads...
+                      </div>
+                    ) : leadOptions.length > 0 ? (
+                      <div style={{ display: 'grid', gap: '6px' }}>
+                        {leadOptions.map((lead) => {
+                          const selected = lead.id === selectedLeadId
+                          return (
+                            <button
+                              key={lead.id}
+                              type="button"
+                              onClick={() => setSelectedLeadId(lead.id)}
+                              style={{
+                                textAlign: 'left',
+                                borderRadius: '10px',
+                                border: selected ? '1px solid rgba(79,122,255,0.45)' : '1px solid var(--border)',
+                                background: selected ? 'rgba(79,122,255,0.14)' : 'var(--bg-surface)',
+                                color: 'var(--text-primary)',
+                                padding: '10px 12px',
+                                cursor: 'pointer',
+                              }}
+                            >
+                              <div style={{ fontSize: '13px', fontWeight: '700', marginBottom: '4px' }}>
+                                {lead.nome}
+                              </div>
+                              <div style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                                {lead.telefone ? <span>{lead.telefone}</span> : null}
+                                {lead.email ? <span>{lead.email}</span> : null}
+                                {lead.status ? <span>{lead.status}</span> : null}
+                              </div>
+                            </button>
+                          )
+                        })}
+                      </div>
+                    ) : (
+                      <div style={{ padding: '12px', fontSize: '12px', color: 'var(--text-muted)' }}>
+                        Nenhum lead encontrado para essa busca.
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
             </FormField>

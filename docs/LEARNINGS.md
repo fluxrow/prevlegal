@@ -736,3 +736,9 @@ export async function GET(
 **Causa:** A busca curta dependia de `or(...)` com `ilike` no PostgREST, o que fica frágil com telefone formatado, acentos e combinacoes com `null`
 **Correcao aplicada:** Buscar um conjunto curto tenant-aware no banco e filtrar no servidor com normalizacao de texto e digitos de telefone antes de devolver os resultados
 **Regra pratica:** Em buscas operacionais pequenas do PrevLegal, confiabilidade vale mais do que “query esperta”; quando o matching ficar frágil demais no SQL, normalize no servidor e devolva um resultado mais previsível
+
+### 82. Picker de lead para agendamento nao deve depender nem de email nem do dono atual do lead
+**Problema:** No modal de agendamento manual, o operador podia digitar o nome certo e ainda assim nao ver o lead para selecionar
+**Causa:** O problema nao era falta de email; o gargalo estava na combinacao de duas coisas: a busca curta continuava sensivel ao escopo do usuario e o picker ainda dependia demais de um fluxo de selecao mais fragil
+**Correcao aplicada:** Tornar `GET /api/leads` explicitamente tenant-aware com `scope=scheduling`, remover a restricao por `responsavel_id` nesse escopo, endurecer `/api/busca` com `tenant_id` explicito e trocar o select nativo do modal por uma lista clicavel que mescla resultados das duas rotas
+**Regra pratica:** Em fluxo operacional de agenda, o usuario precisa encontrar rapidamente qualquer lead relevante do tenant; email pode ajudar no convite, mas nunca pode ser precondicao invisivel para o lead aparecer no picker
