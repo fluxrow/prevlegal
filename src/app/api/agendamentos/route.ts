@@ -2,9 +2,10 @@ import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 import { criarEventoCalendar } from '@/lib/google-calendar'
 import { getTenantContext } from '@/lib/tenant-context'
+import { createClient as createAdminClient } from '@supabase/supabase-js'
 
 async function getScopedLead(
-  supabase: Awaited<ReturnType<typeof createClient>>,
+  supabase: any,
   context: NonNullable<Awaited<ReturnType<typeof getTenantContext>>>,
   leadId: string,
 ) {
@@ -30,7 +31,7 @@ async function getScopedLead(
 }
 
 async function getScopedUsuario(
-  supabase: Awaited<ReturnType<typeof createClient>>,
+  supabase: any,
   context: NonNullable<Awaited<ReturnType<typeof getTenantContext>>>,
   usuarioId: string | null | undefined,
 ) {
@@ -77,72 +78,94 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const supabase = await createClient()
-  const context = await getTenantContext(supabase)
-  if (!context) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-
-  const body = await request.json()
-  const { lead_id, usuario_id, data_hora, duracao_minutos = 30, observacoes, honorario, email_reuniao } = body
-
-  if (!lead_id || !data_hora) {
-    return NextResponse.json({ error: 'lead_id e data_hora são obrigatórios' }, { status: 400 })
-  }
-
-  const lead = await getScopedLead(supabase, context, lead_id)
-  if (!lead) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-  }
-
-  const usuarioResponsavel = await getScopedUsuario(supabase, context, context.isAdmin ? usuario_id : context.usuarioId)
-  if (!usuarioResponsavel) {
-    return NextResponse.json({ error: 'Responsável inválido para este tenant' }, { status: 400 })
-  }
-
-  let googleEventId: string | null = null
-  let meetLink: string | null = null
-  const emailReuniao =
-    typeof email_reuniao === 'string' && email_reuniao.trim()
-      ? email_reuniao.trim()
-      : undefined
-  const emailLead = emailReuniao || lead.email || undefined
-
-  // Tenta criar no Google Calendar (não falha se não conectado)
   try {
-    const resultado = await criarEventoCalendar({
-      titulo: `Consulta Previdenciária — ${lead?.nome ?? 'Lead'}`,
-      descricao: observacoes ?? '',
-      dataHora: data_hora,
-      duracaoMinutos: duracao_minutos,
-      emailLead,
-      emailAdvogado: usuarioResponsavel?.email ?? undefined,
-    })
-    googleEventId = resultado.googleEventId
-    meetLink = resultado.meetLink
-  } catch (err) {
-    console.warn('Google Calendar não conectado, agendando sem evento:', err)
+    const supabase = await createClient()
+    const context = await getTenantContext(supabase)
+    if (!context) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+    const adminSupabase = createAdminClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    )
+
+    const body = await request.json()
+    const { lead_id, usuario_id, data_hora, duracao_minutos = 30, observacoes, honorario, email_reuniao } = body
+
+    if (!lead_id || !data_hora) {
+      return NextResponse.json({ error: 'lead_id e data_hora são obrigatórios' }, { status: 400 })
+    }
+
+    const lead = await getScopedLead(adminSupabase, context, lead_id)
+    if (!lead) {
+      return NextResponse.json({ error: 'Lead fora do escopo deste tenant/usuário' }, { status: 403 })
+    }
+
+    const usuarioResponsavel = await getScopedUsuario(
+      adminSupabase,
+      context,
+      context.isAdmin ? usuario_id : context.usuarioId,
+    )
+    if (!usuarioResponsavel) {
+      return NextResponse.json({ error: 'Responsável inválido para este tenant' }, { status: 400 })
+    }
+
+    let googleEventId: string | null = null
+    let meetLink: string | null = null
+    const emailReuniao =
+      typeof email_reuniao === 'string' && email_reuniao.trim()
+        ? email_reuniao.trim()
+        : undefined
+    const emailLead = emailReuniao || lead.email || undefined
+
+    try {
+      const resultado = await criarEventoCalendar({
+        titulo: `Consulta Previdenciária — ${lead?.nome ?? 'Lead'}`,
+        descricao: observacoes ?? '',
+        dataHora: data_hora,
+        duracaoMinutos: duracao_minutos,
+        emailLead,
+        emailAdvogado: usuarioResponsavel?.email ?? undefined,
+      })
+      googleEventId = resultado.googleEventId
+      meetLink = resultado.meetLink
+    } catch (err) {
+      console.warn('Google Calendar não conectado, agendando sem evento:', err)
+    }
+
+    const { data, error } = await adminSupabase
+      .from('agendamentos')
+      .insert({
+        tenant_id: context.tenantId,
+        lead_id,
+        usuario_id: usuarioResponsavel.id,
+        data_hora,
+        duracao_minutos,
+        observacoes,
+        honorario,
+        google_event_id: googleEventId,
+        meet_link: meetLink,
+        status: 'agendado',
+      })
+      .select(`*, leads(id, nome, telefone), usuarios(id, nome)`)
+      .single()
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+
+    const { error: leadUpdateError } = await adminSupabase
+      .from('leads')
+      .update({ status: 'scheduled' })
+      .eq('id', lead_id)
+      .eq('tenant_id', context.tenantId)
+
+    if (leadUpdateError) {
+      console.warn('Falha ao atualizar status do lead após agendamento:', leadUpdateError.message)
+    }
+
+    return NextResponse.json(data, { status: 201 })
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Não foi possível criar o agendamento'
+    return NextResponse.json({ error: message }, { status: 500 })
   }
-
-  const { data, error } = await supabase
-    .from('agendamentos')
-    .insert({
-      tenant_id: context.tenantId,
-      lead_id,
-      usuario_id: usuarioResponsavel.id,
-      data_hora,
-      duracao_minutos,
-      observacoes,
-      honorario,
-      google_event_id: googleEventId,
-      meet_link: meetLink,
-      status: 'agendado',
-    })
-    .select(`*, leads(id, nome, telefone), usuarios(id, nome)`)
-    .single()
-
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-
-  // Atualiza status do lead para "scheduled"
-  await supabase.from('leads').update({ status: 'scheduled' }).eq('id', lead_id)
-
-  return NextResponse.json(data, { status: 201 })
 }

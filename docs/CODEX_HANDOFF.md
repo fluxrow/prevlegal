@@ -1335,3 +1335,19 @@ Pontos que precisam ser preservados durante a implementacao:
   - `src/components/novo-agendamento-modal.tsx`
     - a busca agora ignora respostas antigas de requests anteriores
     - isso evita que a resposta do carregamento inicial ou de um termo parcial sobrescreva o resultado correto digitado pelo operador na aba de agendamentos
+
+## Atualizacao de 2026-03-31 — Criacao manual de agendamento com erro real
+
+- o modal de agendamento pelo contexto do lead ainda podia falhar com erro generico sem explicar a causa
+- ajustes aplicados:
+  - `src/app/api/agendamentos/route.ts`
+    - `POST` agora usa service role para validar lead/responsavel, inserir o agendamento e atualizar o status do lead com escopo explicito por `tenant_id`
+    - a rota ganhou `try/catch` externo e passa a devolver erro legivel em JSON quando algo quebrar
+  - `src/components/novo-agendamento-modal.tsx`
+    - o submit agora tenta ler o corpo bruto da resposta antes do fallback generico
+    - se o backend devolver mensagem real, ela passa a aparecer no modal
+- validacao:
+  - `npm run build` passou
+- proximo passo:
+  - retestar a criacao do agendamento pelo detalhe do lead
+  - confirmar qual mensagem especifica aparece caso ainda haja falha

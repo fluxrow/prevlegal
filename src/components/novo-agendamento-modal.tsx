@@ -278,7 +278,14 @@ export default function NovoAgendamentoModal({
         }),
       })
 
-      const data = await response.json().catch(() => ({}))
+      const rawBody = await response.text()
+      let data: { error?: string } = {}
+      try {
+        data = rawBody ? JSON.parse(rawBody) : {}
+      } catch {
+        data = rawBody ? { error: rawBody } : {}
+      }
+
       if (!response.ok) {
         setError(data.error || 'Não foi possível criar o agendamento')
         return
