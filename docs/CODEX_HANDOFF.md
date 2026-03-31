@@ -1326,3 +1326,9 @@ Pontos que precisam ser preservados durante a implementacao:
   - `npm run build` passou
 - proximo passo:
   - retestar no browser o picker de lead no modal de agendamento manual
+  - se ainda falhar para leads muito antigos/importados, inspecionar payload real do endpoint em runtime
+
+- refinamento aplicado na mesma trilha:
+  - `src/app/api/leads/route.ts`
+    - quando existe `q`, a rota agora faz busca real no banco com `ilike` antes do filtro final no servidor
+    - isso evita depender apenas da amostra recente por `updated_at`, que podia esconder leads antigos/importados no modal global de agendamento

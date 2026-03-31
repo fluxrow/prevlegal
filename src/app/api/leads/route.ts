@@ -38,8 +38,9 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const q = normalizarTexto(searchParams.get('q'))
   const qNormalizada = normalizarBusca(q)
+  const qDigits = q.replace(/\D/g, '')
   const limit = Math.min(Number(searchParams.get('limit') || 20) || 20, 50)
-  const fetchLimit = q ? Math.max(limit * 4, 120) : limit
+  const fetchLimit = q ? Math.max(limit * 4, 200) : limit
   const scope = normalizarTexto(searchParams.get('scope'))
   const allowTenantWideSearch = scope === 'operational' || scope === 'scheduling'
 
@@ -52,6 +53,22 @@ export async function GET(request: Request) {
 
   if (!context.isAdmin && !allowTenantWideSearch) {
     query = query.eq('responsavel_id', context.usuarioId)
+  }
+
+  if (q) {
+    const termo = `%${q}%`
+    const textFilters = [
+      `nome.ilike.${termo}`,
+      `email.ilike.${termo}`,
+      `banco.ilike.${termo}`,
+      `telefone.ilike.${termo}`,
+    ]
+
+    if (qDigits.length >= 3 && qDigits !== q) {
+      textFilters.push(`telefone.ilike.%${qDigits}%`)
+    }
+
+    query = query.or(textFilters.join(','))
   }
 
   const { data, error } = await query
