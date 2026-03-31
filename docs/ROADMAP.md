@@ -454,6 +454,10 @@ Status atual em 18/03/2026:
 ### Fase 28 — Agendamentos Operacionais
 - Criar fila de reuniões geradas pelo agente com ação rápida de confirmar, remarcar e cancelar
 - Adicionar status de visualização e responsável humano
+- Estado atual em 31/03/2026:
+  - fluxo manual pelo detalhe do lead validado com convite chegando por e-mail
+  - calendario operacional mensal validado
+  - ponto residual mais recente ficou na busca digitada do modal global de `/agendamentos`, atacado pela remocao da dependencia de `leads.email` na busca curta
 
 ### Fase 29 — Saúde e risco do tenant
 - Expandir o admin com tendências de uso, último acesso, risco de churn e crescimento por período

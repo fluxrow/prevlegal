@@ -14,12 +14,10 @@ export async function GET() {
     .select('lead_id, mensagem, remetente, lida, created_at, leads!inner(nome, responsavel_id)')
     .order('created_at', { ascending: false })
 
-  if (!context.isAdmin) {
-    if (!accessibleLeadIds || accessibleLeadIds.length === 0) {
-      return NextResponse.json({ threads: [] })
-    }
-    query = query.in('lead_id', accessibleLeadIds)
+  if (accessibleLeadIds.length === 0) {
+    return NextResponse.json({ threads: [] })
   }
+  query = query.in('lead_id', accessibleLeadIds)
 
   const { data } = await query
 

@@ -59,7 +59,6 @@ export async function GET(request: Request) {
     const termo = `%${q}%`
     const textFilters = [
       `nome.ilike.${termo}`,
-      `email.ilike.${termo}`,
       `banco.ilike.${termo}`,
       `telefone.ilike.${termo}`,
     ]

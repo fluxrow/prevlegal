@@ -742,3 +742,9 @@ export async function GET(
 **Causa:** O problema nao era falta de email; o gargalo estava na combinacao de duas coisas: a busca curta continuava sensivel ao escopo do usuario e o picker ainda dependia demais de um fluxo de selecao mais fragil
 **Correcao aplicada:** Tornar `GET /api/leads` explicitamente tenant-aware com `scope=scheduling`, remover a restricao por `responsavel_id` nesse escopo, endurecer `/api/busca` com `tenant_id` explicito e trocar o select nativo do modal por uma lista clicavel que mescla resultados das duas rotas
 **Regra pratica:** Em fluxo operacional de agenda, o usuario precisa encontrar rapidamente qualquer lead relevante do tenant; email pode ajudar no convite, mas nunca pode ser precondicao invisivel para o lead aparecer no picker
+
+### 83. Busca digitada nao pode depender de coluna que ainda nao existe no schema operacional
+**Problema:** No modal global de `Novo agendamento`, clicar no campo mostrava alguns leads, mas digitar o nome fazia a busca falhar
+**Causa:** `GET /api/leads` ainda montava o filtro `email.ilike...` quando havia texto digitado, mas `leads.email` ainda nao existe no schema operacional atual
+**Correcao aplicada:** Remover `email.ilike` da busca curta e alinhar o recorte tenant-aware de superfícies relacionadas (`tenant-context`, tela de leads, relatórios e portal threads)
+**Regra pratica:** Antes de enriquecer uma busca operacional com novos campos, confirmar que o schema remoto realmente contem essas colunas; se o schema ainda nao estiver alinhado, a busca deve degradar de forma segura em vez de quebrar so quando o usuario digita

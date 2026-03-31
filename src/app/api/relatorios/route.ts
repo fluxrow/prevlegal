@@ -15,51 +15,49 @@ export async function GET() {
       .from('leads')
       .select('status, ganho_potencial, tem_whatsapp, created_at')
 
-    if (accessibleLeadIds) {
-      if (accessibleLeadIds.length === 0) {
-        return NextResponse.json({
-          kpis: {
-            totalLeads: 0,
-            totalConvertidos: 0,
-            totalAgendados: 0,
-            totalContatados: 0,
-            totalComWhatsapp: 0,
-            ganhoTotal: 0,
-            ganhoConvertidos: 0,
-            taxaWhatsapp: 0,
-            taxaConversao: 0,
-          },
-          campanhas: {
-            totalEnviados: 0,
-            totalEntregues: 0,
-            totalLidos: 0,
-            totalRespondidos: 0,
-            totalFalhos: 0,
-            taxaEntrega: 0,
-            taxaLeitura: 0,
-            taxaResposta: 0,
-            lista: [],
-          },
-          funil: [
-            { etapa: 'Total Leads', valor: 0, cor: '#4f7aff' },
-            { etapa: 'Com WhatsApp', valor: 0, cor: '#2dd4a0' },
-            { etapa: 'Contatados', valor: 0, cor: '#f5c842' },
-            { etapa: 'Responderam', valor: 0, cor: '#ff8c42' },
-            { etapa: 'Agendados', valor: 0, cor: '#a78bfa' },
-            { etapa: 'Convertidos', valor: 0, cor: '#2dd4a0' },
-          ],
-          evolucao: [],
-          topBancos: [],
-          agente: {
-            totalMensagens: 0,
-            respondidoAgente: 0,
-            respondidoManual: 0,
-            taxaAutomacao: 0,
-          },
-        })
-      }
-      leadsQuery = leadsQuery.in('id', accessibleLeadIds)
+    if (accessibleLeadIds.length === 0) {
+      return NextResponse.json({
+        kpis: {
+          totalLeads: 0,
+          totalConvertidos: 0,
+          totalAgendados: 0,
+          totalContatados: 0,
+          totalComWhatsapp: 0,
+          ganhoTotal: 0,
+          ganhoConvertidos: 0,
+          taxaWhatsapp: 0,
+          taxaConversao: 0,
+        },
+        campanhas: {
+          totalEnviados: 0,
+          totalEntregues: 0,
+          totalLidos: 0,
+          totalRespondidos: 0,
+          totalFalhos: 0,
+          taxaEntrega: 0,
+          taxaLeitura: 0,
+          taxaResposta: 0,
+          lista: [],
+        },
+        funil: [
+          { etapa: 'Total Leads', valor: 0, cor: '#4f7aff' },
+          { etapa: 'Com WhatsApp', valor: 0, cor: '#2dd4a0' },
+          { etapa: 'Contatados', valor: 0, cor: '#f5c842' },
+          { etapa: 'Responderam', valor: 0, cor: '#ff8c42' },
+          { etapa: 'Agendados', valor: 0, cor: '#a78bfa' },
+          { etapa: 'Convertidos', valor: 0, cor: '#2dd4a0' },
+        ],
+        evolucao: [],
+        topBancos: [],
+        agente: {
+          totalMensagens: 0,
+          respondidoAgente: 0,
+          respondidoManual: 0,
+          taxaAutomacao: 0,
+        },
+      })
     }
+    leadsQuery = leadsQuery.in('id', accessibleLeadIds)
 
     const { data: leads } = await leadsQuery
 
@@ -93,9 +91,7 @@ export async function GET() {
       .from('mensagens_inbound')
       .select('respondido_por_agente')
 
-    if (accessibleLeadIds) {
-      mensagensInboundQuery = mensagensInboundQuery.in('lead_id', accessibleLeadIds)
-    }
+    mensagensInboundQuery = mensagensInboundQuery.in('lead_id', accessibleLeadIds)
 
     const { data: mensagensInbound } = await mensagensInboundQuery
 
@@ -124,9 +120,7 @@ export async function GET() {
       .select('banco, ganho_potencial')
       .not('banco', 'is', null)
 
-    if (accessibleLeadIds) {
-      leadsComBancoQuery = leadsComBancoQuery.in('id', accessibleLeadIds)
-    }
+    leadsComBancoQuery = leadsComBancoQuery.in('id', accessibleLeadIds)
 
     const { data: leadsComBanco } = await leadsComBancoQuery
 

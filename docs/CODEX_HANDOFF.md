@@ -1375,3 +1375,32 @@ Pontos que precisam ser preservados durante a implementacao:
     - cria indice trigram para busca
 - observacao operacional:
   - a migration `034` foi criada no repo, mas ainda nao foi aplicada no operacional nesta sessao
+
+## Atualizacao de 2026-03-31 — Busca digitada no modal global de agendamento
+
+- validacao do usuario em runtime:
+  - o agendamento criado a partir do detalhe do lead funcionou
+  - o convite por e-mail chegou corretamente no e-mail sobrescrito da reuniao
+  - o problema residual ficou restrito ao modal de `Novo agendamento` aberto pela aba `/agendamentos`
+- causa raiz encontrada no codigo:
+  - a rota `GET /api/leads` ainda aplicava `email.ilike` quando havia texto digitado
+  - como `leads.email` nao existe no schema operacional atual, a busca digitada quebrava silenciosamente
+  - sem texto digitado, a lista inicial aparecia porque esse filtro nao era executado
+- correcao aplicada:
+  - `src/app/api/leads/route.ts`
+    - remover `email.ilike` da busca curta tenant-aware
+  - alinhamentos complementares que ficaram no mesmo pacote:
+    - `src/lib/tenant-context.ts`
+      - `getAccessibleLeadIds` e `canAccessLeadId` agora sempre respeitam `tenant_id`
+    - `src/app/(dashboard)/leads/page.tsx`
+      - a tela de leads passou a filtrar explicitamente por `tenant_id`
+    - `src/app/api/relatorios/route.ts`
+    - `src/app/api/portal/threads/route.ts`
+      - ajustados para trabalhar com `accessibleLeadIds` sempre como array tenant-aware
+- impacto operacional:
+  - a busca digitada do modal global de agendamento deixa de depender de uma coluna inexistente
+  - as superfícies de leads e os fluxos dependentes passam a usar o mesmo recorte tenant-aware de forma mais consistente
+- validacao:
+  - `npm run build` passou
+- proximo passo:
+  - retestar no browser a busca digitada no modal de `Novo agendamento` dentro da aba `/agendamentos`

@@ -38,12 +38,18 @@ export async function getAccessibleLeadIds(
   supabase: Awaited<ReturnType<typeof createClient>>,
   context: TenantContext,
 ) {
-  if (context.isAdmin) return null
+  if (!context.tenantId) return []
 
-  const { data, error } = await supabase
+  let query = supabase
     .from('leads')
     .select('id')
-    .eq('responsavel_id', context.usuarioId)
+    .eq('tenant_id', context.tenantId)
+
+  if (!context.isAdmin) {
+    query = query.eq('responsavel_id', context.usuarioId)
+  }
+
+  const { data, error } = await query
 
   if (error) {
     throw new Error(error.message)
@@ -57,14 +63,19 @@ export async function canAccessLeadId(
   context: TenantContext,
   leadId: string,
 ) {
-  if (context.isAdmin) return true
+  if (!context.tenantId) return false
 
-  const { data, error } = await supabase
+  let query = supabase
     .from('leads')
     .select('id')
     .eq('id', leadId)
-    .eq('responsavel_id', context.usuarioId)
-    .maybeSingle()
+    .eq('tenant_id', context.tenantId)
+
+  if (!context.isAdmin) {
+    query = query.eq('responsavel_id', context.usuarioId)
+  }
+
+  const { data, error } = await query.maybeSingle()
 
   if (error) {
     throw new Error(error.message)

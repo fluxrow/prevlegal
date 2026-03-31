@@ -228,6 +228,10 @@ Validar o runtime WhatsApp no tenant limpo:
   - remarcar com nova data/hora
   - reatribuir responsável (admin)
   - cancelar e validar reflexo no status do lead
+  - observacao mais recente:
+    - o fluxo de agendamento pelo detalhe do lead ja foi validado em runtime
+    - o convite chegou no e-mail sobrescrito da reuniao
+    - o ponto residual ficou na busca digitada do modal global de `/agendamentos`, e a causa raiz encontrada foi `email.ilike` em `GET /api/leads` mesmo sem a coluna `leads.email` existir no schema operacional
 - depois retomar os testes operacionais do tenant isolation canonico por `tenant_id`
 - plano fora do WhatsApp para as proximas 2 semanas:
   - semana 1:

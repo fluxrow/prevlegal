@@ -14,6 +14,7 @@ export default async function LeadsPage() {
   let leadsQuery = supabase
     .from('leads')
     .select('id, nome, nb, telefone, status, score, ganho_potencial, tipo_beneficio, banco, origem')
+    .eq('tenant_id', context.tenantId)
     .eq('lgpd_optout', false)
 
   if (!context.isAdmin) {
