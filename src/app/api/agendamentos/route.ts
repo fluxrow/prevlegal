@@ -13,7 +13,7 @@ async function getScopedLead(
 
   let query = supabase
     .from('leads')
-    .select('id, nome, email, tenant_id, responsavel_id')
+    .select('id, nome, tenant_id, responsavel_id')
     .eq('id', leadId)
     .eq('tenant_id', context.tenantId)
 
@@ -115,7 +115,7 @@ export async function POST(request: Request) {
       typeof email_reuniao === 'string' && email_reuniao.trim()
         ? email_reuniao.trim()
         : undefined
-    const emailLead = emailReuniao || lead.email || undefined
+    const emailLead = emailReuniao || undefined
 
     try {
       const resultado = await criarEventoCalendar({

@@ -1351,3 +1351,27 @@ Pontos que precisam ser preservados durante a implementacao:
 - proximo passo:
   - retestar a criacao do agendamento pelo detalhe do lead
   - confirmar qual mensagem especifica aparece caso ainda haja falha
+
+## Atualizacao de 2026-03-31 — Drift de schema em `leads.email`
+
+- a mensagem real do modal revelou a causa raiz: `column leads.email does not exist`
+- conclusao:
+  - o codigo ja passou a assumir `email` em `leads`
+  - o schema operacional atual ainda nao tem essa coluna
+  - isso explicava ao mesmo tempo:
+    - falha ao criar agendamento pelo detalhe do lead
+    - busca vazia na aba de agendamentos, porque `GET /api/leads` tambem selecionava `email`
+- correcao imediata aplicada:
+  - `src/app/api/agendamentos/route.ts`
+    - remove dependencia de `lead.email`
+    - usa apenas `email_reuniao` como attendee do lead nesse fluxo
+  - `src/app/api/leads/route.ts`
+    - deixa de selecionar/filtrar por `email`
+  - `src/app/api/leads/[id]/route.ts`
+    - deixa de tentar atualizar `payload.email` enquanto o schema operacional nao for alinhado
+- correcao canonica preparada:
+  - nova migration `supabase/migrations/034_leads_email_foundation.sql`
+    - adiciona `email` em `leads`
+    - cria indice trigram para busca
+- observacao operacional:
+  - a migration `034` foi criada no repo, mas ainda nao foi aplicada no operacional nesta sessao

@@ -46,7 +46,7 @@ export async function GET(request: Request) {
 
   let query = adminSupabase
     .from('leads')
-    .select('id, nome, telefone, status, email, banco, tenant_id, responsavel_id, lgpd_optout, updated_at')
+    .select('id, nome, telefone, status, banco, tenant_id, responsavel_id, lgpd_optout, updated_at')
     .eq('tenant_id', context.tenantId)
     .order('updated_at', { ascending: false })
     .limit(fetchLimit)
@@ -83,7 +83,6 @@ export async function GET(request: Request) {
       const queryDigits = q.replace(/\D/g, '')
       const haystack = [
         normalizarBusca(lead.nome),
-        normalizarBusca(lead.email),
         normalizarBusca(lead.banco),
         normalizarBusca(lead.telefone),
       ]
@@ -101,7 +100,6 @@ export async function GET(request: Request) {
       nome: lead.nome,
       telefone: lead.telefone,
       status: lead.status,
-      email: lead.email,
     })),
   })
 }
