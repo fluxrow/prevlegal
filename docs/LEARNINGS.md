@@ -259,6 +259,21 @@ export async function GET(
 **Correcao:** Aplicar a migration `032`, registrar o primeiro canal em `whatsapp_numbers` e sincronizar o tenant `Fluxrow` com `whatsapp:+14155238886` como origem default
 **Regra pratica:** Quando o erro do provider aponta para `From address`, validar primeiro o sender configurado antes de concluir que o fluxo do produto quebrou
 
+### 87. O backlog mobile precisa nascer do portal real, nao de uma ideia abstrata de app
+**Problema:** Planejar “app mobile” sem olhar o portal atual levaria a duplicar superficie e ignorar debitos reais do produto
+**Causa:** O PrevLegal ja possui uma base funcional em `src/app/portal/[token]/page.tsx` e `src/app/api/portal/[token]/route.ts`, mas com limitacoes concretas como branding hardcoded e acesso apenas por token
+**Correcao:** Formalizar a direcao `portal mobile-first -> PWA -> identidade persistente -> nativo se justificar` e transformar isso em backlog tecnico canônico em `docs/MOBILE_CLIENT_APP_BACKLOG.md`
+**Regra pratica:** Em novas frentes de produto no PrevLegal, o primeiro backlog deve partir do estado real do codigo e dos debitos atuais, nao de uma superficie idealizada
+
+### 88. O portal atual ainda nao e uma base multi-tenant pronta para virar app do cliente
+**Problema:** O portal parecia reutilizavel como app do cliente, mas a leitura do codigo mostrou dependencias fixas de escritorio e payload restrito
+**Causa:** `src/app/portal/[token]/page.tsx` ainda exibe `Alexandrini Advogados`, telefone fixo e dominio fixo, enquanto `GET /api/portal/[token]` ainda retorna so lead basico, documentos compartilhados e mensagens
+**Correcao:** Registrar como debito de Fase 1:
+- remover branding hardcoded
+- ampliar o payload do portal
+- expor agenda/Meet e pendencias de documento
+**Regra pratica:** Antes de chamar uma superficie de “base do app”, validar se branding, auth e payload ja estao prontos para tenant-awareness e uso recorrente
+
 ### 40. Funil executivo so fecha o ciclo quando a tela de leads tambem aceita filtro por URL
 **Problema:** O pipeline em `/relatorios` e os cards do dashboard ja apontavam para filas reais de inbox, agenda e financeiro, mas o kanban de leads continuava abrindo sempre sem recorte
 **Causa:** `/leads` era renderizada sem ler `searchParams`, entao o produto perdia contexto ao sair dos cards-resumo e voltar para o funil comercial

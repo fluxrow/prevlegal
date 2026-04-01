@@ -19,6 +19,46 @@ Objetivo:
 - facilitar o repasse posterior para o Claude
 - registrar decisoes, arquivos afetados, validacoes e proximos passos
 
+## Atualizacao 2026-04-01 - Backlog tecnico do app mobile do cliente
+
+- a frente mobile deixou de ser apenas direcao conceitual e ganhou backlog tecnico canonico em `docs/MOBILE_CLIENT_APP_BACKLOG.md`
+- a definicao foi baseada no estado real do portal ja existente:
+  - `src/app/portal/[token]/page.tsx`
+  - `src/app/api/portal/[token]/route.ts`
+  - `src/app/api/portal/link/[leadId]/route.ts`
+  - `src/app/api/portal/threads/route.ts`
+  - `src/app/api/portal/mensagens/[leadId]/route.ts`
+- constatacoes reais que orientaram o backlog:
+  - o portal atual ainda depende so de `portal_token`
+  - o portal atual ainda tem branding hardcoded de `Alexandrini Advogados`
+  - o payload do portal ainda e estreito para sustentar uma home mobile-first
+- direcao oficial reforcada:
+  - portal mobile-first
+  - PWA
+  - identidade persistente do cliente/familiar
+  - nativo so se justificar
+- backlog tecnico definido:
+  - entidades sugeridas:
+    - `portal_users`
+    - `portal_access_links`
+    - `portal_timeline_events`
+    - `portal_document_requests`
+  - telas do MVP:
+    - `Home`
+    - `Mensagens`
+    - `Agenda`
+    - `Documentos`
+    - `Perfil`
+    - `Acesso`
+  - ordem de implementacao:
+    - fase 1: endurecer o portal atual
+    - fase 2: PWA instalavel
+    - fase 3: identidade persistente
+    - fase 4: canal mobile operacional
+    - fase 5: nativo se justificar
+- proximo passo direto recomendado:
+  - iniciar a fase 1 removendo o branding hardcoded do portal e ampliando `GET /api/portal/[token]`
+
 ## Estado Atual Confirmado
 
 Data da ultima revisao: 2026-03-27

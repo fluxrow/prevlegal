@@ -3,7 +3,7 @@
 Contexto: [[SESSION_HISTORY_MASTER]]
 Mestra: [[MASTER_PREV_LEGAL]]
 > Documento vivo. Atualizado a cada sessão de desenvolvimento.
-> Última atualização: 19/03/2026
+> Última atualização: 01/04/2026
 
 ---
 
@@ -16,6 +16,7 @@ Mestra: [[MASTER_PREV_LEGAL]]
 - [[CODEX_HANDOFF]]
 - [[DOMAIN_MIGRATION]]
 - [[MOBILE_CLIENT_APP_PLAN]]
+- [[MOBILE_CLIENT_APP_BACKLOG]]
 
 ## Produto
 
@@ -206,3 +207,5 @@ Estratégia: entrar com R$ 1.997 para gerar cases, subir gradualmente.
   - perfil do cliente/familiar
 - referencia canonica:
   - `docs/MOBILE_CLIENT_APP_PLAN.md`
+- backlog tecnico inicial:
+  - `docs/MOBILE_CLIENT_APP_BACKLOG.md`

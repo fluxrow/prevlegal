@@ -16,6 +16,7 @@ Mestra: [[MASTER_PREV_LEGAL]]
 - [[LEARNINGS]]
 - [[SESSION_BRIEF]]
 - [[CODEX_HANDOFF]]
+- [[MOBILE_CLIENT_APP_BACKLOG]]
 
 ## Tese de Produto
 
@@ -35,6 +36,9 @@ A decisão recomendada é:
 3. só depois avaliar **app nativo**
 
 Isso maximiza reaproveitamento do backend atual, reduz risco e acelera validação real de uso.
+
+Backlog técnico derivado desta direção:
+- `docs/MOBILE_CLIENT_APP_BACKLOG.md`
 
 ## Para quem é o app
 

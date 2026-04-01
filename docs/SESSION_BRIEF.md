@@ -25,7 +25,7 @@ Ordem de leitura:
 
 ## Estado Atual
 
-Ultima atualizacao: 2026-03-31
+Ultima atualizacao: 2026-04-01
 
 - Branch principal: `main`
 - Linha atual do produto no Obsidian: Fases 21, 22, 23, 24 e 25 concluidas
@@ -205,6 +205,17 @@ Ultima atualizacao: 2026-03-31
     - nativo so se justificar
   - documento canonico criado:
     - `docs/MOBILE_CLIENT_APP_PLAN.md`
+  - backlog tecnico inicial formalizado:
+    - `docs/MOBILE_CLIENT_APP_BACKLOG.md`
+  - estado real que guiou o backlog:
+    - o portal atual ainda e `token-only`
+    - `src/app/portal/[token]/page.tsx` ainda tem branding hardcoded de `Alexandrini Advogados`
+    - `GET /api/portal/[token]` ainda retorna payload estreito para uma home mobile-first
+  - ordem oficial de construcao confirmada:
+    - endurecer o portal atual
+    - publicar como PWA
+    - criar identidade persistente
+    - avaliar app nativo depois
 
 ## Proximo Passo Recomendado
 
@@ -218,6 +229,10 @@ Validar o runtime WhatsApp no tenant limpo:
 - retestar agora o envio manual e o `Iniciar conversa` com o canal default do tenant
 - identificar a causa operacional do `errorCode 63015` no sandbox Twilio e confirmar a adesao correta do numero de destino
 - provocar uma inbound de resposta no mesmo numero para validar roteamento pelo tenant
+- iniciar a fase 1 do backlog mobile:
+  - remover branding hardcoded do portal
+  - ampliar `GET /api/portal/[token]`
+  - desenhar a home mobile-first do cliente
 - cadastrar o primeiro canal `Z-API` na nova UI do admin e validar um disparo de campanha ponta a ponta
 - amanha:
   - plugar o chip `41984233554` na instancia Z-API

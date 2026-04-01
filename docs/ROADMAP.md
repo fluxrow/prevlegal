@@ -2,7 +2,7 @@
 
 Contexto: [[SESSION_HISTORY_MASTER]]
 Mestra: [[MASTER_PREV_LEGAL]]
-> Última atualização: 27/03/2026
+> Última atualização: 01/04/2026
 
 ## Navegação
 
@@ -258,13 +258,37 @@ Mestra: [[MASTER_PREV_LEGAL]]
   - documentos
   - perfil do cliente/familiar
 - risco evitado com essa decisao:
-  - abrir uma segunda frente tecnica cedo demais
-  - duplicar regras de negocio
-  - misturar usuario interno com cliente/familiar
-- documento canonico criado:
+  - abrir um app nativo cedo demais e duplicar regras do portal
+- documento canonico:
   - `docs/MOBILE_CLIENT_APP_PLAN.md`
 - proximo passo recomendado:
-  - transformar o plano em backlog tecnico de entidades, rotas e telas
+  - transformar essa direcao em backlog tecnico com entidades, rotas, telas e ordem de implementacao
+
+## Atualizacao Backlog Mobile Cliente — 01/04/2026
+
+- a frente mobile agora deixou de ser so tese de produto e ganhou backlog tecnico canonico em `docs/MOBILE_CLIENT_APP_BACKLOG.md`
+- o backlog foi ancorado no estado real do portal ja existente:
+  - `src/app/portal/[token]/page.tsx`
+  - `src/app/api/portal/[token]/route.ts`
+  - `src/app/api/portal/link/[leadId]/route.ts`
+  - `src/app/api/portal/threads/route.ts`
+  - `src/app/api/portal/mensagens/[leadId]/route.ts`
+- debitos reais registrados para a fase 1:
+  - branding hardcoded de `Alexandrini Advogados` no portal
+  - modelo de acesso ainda `token-only`
+  - payload do portal estreito demais para uma home mobile-first
+- ordem oficial de implementacao:
+  - fase 1: endurecer o portal atual
+  - fase 2: publicar como PWA
+  - fase 3: identidade persistente de cliente/familiar
+  - fase 4: canal mobile operacional completo
+  - fase 5: app nativo apenas se justificar
+- backlog tecnico inicial definido:
+  - entidades sugeridas: `portal_users`, `portal_access_links`, `portal_timeline_events`, `portal_document_requests`
+  - novas rotas planejadas para auth persistente, timeline, agenda e documentos
+  - telas-alvo do MVP: `Home`, `Mensagens`, `Agenda`, `Documentos`, `Perfil` e `Acesso`
+- proximo passo recomendado:
+  - iniciar a Fase 1 removendo o branding hardcoded do portal e ampliando `GET /api/portal/[token]`
 
 ## Atualizacao Agendamento Manual — 30/03/2026
 
