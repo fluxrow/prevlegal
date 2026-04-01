@@ -245,6 +245,25 @@ Pontos que precisam ser preservados durante a implementacao:
 - proximo passo sugerido:
   - decidir se o funil executivo em `/relatorios` tambem deve ganhar atalhos especificos para `Novos`, `Contatados` e `Perdidos`
 
+## Atualizacao de 2026-04-01 — Sidebar retraida e funil executivo clicavel
+
+- o bloco `Funil de Conversao` em `/relatorios` agora tambem redireciona para filas reais nas etapas acionaveis
+- mapeamento atual:
+  - `Total Leads` -> `/leads`
+  - `Contatados` -> `/leads?status=contacted`
+  - `Responderam` -> `/caixa-de-entrada?tab=todas`
+  - `Agendados` -> `/leads?status=scheduled`
+  - `Convertidos` -> `/leads?status=converted`
+- a sidebar foi refinada para ganhar mais area util no app:
+  - auto-retraida por padrao em dispositivos com hover
+  - expande ao passar o mouse
+  - continua expandida em touch
+- arquivos principais:
+  - `src/app/(dashboard)/relatorios/page.tsx`
+  - `src/components/sidebar.tsx`
+- proximo passo sugerido:
+  - validar no browser a ergonomia da sidebar no kanban e na agenda
+
 2026-03-30 - Saude do tenant no admin com metricas tenant-aware
 
 - Objetivo:

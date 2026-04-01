@@ -225,6 +225,25 @@ Mestra: [[MASTER_PREV_LEGAL]]
 - proximo passo recomendado:
   - decidir se o funil executivo tambem deve ganhar atalhos para `Novos`, `Contatados` e `Perdidos`
 
+## Atualizacao Navegacao Executiva e Sidebar — 01/04/2026
+
+- o bloco `Funil de Conversao` em `/relatorios` agora tambem ganhou pontos clicaveis nas etapas que viram fila real:
+  - `Total Leads` -> `/leads`
+  - `Contatados` -> `/leads?status=contacted`
+  - `Responderam` -> `/caixa-de-entrada?tab=todas`
+  - `Agendados` -> `/leads?status=scheduled`
+  - `Convertidos` -> `/leads?status=converted`
+- a sidebar do app passou a operar em modo auto-retraido em dispositivos com hover real:
+  - recolhida por padrao
+  - expande ao passar o mouse
+  - mantem badges e titulos por `title` no estado retraido
+  - em dispositivos sem hover ela continua expandida, evitando quebrar navegacao touch
+- impacto operacional:
+  - mais area horizontal para kanban, calendario e tabelas densas
+  - menos necessidade de scroll lateral para leitura visual do produto
+- proximo passo recomendado:
+  - validar no browser se a largura recolhida da sidebar ficou equilibrada no kanban e na agenda
+
 ## Atualizacao Agendamento Manual — 30/03/2026
 
 - o backend ja aceitava `POST /api/agendamentos`, mas o produto ainda nao oferecia uma entrada humana obvia para criar consulta manualmente

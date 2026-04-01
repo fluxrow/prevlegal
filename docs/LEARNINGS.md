@@ -265,6 +265,12 @@ export async function GET(
 **Correcao:** Fazer `/leads` aceitar `?status=` no servidor, aplicar o filtro direto na query e expor faixa de filtro ativo + chips de status na UI
 **Regra pratica:** Quando uma métrica ou card executivo representa uma etapa do funil, a tela de destino precisa abrir ja no recorte operacional correspondente
 
+### 41. Sidebar retraida so funciona bem quando respeita a capacidade real de hover do dispositivo
+**Problema:** Recolher a navegação lateral pode abrir muito espaço útil, mas em touch isso vira fricção e pode esconder o produto
+**Causa:** O comportamento de hover não existe do mesmo jeito em touchscreens, então colapsar a sidebar indiscriminadamente pioraria a navegação
+**Correcao:** Ativar auto-retracao apenas quando `matchMedia('(hover: hover) and (pointer: fine)')` for verdadeiro, mantendo a sidebar expandida em dispositivos sem hover fino
+**Regra pratica:** Otimizacoes de densidade visual que dependem de hover precisam degradar com segurança em telas touch
+
 ### 40. Saúde do tenant no admin só serve para decisão quando as métricas são recortadas pelo tenant certo
 **Problema:** O detalhe do tenant no admin podia exibir leituras operacionais convincentes, mas parte das contagens ainda não filtrava por `tenant_id`
 **Risco:** A tela parecia executiva, mas podia induzir leitura errada de adoção, volume e risco de um escritório específico

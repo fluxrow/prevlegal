@@ -192,6 +192,10 @@ Ultima atualizacao: 2026-03-31
     - `scheduled`
     - `converted`
     - `lost`
+- refinamentos de UX em 01/04:
+  - o `Funil de Conversao` em `/relatorios` agora tambem aponta para filas reais nas etapas operacionais
+  - a sidebar passou a ficar auto-retraida em dispositivos com hover e expandir ao passar o mouse
+  - em dispositivos sem hover a sidebar continua expandida
 
 ## Proximo Passo Recomendado
 

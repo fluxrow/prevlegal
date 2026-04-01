@@ -27,6 +27,8 @@ export default function Sidebar() {
     const pathname = usePathname()
     const router = useRouter()
     const [pendencias, setPendencias] = useState({ total: 0, agendamentos: 0 })
+    const [canAutoCollapse, setCanAutoCollapse] = useState(false)
+    const [collapsed, setCollapsed] = useState(false)
 
     useEffect(() => {
         async function fetchPendencias() {
@@ -39,31 +41,70 @@ export default function Sidebar() {
         return () => clearInterval(iv)
     }, [])
 
+    useEffect(() => {
+        if (typeof window === 'undefined') return
+
+        const media = window.matchMedia('(hover: hover) and (pointer: fine)')
+        const syncCollapseMode = () => {
+            const enabled = media.matches
+            setCanAutoCollapse(enabled)
+            setCollapsed(enabled)
+        }
+
+        syncCollapseMode()
+        media.addEventListener('change', syncCollapseMode)
+        return () => media.removeEventListener('change', syncCollapseMode)
+    }, [])
+
     async function handleLogout() {
         const supabase = createClient()
         await supabase.auth.signOut()
         router.push('/login')
     }
 
+    const isCollapsed = canAutoCollapse && collapsed
+    const sidebarWidth = isCollapsed ? '78px' : '220px'
+
     return (
         <aside style={{
-            width: '220px',
+            width: sidebarWidth,
             minHeight: '100vh',
             background: 'var(--bg-surface)',
             borderRight: '1px solid var(--border)',
             display: 'flex',
             flexDirection: 'column',
             padding: '20px 12px',
-            flexShrink: 0
-        }}>
+            flexShrink: 0,
+            transition: 'width 0.22s ease',
+            overflow: 'hidden',
+            position: 'relative',
+        }}
+            onMouseEnter={() => { if (canAutoCollapse) setCollapsed(false) }}
+            onMouseLeave={() => { if (canAutoCollapse) setCollapsed(true) }}
+        >
+            {canAutoCollapse && (
+                <div
+                    style={{
+                        position: 'absolute',
+                        top: '24px',
+                        right: '10px',
+                        width: '4px',
+                        height: '28px',
+                        borderRadius: '999px',
+                        background: isCollapsed ? 'rgba(79,122,255,0.35)' : 'rgba(79,122,255,0.18)',
+                        transition: 'all 0.15s ease',
+                    }}
+                />
+            )}
             {/* Logo */}
             <div style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: '10px',
+                gap: isCollapsed ? '0px' : '10px',
                 padding: '8px 12px 24px',
                 borderBottom: '1px solid var(--border)',
-                marginBottom: '16px'
+                marginBottom: '16px',
+                justifyContent: isCollapsed ? 'center' : 'flex-start',
             }}>
                 <div style={{
                     width: '30px', height: '30px',
@@ -78,7 +119,12 @@ export default function Sidebar() {
                     fontSize: '16px',
                     fontWeight: '700',
                     color: 'var(--text-primary)',
-                    letterSpacing: '-0.3px'
+                    letterSpacing: '-0.3px',
+                    opacity: isCollapsed ? 0 : 1,
+                    width: isCollapsed ? 0 : 'auto',
+                    overflow: 'hidden',
+                    whiteSpace: 'nowrap',
+                    transition: 'opacity 0.15s ease, width 0.2s ease',
                 }}>PrevLegal</span>
             </div>
 
@@ -87,10 +133,10 @@ export default function Sidebar() {
                 {nav.map(({ href, icon: Icon, label }) => {
                     const active = pathname === href || pathname.startsWith(href + '/')
                     return (
-                        <Link key={href} href={href} style={{
+                        <Link key={href} href={href} title={isCollapsed ? label : undefined} style={{
                             display: 'flex',
                             alignItems: 'center',
-                            gap: '10px',
+                            gap: isCollapsed ? '0px' : '10px',
                             padding: '9px 12px',
                             borderRadius: '8px',
                             background: active ? 'var(--accent-glow)' : 'transparent',
@@ -99,16 +145,29 @@ export default function Sidebar() {
                             fontSize: '13px',
                             fontWeight: active ? '500' : '400',
                             transition: 'all 0.15s',
-                            border: active ? '1px solid #4f7aff20' : '1px solid transparent'
+                            border: active ? '1px solid #4f7aff20' : '1px solid transparent',
+                            justifyContent: isCollapsed ? 'center' : 'flex-start',
+                            position: 'relative',
                         }}
                             onMouseEnter={e => { if (!active) { (e.currentTarget as HTMLElement).style.background = 'var(--bg-hover)'; (e.currentTarget as HTMLElement).style.color = 'var(--text-primary)' } }}
                             onMouseLeave={e => { if (!active) { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = 'var(--text-secondary)' } }}
                         >
                             <Icon size={16} strokeWidth={1.8} />
-                            {label}
+                            <span style={{
+                                opacity: isCollapsed ? 0 : 1,
+                                width: isCollapsed ? 0 : 'auto',
+                                overflow: 'hidden',
+                                whiteSpace: 'nowrap',
+                                transition: 'opacity 0.15s ease, width 0.2s ease',
+                            }}>
+                                {label}
+                            </span>
                             {pendencias.total > 0 && label === 'Caixa de Entrada' && (
                                 <span style={{
-                                    marginLeft: 'auto',
+                                    marginLeft: isCollapsed ? 0 : 'auto',
+                                    position: isCollapsed ? 'absolute' : 'static',
+                                    top: isCollapsed ? '6px' : undefined,
+                                    right: isCollapsed ? '6px' : undefined,
                                     background: '#ef4444',
                                     color: '#fff',
                                     borderRadius: '100px',
@@ -123,7 +182,10 @@ export default function Sidebar() {
                             )}
                             {pendencias.agendamentos > 0 && label === 'Agendamentos' && (
                                 <span style={{
-                                    marginLeft: 'auto',
+                                    marginLeft: isCollapsed ? 0 : 'auto',
+                                    position: isCollapsed ? 'absolute' : 'static',
+                                    top: isCollapsed ? '6px' : undefined,
+                                    right: isCollapsed ? '6px' : undefined,
                                     background: '#f59e0b',
                                     color: '#fff',
                                     borderRadius: '100px',
@@ -142,10 +204,13 @@ export default function Sidebar() {
             </nav>
 
             {/* Logout */}
-            <button onClick={handleLogout} style={{
+            <button
+                onClick={handleLogout}
+                title={isCollapsed ? 'Sair' : undefined}
+                style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: '10px',
+                gap: isCollapsed ? '0px' : '10px',
                 padding: '9px 12px',
                 borderRadius: '8px',
                 background: 'transparent',
@@ -155,13 +220,22 @@ export default function Sidebar() {
                 cursor: 'pointer',
                 transition: 'all 0.15s',
                 width: '100%',
-                textAlign: 'left'
+                textAlign: 'left',
+                justifyContent: isCollapsed ? 'center' : 'flex-start',
             }}
                 onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--red-bg)'; (e.currentTarget as HTMLElement).style.color = 'var(--red)' }}
                 onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = 'var(--text-muted)' }}
             >
                 <LogOut size={16} strokeWidth={1.8} />
-                Sair
+                <span style={{
+                    opacity: isCollapsed ? 0 : 1,
+                    width: isCollapsed ? 0 : 'auto',
+                    overflow: 'hidden',
+                    whiteSpace: 'nowrap',
+                    transition: 'opacity 0.15s ease, width 0.2s ease',
+                }}>
+                    Sair
+                </span>
             </button>
         </aside>
     )

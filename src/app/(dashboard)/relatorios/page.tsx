@@ -122,6 +122,14 @@ function ClickableStageCard({
   )
 }
 
+const FUNIL_HREFS: Record<string, string | undefined> = {
+  'Total Leads': '/leads',
+  'Contatados': '/leads?status=contacted',
+  'Agendados': '/leads?status=scheduled',
+  'Convertidos': '/leads?status=converted',
+  'Responderam': '/caixa-de-entrada?tab=todas',
+}
+
 const TABS = ['Visão Geral', 'Funil', 'Campanhas', 'Listas', '📈 ROI por Campanha']
 const TOOLTIP_STYLE = { background: '#161920', border: '1px solid #ffffff0f', borderRadius: '8px', color: '#f0f2f5' }
 const AXIS_TICK = { fill: '#8b92a0', fontSize: 12 }
@@ -278,8 +286,9 @@ export default function RelatoriosPage() {
               {data.funil.map(etapa => {
                 const maxValor = data.funil[0]?.valor ?? 1
                 const pct = maxValor > 0 ? Math.round((etapa.valor / maxValor) * 100) : 0
-                return (
-                  <div key={etapa.etapa}>
+                const href = FUNIL_HREFS[etapa.etapa]
+                const content = (
+                  <>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
                       <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>{etapa.etapa}</span>
                       <span style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text-primary)' }}>
@@ -289,7 +298,29 @@ export default function RelatoriosPage() {
                     <div style={{ height: '8px', background: 'var(--bg-hover)', borderRadius: '4px', overflow: 'hidden' }}>
                       <div style={{ height: '100%', width: `${pct}%`, background: etapa.cor, borderRadius: '4px', transition: 'width 0.5s ease' }} />
                     </div>
-                  </div>
+                  </>
+                )
+                return (
+                  href ? (
+                    <a
+                      key={etapa.etapa}
+                      href={href}
+                      style={{
+                        display: 'block',
+                        textDecoration: 'none',
+                        padding: '6px 8px',
+                        margin: '0 -8px',
+                        borderRadius: '8px',
+                        transition: 'background 0.15s ease',
+                      }}
+                    >
+                      {content}
+                    </a>
+                  ) : (
+                    <div key={etapa.etapa}>
+                      {content}
+                    </div>
+                  )
                 )
               })}
             </div>
