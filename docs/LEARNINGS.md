@@ -871,3 +871,20 @@ e destacar quando o acordo ajuda ou atrapalha o caso
 - camada macro: etapa do caso
 - camada concreta: acontecimentos recentes
 Isso gera mais confianca e reduz sensacao de “portal vazio”
+
+### 92. O mesmo lugar onde o escritorio acompanha o lead deve abastecer o portal do cliente
+**Problema:** Depois de enriquecer a home mobile-first com pendencias e timeline, ainda faltava um lugar simples para a equipe alimentar esses dados sem abrir um modulo separado
+**Causa:** Criar uma area nova cedo demais aumentaria friccao e reduziria adoção interna
+**Correcao aplicada:** A secao `Portal do Cliente` dentro do detalhe do lead passou a ser a superficie minima para:
+- criar pendencias de documento
+- criar eventos manuais de timeline
+- controlar visibilidade para o cliente
+**Regra pratica:** No PrevLegal, quando uma funcionalidade do cliente depender de input do escritorio, a primeira superficie deve nascer no contexto do lead, nao em um modulo paralelo
+
+### 93. Foundation pendente no banco deve aparecer como aviso funcional, nao como erro opaco de produto
+**Problema:** O front do portal e a nova superficie interna dependem de tabelas novas (`portal_document_requests` e `portal_timeline_events`) que ainda podem nao existir no operacional em alguns momentos
+**Causa:** A frente mobile esta sendo construida antes da rodada final de aplicacao de schema
+**Correcao aplicada:** As rotas internas e do portal agora distinguem:
+- tabela ausente = aviso/fallback seguro
+- erro real = falha explicita
+**Regra pratica:** Em evolucao incremental de schema no PrevLegal, a UI deve informar quando a foundation ainda nao foi aplicada, em vez de parecer que a feature quebrou por motivo desconhecido

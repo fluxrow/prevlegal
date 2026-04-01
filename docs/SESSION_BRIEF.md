@@ -233,6 +233,18 @@ Ultima atualizacao: 2026-04-01
       - se `portal_timeline_events` nao existir ainda, a timeline e derivada de mensagens, documentos, agendamentos e abertura do caso
     - migration preparada:
       - `supabase/migrations/035_portal_mobile_foundation.sql`
+  - fase 1 continuada, passo 3:
+    - a secao `Portal do Cliente` dentro do detalhe do lead agora permite abastecer:
+      - `portal_document_requests`
+      - `portal_timeline_events`
+    - rotas internas novas:
+      - `GET/POST /api/leads/[id]/portal-document-requests`
+      - `PATCH/DELETE /api/leads/[id]/portal-document-requests/[requestId]`
+      - `GET/POST /api/leads/[id]/portal-timeline-events`
+      - `PATCH/DELETE /api/leads/[id]/portal-timeline-events/[eventId]`
+    - se a migration `035` ainda nao estiver aplicada no banco:
+      - a UI nao quebra
+      - mostra aviso de foundation pendente
 - frente estrategica previdenciaria em 01/04:
   - foi registrada uma nota separada para concorrencia e expansao do produto:
     - `docs/PREVIDENCIARIO_EXPANSION_STRATEGY.md`
@@ -267,9 +279,7 @@ Validar o runtime WhatsApp no tenant limpo:
 - manter o mobile pausado ate o comando explicito:
   - `vamos continuar o mobile`
 - quando esse comando vier, retomar daqui:
-  - criar a superficie interna minima para abastecer:
-    - `portal_document_requests`
-    - `portal_timeline_events`
+  - aplicar a migration `035_portal_mobile_foundation.sql` no operacional
   - depois seguir para manifest/installability de PWA
 - cadastrar o primeiro canal `Z-API` na nova UI do admin e validar um disparo de campanha ponta a ponta
 - amanha:

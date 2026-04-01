@@ -128,6 +128,45 @@ Objetivo:
     - `portal_timeline_events`
   - depois seguir para PWA (`manifest` / installability)
 
+## Atualizacao 2026-04-01 - Superficie interna do portal mobile pronta
+
+- a fase 1 do mobile ganhou a primeira superficie interna real para o escritorio abastecer o portal do cliente
+- arquivos adicionados:
+  - `src/app/api/leads/[id]/portal-document-requests/route.ts`
+  - `src/app/api/leads/[id]/portal-document-requests/[requestId]/route.ts`
+  - `src/app/api/leads/[id]/portal-timeline-events/route.ts`
+  - `src/app/api/leads/[id]/portal-timeline-events/[eventId]/route.ts`
+- arquivo principal alterado:
+  - `src/components/portal-lead.tsx`
+- mudancas principais no backend:
+  - novas rotas tenant-aware para listar, criar, editar e excluir:
+    - pendencias de documento do cliente
+    - eventos de timeline visiveis para o cliente
+  - todas validam:
+    - auth
+    - acesso ao lead
+    - `tenant_id` do contexto atual
+  - quando as tabelas `portal_document_requests` ou `portal_timeline_events` ainda nao existirem no banco, as rotas:
+    - nao quebram a leitura
+    - retornam `foundationPending: true`
+    - devolvem erro `409` claro nas operacoes de escrita
+- mudancas principais no frontend:
+  - a secao `Portal do Cliente` no detalhe do lead agora permite:
+    - criar pendencia de documento
+    - mudar status da pendencia
+    - excluir pendencia
+    - criar evento manual na timeline
+    - definir se o evento fica visivel para o cliente
+    - excluir evento
+  - o painel mostra aviso funcional quando a foundation `035_portal_mobile_foundation.sql` ainda nao foi aplicada
+- efeito de produto:
+  - o portal deixa de depender so de fallback derivado
+  - o escritorio passa a conseguir alimentar manualmente o que o cliente vera no “app”
+  - isso aproxima o portal do papel de PWA operacional real
+- proximo passo recomendado:
+  - aplicar `supabase/migrations/035_portal_mobile_foundation.sql` no operacional
+  - depois seguir para `manifest`, installability e experiencia PWA
+
 ## Atualizacao 2026-04-01 - Frente estrategica previdenciaria registrada
 
 - foi criada a nota canonica:

@@ -323,6 +323,28 @@ Mestra: [[MASTER_PREV_LEGAL]]
 - proximo passo recomendado:
   - criar a superficie interna minima para o escritorio registrar pendencias de documento e eventos explicitos para o cliente
   - depois seguir para manifest/installability de PWA
+
+## Atualizacao Mobile Cliente — 01/04/2026 (Fase 1, passo 3)
+
+- o contexto interno do lead agora ja ganhou a superficie minima para abastecer o portal mobile-first
+- novas rotas internas:
+  - `GET/POST /api/leads/[id]/portal-document-requests`
+  - `PATCH/DELETE /api/leads/[id]/portal-document-requests/[requestId]`
+  - `GET/POST /api/leads/[id]/portal-timeline-events`
+  - `PATCH/DELETE /api/leads/[id]/portal-timeline-events/[eventId]`
+- a secao `Portal do Cliente` no detalhe do lead agora permite:
+  - criar pendencias de documento do portal
+  - atualizar status da pendencia
+  - excluir pendencia
+  - criar evento manual de timeline
+  - alternar se o evento fica visivel para o cliente
+  - excluir evento
+- comportamento de seguranca:
+  - tudo continua tenant-aware por `lead_id` + `tenant_id`
+  - se a foundation ainda nao estiver aplicada no banco, a UI mostra aviso claro em vez de quebrar
+- proximo passo recomendado:
+  - aplicar a migration `035_portal_mobile_foundation.sql` no operacional
+  - depois seguir para `manifest`, `icons` e installability de PWA
   - abrir um app nativo cedo demais e duplicar regras do portal
 - documento canonico:
   - `docs/MOBILE_CLIENT_APP_PLAN.md`
