@@ -271,6 +271,12 @@ export async function GET(
 **Correcao:** Ativar auto-retracao apenas quando `matchMedia('(hover: hover) and (pointer: fine)')` for verdadeiro, mantendo a sidebar expandida em dispositivos sem hover fino
 **Regra pratica:** Otimizacoes de densidade visual que dependem de hover precisam degradar com segurança em telas touch
 
+### 42. App mobile do cliente deve nascer como evolucao do portal, nao como produto paralelo
+**Problema:** Começar direto com app nativo parece atraente, mas abre uma segunda frente técnica antes de validar o modelo de uso do cliente/familiar
+**Causa:** O PrevLegal já possui portal, mensagens, documentos e agenda; criar um app separado cedo demais duplicaria superfície e regras de negócio
+**Correcao:** Definir a direção oficial como `portal mobile-first -> PWA -> identidade persistente -> nativo só se justificar`
+**Regra pratica:** Quando a base web já entrega o fluxo principal do cliente, a primeira versão mobile deve reaproveitar essa superfície antes de abrir uma stack nativa própria
+
 ### 40. Saúde do tenant no admin só serve para decisão quando as métricas são recortadas pelo tenant certo
 **Problema:** O detalhe do tenant no admin podia exibir leituras operacionais convincentes, mas parte das contagens ainda não filtrava por `tenant_id`
 **Risco:** A tela parecia executiva, mas podia induzir leitura errada de adoção, volume e risco de um escritório específico

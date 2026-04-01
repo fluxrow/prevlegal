@@ -244,6 +244,28 @@ Mestra: [[MASTER_PREV_LEGAL]]
 - proximo passo recomendado:
   - validar no browser se a largura recolhida da sidebar ficou equilibrada no kanban e na agenda
 
+## Atualizacao Mobile Cliente — 01/04/2026
+
+- foi formalizada a direcao de produto para a frente mobile do cliente
+- decisao atual:
+  - evoluir o portal como experiencia mobile-first
+  - lancar primeiro como `PWA`
+  - adiar app nativo ate existir prova de uso e necessidade tecnica real
+- MVP recomendado:
+  - acompanhamento do caso
+  - mensagens
+  - agenda / Meet
+  - documentos
+  - perfil do cliente/familiar
+- risco evitado com essa decisao:
+  - abrir uma segunda frente tecnica cedo demais
+  - duplicar regras de negocio
+  - misturar usuario interno com cliente/familiar
+- documento canonico criado:
+  - `docs/MOBILE_CLIENT_APP_PLAN.md`
+- proximo passo recomendado:
+  - transformar o plano em backlog tecnico de entidades, rotas e telas
+
 ## Atualizacao Agendamento Manual — 30/03/2026
 
 - o backend ja aceitava `POST /api/agendamentos`, mas o produto ainda nao oferecia uma entrada humana obvia para criar consulta manualmente

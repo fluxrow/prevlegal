@@ -15,6 +15,7 @@ Mestra: [[MASTER_PREV_LEGAL]]
 - [[SESSION_BRIEF]]
 - [[CODEX_HANDOFF]]
 - [[DOMAIN_MIGRATION]]
+- [[MOBILE_CLIENT_APP_PLAN]]
 
 ## Produto
 
@@ -188,3 +189,20 @@ Estratégia: entrar com R$ 1.997 para gerar cases, subir gradualmente.
   - permitir mais de um numero de prospeccao por escritorio
   - escolher origem por campanha e, depois, por conversa humana
   - reduzir dependencia de um unico sender ou provider global
+
+## Mobile do Cliente — Direcao atual
+
+- o app mobile do cliente deve nascer como extensao do portal
+- ordem recomendada:
+  - portal mobile-first
+  - PWA instalavel
+  - identidade persistente do cliente/familiar
+  - app nativo apenas se o uso provar necessidade
+- objetivo do MVP:
+  - acompanhamento do caso
+  - mensagens
+  - agenda / Meet
+  - documentos
+  - perfil do cliente/familiar
+- referencia canonica:
+  - `docs/MOBILE_CLIENT_APP_PLAN.md`

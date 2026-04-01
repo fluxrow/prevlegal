@@ -196,6 +196,15 @@ Ultima atualizacao: 2026-03-31
   - o `Funil de Conversao` em `/relatorios` agora tambem aponta para filas reais nas etapas operacionais
   - a sidebar passou a ficar auto-retraida em dispositivos com hover e expandir ao passar o mouse
   - em dispositivos sem hover a sidebar continua expandida
+- mobile do cliente em 01/04:
+  - direcao oficial definida como extensao do portal atual
+  - ordem recomendada:
+    - portal mobile-first
+    - PWA
+    - identidade persistente do cliente/familiar
+    - nativo so se justificar
+  - documento canonico criado:
+    - `docs/MOBILE_CLIENT_APP_PLAN.md`
 
 ## Proximo Passo Recomendado
 

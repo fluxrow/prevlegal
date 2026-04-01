@@ -264,6 +264,28 @@ Pontos que precisam ser preservados durante a implementacao:
 - proximo passo sugerido:
   - validar no browser a ergonomia da sidebar no kanban e na agenda
 
+## Atualizacao de 2026-04-01 — Plano do app mobile do cliente
+
+- foi consolidada a direcao de produto para a frente mobile do cliente/familiar
+- decisao atual:
+  - usar o portal atual como base
+  - priorizar experiencia mobile-first
+  - lancar primeiro como `PWA`
+  - adiar app nativo ate haver prova real de necessidade
+- MVP recomendado:
+  - home com status e proximos passos
+  - mensagens
+  - agenda / Google Meet
+  - documentos
+  - perfil do cliente/familiar
+- direcao de modelagem:
+  - criar identidade separada para cliente/familiar
+  - nao misturar com `usuarios` internos
+- documento canonico:
+  - `docs/MOBILE_CLIENT_APP_PLAN.md`
+- proximo passo sugerido:
+  - transformar esse plano em backlog tecnico de banco, rotas e telas
+
 2026-03-30 - Saude do tenant no admin com metricas tenant-aware
 
 - Objetivo:
