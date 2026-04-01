@@ -209,3 +209,6 @@ Estratégia: entrar com R$ 1.997 para gerar cases, subir gradualmente.
   - `docs/MOBILE_CLIENT_APP_PLAN.md`
 - backlog tecnico inicial:
   - `docs/MOBILE_CLIENT_APP_BACKLOG.md`
+- fase 1 ja iniciada:
+  - o portal atual passou a ler branding dinamico do tenant
+  - o payload do portal ja inclui `branding`, `proximo_agendamento` e `resumo`

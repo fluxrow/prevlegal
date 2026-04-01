@@ -216,6 +216,10 @@ Ultima atualizacao: 2026-04-01
     - publicar como PWA
     - criar identidade persistente
     - avaliar app nativo depois
+  - fase 1 iniciada:
+    - `src/app/portal/[token]/page.tsx` agora usa branding dinâmico do tenant
+    - `GET /api/portal/[token]` agora retorna `branding`, `proximo_agendamento` e `resumo`
+    - o portal passou a exibir o próximo compromisso e o contato do escritório certo
 
 ## Proximo Passo Recomendado
 
@@ -230,9 +234,9 @@ Validar o runtime WhatsApp no tenant limpo:
 - identificar a causa operacional do `errorCode 63015` no sandbox Twilio e confirmar a adesao correta do numero de destino
 - provocar uma inbound de resposta no mesmo numero para validar roteamento pelo tenant
 - iniciar a fase 1 do backlog mobile:
-  - remover branding hardcoded do portal
-  - ampliar `GET /api/portal/[token]`
-  - desenhar a home mobile-first do cliente
+  - incluir pendencias de documento no payload do portal
+  - enriquecer a home mobile-first com timeline operacional mais clara
+  - seguir para manifest/installability de PWA depois dessa camada
 - cadastrar o primeiro canal `Z-API` na nova UI do admin e validar um disparo de campanha ponta a ponta
 - amanha:
   - plugar o chip `41984233554` na instancia Z-API

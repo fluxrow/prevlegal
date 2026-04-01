@@ -59,6 +59,39 @@ Objetivo:
 - proximo passo direto recomendado:
   - iniciar a fase 1 removendo o branding hardcoded do portal e ampliando `GET /api/portal/[token]`
 
+## Atualizacao 2026-04-01 - Fase 1 do portal mobile-first iniciada
+
+- o portal atual deixou de ficar preso ao branding fixo do piloto
+- arquivos alterados:
+  - `src/app/portal/[token]/page.tsx`
+  - `src/app/api/portal/[token]/route.ts`
+- mudancas principais no backend:
+  - `GET /api/portal/[token]` agora retorna:
+    - `branding`
+    - `proximo_agendamento`
+    - `resumo.documentos_compartilhados`
+    - `resumo.mensagens_nao_lidas`
+  - o branding e resolvido a partir de:
+    - `configuracoes.nome_escritorio`
+    - `configuracoes.logo_url`
+    - `configuracoes.cor_primaria`
+    - `tenants.responsavel_email`
+    - `tenants.responsavel_telefone`
+  - `POST /api/portal/[token]` passou a gravar `tenant_id` em `portal_mensagens` e `notificacoes`
+- mudancas principais no frontend:
+  - header, mensagens e footer do portal agora usam o branding dinamico do tenant
+  - a primeira aba virou uma home mais util para mobile:
+    - status
+    - cards-resumo
+    - proxima consulta
+    - linha do tempo
+  - o link do Meet agora aparece na home quando houver agendamento futuro com `meet_link`
+- efeito de produto:
+  - o portal passa a parecer superficie do escritorio certo
+  - a base do futuro PWA ja fica mais proxima de um app de acompanhamento do cliente
+- proximo passo recomendado:
+  - incluir pendencias de documento e timeline operacional mais rica no payload do portal
+
 ## Estado Atual Confirmado
 
 Data da ultima revisao: 2026-03-27

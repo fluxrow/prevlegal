@@ -274,6 +274,12 @@ export async function GET(
 - expor agenda/Meet e pendencias de documento
 **Regra pratica:** Antes de chamar uma superficie de “base do app”, validar se branding, auth e payload ja estao prontos para tenant-awareness e uso recorrente
 
+### 89. A primeira evolucao do app do cliente deve trocar branding fixo por branding dinamico antes de qualquer “novo app”
+**Problema:** Mesmo com a estrategia certa de `portal mobile-first`, o cliente ainda via `Alexandrini Advogados` hardcoded no header, nas mensagens e no footer
+**Causa:** `src/app/portal/[token]/page.tsx` estava acoplada ao piloto inicial e `GET /api/portal/[token]` nao devolvia dados de tenant/configuracao para o front
+**Correcao:** Expandir `GET /api/portal/[token]` para devolver `branding`, `proximo_agendamento` e `resumo`, e fazer a pagina do portal consumir `configuracoes` + `tenants` em vez de texto fixo
+**Regra pratica:** Em superficies cliente-facing do PrevLegal, o primeiro passo para virar produto e remover hardcode de escritorio e passar a ler branding/contato do tenant correto
+
 ### 40. Funil executivo so fecha o ciclo quando a tela de leads tambem aceita filtro por URL
 **Problema:** O pipeline em `/relatorios` e os cards do dashboard ja apontavam para filas reais de inbox, agenda e financeiro, mas o kanban de leads continuava abrindo sempre sem recorte
 **Causa:** `/leads` era renderizada sem ler `searchParams`, entao o produto perdia contexto ao sair dos cards-resumo e voltar para o funil comercial

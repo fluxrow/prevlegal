@@ -290,6 +290,28 @@ Mestra: [[MASTER_PREV_LEGAL]]
 - proximo passo recomendado:
   - iniciar a Fase 1 removendo o branding hardcoded do portal e ampliando `GET /api/portal/[token]`
 
+## Atualizacao Portal Mobile-First — 01/04/2026
+
+- a fase 1 do app do cliente foi iniciada no portal atual
+- `src/app/portal/[token]/page.tsx` deixou de depender de branding fixo de `Alexandrini Advogados`
+- o portal agora consome branding dinâmico a partir de:
+  - `configuracoes.nome_escritorio`
+  - `configuracoes.logo_url`
+  - `configuracoes.cor_primaria`
+  - `tenants.responsavel_email`
+  - `tenants.responsavel_telefone`
+- `GET /api/portal/[token]` foi ampliado para devolver:
+  - `branding`
+  - `proximo_agendamento`
+  - `resumo.documentos_compartilhados`
+  - `resumo.mensagens_nao_lidas`
+- impacto de produto:
+  - o portal deixa de parecer uma tela fixa de piloto
+  - a home do cliente passa a mostrar consulta futura e contato do escritorio certo
+  - a base para o PWA fica mais realista sem abrir outra superficie paralela
+- proximo passo recomendado:
+  - incluir pendencias de documento e timeline operacional mais clara no payload do portal
+
 ## Atualizacao Agendamento Manual — 30/03/2026
 
 - o backend ja aceitava `POST /api/agendamentos`, mas o produto ainda nao oferecia uma entrada humana obvia para criar consulta manualmente
