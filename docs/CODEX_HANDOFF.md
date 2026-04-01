@@ -1440,3 +1440,33 @@ Pontos que precisam ser preservados durante a implementacao:
 - proximo passo:
   - validar no browser a aba `Funil` de `/relatorios`
   - decidir depois se o pipeline vira tambem uma fila clicavel por etapa
+
+## Atualizacao de 2026-04-01 — Pipeline virou fila clicavel
+
+- o bloco de pipeline em `/relatorios` foi elevado de insight para navegacao operacional
+- ajustes aplicados:
+  - `src/app/(dashboard)/relatorios/page.tsx`
+    - cards do pipeline agora sao clicaveis
+    - cada etapa aponta para uma fila real
+  - `src/app/(dashboard)/caixa-de-entrada/page.tsx`
+    - passou a ler `tab` via `useSearchParams`
+  - `src/app/(dashboard)/agendamentos/page.tsx`
+    - passou a ler `status` via `useSearchParams`
+    - exibe faixa de filtro ativo e permite limpar o recorte
+  - `src/app/(dashboard)/financeiro/page.tsx`
+    - passou a ler `filtro` via `useSearchParams`
+    - exibe faixa de filtro ativo e permite limpar o recorte
+- mapeamento atual:
+  - `Com conversa` -> inbox todas
+  - `Fila humana` -> inbox humano
+  - `Aguardando cliente` -> inbox aguardando_cliente
+  - `Resolvidos` -> inbox resolvido
+  - `Agendados` -> agendamentos pendentes
+  - `Confirmados` -> agendamentos confirmados
+  - `Realizados` -> agendamentos finalizados
+  - `Com contrato` -> financeiro ativo
+- validacao:
+  - `npm run build` passou
+- proximo passo:
+  - validar os cliques no browser
+  - decidir depois se `Leads` tambem deve aceitar filtros por URL

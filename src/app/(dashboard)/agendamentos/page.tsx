@@ -230,9 +230,13 @@ export default function AgendamentosPage() {
     }
   }
 
+  const statusFilter = searchParams.get('status')
   const pendentesConfirmacao = agendamentos.filter((ag) => ['agendado', 'remarcado'].includes(ag.status))
   const confirmados = agendamentos.filter((ag) => ag.status === 'confirmado')
   const finalizados = agendamentos.filter((ag) => ['realizado', 'cancelado'].includes(ag.status))
+  const showPendentes = !statusFilter || statusFilter === 'pendentes'
+  const showConfirmados = !statusFilter || statusFilter === 'confirmados'
+  const showFinalizados = !statusFilter || statusFilter === 'finalizados'
 
   const calendarDays = eachDayOfInterval({
     start: startOfWeek(startOfMonth(currentMonth), { weekStartsOn: 0 }),
@@ -558,6 +562,23 @@ export default function AgendamentosPage() {
         ))}
       </div>
 
+      {statusFilter ? (
+        <div className="mb-6 flex items-center justify-between gap-3 rounded-xl border border-blue-500/20 bg-blue-500/5 px-4 py-3">
+          <div>
+            <p className="text-sm font-medium text-blue-300">Filtro operacional ativo</p>
+            <p className="mt-1 text-xs text-slate-500">
+              Exibindo {statusFilter === 'pendentes' ? 'agendamentos que pedem ação' : statusFilter === 'confirmados' ? 'agendamentos confirmados' : 'histórico recente'}.
+            </p>
+          </div>
+          <a
+            href="/agendamentos"
+            className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-slate-300 transition-colors hover:bg-white/10"
+          >
+            Limpar filtro
+          </a>
+        </div>
+      ) : null}
+
       <div className="mb-8 overflow-hidden rounded-2xl border border-white/10 bg-[#11131b]">
         <div className="flex items-center justify-between border-b border-white/10 px-4 py-4">
           <div>
@@ -678,21 +699,21 @@ export default function AgendamentosPage() {
           </div>
         ) : (
           <div className="space-y-8">
-            {renderLista(
+            {showPendentes ? renderLista(
               pendentesConfirmacao,
               'Fila que precisa confirmação',
               'Agendamentos novos ou remarcados que ainda pedem ação humana.',
-            )}
-            {renderLista(
+            ) : null}
+            {showConfirmados ? renderLista(
               confirmados,
               'Confirmados',
               'Reuniões já validadas e prontas para acontecer.',
-            )}
-            {renderLista(
+            ) : null}
+            {showFinalizados ? renderLista(
               finalizados,
               'Histórico recente',
               'Realizados ou cancelados, para acompanhamento operacional.',
-            )}
+            ) : null}
           </div>
         )}
       </div>

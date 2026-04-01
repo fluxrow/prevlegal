@@ -86,6 +86,42 @@ function KpiCard({ label, value, sub, color }: { label: string; value: string | 
   )
 }
 
+function ClickableStageCard({
+  label,
+  value,
+  color,
+  href,
+  helper,
+}: {
+  label: string
+  value: number
+  color: string
+  href: string
+  helper: string
+}) {
+  return (
+    <a
+      href={href}
+      style={{
+        display: 'block',
+        background: 'var(--bg)',
+        border: `1px solid ${color}30`,
+        borderRadius: '10px',
+        padding: '14px 12px',
+        textAlign: 'center',
+        textDecoration: 'none',
+        transition: 'transform 0.15s ease, border-color 0.15s ease, background 0.15s ease',
+      }}
+    >
+      <div style={{ fontSize: '22px', fontWeight: '700', fontFamily: 'Syne, sans-serif', color, letterSpacing: '-0.5px' }}>
+        {value.toLocaleString('pt-BR')}
+      </div>
+      <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>{label}</div>
+      <div style={{ fontSize: '10px', color: 'var(--text-secondary)', marginTop: '8px' }}>{helper}</div>
+    </a>
+  )
+}
+
 const TABS = ['Visão Geral', 'Funil', 'Campanhas', 'Listas', '📈 ROI por Campanha']
 const TOOLTIP_STYLE = { background: '#161920', border: '1px solid #ffffff0f', borderRadius: '8px', color: '#f0f2f5' }
 const AXIS_TICK = { fill: '#8b92a0', fontSize: 12 }
@@ -212,38 +248,24 @@ export default function RelatoriosPage() {
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '10px', marginBottom: '18px' }}>
               {[
-                { label: 'Leads', value: data.kpis.totalLeads, color: '#4f7aff' },
-                { label: 'Com conversa', value: data.pipelineOperacional.leadsComConversa, color: '#2dd4a0' },
-                { label: 'Fila humana', value: data.pipelineOperacional.leadsEmFilaHumana, color: '#f5c842' },
-                { label: 'Agendados', value: data.pipelineOperacional.leadsComAgendamento, color: '#a78bfa' },
-                { label: 'Com contrato', value: data.pipelineOperacional.leadsComContrato, color: '#14b8a6' },
+                { label: 'Leads', value: data.kpis.totalLeads, color: '#4f7aff', href: '/leads', helper: 'Abrir Kanban' },
+                { label: 'Com conversa', value: data.pipelineOperacional.leadsComConversa, color: '#2dd4a0', href: '/caixa-de-entrada?tab=todas', helper: 'Abrir inbox' },
+                { label: 'Fila humana', value: data.pipelineOperacional.leadsEmFilaHumana, color: '#f5c842', href: '/caixa-de-entrada?tab=humano', helper: 'Ver atendimento' },
+                { label: 'Agendados', value: data.pipelineOperacional.leadsComAgendamento, color: '#a78bfa', href: '/agendamentos?status=pendentes', helper: 'Ver agenda' },
+                { label: 'Com contrato', value: data.pipelineOperacional.leadsComContrato, color: '#14b8a6', href: '/financeiro?filtro=ativo', helper: 'Abrir carteira' },
               ].map((item) => (
-                <div key={item.label}>
-                  <div style={{ background: 'var(--bg)', border: `1px solid ${item.color}30`, borderRadius: '10px', padding: '14px 12px', textAlign: 'center' }}>
-                    <div style={{ fontSize: '22px', fontWeight: '700', fontFamily: 'Syne, sans-serif', color: item.color, letterSpacing: '-0.5px' }}>
-                      {item.value.toLocaleString('pt-BR')}
-                    </div>
-                    <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>{item.label}</div>
-                  </div>
-                </div>
+                <ClickableStageCard key={item.label} {...item} />
               ))}
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '10px' }}>
               {[
-                { label: 'Aguardando cliente', value: data.pipelineOperacional.leadsAguardandoCliente, color: '#f59e0b' },
-                { label: 'Resolvidos na inbox', value: data.pipelineOperacional.leadsResolvidos, color: '#14b8a6' },
-                { label: 'Confirmados', value: data.pipelineOperacional.leadsConfirmados, color: '#22c55e' },
-                { label: 'Realizados', value: data.pipelineOperacional.leadsRealizados, color: '#4f7aff' },
+                { label: 'Aguardando cliente', value: data.pipelineOperacional.leadsAguardandoCliente, color: '#f59e0b', href: '/caixa-de-entrada?tab=aguardando_cliente', helper: 'Cobrar retorno' },
+                { label: 'Resolvidos na inbox', value: data.pipelineOperacional.leadsResolvidos, color: '#14b8a6', href: '/caixa-de-entrada?tab=resolvido', helper: 'Ver concluídas' },
+                { label: 'Confirmados', value: data.pipelineOperacional.leadsConfirmados, color: '#22c55e', href: '/agendamentos?status=confirmados', helper: 'Ver confirmados' },
+                { label: 'Realizados', value: data.pipelineOperacional.leadsRealizados, color: '#4f7aff', href: '/agendamentos?status=finalizados', helper: 'Ver histórico' },
               ].map((item) => (
-                <div key={item.label} style={{ background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: '10px', padding: '12px 14px' }}>
-                  <p style={{ fontSize: '10px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 8px' }}>
-                    {item.label}
-                  </p>
-                  <p style={{ fontSize: '20px', fontWeight: '700', color: item.color, fontFamily: 'Syne, sans-serif', margin: 0 }}>
-                    {item.value.toLocaleString('pt-BR')}
-                  </p>
-                </div>
+                <ClickableStageCard key={item.label} {...item} />
               ))}
             </div>
           </div>

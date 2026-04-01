@@ -112,6 +112,16 @@ export default function CaixaDeEntradaPage() {
   }, [])
 
   useEffect(() => {
+    const tab = searchParams.get('tab')
+    if (!tab) return
+
+    const abasValidas: AbaInbox[] = ['todas', 'agente', 'humano', 'aguardando_cliente', 'resolvido', 'portal']
+    if (abasValidas.includes(tab as AbaInbox)) {
+      setAbaAtiva(tab as AbaInbox)
+    }
+  }, [searchParams])
+
+  useEffect(() => {
     if (abaAtiva === 'portal') return
 
     const conversaId = searchParams.get('conversaId')

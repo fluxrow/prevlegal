@@ -760,3 +760,12 @@ export async function GET(
 **Causa:** O `Dashboard` ainda consultava `leads` só por `responsavel_id` / `lgpd_optout`, sem `tenant_id` explícito
 **Correcao aplicada:** Adicionar filtro por `tenant_id` nas queries de leads e stats do dashboard
 **Regra pratica:** Em transições de hardening multi-tenant, telas “resumo” costumam sobrar para trás; revisar sempre dashboard, relatórios e buscas globais depois de endurecer as rotas principais
+
+### 86. Funil executivo fica muito mais útil quando cada etapa cai numa fila real
+**Problema:** O pipeline em `/relatorios` mostrava bem o estágio da operação, mas ainda parava em insight e obrigava o usuário a navegar manualmente até a fila certa
+**Causa:** As telas operacionais já existiam, mas não liam parâmetros simples de URL para abrir o recorte desejado
+**Correcao aplicada:** Tornar os cards do pipeline clicáveis e ensinar:
+- `Caixa de Entrada` a respeitar `tab`
+- `Agendamentos` a respeitar `status`
+- `Financeiro` a respeitar `filtro`
+**Regra pratica:** Sempre que um dashboard do PrevLegal mostrar uma quantidade operacional relevante, o próximo clique precisa levar para uma fila acionável, não para uma navegação em branco

@@ -252,6 +252,10 @@ Validar o runtime WhatsApp no tenant limpo:
     - agendamento
     - contrato
   - o `Dashboard` tambem foi endurecido para ler leads com `tenant_id` explicito
+  - em 01/04/2026, esse pipeline deixou de ser so leitura e virou navegacao para filas reais:
+    - inbox por aba
+    - agendamentos por recorte de status
+    - financeiro por filtro
 
 ## Bloqueios e Cuidados
 

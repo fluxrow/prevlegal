@@ -178,6 +178,28 @@ Mestra: [[MASTER_PREV_LEGAL]]
   - transformar essa leitura em filas acionaveis por etapa
   - depois ligar esse pipeline ao canal WhatsApp de origem quando a Z-API estiver operacional
 
+## Atualizacao Filas Clicaveis — 01/04/2026
+
+- a leitura do pipeline operacional em `/relatorios` deixou de ser apenas diagnostica
+- as etapas principais agora viram atalhos de navegacao para filas reais:
+  - `Com conversa` -> `/caixa-de-entrada?tab=todas`
+  - `Fila humana` -> `/caixa-de-entrada?tab=humano`
+  - `Aguardando cliente` -> `/caixa-de-entrada?tab=aguardando_cliente`
+  - `Resolvidos` -> `/caixa-de-entrada?tab=resolvido`
+  - `Agendados` -> `/agendamentos?status=pendentes`
+  - `Confirmados` -> `/agendamentos?status=confirmados`
+  - `Realizados` -> `/agendamentos?status=finalizados`
+  - `Com contrato` -> `/financeiro?filtro=ativo`
+- para isso, as telas operacionais passaram a aceitar filtros por URL:
+  - `Caixa de Entrada` agora respeita `tab`
+  - `Agendamentos` agora respeita `status`
+  - `Financeiro` agora respeita `filtro`
+- impacto operacional:
+  - o funil deixa de ser so leitura executiva
+  - o operador consegue sair do insight e cair direto na fila correspondente
+- proximo passo recomendado:
+  - avaliar se a tela de leads tambem deve aceitar filtros por URL para completar a navegacao ponta a ponta
+
 ## Atualizacao Agendamento Manual — 30/03/2026
 
 - o backend ja aceitava `POST /api/agendamentos`, mas o produto ainda nao oferecia uma entrada humana obvia para criar consulta manualmente

@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { AlertCircle, Check, CheckCircle, ChevronDown, ChevronUp, Clock, DollarSign, TrendingUp, X } from 'lucide-react'
 
 interface Resumo {
@@ -96,6 +96,7 @@ function fmtData(d: string | null) {
 
 export default function FinanceiroPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [resumo, setResumo] = useState<Resumo | null>(null)
   const [contratos, setContratos] = useState<Contrato[]>([])
   const [loading, setLoading] = useState(true)
@@ -106,6 +107,15 @@ export default function FinanceiroPage() {
   useEffect(() => {
     fetchData()
   }, [])
+
+  useEffect(() => {
+    const filtroParam = searchParams.get('filtro')
+    if (!filtroParam) return
+
+    if (['todos', 'ativo', 'quitado', 'inadimplente', 'cancelado'].includes(filtroParam)) {
+      setFiltro(filtroParam)
+    }
+  }, [searchParams])
 
   async function fetchData() {
     setLoading(true)
@@ -383,6 +393,25 @@ export default function FinanceiroPage() {
           </p>
         </div>
       )}
+
+      {searchParams.get('filtro') ? (
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', marginBottom: '16px', background: 'rgba(79,122,255,0.05)', border: '1px solid rgba(79,122,255,0.18)', borderRadius: '10px', padding: '12px 14px' }}>
+          <div>
+            <p style={{ fontSize: '13px', fontWeight: '600', color: 'var(--accent)', margin: '0 0 4px' }}>
+              Filtro financeiro ativo
+            </p>
+            <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: 0 }}>
+              Exibindo contratos no recorte <strong style={{ color: 'var(--text-secondary)' }}>{searchParams.get('filtro')}</strong>.
+            </p>
+          </div>
+          <a
+            href="/financeiro"
+            style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text-secondary)', textDecoration: 'none', border: '1px solid var(--border)', borderRadius: '8px', padding: '6px 10px', background: 'var(--bg)' }}
+          >
+            Limpar filtro
+          </a>
+        </div>
+      ) : null}
 
       <div style={{ display: 'flex', gap: '6px', marginBottom: '16px', flexWrap: 'wrap' }}>
         {[
