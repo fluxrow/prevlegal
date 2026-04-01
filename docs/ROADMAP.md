@@ -200,6 +200,31 @@ Mestra: [[MASTER_PREV_LEGAL]]
 - proximo passo recomendado:
   - avaliar se a tela de leads tambem deve aceitar filtros por URL para completar a navegacao ponta a ponta
 
+## Atualizacao Leads por URL — 01/04/2026
+
+- a tela `/leads` agora aceita `?status=` e aplica o recorte diretamente no servidor antes de renderizar o kanban
+- os status suportados nesse filtro sao:
+  - `new`
+  - `contacted`
+  - `awaiting`
+  - `scheduled`
+  - `converted`
+  - `lost`
+- a UX do kanban ganhou:
+  - faixa de filtro ativo com CTA `Limpar filtro`
+  - chips de status no topo para alternar rapidamente entre colunas
+- o `Dashboard` tambem passou a tratar o pipeline como navegacao:
+  - `Novos` -> `/leads?status=new`
+  - `Contatados` -> `/leads?status=contacted`
+  - `Agendados` -> `/leads?status=scheduled`
+  - `Convertidos` -> `/leads?status=converted`
+  - `Perdidos` -> `/leads?status=lost`
+- impacto operacional:
+  - o operador agora consegue sair dos cards-resumo e cair direto no recorte certo do kanban
+  - o ciclo `insight -> fila -> acao` ficou fechado tambem para a superficie de leads
+- proximo passo recomendado:
+  - decidir se o funil executivo tambem deve ganhar atalhos para `Novos`, `Contatados` e `Perdidos`
+
 ## Atualizacao Agendamento Manual — 30/03/2026
 
 - o backend ja aceitava `POST /api/agendamentos`, mas o produto ainda nao oferecia uma entrada humana obvia para criar consulta manualmente

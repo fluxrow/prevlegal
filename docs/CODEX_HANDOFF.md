@@ -218,6 +218,33 @@ Pontos que precisam ser preservados durante a implementacao:
 
 ## Registro de Validacoes
 
+## Atualizacao de 2026-04-01 — Leads agora respeitam filtro por URL
+
+- a tela `/leads` passou a aceitar `?status=` diretamente no servidor
+- recortes suportados:
+  - `new`
+  - `contacted`
+  - `awaiting`
+  - `scheduled`
+  - `converted`
+  - `lost`
+- a UI do kanban ganhou:
+  - faixa de filtro ativo com `Limpar filtro`
+  - chips de status no topo
+- o `Dashboard` agora usa esses recortes no bloco de pipeline:
+  - `Novos` -> `/leads?status=new`
+  - `Contatados` -> `/leads?status=contacted`
+  - `Agendados` -> `/leads?status=scheduled`
+  - `Convertidos` -> `/leads?status=converted`
+  - `Perdidos` -> `/leads?status=lost`
+- arquivos principais:
+  - `src/app/(dashboard)/leads/page.tsx`
+  - `src/app/(dashboard)/dashboard/page.tsx`
+- validacao:
+  - `npm run build` passou
+- proximo passo sugerido:
+  - decidir se o funil executivo em `/relatorios` tambem deve ganhar atalhos especificos para `Novos`, `Contatados` e `Perdidos`
+
 2026-03-30 - Saude do tenant no admin com metricas tenant-aware
 
 - Objetivo:

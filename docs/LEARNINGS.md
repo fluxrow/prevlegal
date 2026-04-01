@@ -259,6 +259,12 @@ export async function GET(
 **Correcao:** Aplicar a migration `032`, registrar o primeiro canal em `whatsapp_numbers` e sincronizar o tenant `Fluxrow` com `whatsapp:+14155238886` como origem default
 **Regra pratica:** Quando o erro do provider aponta para `From address`, validar primeiro o sender configurado antes de concluir que o fluxo do produto quebrou
 
+### 40. Funil executivo so fecha o ciclo quando a tela de leads tambem aceita filtro por URL
+**Problema:** O pipeline em `/relatorios` e os cards do dashboard ja apontavam para filas reais de inbox, agenda e financeiro, mas o kanban de leads continuava abrindo sempre sem recorte
+**Causa:** `/leads` era renderizada sem ler `searchParams`, entao o produto perdia contexto ao sair dos cards-resumo e voltar para o funil comercial
+**Correcao:** Fazer `/leads` aceitar `?status=` no servidor, aplicar o filtro direto na query e expor faixa de filtro ativo + chips de status na UI
+**Regra pratica:** Quando uma métrica ou card executivo representa uma etapa do funil, a tela de destino precisa abrir ja no recorte operacional correspondente
+
 ### 40. Saúde do tenant no admin só serve para decisão quando as métricas são recortadas pelo tenant certo
 **Problema:** O detalhe do tenant no admin podia exibir leituras operacionais convincentes, mas parte das contagens ainda não filtrava por `tenant_id`
 **Risco:** A tela parecia executiva, mas podia induzir leitura errada de adoção, volume e risco de um escritório específico

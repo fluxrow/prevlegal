@@ -183,6 +183,15 @@ Ultima atualizacao: 2026-03-31
     - reatribuir responsavel
     - abrir conversa / WhatsApp / Meet
   - a fila operacional continua existindo abaixo, entao a tela passou a juntar leitura visual + execucao
+- leads por URL em 01/04:
+  - `/leads` agora aceita `?status=` e aplica o recorte no servidor
+  - o kanban ganhou faixa de filtro ativo + chips de status
+  - o pipeline do `Dashboard` agora cai direto nesses recortes:
+    - `new`
+    - `contacted`
+    - `scheduled`
+    - `converted`
+    - `lost`
 
 ## Proximo Passo Recomendado
 

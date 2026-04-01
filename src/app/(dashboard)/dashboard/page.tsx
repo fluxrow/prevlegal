@@ -62,11 +62,11 @@ export default async function DashboardPage() {
     ]
 
     const pipeline = [
-        { label: 'Novos', value: s.total_novos || 0, color: 'var(--accent)', icon: ArrowUpRight },
-        { label: 'Contatados', value: s.total_contatados || 0, color: 'var(--yellow)', icon: Clock },
-        { label: 'Agendados', value: s.total_agendados || 0, color: 'var(--purple)', icon: Calendar },
-        { label: 'Convertidos', value: s.total_convertidos || 0, color: 'var(--green)', icon: CheckCircle2 },
-        { label: 'Perdidos', value: s.total_perdidos || 0, color: 'var(--red)', icon: XCircle },
+        { label: 'Novos', value: s.total_novos || 0, color: 'var(--accent)', icon: ArrowUpRight, href: '/leads?status=new' },
+        { label: 'Contatados', value: s.total_contatados || 0, color: 'var(--yellow)', icon: Clock, href: '/leads?status=contacted' },
+        { label: 'Agendados', value: s.total_agendados || 0, color: 'var(--purple)', icon: Calendar, href: '/leads?status=scheduled' },
+        { label: 'Convertidos', value: s.total_convertidos || 0, color: 'var(--green)', icon: CheckCircle2, href: '/leads?status=converted' },
+        { label: 'Perdidos', value: s.total_perdidos || 0, color: 'var(--red)', icon: XCircle, href: '/leads?status=lost' },
     ]
 
     return (
@@ -129,7 +129,7 @@ export default async function DashboardPage() {
             }}>
                 <h3 style={{ fontFamily: 'Syne, sans-serif', fontSize: '14px', fontWeight: '600', marginBottom: '16px', color: 'var(--text-secondary)' }}>Pipeline</h3>
                 <div style={{ display: 'flex', gap: '8px', alignItems: 'stretch' }}>
-                    {pipeline.map(({ label, value, color, icon: Icon }, i) => (
+                    {pipeline.map(({ label, value, color, icon: Icon, href }, i) => (
                         <div key={label} style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px', position: 'relative' }}>
                             {i < pipeline.length - 1 && (
                                 <div style={{
@@ -137,17 +137,19 @@ export default async function DashboardPage() {
                                     color: 'var(--border)', fontSize: '18px', zIndex: 1
                                 }}>›</div>
                             )}
-                            <div style={{
+                            <a href={href} style={{
+                                display: 'block',
                                 background: 'var(--bg-surface)',
                                 border: `1px solid ${color}30`,
                                 borderRadius: '10px',
                                 padding: '16px',
-                                textAlign: 'center'
+                                textAlign: 'center',
+                                textDecoration: 'none'
                             }}>
                                 <Icon size={18} color={color} strokeWidth={1.8} style={{ marginBottom: '8px' }} />
                                 <div style={{ fontSize: '22px', fontWeight: '700', fontFamily: 'Syne, sans-serif', color, letterSpacing: '-0.5px' }}>{value}</div>
                                 <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>{label}</div>
-                            </div>
+                            </a>
                         </div>
                     ))}
                 </div>
