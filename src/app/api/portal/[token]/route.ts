@@ -26,6 +26,76 @@ function normalizeBranding(payload: {
   }
 }
 
+type TimelineEvent = {
+  id: string
+  tipo: string
+  titulo: string
+  descricao: string | null
+  created_at: string
+}
+
+function isMissingRelation(error?: { code?: string; message?: string } | null) {
+  return error?.code === 'PGRST205' || error?.message?.includes('does not exist') || false
+}
+
+function buildDerivedTimeline({
+  lead,
+  documentos,
+  mensagens,
+  agendamentos,
+}: {
+  lead: { id: string; created_at: string; status: string }
+  documentos: Array<{ id: string; nome: string; tipo_documento?: string | null; tipo?: string | null; created_at: string }>
+  mensagens: Array<{ id: string; remetente: string; mensagem: string; created_at: string }>
+  agendamentos: Array<{ id: string; data_hora: string; status: string; observacoes?: string | null }>
+}): TimelineEvent[] {
+  const agendamentoLabel: Record<string, { titulo: string; descricao: string }> = {
+    agendado: { titulo: 'Consulta agendada', descricao: 'Sua consulta foi registrada no sistema.' },
+    confirmado: { titulo: 'Consulta confirmada', descricao: 'A equipe confirmou sua consulta.' },
+    remarcado: { titulo: 'Consulta remarcada', descricao: 'A data da consulta foi atualizada.' },
+    realizado: { titulo: 'Consulta realizada', descricao: 'Seu atendimento em reunião foi concluído.' },
+    cancelado: { titulo: 'Consulta cancelada', descricao: 'A consulta foi cancelada.' },
+  }
+
+  const eventos: TimelineEvent[] = [
+    {
+      id: `lead-${lead.id}`,
+      tipo: 'caso_recebido',
+      titulo: 'Caso recebido',
+      descricao: 'Seu atendimento foi aberto e entrou em análise.',
+      created_at: lead.created_at,
+    },
+    ...documentos.map((documento) => ({
+      id: `documento-${documento.id}`,
+      tipo: 'documento_compartilhado',
+      titulo: 'Documento disponível no portal',
+      descricao: documento.nome,
+      created_at: documento.created_at,
+    })),
+    ...mensagens.map((mensagem) => ({
+      id: `mensagem-${mensagem.id}`,
+      tipo: mensagem.remetente === 'cliente' ? 'mensagem_cliente' : 'mensagem_escritorio',
+      titulo:
+        mensagem.remetente === 'cliente'
+          ? 'Você enviou uma mensagem'
+          : 'A equipe enviou uma mensagem',
+      descricao: mensagem.mensagem.slice(0, 120),
+      created_at: mensagem.created_at,
+    })),
+    ...agendamentos.map((agendamento) => ({
+      id: `agendamento-${agendamento.id}`,
+      tipo: `agendamento_${agendamento.status}`,
+      titulo: agendamentoLabel[agendamento.status]?.titulo || 'Atualização de consulta',
+      descricao: agendamentoLabel[agendamento.status]?.descricao || agendamento.observacoes || null,
+      created_at: agendamento.data_hora,
+    })),
+  ]
+
+  return eventos
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+    .slice(0, 8)
+}
+
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ token: string }> },
@@ -49,7 +119,14 @@ export async function GET(
     .update({ portal_ultimo_acesso: new Date().toISOString() })
     .eq('id', lead.id)
 
-  const [{ data: tenant }, { data: configuracao }, { data: documentos }, { data: mensagens }, { data: proximoAgendamento }] =
+  const [
+    { data: tenant },
+    { data: configuracao },
+    { data: documentos },
+    { data: mensagens },
+    { data: proximoAgendamento },
+    { data: agendamentosRecentes },
+  ] =
     await Promise.all([
       lead.tenant_id
         ? adminSupabase
@@ -83,7 +160,53 @@ export async function GET(
         .order('data_hora', { ascending: true })
         .limit(1)
         .maybeSingle(),
+      adminSupabase
+        .from('agendamentos')
+        .select('id, data_hora, status, observacoes')
+        .eq('lead_id', lead.id)
+        .order('data_hora', { ascending: false })
+        .limit(6),
     ])
+
+  let pendenciasDocumento:
+    | Array<{
+        id: string
+        titulo: string
+        descricao: string | null
+        status: string
+        created_at: string
+        updated_at: string
+      }>
+    | [] = []
+
+  let timelineExplicita: TimelineEvent[] = []
+
+  const { data: pendenciasData, error: pendenciasError } = await adminSupabase
+    .from('portal_document_requests')
+    .select('id, titulo, descricao, status, created_at, updated_at')
+    .eq('lead_id', lead.id)
+    .in('status', ['pendente', 'rejeitado'])
+    .order('created_at', { ascending: false })
+
+  if (!pendenciasError) {
+    pendenciasDocumento = pendenciasData || []
+  } else if (!isMissingRelation(pendenciasError)) {
+    return NextResponse.json({ error: pendenciasError.message }, { status: 500 })
+  }
+
+  const { data: timelineData, error: timelineError } = await adminSupabase
+    .from('portal_timeline_events')
+    .select('id, tipo, titulo, descricao, created_at')
+    .eq('lead_id', lead.id)
+    .eq('visivel_cliente', true)
+    .order('created_at', { ascending: false })
+    .limit(12)
+
+  if (!timelineError) {
+    timelineExplicita = timelineData || []
+  } else if (!isMissingRelation(timelineError)) {
+    return NextResponse.json({ error: timelineError.message }, { status: 500 })
+  }
 
   await adminSupabase
     .from('portal_mensagens')
@@ -116,9 +239,20 @@ export async function GET(
     documentos: documentos || [],
     mensagens: mensagens || [],
     proximo_agendamento: proximoAgendamento || null,
+    pendencias_documento: pendenciasDocumento,
+    timeline:
+      timelineExplicita.length > 0
+        ? timelineExplicita
+        : buildDerivedTimeline({
+            lead,
+            documentos: documentos || [],
+            mensagens: mensagens || [],
+            agendamentos: agendamentosRecentes || [],
+          }),
     resumo: {
       documentos_compartilhados: documentos?.length || 0,
       mensagens_nao_lidas: mensagensNaoLidas,
+      documentos_pendentes: pendenciasDocumento.length,
     },
   })
 }

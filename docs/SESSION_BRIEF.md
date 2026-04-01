@@ -220,6 +220,19 @@ Ultima atualizacao: 2026-04-01
     - `src/app/portal/[token]/page.tsx` agora usa branding dinâmico do tenant
     - `GET /api/portal/[token]` agora retorna `branding`, `proximo_agendamento` e `resumo`
     - o portal passou a exibir o próximo compromisso e o contato do escritório certo
+  - fase 1 continuada:
+    - `GET /api/portal/[token]` agora tambem retorna:
+      - `pendencias_documento`
+      - `timeline`
+      - `resumo.documentos_pendentes`
+    - a home do portal agora exibe:
+      - bloco de documentos pendentes
+      - linha do tempo do caso
+    - o backend usa fallback seguro:
+      - se `portal_document_requests` nao existir ainda, o portal nao quebra
+      - se `portal_timeline_events` nao existir ainda, a timeline e derivada de mensagens, documentos, agendamentos e abertura do caso
+    - migration preparada:
+      - `supabase/migrations/035_portal_mobile_foundation.sql`
 - frente estrategica previdenciaria em 01/04:
   - foi registrada uma nota separada para concorrencia e expansao do produto:
     - `docs/PREVIDENCIARIO_EXPANSION_STRATEGY.md`
@@ -254,9 +267,10 @@ Validar o runtime WhatsApp no tenant limpo:
 - manter o mobile pausado ate o comando explicito:
   - `vamos continuar o mobile`
 - quando esse comando vier, retomar daqui:
-  - incluir pendencias de documento no payload do portal
-  - enriquecer a home mobile-first com timeline operacional mais clara
-  - seguir para manifest/installability de PWA depois dessa camada
+  - criar a superficie interna minima para abastecer:
+    - `portal_document_requests`
+    - `portal_timeline_events`
+  - depois seguir para manifest/installability de PWA
 - cadastrar o primeiro canal `Z-API` na nova UI do admin e validar um disparo de campanha ponta a ponta
 - amanha:
   - plugar o chip `41984233554` na instancia Z-API

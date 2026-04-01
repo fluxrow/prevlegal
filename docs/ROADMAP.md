@@ -293,6 +293,36 @@ Mestra: [[MASTER_PREV_LEGAL]]
   - incluir pendencias de documento no payload do portal
   - enriquecer a timeline operacional do portal
   - depois seguir para manifest/installability de PWA
+
+## Atualizacao Mobile Cliente — 01/04/2026 (Fase 1, passo 2)
+
+- o portal mobile-first avancou mais uma camada sem abrir uma nova superficie paralela
+- `GET /api/portal/[token]` agora tambem entrega:
+  - `pendencias_documento`
+  - `timeline`
+  - `resumo.documentos_pendentes`
+- a timeline do portal agora ja consegue operar em dois modos:
+  - usar eventos explicitos de `portal_timeline_events` quando a tabela existir
+  - fazer fallback seguro para uma timeline derivada de:
+    - abertura do caso
+    - mensagens do portal
+    - documentos compartilhados
+    - agendamentos
+- as pendencias de documento tambem ficaram preparadas com fallback seguro:
+  - se `portal_document_requests` existir, o portal passa a ler pendencias reais do caso
+  - se a tabela ainda nao existir no operacional, o portal nao quebra
+- a home do portal ganhou:
+  - resumo com 4 cards
+  - bloco de `Documentos pendentes`
+  - `Linha do tempo do caso`
+- migration preparada:
+  - `supabase/migrations/035_portal_mobile_foundation.sql`
+  - tabelas:
+    - `portal_timeline_events`
+    - `portal_document_requests`
+- proximo passo recomendado:
+  - criar a superficie interna minima para o escritorio registrar pendencias de documento e eventos explicitos para o cliente
+  - depois seguir para manifest/installability de PWA
   - abrir um app nativo cedo demais e duplicar regras do portal
 - documento canonico:
   - `docs/MOBILE_CLIENT_APP_PLAN.md`

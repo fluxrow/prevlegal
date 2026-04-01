@@ -850,3 +850,24 @@ e destacar quando o acordo ajuda ou atrapalha o caso
 - comparativo automatico de cenarios
 - foco inicial em poucos corredores de maior demanda
 **Regra pratica:** Em modulos previdenciarios internacionais, priorizar primeiro os paises de maior fluxo e uma UX comparativa, nao um cadastro enciclopedico de todos os acordos logo de inicio
+
+### 90. O portal mobile-first precisa evoluir com fallback seguro quando a fundacao de dados ainda nao estiver aplicada no operacional
+**Problema:** O portal precisava passar a mostrar pendencias de documento e uma timeline mais rica, mas as entidades novas (`portal_document_requests` e `portal_timeline_events`) ainda nao existiam garantidamente no banco operacional
+**Causa:** A frente mobile esta andando antes da fundacao completa de schema e antes da superficie interna de abastecimento desses dados
+**Correcao aplicada:** Expandir `GET /api/portal/[token]` com leitura segura:
+- se as tabelas novas existirem, usar os dados reais
+- se nao existirem, fazer fallback para timeline derivada de:
+  - abertura do caso
+  - mensagens do portal
+  - documentos compartilhados
+  - agendamentos
+**Regra pratica:** Em evolucoes do portal do cliente no PrevLegal, a UX pode avancar antes da modelagem ficar 100% abastecida, desde que a API degrade com seguranca e nunca quebre o portal em producao
+
+### 91. Timeline do cliente e mais útil quando combina etapa macro com acontecimentos concretos
+**Problema:** So mostrar o `status` do lead e as etapas macro do atendimento nao dava uma leitura viva do andamento do caso no portal
+**Causa:** O cliente precisava de sinais concretos de movimento, nao apenas de uma trilha abstrata de progresso
+**Correcao aplicada:** Manter as `Etapas do atendimento` como macro-estados e adicionar uma `Linha do tempo do caso` com eventos reais/derivados
+**Regra pratica:** No app/portal do cliente, combinar sempre:
+- camada macro: etapa do caso
+- camada concreta: acontecimentos recentes
+Isso gera mais confianca e reduz sensacao de “portal vazio”

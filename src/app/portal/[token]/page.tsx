@@ -71,6 +71,7 @@ interface Documento {
   tipo: string
   arquivo_url?: string
   tipo_documento?: string
+  descricao?: string | null
   created_at: string
 }
 
@@ -99,15 +100,35 @@ interface ProximoAgendamento {
   observacoes?: string | null
 }
 
+interface PendenciaDocumento {
+  id: string
+  titulo: string
+  descricao?: string | null
+  status: string
+  created_at: string
+  updated_at: string
+}
+
+interface TimelineEvent {
+  id: string
+  tipo: string
+  titulo: string
+  descricao?: string | null
+  created_at: string
+}
+
 interface PortalPayload {
   lead: Lead
   documentos: Documento[]
   mensagens: Mensagem[]
   branding: Branding
   proximo_agendamento: ProximoAgendamento | null
+  pendencias_documento: PendenciaDocumento[]
+  timeline: TimelineEvent[]
   resumo: {
     documentos_compartilhados: number
     mensagens_nao_lidas: number
+    documentos_pendentes: number
   }
 }
 
@@ -157,6 +178,23 @@ function timelineSteps(status: string) {
       done: status === 'converted',
     },
   ]
+}
+
+function timelineIcon(tipo: string) {
+  if (tipo.includes('agendamento')) return <CalendarDays size={14} />
+  if (tipo.includes('documento')) return <FileText size={14} />
+  if (tipo.includes('mensagem')) return <MessageSquare size={14} />
+  if (tipo.includes('caso')) return <CheckCircle size={14} />
+  return <Clock size={14} />
+}
+
+function timelineColor(tipo: string, fallback: string) {
+  if (tipo.includes('agendamento')) return '#a78bfa'
+  if (tipo.includes('documento')) return '#2dd4a0'
+  if (tipo.includes('mensagem_cliente')) return '#f5c842'
+  if (tipo.includes('mensagem_escritorio')) return fallback
+  if (tipo.includes('caso')) return fallback
+  return '#8b92a0'
 }
 
 export default function PortalClientePage() {
@@ -220,6 +258,8 @@ export default function PortalClientePage() {
   const mensagens = payload?.mensagens ?? []
   const branding = payload?.branding
   const proximoAgendamento = payload?.proximo_agendamento ?? null
+  const pendenciasDocumento = payload?.pendencias_documento ?? []
+  const timeline = payload?.timeline ?? []
 
   const statusInfo = lead ? STATUS_INFO[lead.status] || STATUS_INFO.new : null
   const msgNaoLidas = useMemo(
@@ -391,7 +431,7 @@ export default function PortalClientePage() {
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+            gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
             gap: '10px',
             marginBottom: '18px',
           }}
@@ -406,6 +446,11 @@ export default function PortalClientePage() {
               label: 'Mensagens',
               value: msgNaoLidas,
               icon: <MessageSquare size={14} />,
+            },
+            {
+              label: 'Pendências',
+              value: payload.resumo.documentos_pendentes,
+              icon: <Clock size={14} />,
             },
             {
               label: 'Consulta',
@@ -568,6 +613,71 @@ export default function PortalClientePage() {
                 padding: '20px',
               }}
             >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+                <FileText size={16} color={branding.cor_primaria} />
+                <p
+                  style={{
+                    fontSize: '11px',
+                    fontWeight: '700',
+                    color: '#6b7280',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.06em',
+                    margin: 0,
+                  }}
+                >
+                  Documentos pendentes
+                </p>
+              </div>
+
+              {pendenciasDocumento.length > 0 ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '18px' }}>
+                  {pendenciasDocumento.map((pendencia) => (
+                    <div
+                      key={pendencia.id}
+                      style={{
+                        background: '#080b14',
+                        border: '1px solid #ffffff0f',
+                        borderRadius: '12px',
+                        padding: '12px 14px',
+                      }}
+                    >
+                      <p
+                        style={{
+                          fontSize: '13px',
+                          fontWeight: '700',
+                          color: '#f0f2f5',
+                          margin: '0 0 4px',
+                        }}
+                      >
+                        {pendencia.titulo}
+                      </p>
+                      {pendencia.descricao ? (
+                        <p style={{ fontSize: '12px', color: '#8b92a0', margin: '0 0 6px', lineHeight: '1.5' }}>
+                          {pendencia.descricao}
+                        </p>
+                      ) : null}
+                      <p style={{ fontSize: '11px', color: '#4a5060', margin: 0 }}>
+                        Registrado em {formatarData(pendencia.created_at)}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div
+                  style={{
+                    background: '#080b14',
+                    border: '1px solid #ffffff0f',
+                    borderRadius: '12px',
+                    padding: '14px',
+                    marginBottom: '18px',
+                  }}
+                >
+                  <p style={{ fontSize: '13px', color: '#8b92a0', margin: 0 }}>
+                    Nenhum documento pendente no momento. Se a equipe precisar de algo novo, essa área será atualizada.
+                  </p>
+                </div>
+              )}
+
               <p
                 style={{
                   fontSize: '11px',
@@ -624,6 +734,88 @@ export default function PortalClientePage() {
                   </p>
                 </div>
               ))}
+            </div>
+
+            <div
+              style={{
+                background: '#111318',
+                border: '1px solid #ffffff0f',
+                borderRadius: '14px',
+                padding: '20px',
+              }}
+            >
+              <p
+                style={{
+                  fontSize: '11px',
+                  fontWeight: '700',
+                  color: '#6b7280',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.06em',
+                  marginBottom: '16px',
+                }}
+              >
+                Linha do tempo do caso
+              </p>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {timeline.map((evento, index) => {
+                  const corEvento = timelineColor(evento.tipo, branding.cor_primaria)
+
+                  return (
+                    <div key={evento.id} style={{ display: 'flex', gap: '12px' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                        <div
+                          style={{
+                            width: '28px',
+                            height: '28px',
+                            borderRadius: '50%',
+                            background: `${corEvento}18`,
+                            color: corEvento,
+                            border: `1px solid ${corEvento}40`,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            flexShrink: 0,
+                          }}
+                        >
+                          {timelineIcon(evento.tipo)}
+                        </div>
+                        {index < timeline.length - 1 ? (
+                          <div
+                            style={{
+                              width: '2px',
+                              flex: 1,
+                              minHeight: '18px',
+                              background: '#ffffff10',
+                              margin: '4px 0',
+                            }}
+                          />
+                        ) : null}
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0, paddingTop: '2px' }}>
+                        <p
+                          style={{
+                            fontSize: '13px',
+                            fontWeight: '700',
+                            color: '#f0f2f5',
+                            margin: '0 0 4px',
+                          }}
+                        >
+                          {evento.titulo}
+                        </p>
+                        {evento.descricao ? (
+                          <p style={{ fontSize: '12px', color: '#8b92a0', margin: '0 0 4px', lineHeight: '1.5' }}>
+                            {evento.descricao}
+                          </p>
+                        ) : null}
+                        <p style={{ fontSize: '11px', color: '#4a5060', margin: 0 }}>
+                          {formatarDataHora(evento.created_at)}
+                        </p>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
             </div>
 
             <div

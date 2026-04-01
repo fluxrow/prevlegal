@@ -213,6 +213,17 @@ Estratégia: entrar com R$ 1.997 para gerar cases, subir gradualmente.
 - fase 1 ja iniciada:
   - o portal atual passou a ler branding dinamico do tenant
   - o payload do portal ja inclui `branding`, `proximo_agendamento` e `resumo`
+  - o payload do portal agora tambem inclui:
+    - `pendencias_documento`
+    - `timeline`
+    - `resumo.documentos_pendentes`
+  - a home do portal agora combina:
+    - status macro do caso
+    - proxima consulta
+    - documentos pendentes
+    - linha do tempo do caso
+  - a fundacao de schema para a fase seguinte foi preparada em:
+    - `supabase/migrations/035_portal_mobile_foundation.sql`
 
 ## Expansao Previdenciaria — Direcao atual
 

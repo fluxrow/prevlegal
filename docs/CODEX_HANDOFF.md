@@ -92,6 +92,42 @@ Objetivo:
 - proximo passo recomendado:
   - incluir pendencias de documento e timeline operacional mais rica no payload do portal
 
+## Atualizacao 2026-04-01 - Fase 1 do portal mobile-first enriquecida
+
+- a frente mobile continuou em cima do portal atual, sem abrir uma segunda superficie
+- arquivos alterados:
+  - `src/app/api/portal/[token]/route.ts`
+  - `src/app/portal/[token]/page.tsx`
+  - `supabase/migrations/035_portal_mobile_foundation.sql`
+- mudancas principais no backend:
+  - `GET /api/portal/[token]` agora tambem retorna:
+    - `pendencias_documento`
+    - `timeline`
+    - `resumo.documentos_pendentes`
+  - o portal passou a tentar ler:
+    - `portal_document_requests`
+    - `portal_timeline_events`
+  - se essas tabelas ainda nao existirem no operacional, a API nao quebra:
+    - pendencias ficam vazias
+    - timeline cai para fallback derivado de caso + mensagens + documentos + agendamentos
+- mudancas principais no frontend:
+  - resumo da home do portal agora usa quatro cards
+  - a home ganhou:
+    - `Documentos pendentes`
+    - `Linha do tempo do caso`
+  - as `Etapas do atendimento` continuam existindo como camada macro
+- efeito de produto:
+  - o portal fica mais vivo e menos “vazio”
+  - o cliente/familiar passa a enxergar:
+    - o que falta
+    - o que ja aconteceu
+    - o que vem a seguir
+- proximo passo recomendado:
+  - criar a superficie interna minima para o escritorio abastecer:
+    - `portal_document_requests`
+    - `portal_timeline_events`
+  - depois seguir para PWA (`manifest` / installability)
+
 ## Atualizacao 2026-04-01 - Frente estrategica previdenciaria registrada
 
 - foi criada a nota canonica:
