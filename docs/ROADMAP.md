@@ -351,6 +351,25 @@ Mestra: [[MASTER_PREV_LEGAL]]
 - proximo passo recomendado:
   - transformar essa direcao em backlog tecnico com entidades, rotas, telas e ordem de implementacao
 
+## Atualizacao Mobile Cliente — 01/04/2026 (Fase 1, passo 4)
+
+- a migration `035_portal_mobile_foundation.sql` foi aplicada diretamente no operacional `lrqvvxmgimjlghpwavdb`
+- confirmacao pos-aplicacao:
+  - `portal_document_requests` existe no banco
+  - `portal_timeline_events` existe no banco
+- a installability da PWA entrou no proprio portal:
+  - rota nova `GET /api/portal/manifest/[token]`
+  - `/portal/[token]` agora usa manifesto dinamico por token
+  - `public/sw.js` registra um `service worker` leve para habilitar installability
+  - o portal ganhou CTA `Instalar app` quando o navegador suportar `beforeinstallprompt`
+  - em iPhone / iOS, o portal mostra instrucao de `Adicionar à Tela de Início`
+- impacto de produto:
+  - o “app do cliente” passa a nascer do portal real, nao de uma segunda superficie
+  - a instalacao abre o proprio caso do cliente em vez de redirecionar para o dashboard interno
+- proximo passo recomendado:
+  - validar a instalacao real no celular
+  - depois desenhar a primeira camada de identidade persistente do cliente/familiar
+
 ## Atualizacao Backlog Mobile Cliente — 01/04/2026
 
 - a frente mobile agora deixou de ser so tese de produto e ganhou backlog tecnico canonico em `docs/MOBILE_CLIENT_APP_BACKLOG.md`

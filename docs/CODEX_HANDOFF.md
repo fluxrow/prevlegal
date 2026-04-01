@@ -167,6 +167,37 @@ Objetivo:
   - aplicar `supabase/migrations/035_portal_mobile_foundation.sql` no operacional
   - depois seguir para `manifest`, installability e experiencia PWA
 
+## Atualizacao 2026-04-01 - PWA do portal habilitada
+
+- a migration `035_portal_mobile_foundation.sql` foi aplicada diretamente no operacional `lrqvvxmgimjlghpwavdb`
+- confirmacao pos-aplicacao:
+  - `portal_document_requests` existe no banco
+  - `portal_timeline_events` existe no banco
+- a frente mobile ganhou installability real no proprio portal
+- arquivos adicionados:
+  - `src/app/api/portal/manifest/[token]/route.ts`
+  - `src/app/portal/[token]/layout.tsx`
+  - `src/components/portal-install-prompt.tsx`
+  - `public/sw.js`
+- arquivo alterado:
+  - `src/app/portal/[token]/page.tsx`
+- mudancas principais:
+  - cada portal agora tem manifesto proprio com:
+    - nome derivado do escritorio
+    - `start_url` apontando para `/portal/[token]`
+    - `scope` do proprio portal
+  - o portal registra `service worker` leve para habilitar installability
+  - a UI exibe:
+    - CTA `Instalar app` quando houver `beforeinstallprompt`
+    - fallback de instrucao para iPhone / iOS
+- efeito de produto:
+  - o cliente consegue instalar a experiencia do proprio caso como app
+  - a instalacao nao joga o usuario no dashboard interno
+  - o portal passa a se comportar mais claramente como o embrião do app mobile
+- proximo passo recomendado:
+  - validar a instalacao real no celular
+  - depois desenhar a primeira camada de identidade persistente do cliente/familiar
+
 ## Atualizacao 2026-04-01 - Frente estrategica previdenciaria registrada
 
 - foi criada a nota canonica:

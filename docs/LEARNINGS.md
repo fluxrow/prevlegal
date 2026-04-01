@@ -259,6 +259,18 @@ export async function GET(
 **Correcao:** Aplicar a migration `032`, registrar o primeiro canal em `whatsapp_numbers` e sincronizar o tenant `Fluxrow` com `whatsapp:+14155238886` como origem default
 **Regra pratica:** Quando o erro do provider aponta para `From address`, validar primeiro o sender configurado antes de concluir que o fluxo do produto quebrou
 
+### 40. O “app do cliente” precisa de manifesto proprio por portal, nao do manifest global da plataforma
+**Problema:** O projeto ja tinha `public/manifest.json`, mas ele foi desenhado para o app interno e apontava para `/dashboard`
+**Causa:** A frente mobile do cliente nasceu depois da plataforma interna e exige `start_url` contextualizado por token/caso
+**Correcao:** Criar manifesto dinamico em `GET /api/portal/manifest/[token]` e ligá-lo ao layout de `/portal/[token]`
+**Regra pratica:** Quando a experiencia PWA nasce de uma superficie contextualizada por token, o manifesto precisa apontar para essa superficie, nao para um dashboard generico
+
+### 41. Installability pode entrar antes da estrategia de cache offline completa
+**Problema:** O portal precisava ficar instalavel no celular sem abrir agora uma frente grande de offline/cache
+**Causa:** Esperar uma estrategia completa de cache atrasaria a validacao de uso real do “app” com clientes
+**Correcao:** Registrar um `service worker` leve em `public/sw.js` e mostrar o CTA `Instalar app` no proprio portal
+**Regra pratica:** Em MVPs mobile do PrevLegal, primeiro habilitar installability e validar uso; cache/offline avancado entra depois
+
 ### 87. O backlog mobile precisa nascer do portal real, nao de uma ideia abstrata de app
 **Problema:** Planejar “app mobile” sem olhar o portal atual levaria a duplicar superficie e ignorar debitos reais do produto
 **Causa:** O PrevLegal ja possui uma base funcional em `src/app/portal/[token]/page.tsx` e `src/app/api/portal/[token]/route.ts`, mas com limitacoes concretas como branding hardcoded e acesso apenas por token

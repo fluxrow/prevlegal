@@ -6,6 +6,7 @@ import {
   CalendarDays,
   CheckCircle,
   Clock,
+  Download,
   ExternalLink,
   FileText,
   Loader2,
@@ -13,6 +14,7 @@ import {
   Send,
   XCircle,
 } from 'lucide-react'
+import PortalInstallPrompt from '@/components/portal-install-prompt'
 
 const STATUS_INFO: Record<string, { label: string; cor: string; descricao: string }> = {
   new: {
@@ -373,6 +375,9 @@ export default function PortalClientePage() {
           </div>
         </div>
         <div style={{ textAlign: 'right', flexShrink: 0 }}>
+          <div style={{ marginBottom: '8px', display: 'flex', justifyContent: 'flex-end' }}>
+            <PortalInstallPrompt accentColor={branding.cor_primaria} />
+          </div>
           <p style={{ fontSize: '13px', fontWeight: '600', color: '#f0f2f5', margin: 0 }}>{lead.nome}</p>
           <p style={{ fontSize: '11px', color: '#4a5060', margin: 0 }}>
             Desde {formatarData(lead.created_at)}
@@ -836,6 +841,31 @@ export default function PortalClientePage() {
                 </p>
                 <p style={{ fontSize: '11px', color: '#4a5060', margin: 0 }}>
                   Use a aba Mensagens para tirar dúvidas ou mandar atualizações importantes sobre o caso.
+                </p>
+              </div>
+            </div>
+
+            <div
+              style={{
+                background: '#111318',
+                border: '1px solid #ffffff0f',
+                borderRadius: '12px',
+                padding: '16px',
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: '12px',
+              }}
+            >
+              <span style={{ fontSize: '24px' }}>
+                <Download size={20} color={branding.cor_primaria} />
+              </span>
+              <div>
+                <p style={{ fontSize: '13px', fontWeight: '600', color: '#f0f2f5', margin: '0 0 3px' }}>
+                  Instale no seu celular
+                </p>
+                <p style={{ fontSize: '11px', color: '#4a5060', margin: 0 }}>
+                  Você pode usar este portal como app e abrir direto da tela inicial para acompanhar mensagens,
+                  documentos e consultas.
                 </p>
               </div>
             </div>

@@ -245,6 +245,12 @@ Ultima atualizacao: 2026-04-01
     - se a migration `035` ainda nao estiver aplicada no banco:
       - a UI nao quebra
       - mostra aviso de foundation pendente
+  - fase 1 continuada, passo 4:
+    - a migration `035_portal_mobile_foundation.sql` ja foi aplicada no operacional `lrqvvxmgimjlghpwavdb`
+    - `/portal/[token]` agora tem manifesto dinamico por token e `service worker` leve
+    - o portal passou a mostrar CTA `Instalar app`
+    - em iPhone / iOS existe fallback instrucional para `Adicionar à Tela de Início`
+    - o “app do cliente” agora pode ser visto e instalado a partir do proprio link do portal no lead
 - frente estrategica previdenciaria em 01/04:
   - foi registrada uma nota separada para concorrencia e expansao do produto:
     - `docs/PREVIDENCIARIO_EXPANSION_STRATEGY.md`
@@ -279,8 +285,8 @@ Validar o runtime WhatsApp no tenant limpo:
 - manter o mobile pausado ate o comando explicito:
   - `vamos continuar o mobile`
 - quando esse comando vier, retomar daqui:
-  - aplicar a migration `035_portal_mobile_foundation.sql` no operacional
-  - depois seguir para manifest/installability de PWA
+  - validar no celular a instalacao do portal como PWA
+  - depois desenhar a identidade persistente do cliente/familiar
 - cadastrar o primeiro canal `Z-API` na nova UI do admin e validar um disparo de campanha ponta a ponta
 - amanha:
   - plugar o chip `41984233554` na instancia Z-API

@@ -224,6 +224,12 @@ Estratégia: entrar com R$ 1.997 para gerar cases, subir gradualmente.
     - linha do tempo do caso
   - a fundacao de schema para a fase seguinte foi preparada em:
     - `supabase/migrations/035_portal_mobile_foundation.sql`
+  - a migration `035_portal_mobile_foundation.sql` ja foi aplicada no operacional `lrqvvxmgimjlghpwavdb`
+  - o portal agora tambem ganhou installability de PWA:
+    - manifesto dinamico por token
+    - `service worker` leve em `public/sw.js`
+    - CTA `Instalar app` dentro do proprio portal
+    - fallback instrucional para iPhone / iOS
 
 ## Expansao Previdenciaria — Direcao atual
 
