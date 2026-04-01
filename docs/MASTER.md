@@ -17,6 +17,7 @@ Mestra: [[MASTER_PREV_LEGAL]]
 - [[DOMAIN_MIGRATION]]
 - [[MOBILE_CLIENT_APP_PLAN]]
 - [[MOBILE_CLIENT_APP_BACKLOG]]
+- [[PREVIDENCIARIO_EXPANSION_STRATEGY]]
 
 ## Produto
 
@@ -212,3 +213,24 @@ Estratégia: entrar com R$ 1.997 para gerar cases, subir gradualmente.
 - fase 1 ja iniciada:
   - o portal atual passou a ler branding dinamico do tenant
   - o payload do portal ja inclui `branding`, `proximo_agendamento` e `resumo`
+
+## Expansao Previdenciaria — Direcao atual
+
+- a leitura competitiva entre `Prévius` e `Tramitação Inteligente` reforca que o PrevLegal nao deve virar apenas um “software de calculo”
+- a tese mais forte e unir:
+  - CRM
+  - IA
+  - operacao comercial
+  - calculo previdenciario integrado ao lead
+  - agenda
+  - contrato
+- blocos mais promissores:
+  - analise de CNIS com IA
+  - score de viabilidade
+  - calculo preliminar integrado ao lead
+  - geracao de pecas com IA como modulo premium
+  - acompanhamento processual como modulo premium
+- tese de modulo premium separado:
+  - totalizacao internacional (`PrevGlobal`)
+- referencia canonica:
+  - `docs/PREVIDENCIARIO_EXPANSION_STRATEGY.md`

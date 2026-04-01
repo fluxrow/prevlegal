@@ -92,6 +92,43 @@ Objetivo:
 - proximo passo recomendado:
   - incluir pendencias de documento e timeline operacional mais rica no payload do portal
 
+## Atualizacao 2026-04-01 - Frente estrategica previdenciaria registrada
+
+- foi criada a nota canonica:
+  - `docs/PREVIDENCIARIO_EXPANSION_STRATEGY.md`
+- objetivo da nota:
+  - registrar a analise de concorrencia entre `Prévius` e `Tramitação Inteligente`
+  - documentar a tese de expansao previdenciaria do PrevLegal
+  - preservar a ideia de modulo premium de totalizacao internacional
+- conclusao central:
+  - o PrevLegal nao deve competir como “mais um software de calculo”
+  - o caminho mais forte e unir:
+    - CRM
+    - IA
+    - operacao comercial
+    - atendimento
+    - agenda
+    - contrato
+    - calculo integrado ao lead
+- recomendacao de produto:
+  - manter no core:
+    - analise de CNIS com IA
+    - score de viabilidade
+    - calculo preliminar integrado ao lead
+  - tratar como premium:
+    - pecas com IA
+    - acompanhamento processual inteligente
+    - totalizacao internacional (`PrevGlobal`)
+- observacao importante de continuidade:
+  - a execucao do mobile foi pausada por combinacao do fundador
+  - gatilho de retomada:
+    - `vamos continuar o mobile`
+  - ponto exato de retomada:
+    - seguir na fase 1 do portal mobile-first
+    - incluir pendencias de documento no payload do portal
+    - enriquecer a timeline operacional do portal
+    - depois seguir para manifest/installability de PWA
+
 ## Estado Atual Confirmado
 
 Data da ultima revisao: 2026-03-27

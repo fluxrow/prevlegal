@@ -258,6 +258,41 @@ Mestra: [[MASTER_PREV_LEGAL]]
   - documentos
   - perfil do cliente/familiar
 - risco evitado com essa decisao:
+  - nao abrir cedo demais uma segunda frente tecnica nativa
+  - nao duplicar regras de negocio antes da hora
+
+## Atualizacao Estrategica — 01/04/2026
+
+- foi registrada uma frente estrategica separada da execucao atual do mobile:
+  - comparativo de mercado entre `Prévius` e `Tramitação Inteligente`
+  - tese de expansao previdenciaria do PrevLegal
+  - avaliacao de modulos premium
+  - oportunidade de totalizacao internacional
+- leitura consolidada:
+  - `Prévius` = profundidade tecnica de calculo
+  - `Tramitação Inteligente` = conveniencia operacional de escritorio
+  - espaco do PrevLegal = fluxo unico entre CRM, IA, atendimento, agenda e calculo integrado ao lead
+- direcionamento recomendado:
+  - manter no core:
+    - analise de CNIS com IA
+    - score de viabilidade
+    - calculo preliminar integrado ao lead
+  - tratar como premium:
+    - geracao de pecas com IA
+    - acompanhamento processual inteligente
+    - totalizacao internacional
+- tese de nicho premium:
+  - `PrevGlobal` como modulo de totalizacao internacional com comparacao:
+    - sem totalizacao
+    - com totalizacao
+- a execucao do mobile fica apenas pausada, nao abandonada
+- gatilho de retomada combinado:
+  - quando o fundador disser `vamos continuar o mobile`
+- ponto exato de retomada:
+  - seguir na fase 1 do portal mobile-first
+  - incluir pendencias de documento no payload do portal
+  - enriquecer a timeline operacional do portal
+  - depois seguir para manifest/installability de PWA
   - abrir um app nativo cedo demais e duplicar regras do portal
 - documento canonico:
   - `docs/MOBILE_CLIENT_APP_PLAN.md`

@@ -220,6 +220,24 @@ Ultima atualizacao: 2026-04-01
     - `src/app/portal/[token]/page.tsx` agora usa branding dinâmico do tenant
     - `GET /api/portal/[token]` agora retorna `branding`, `proximo_agendamento` e `resumo`
     - o portal passou a exibir o próximo compromisso e o contato do escritório certo
+- frente estrategica previdenciaria em 01/04:
+  - foi registrada uma nota separada para concorrencia e expansao do produto:
+    - `docs/PREVIDENCIARIO_EXPANSION_STRATEGY.md`
+  - comparativo consolidado:
+    - `Prévius` = profundidade tecnica de calculo
+    - `Tramitação Inteligente` = conveniencia operacional de escritorio
+  - tese de diferenciacao do PrevLegal:
+    - CRM + IA + operacao comercial + calculo integrado ao lead
+  - modulos mais promissores:
+    - analise de CNIS com IA
+    - score de viabilidade
+    - calculo preliminar integrado ao lead
+    - pecas com IA como premium
+    - acompanhamento processual como premium
+    - totalizacao internacional (`PrevGlobal`) como premium
+  - combinado operacional:
+    - esta frente fica registrada e pausada para refinamento posterior
+    - quando o fundador disser `vamos continuar o mobile`, retomar exatamente da fase 1 do portal mobile-first
 
 ## Proximo Passo Recomendado
 
@@ -233,7 +251,9 @@ Validar o runtime WhatsApp no tenant limpo:
 - retestar agora o envio manual e o `Iniciar conversa` com o canal default do tenant
 - identificar a causa operacional do `errorCode 63015` no sandbox Twilio e confirmar a adesao correta do numero de destino
 - provocar uma inbound de resposta no mesmo numero para validar roteamento pelo tenant
-- iniciar a fase 1 do backlog mobile:
+- manter o mobile pausado ate o comando explicito:
+  - `vamos continuar o mobile`
+- quando esse comando vier, retomar daqui:
   - incluir pendencias de documento no payload do portal
   - enriquecer a home mobile-first com timeline operacional mais clara
   - seguir para manifest/installability de PWA depois dessa camada

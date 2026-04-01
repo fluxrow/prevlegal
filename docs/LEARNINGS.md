@@ -808,3 +808,45 @@ export async function GET(
 - `Agendamentos` a respeitar `status`
 - `Financeiro` a respeitar `filtro`
 **Regra pratica:** Sempre que um dashboard do PrevLegal mostrar uma quantidade operacional relevante, o próximo clique precisa levar para uma fila acionável, não para uma navegação em branco
+
+### 87. O PrevLegal nao deve competir como “mais um software de calculo previdenciario”
+**Problema:** A comparacao com ferramentas como `Prévius` e `Tramitação Inteligente` pode empurrar o produto para uma corrida de checklist de calculo puro
+**Causa:** O mercado ja tem polos bem definidos:
+- profundidade tecnica de calculo
+- conveniencia operacional de escritorio
+**Correcao aplicada:** Registrar como tese de produto que o PrevLegal deve unir:
+- CRM
+- IA
+- operacao comercial
+- atendimento
+- agenda
+- contrato
+- calculo integrado ao lead
+**Regra pratica:** Toda nova frente previdenciaria deve ser avaliada pelo quanto ela fortalece o fluxo completo do lead, e nao apenas pela sofisticacao isolada do motor de calculo
+
+### 88. Modulos premium previdenciarios fazem mais sentido do que inflar o core com tudo de uma vez
+**Problema:** Blocos como pecas com IA, acompanhamento processual e totalizacao internacional tem alto valor, mas aumentam demais a superficie do produto base
+**Causa:** Exigem curadoria juridica, regras especializadas e ticket diferente do fluxo operacional central do PrevLegal
+**Correcao aplicada:** Separar a estrategia em:
+- core:
+  - analise de CNIS com IA
+  - score de viabilidade
+  - calculo preliminar integrado ao lead
+- premium:
+  - geracao de pecas com IA
+  - acompanhamento processual inteligente
+  - totalizacao internacional (`PrevGlobal`)
+**Regra pratica:** Quando uma frente previdenciaria exigir alta especializacao e gerar valor percebido proprio, tratar como modulo premium antes de tentar encaixar tudo no core
+
+### 89. Totalizacao internacional tem cara de nicho premium com UX baseada em comparacao de cenarios
+**Problema:** Casos de contribuicao em mais de um pais nao se resolvem apenas “somando tempos”; as regras variam e nem sempre totalizar e vantajoso
+**Causa:** O valor juridico real esta em comparar:
+- sem totalizacao
+- com totalizacao
+e destacar quando o acordo ajuda ou atrapalha o caso
+**Correcao aplicada:** Registrar a tese `PrevGlobal` com:
+- toggle por pais
+- adaptacao por acordo internacional
+- comparativo automatico de cenarios
+- foco inicial em poucos corredores de maior demanda
+**Regra pratica:** Em modulos previdenciarios internacionais, priorizar primeiro os paises de maior fluxo e uma UX comparativa, nao um cadastro enciclopedico de todos os acordos logo de inicio
