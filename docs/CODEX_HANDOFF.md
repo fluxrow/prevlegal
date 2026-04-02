@@ -69,6 +69,30 @@ Objetivo:
   - validar o upload real no celular
   - depois desenhar pedido de remarcacao pelo portal
 
+## Atualizacao 2026-04-02 - Pedido de remarcacao no portal
+
+- a frente mobile/core ganhou mais uma acao real do cliente/familiar
+- arquivos adicionados:
+  - `src/app/api/portal/[token]/remarcacao/route.ts`
+- arquivo alterado:
+  - `src/app/portal/[token]/page.tsx`
+- mudancas principais:
+  - o card da proxima consulta agora expõe CTA `Pedir remarcação`
+  - o cliente pode informar:
+    - motivo
+    - sugestao opcional de nova janela
+  - o backend:
+    - valida a existencia de agendamento futuro
+    - cria evento `pedido_remarcacao_cliente` em `portal_timeline_events`
+    - gera notificacao interna para a equipe
+    - nao altera automaticamente o agendamento
+- efeito de produto:
+  - o portal continua aumentando autonomia do cliente
+  - a equipe continua no controle da agenda operacional
+- proximo passo recomendado:
+  - validar esse fluxo no celular
+  - depois avaliar push/notificacoes do portal
+
 ## Atualizacao 2026-04-01 - Backlog tecnico do app mobile do cliente
 
 - a frente mobile deixou de ser apenas direcao conceitual e ganhou backlog tecnico canonico em `docs/MOBILE_CLIENT_APP_BACKLOG.md`

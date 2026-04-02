@@ -251,7 +251,26 @@ Mestra: [[MASTER_PREV_LEGAL]]
   - o cliente passa a agir no fluxo, e nao apenas acompanhar
 - proximo passo recomendado:
   - validar o upload real no celular
-  - depois avaliar pedido de remarcacao pelo proprio portal
+  - depois evoluir para pedido de remarcacao pelo proprio portal
+
+## Atualizacao Mobile / Remarcacao no Portal — 02/04/2026
+
+- o portal do cliente agora permite `pedido de remarcacao` sem alterar a agenda automaticamente
+- nova rota:
+  - `POST /api/portal/[token]/remarcacao`
+- comportamento:
+  - valida que existe um agendamento futuro do lead
+  - recebe motivo e sugestao opcional de nova janela
+  - cria evento `pedido_remarcacao_cliente` em `portal_timeline_events`
+  - gera notificacao interna para a equipe
+  - nao muda o agendamento por conta propria
+- a home do portal agora expõe CTA `Pedir remarcação` dentro do card da próxima consulta
+- efeito de produto:
+  - o cliente/familiar ganha mais autonomia
+  - a equipe continua no controle operacional do calendário
+- proximo passo recomendado:
+  - validar esse fluxo no celular
+  - depois avaliar upload/captura de mais tipos de documento e notificacao push do portal
 - a UX do kanban ganhou:
   - faixa de filtro ativo com CTA `Limpar filtro`
   - chips de status no topo para alternar rapidamente entre colunas

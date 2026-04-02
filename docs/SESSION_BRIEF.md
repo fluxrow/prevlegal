@@ -233,7 +233,14 @@ Ultima atualizacao: 2026-04-01
     - notifica a equipe no backoffice
   - proximo passo recomendado no mobile/core:
     - validar upload real no celular
-    - depois avaliar pedido de remarcacao no proprio portal
+    - depois validar pedido de remarcacao no proprio portal
+  - remarcacao no portal em 02/04:
+    - `POST /api/portal/[token]/remarcacao` foi criada
+    - o cliente/familiar agora pode explicar o motivo e sugerir outra janela
+    - o sistema:
+      - gera notificacao interna
+      - registra evento `pedido_remarcacao_cliente` na timeline
+      - nao altera o agendamento automaticamente
 - diretriz de portfólio em 01/04:
   - o crescimento do sistema nao deve reescrever a identidade principal do PrevLegal
   - o core continua sendo:

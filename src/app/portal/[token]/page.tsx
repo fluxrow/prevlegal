@@ -240,6 +240,12 @@ export default function PortalClientePage() {
   const [enviandoDocumento, setEnviandoDocumento] = useState(false)
   const [erroDocumento, setErroDocumento] = useState('')
   const [sucessoDocumento, setSucessoDocumento] = useState('')
+  const [mostrarRemarcacao, setMostrarRemarcacao] = useState(false)
+  const [motivoRemarcacao, setMotivoRemarcacao] = useState('')
+  const [sugestaoRemarcacao, setSugestaoRemarcacao] = useState('')
+  const [enviandoRemarcacao, setEnviandoRemarcacao] = useState(false)
+  const [erroRemarcacao, setErroRemarcacao] = useState('')
+  const [sucessoRemarcacao, setSucessoRemarcacao] = useState('')
   const msgEndRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -358,6 +364,36 @@ export default function PortalClientePage() {
     setSucessoDocumento('Documento enviado com sucesso. A equipe já pode analisar.')
     await fetchPortal()
     setEnviandoDocumento(false)
+  }
+
+  async function pedirRemarcacao() {
+    if (!motivoRemarcacao.trim()) return
+    setEnviandoRemarcacao(true)
+    setErroRemarcacao('')
+    setSucessoRemarcacao('')
+
+    const res = await fetch(`/api/portal/${token}/remarcacao`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        motivo: motivoRemarcacao,
+        sugestao: sugestaoRemarcacao,
+      }),
+    })
+
+    const json = await res.json().catch(() => null)
+    if (!res.ok) {
+      setErroRemarcacao(json?.error || 'Não foi possível registrar o pedido de remarcação.')
+      setEnviandoRemarcacao(false)
+      return
+    }
+
+    setMotivoRemarcacao('')
+    setSugestaoRemarcacao('')
+    setMostrarRemarcacao(false)
+    setSucessoRemarcacao('Pedido enviado. A equipe vai revisar e retornar com a nova disponibilidade.')
+    await fetchPortal()
+    setEnviandoRemarcacao(false)
   }
 
   const lead = payload?.lead ?? null
@@ -708,7 +744,158 @@ export default function PortalClientePage() {
                       <Clock size={13} />
                       {proximoAgendamento.status}
                     </div>
+                    <button
+                      onClick={() => {
+                        setMostrarRemarcacao((current) => !current)
+                        setErroRemarcacao('')
+                        setSucessoRemarcacao('')
+                      }}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        border: '1px solid #ffffff12',
+                        background: '#080b14',
+                        color: '#8b92a0',
+                        borderRadius: '10px',
+                        padding: '10px 14px',
+                        fontSize: '12px',
+                        fontWeight: '700',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <CalendarDays size={13} />
+                      Pedir remarcação
+                    </button>
                   </div>
+                  {sucessoRemarcacao ? (
+                    <div
+                      style={{
+                        marginTop: '12px',
+                        background: 'rgba(45,212,160,0.08)',
+                        border: '1px solid rgba(45,212,160,0.18)',
+                        borderRadius: '10px',
+                        padding: '10px 12px',
+                        color: '#8ef0cc',
+                        fontSize: '12px',
+                      }}
+                    >
+                      {sucessoRemarcacao}
+                    </div>
+                  ) : null}
+                  {mostrarRemarcacao ? (
+                    <div
+                      style={{
+                        marginTop: '14px',
+                        display: 'grid',
+                        gap: '10px',
+                        background: '#080b14',
+                        border: '1px solid #ffffff0f',
+                        borderRadius: '12px',
+                        padding: '14px',
+                      }}
+                    >
+                      <p style={{ fontSize: '12px', color: '#8b92a0', margin: 0, lineHeight: '1.6' }}>
+                        Conte para a equipe por que você precisa remarcar e, se quiser, sugira outro período.
+                      </p>
+                      <textarea
+                        value={motivoRemarcacao}
+                        onChange={(e) => setMotivoRemarcacao(e.target.value)}
+                        placeholder="Ex.: não conseguirei estar disponível nesse horário"
+                        rows={3}
+                        style={{
+                          resize: 'vertical',
+                          minHeight: '88px',
+                          background: '#111318',
+                          border: '1px solid #ffffff0f',
+                          borderRadius: '10px',
+                          padding: '12px 14px',
+                          color: '#f0f2f5',
+                          fontSize: '13px',
+                          fontFamily: 'DM Sans, sans-serif',
+                          outline: 'none',
+                        }}
+                      />
+                      <input
+                        value={sugestaoRemarcacao}
+                        onChange={(e) => setSugestaoRemarcacao(e.target.value)}
+                        placeholder="Sugestão de período (opcional)"
+                        style={{
+                          background: '#111318',
+                          border: '1px solid #ffffff0f',
+                          borderRadius: '10px',
+                          padding: '11px 14px',
+                          color: '#f0f2f5',
+                          fontSize: '13px',
+                          fontFamily: 'DM Sans, sans-serif',
+                          outline: 'none',
+                        }}
+                      />
+                      {erroRemarcacao ? (
+                        <div
+                          style={{
+                            background: 'rgba(255,87,87,0.08)',
+                            border: '1px solid rgba(255,87,87,0.18)',
+                            borderRadius: '10px',
+                            padding: '10px 12px',
+                            color: '#ff8a8a',
+                            fontSize: '12px',
+                          }}
+                        >
+                          {erroRemarcacao}
+                        </div>
+                      ) : null}
+                      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                        <button
+                          onClick={pedirRemarcacao}
+                          disabled={enviandoRemarcacao || !motivoRemarcacao.trim()}
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            background: motivoRemarcacao.trim() ? branding.cor_primaria : '#1c2028',
+                            color: motivoRemarcacao.trim() ? '#fff' : '#4a5060',
+                            borderRadius: '10px',
+                            padding: '10px 14px',
+                            border: 'none',
+                            fontSize: '12px',
+                            fontWeight: '700',
+                            cursor: motivoRemarcacao.trim() ? 'pointer' : 'not-allowed',
+                          }}
+                        >
+                          {enviandoRemarcacao ? (
+                            <>
+                              <Loader2 size={13} style={{ animation: 'spin 1s linear infinite' }} />
+                              Enviando...
+                            </>
+                          ) : (
+                            'Enviar pedido'
+                          )}
+                        </button>
+                        <button
+                          onClick={() => {
+                            setMostrarRemarcacao(false)
+                            setErroRemarcacao('')
+                          }}
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            background: '#111318',
+                            color: '#8b92a0',
+                            borderRadius: '10px',
+                            padding: '10px 14px',
+                            border: '1px solid #ffffff0f',
+                            fontSize: '12px',
+                            fontWeight: '700',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          Cancelar
+                        </button>
+                      </div>
+                    </div>
+                  ) : null}
                 </>
               ) : (
                 <p style={{ fontSize: '13px', color: '#8b92a0', margin: 0 }}>

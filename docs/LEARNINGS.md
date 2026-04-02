@@ -35,6 +35,12 @@ Mestra: [[MASTER_PREV_LEGAL]]
 **Correção:** Permitir upload de documento direto na aba `Documentos` do portal, com reflexo em pendências, timeline e notificações internas
 **Regra pratica:** Toda fase do mobile do cliente deve adicionar pelo menos uma ação útil do usuário final, e não apenas mais visualização
 
+### 35. Remarcação pelo portal deve sinalizar intenção, não mudar a agenda automaticamente
+**Problema:** O cliente precisa pedir remarcação pelo app, mas alterar o horário sem mediação humana pode bagunçar a operação do escritório
+**Causa:** O portal é uma superfície de cliente/familiar, enquanto a agenda operacional continua sendo responsabilidade da equipe
+**Correção:** Criar um fluxo de `pedido de remarcação` que registra motivo e sugestão, alimenta timeline/notificação e mantém o time humano no controle da agenda
+**Regra pratica:** No mobile do cliente, ações com impacto operacional forte devem entrar primeiro como `pedido` ou `sinalização`, e só depois como automação total
+
 ## Padrões TypeScript/Next.js 16
 
 ### 1. `createClient` admin no nível de módulo

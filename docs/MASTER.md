@@ -223,6 +223,7 @@ Estratégia: entrar com R$ 1.997 para gerar cases, subir gradualmente.
     - envio de documentos pelo proprio cliente/familiar
     - associacao opcional do envio a uma pendencia existente
     - atualizacao automatica da timeline e notificacao interna da equipe
+    - pedido de remarcacao pelo proprio cliente/familiar, sem alterar a agenda automaticamente
 
 ## Arquitetura de Portfólio — Regra atual
 

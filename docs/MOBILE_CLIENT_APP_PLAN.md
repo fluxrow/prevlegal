@@ -136,7 +136,7 @@ O MVP deve ter 5 áreas.
 - consultas futuras
 - botão para entrar no Meet
 - instruções da reunião
-- pedido de remarcação em fase seguinte
+- pedido de remarcação
 
 ### 4. Documentos
 - checklist do que já foi enviado

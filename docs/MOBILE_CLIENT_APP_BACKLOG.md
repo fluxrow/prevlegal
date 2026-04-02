@@ -75,6 +75,7 @@ Entregas:
 - agenda do cliente com próxima consulta e link do Meet
 - documentos organizados por checklist
 - envio de documento pelo cliente/familiar dentro do portal
+- pedido de remarcação pelo cliente/familiar
 - mensagens com hierarquia melhor
 - branding dinâmico por tenant no lugar de conteúdo fixo
 - layout preparado para PWA
