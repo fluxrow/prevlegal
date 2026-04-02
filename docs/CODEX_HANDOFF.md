@@ -1900,3 +1900,21 @@ Pontos que precisam ser preservados durante a implementacao:
 - proximo passo:
   - validar os cliques no browser
   - decidir depois se `Leads` tambem deve aceitar filtros por URL
+
+## Atualizacao 2026-04-02 - Confirmacao de presenca no portal
+
+- a frente mobile/core ganhou uma acao concreta e segura para a agenda do cliente
+- arquivos principais:
+  - `src/app/api/portal/[token]/confirmacao/route.ts`
+  - `src/app/portal/[token]/page.tsx`
+- comportamento:
+  - o card da proxima consulta agora permite `Confirmar presença`
+  - a acao atualiza o agendamento para `confirmado`
+  - cria evento `confirmacao_presenca_cliente` em `portal_timeline_events`
+  - gera notificacao interna para a equipe
+- racional:
+  - remarcacao continua como pedido
+  - confirmacao e automacao leve de baixo risco, boa candidata para acontecer direto no app do cliente
+- proximo passo:
+  - validar confirmacao no celular
+  - depois evoluir uma camada de novidades/notificacoes do portal

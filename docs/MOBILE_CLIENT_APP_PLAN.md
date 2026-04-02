@@ -293,3 +293,11 @@ Transformar esse plano em backlog técnico com:
 - revisão das rotas atuais de portal
 - telas do MVP
 - ordem de implementação por sprint
+
+## Atualizacao 2026-04-02 - Confirmacao de presenca
+
+- o MVP mobile do cliente agora tambem inclui `confirmacao de presença` na proxima consulta
+- isso reforca a tese de que o portal deve virar um canal operacional leve:
+  - Meet
+  - remarcacao como pedido
+  - confirmacao de presenca como automacao segura

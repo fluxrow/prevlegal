@@ -246,6 +246,9 @@ export default function PortalClientePage() {
   const [enviandoRemarcacao, setEnviandoRemarcacao] = useState(false)
   const [erroRemarcacao, setErroRemarcacao] = useState('')
   const [sucessoRemarcacao, setSucessoRemarcacao] = useState('')
+  const [confirmandoPresenca, setConfirmandoPresenca] = useState(false)
+  const [erroConfirmacao, setErroConfirmacao] = useState('')
+  const [sucessoConfirmacao, setSucessoConfirmacao] = useState('')
   const msgEndRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -396,6 +399,27 @@ export default function PortalClientePage() {
     setEnviandoRemarcacao(false)
   }
 
+  async function confirmarPresenca() {
+    setConfirmandoPresenca(true)
+    setErroConfirmacao('')
+    setSucessoConfirmacao('')
+
+    const res = await fetch(`/api/portal/${token}/confirmacao`, {
+      method: 'POST',
+    })
+
+    const json = await res.json().catch(() => null)
+    if (!res.ok) {
+      setErroConfirmacao(json?.error || 'Não foi possível confirmar sua presença agora.')
+      setConfirmandoPresenca(false)
+      return
+    }
+
+    setSucessoConfirmacao('Presença confirmada com sucesso. A equipe já foi avisada.')
+    await fetchPortal()
+    setConfirmandoPresenca(false)
+  }
+
   const lead = payload?.lead ?? null
   const documentos = payload?.documentos ?? []
   const mensagens = payload?.mensagens ?? []
@@ -404,6 +428,10 @@ export default function PortalClientePage() {
   const pendenciasDocumento = payload?.pendencias_documento ?? []
   const timeline = payload?.timeline ?? []
   const viewer = payload?.viewer ?? null
+  const podeConfirmarPresenca = Boolean(
+    proximoAgendamento && ['agendado', 'remarcado'].includes(proximoAgendamento.status),
+  )
+  const consultaJaConfirmada = proximoAgendamento?.status === 'confirmado'
 
   const statusInfo = lead ? STATUS_INFO[lead.status] || STATUS_INFO.new : null
   const msgNaoLidas = useMemo(
@@ -705,6 +733,37 @@ export default function PortalClientePage() {
                     Duração estimada de {proximoAgendamento.duracao_minutos} minutos.
                   </p>
                   <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    {podeConfirmarPresenca ? (
+                      <button
+                        onClick={confirmarPresenca}
+                        disabled={confirmandoPresenca}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          background: branding.cor_primaria,
+                          color: '#fff',
+                          borderRadius: '10px',
+                          padding: '10px 14px',
+                          fontSize: '12px',
+                          fontWeight: '700',
+                          border: 'none',
+                          cursor: confirmandoPresenca ? 'wait' : 'pointer',
+                        }}
+                      >
+                        {confirmandoPresenca ? (
+                          <>
+                            <Loader2 size={13} style={{ animation: 'spin 1s linear infinite' }} />
+                            Confirmando...
+                          </>
+                        ) : (
+                          <>
+                            <CheckCircle size={13} />
+                            Confirmar presença
+                          </>
+                        )}
+                      </button>
+                    ) : null}
                     {proximoAgendamento.meet_link ? (
                       <a
                         href={proximoAgendamento.meet_link}
@@ -741,9 +800,28 @@ export default function PortalClientePage() {
                         fontWeight: '600',
                       }}
                     >
-                      <Clock size={13} />
-                      {proximoAgendamento.status}
-                    </div>
+                        <Clock size={13} />
+                        {proximoAgendamento.status}
+                      </div>
+                    {consultaJaConfirmada ? (
+                      <div
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          border: '1px solid rgba(45,212,160,0.18)',
+                          background: 'rgba(45,212,160,0.08)',
+                          color: '#8ef0cc',
+                          borderRadius: '10px',
+                          padding: '10px 14px',
+                          fontSize: '12px',
+                          fontWeight: '700',
+                        }}
+                      >
+                        <CheckCircle size={13} />
+                        Presença confirmada
+                      </div>
+                    ) : null}
                     <button
                       onClick={() => {
                         setMostrarRemarcacao((current) => !current)
@@ -781,6 +859,36 @@ export default function PortalClientePage() {
                       }}
                     >
                       {sucessoRemarcacao}
+                    </div>
+                  ) : null}
+                  {sucessoConfirmacao ? (
+                    <div
+                      style={{
+                        marginTop: '12px',
+                        background: 'rgba(45,212,160,0.08)',
+                        border: '1px solid rgba(45,212,160,0.18)',
+                        borderRadius: '10px',
+                        padding: '10px 12px',
+                        color: '#8ef0cc',
+                        fontSize: '12px',
+                      }}
+                    >
+                      {sucessoConfirmacao}
+                    </div>
+                  ) : null}
+                  {erroConfirmacao ? (
+                    <div
+                      style={{
+                        marginTop: '12px',
+                        background: 'rgba(255,87,87,0.08)',
+                        border: '1px solid rgba(255,87,87,0.18)',
+                        borderRadius: '10px',
+                        padding: '10px 12px',
+                        color: '#ff8a8a',
+                        fontSize: '12px',
+                      }}
+                    >
+                      {erroConfirmacao}
                     </div>
                   ) : null}
                   {mostrarRemarcacao ? (

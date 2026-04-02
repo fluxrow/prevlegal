@@ -218,6 +218,7 @@ Estratégia: entrar com R$ 1.997 para gerar cases, subir gradualmente.
     - `pendencias_documento`
     - `timeline`
     - `resumo.documentos_pendentes`
+  - o portal agora tambem permite confirmar presenca na proxima consulta, gerando timeline e notificacao interna para a equipe
   - a home do portal agora combina:
   - o portal agora tambem permite:
     - envio de documentos pelo proprio cliente/familiar

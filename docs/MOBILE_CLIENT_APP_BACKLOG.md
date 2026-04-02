@@ -371,3 +371,9 @@ Iniciar pela Fase 1:
   - próxima consulta
   - mensagens
   - documentos pendentes
+
+## Atualizacao 2026-04-02 - Confirmacao de presenca
+
+- a fase 1 do portal mobile-first agora tambem cobre:
+  - confirmacao de presenca na proxima consulta
+- isso fortalece o app do cliente como canal de agenda e reduz friccao operacional para o escritorio

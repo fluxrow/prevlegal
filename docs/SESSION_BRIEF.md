@@ -374,3 +374,16 @@ No inicio:
 No final:
 - atualizar docs locais
 - rodar `scripts/sync-obsidian.sh "<tema>" "<proximo passo>"`
+
+## Atualizacao 2026-04-02 - Confirmacao de presenca no portal
+
+- o portal agora permite `confirmar presença` na proxima consulta
+- nova rota: `POST /api/portal/[token]/confirmacao`
+- comportamento:
+  - quando a consulta estiver `agendado` ou `remarcado`, o cliente/familiar pode confirmar presenca
+  - o agendamento passa para `confirmado`
+  - um evento `confirmacao_presenca_cliente` entra na timeline
+  - a equipe recebe notificacao interna
+- proximo passo sugerido:
+  - validar esse fluxo no celular
+  - depois evoluir uma camada leve de novidades/notificacoes do portal

@@ -933,3 +933,9 @@ Isso gera mais confianca e reduz sensacao de “portal vazio”
 - tabela ausente = aviso/fallback seguro
 - erro real = falha explicita
 **Regra pratica:** Em evolucao incremental de schema no PrevLegal, a UI deve informar quando a foundation ainda nao foi aplicada, em vez de parecer que a feature quebrou por motivo desconhecido
+
+### 94. Confirmacao de presenca e uma boa automacao leve para o app do cliente
+**Problema:** O cliente ja via a proxima consulta no portal, mas ainda faltava uma acao simples para reduzir no-show e dar previsibilidade ao escritorio
+**Causa:** O sistema interno ja trabalhava com status `confirmado`, mas o mobile do cliente ainda nao acionava esse passo
+**Correcao aplicada:** Criar `POST /api/portal/[token]/confirmacao`, permitindo ao cliente/familiar confirmar presenca na proxima consulta, atualizar o agendamento e alimentar timeline/notificacao
+**Regra pratica:** No mobile do cliente, automacoes de baixo risco operacional devem entrar cedo quando ajudam a equipe e nao tiram o controle humano de decisoes sensiveis

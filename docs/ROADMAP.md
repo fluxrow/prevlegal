@@ -876,3 +876,16 @@ Status atual em 18/03/2026:
 - [ ] Repo GitHub privado
 - [ ] Domínio + email exclusivo PrevLegal (prevlegal.com.br)
 - [ ] Stripe Billing
+
+## Atualizacao Mobile / Confirmacao de Presenca no Portal — 02/04/2026
+
+- o portal agora permite `confirmar presença` na próxima consulta quando ela estiver `agendado` ou `remarcado`
+- nova rota:
+  - `POST /api/portal/[token]/confirmacao`
+- comportamento:
+  - atualiza o agendamento para `confirmado`
+  - registra `confirmacao_presenca_cliente` em `portal_timeline_events`
+  - gera notificacao interna para a equipe
+- racional:
+  - diferente da remarcacao, essa e uma automacao leve e de baixo risco operacional
+  - melhora previsibilidade de comparecimento sem baguncar a agenda
