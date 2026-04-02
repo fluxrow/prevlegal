@@ -11,6 +11,7 @@ import {
   FileText,
   Loader2,
   MessageSquare,
+  Upload,
   Send,
   UserRound,
   XCircle,
@@ -149,6 +150,14 @@ interface PortalPayload {
   }
 }
 
+const DOCUMENT_TYPE_OPTIONS = [
+  { value: 'identidade', label: 'Identidade' },
+  { value: 'cnis', label: 'CNIS' },
+  { value: 'procuracao', label: 'Procuração' },
+  { value: 'laudo', label: 'Laudo' },
+  { value: 'outro', label: 'Outro documento' },
+] as const
+
 function formatarDataHora(dataHora: string) {
   const date = new Date(dataHora)
   return date.toLocaleString('pt-BR', {
@@ -224,6 +233,13 @@ export default function PortalClientePage() {
   const [aba, setAba] = useState<'inicio' | 'documentos' | 'mensagens' | 'perfil'>('inicio')
   const [perfil, setPerfil] = useState({ nome: '', email: '', telefone: '' })
   const [salvandoPerfil, setSalvandoPerfil] = useState(false)
+  const [arquivoPortal, setArquivoPortal] = useState<File | null>(null)
+  const [tituloDocumentoPortal, setTituloDocumentoPortal] = useState('')
+  const [tipoDocumentoPortal, setTipoDocumentoPortal] = useState<string>('outro')
+  const [requestSelecionadaId, setRequestSelecionadaId] = useState<string>('')
+  const [enviandoDocumento, setEnviandoDocumento] = useState(false)
+  const [erroDocumento, setErroDocumento] = useState('')
+  const [sucessoDocumento, setSucessoDocumento] = useState('')
   const msgEndRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -309,6 +325,39 @@ export default function PortalClientePage() {
   async function sairDoAcesso() {
     await fetch('/api/portal/session', { method: 'DELETE' })
     window.location.reload()
+  }
+
+  async function enviarDocumentoPortal() {
+    if (!arquivoPortal) return
+    setEnviandoDocumento(true)
+    setErroDocumento('')
+    setSucessoDocumento('')
+
+    const formData = new FormData()
+    formData.append('file', arquivoPortal)
+    if (tituloDocumentoPortal.trim()) formData.append('titulo', tituloDocumentoPortal.trim())
+    formData.append('tipo', tipoDocumentoPortal)
+    if (requestSelecionadaId) formData.append('requestId', requestSelecionadaId)
+
+    const res = await fetch(`/api/portal/${token}/documentos/upload`, {
+      method: 'POST',
+      body: formData,
+    })
+
+    const json = await res.json().catch(() => null)
+    if (!res.ok) {
+      setErroDocumento(json?.error || 'Não foi possível enviar o documento pelo portal.')
+      setEnviandoDocumento(false)
+      return
+    }
+
+    setArquivoPortal(null)
+    setTituloDocumentoPortal('')
+    setTipoDocumentoPortal('outro')
+    setRequestSelecionadaId('')
+    setSucessoDocumento('Documento enviado com sucesso. A equipe já pode analisar.')
+    await fetchPortal()
+    setEnviandoDocumento(false)
   }
 
   const lead = payload?.lead ?? null
@@ -931,7 +980,257 @@ export default function PortalClientePage() {
         )}
 
         {aba === 'documentos' && (
-          <div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div
+              style={{
+                background: '#111318',
+                border: '1px solid #ffffff0f',
+                borderRadius: '14px',
+                padding: '18px',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+                <Upload size={16} color={branding.cor_primaria} />
+                <p
+                  style={{
+                    fontSize: '11px',
+                    fontWeight: '700',
+                    color: '#6b7280',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.06em',
+                    margin: 0,
+                  }}
+                >
+                  Enviar documento
+                </p>
+              </div>
+
+              <p style={{ fontSize: '13px', color: '#8b92a0', margin: '0 0 14px', lineHeight: '1.6' }}>
+                Envie o arquivo por aqui para acelerar a análise do seu caso. Se houver uma pendência específica,
+                você pode associar o envio a ela.
+              </p>
+
+              <div style={{ display: 'grid', gap: '10px' }}>
+                {pendenciasDocumento.length > 0 ? (
+                  <select
+                    value={requestSelecionadaId}
+                    onChange={(e) => setRequestSelecionadaId(e.target.value)}
+                    style={{
+                      background: '#080b14',
+                      border: '1px solid #ffffff0f',
+                      borderRadius: '10px',
+                      padding: '11px 14px',
+                      color: '#f0f2f5',
+                      fontSize: '13px',
+                      fontFamily: 'DM Sans, sans-serif',
+                      outline: 'none',
+                    }}
+                  >
+                    <option value="">Vincular a uma pendência (opcional)</option>
+                    {pendenciasDocumento.map((pendencia) => (
+                      <option key={pendencia.id} value={pendencia.id}>
+                        {pendencia.titulo}
+                      </option>
+                    ))}
+                  </select>
+                ) : null}
+
+                <input
+                  value={tituloDocumentoPortal}
+                  onChange={(e) => setTituloDocumentoPortal(e.target.value)}
+                  placeholder="Título do documento (opcional)"
+                  style={{
+                    background: '#080b14',
+                    border: '1px solid #ffffff0f',
+                    borderRadius: '10px',
+                    padding: '11px 14px',
+                    color: '#f0f2f5',
+                    fontSize: '13px',
+                    fontFamily: 'DM Sans, sans-serif',
+                    outline: 'none',
+                  }}
+                />
+
+                <select
+                  value={tipoDocumentoPortal}
+                  onChange={(e) => setTipoDocumentoPortal(e.target.value)}
+                  style={{
+                    background: '#080b14',
+                    border: '1px solid #ffffff0f',
+                    borderRadius: '10px',
+                    padding: '11px 14px',
+                    color: '#f0f2f5',
+                    fontSize: '13px',
+                    fontFamily: 'DM Sans, sans-serif',
+                    outline: 'none',
+                  }}
+                >
+                  {DOCUMENT_TYPE_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+
+                <label
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: '12px',
+                    background: '#080b14',
+                    border: '1px dashed #ffffff20',
+                    borderRadius: '12px',
+                    padding: '12px 14px',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <div style={{ minWidth: 0 }}>
+                    <p style={{ fontSize: '13px', color: '#f0f2f5', margin: '0 0 4px', fontWeight: '600' }}>
+                      {arquivoPortal ? arquivoPortal.name : 'Selecionar arquivo'}
+                    </p>
+                    <p style={{ fontSize: '11px', color: '#6b7280', margin: 0 }}>
+                      PDF, imagem ou documento para análise.
+                    </p>
+                  </div>
+                  <span
+                    style={{
+                      flexShrink: 0,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      background: '#111318',
+                      border: '1px solid #ffffff0f',
+                      borderRadius: '9px',
+                      padding: '8px 10px',
+                      color: '#8b92a0',
+                      fontSize: '11px',
+                      fontWeight: '700',
+                    }}
+                  >
+                    <Upload size={12} />
+                    Escolher
+                  </span>
+                  <input
+                    type="file"
+                    hidden
+                    onChange={(e) => setArquivoPortal(e.target.files?.[0] || null)}
+                  />
+                </label>
+
+                {erroDocumento ? (
+                  <div
+                    style={{
+                      background: 'rgba(255,87,87,0.08)',
+                      border: '1px solid rgba(255,87,87,0.18)',
+                      borderRadius: '10px',
+                      padding: '10px 12px',
+                      color: '#ff8a8a',
+                      fontSize: '12px',
+                    }}
+                  >
+                    {erroDocumento}
+                  </div>
+                ) : null}
+
+                {sucessoDocumento ? (
+                  <div
+                    style={{
+                      background: 'rgba(45,212,160,0.08)',
+                      border: '1px solid rgba(45,212,160,0.18)',
+                      borderRadius: '10px',
+                      padding: '10px 12px',
+                      color: '#8ef0cc',
+                      fontSize: '12px',
+                    }}
+                  >
+                    {sucessoDocumento}
+                  </div>
+                ) : null}
+
+                <button
+                  onClick={enviarDocumentoPortal}
+                  disabled={enviandoDocumento || !arquivoPortal}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px',
+                    background: arquivoPortal ? branding.cor_primaria : '#1c2028',
+                    color: arquivoPortal ? '#fff' : '#4a5060',
+                    borderRadius: '10px',
+                    padding: '12px 14px',
+                    border: 'none',
+                    fontSize: '12px',
+                    fontWeight: '700',
+                    cursor: arquivoPortal ? 'pointer' : 'not-allowed',
+                  }}
+                >
+                  {enviandoDocumento ? (
+                    <>
+                      <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} />
+                      Enviando...
+                    </>
+                  ) : (
+                    <>
+                      <Upload size={14} />
+                      Enviar documento
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {pendenciasDocumento.length > 0 ? (
+              <div
+                style={{
+                  background: '#111318',
+                  border: '1px solid #ffffff0f',
+                  borderRadius: '14px',
+                  padding: '18px',
+                }}
+              >
+                <p
+                  style={{
+                    fontSize: '11px',
+                    fontWeight: '700',
+                    color: '#6b7280',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.06em',
+                    margin: '0 0 12px',
+                  }}
+                >
+                  Pendências abertas
+                </p>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  {pendenciasDocumento.map((pendencia) => (
+                    <div
+                      key={pendencia.id}
+                      style={{
+                        background: '#080b14',
+                        border: '1px solid #ffffff0f',
+                        borderRadius: '12px',
+                        padding: '12px 14px',
+                      }}
+                    >
+                      <p style={{ fontSize: '13px', color: '#f0f2f5', margin: '0 0 4px', fontWeight: '700' }}>
+                        {pendencia.titulo}
+                      </p>
+                      {pendencia.descricao ? (
+                        <p style={{ fontSize: '12px', color: '#8b92a0', margin: '0 0 6px', lineHeight: '1.5' }}>
+                          {pendencia.descricao}
+                        </p>
+                      ) : null}
+                      <p style={{ fontSize: '11px', color: '#4a5060', margin: 0 }}>
+                        Situação: {pendencia.status}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
             {documentos.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '48px 0' }}>
                 <FileText size={36} color="#4a5060" style={{ marginBottom: '12px' }} />

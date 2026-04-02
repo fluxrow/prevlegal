@@ -219,6 +219,21 @@ Ultima atualizacao: 2026-04-01
     - avaliar app nativo depois
   - fase 1 iniciada:
     - `src/app/portal/[token]/page.tsx` agora usa branding dinâmico do tenant
+  - o portal ja avancou para:
+    - PWA instalavel
+    - identidade persistente
+    - sessao propria do portal
+    - aba `Perfil`
+    - upload de documento direto pelo cliente/familiar
+  - a nova rota `POST /api/portal/[token]/documentos/upload`:
+    - salva arquivo no bucket `lead-documentos`
+    - registra em `lead_documentos`
+    - pode atualizar `portal_document_requests` para `enviado`
+    - cria evento em `portal_timeline_events`
+    - notifica a equipe no backoffice
+  - proximo passo recomendado no mobile/core:
+    - validar upload real no celular
+    - depois avaliar pedido de remarcacao no proprio portal
 - diretriz de portfólio em 01/04:
   - o crescimento do sistema nao deve reescrever a identidade principal do PrevLegal
   - o core continua sendo:

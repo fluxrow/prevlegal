@@ -29,6 +29,12 @@ Mestra: [[MASTER_PREV_LEGAL]]
 - modulos premium
 **Regra pratica:** Novas frentes devem se conectar ao core, nao reescrever sua identidade. Sempre classificar a iniciativa como `core`, `adjacencia` ou `modulo premium` antes de executar
 
+### 34. Portal mobile precisa sair de leitura passiva para ação útil do cliente
+**Problema:** Um portal que só mostra status e mensagens ainda força o cliente a voltar para WhatsApp ou canais paralelos quando precisa mandar documentos
+**Causa:** O mobile-first do portal estava evoluindo a leitura do caso, mas ainda sem uma ação operacional central para o cliente/familiar
+**Correção:** Permitir upload de documento direto na aba `Documentos` do portal, com reflexo em pendências, timeline e notificações internas
+**Regra pratica:** Toda fase do mobile do cliente deve adicionar pelo menos uma ação útil do usuário final, e não apenas mais visualização
+
 ## Padrões TypeScript/Next.js 16
 
 ### 1. `createClient` admin no nível de módulo

@@ -210,6 +210,7 @@ Entregas:
 - mensagens mais claras
 - agenda do cliente
 - documentos compartilhados / pendentes
+- upload de documento pelo próprio cliente/familiar
 - PWA instalável
 
 Critério de sucesso:

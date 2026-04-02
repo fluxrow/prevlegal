@@ -230,6 +230,28 @@ Mestra: [[MASTER_PREV_LEGAL]]
   - a clareza comercial da oferta
 - referencia canonica:
   - `docs/PRODUCT_PORTFOLIO_STRATEGY.md`
+
+## Atualizacao Mobile / Portal — 01/04/2026
+
+- o portal do cliente deixou de ser apenas superficie de leitura
+- o cliente/familiar agora pode enviar documento direto pelo proprio portal mobile/PWA
+- a nova rota `POST /api/portal/[token]/documentos/upload`:
+  - valida o portal pelo `token`
+  - envia o arquivo para o bucket `lead-documentos`
+  - registra em `lead_documentos` com `tenant_id`
+  - pode marcar uma `portal_document_request` como `enviado`
+  - cria evento em `portal_timeline_events`
+  - gera notificacao interna para a equipe
+- a aba `Documentos` do portal agora combina:
+  - upload do arquivo
+  - pendencias abertas
+  - documentos ja compartilhados/disponiveis
+- efeito de produto:
+  - o portal se aproxima de um app operacional real
+  - o cliente passa a agir no fluxo, e nao apenas acompanhar
+- proximo passo recomendado:
+  - validar o upload real no celular
+  - depois avaliar pedido de remarcacao pelo proprio portal
 - a UX do kanban ganhou:
   - faixa de filtro ativo com CTA `Limpar filtro`
   - chips de status no topo para alternar rapidamente entre colunas

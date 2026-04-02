@@ -219,6 +219,10 @@ Estratégia: entrar com R$ 1.997 para gerar cases, subir gradualmente.
     - `timeline`
     - `resumo.documentos_pendentes`
   - a home do portal agora combina:
+  - o portal agora tambem permite:
+    - envio de documentos pelo proprio cliente/familiar
+    - associacao opcional do envio a uma pendencia existente
+    - atualizacao automatica da timeline e notificacao interna da equipe
 
 ## Arquitetura de Portfólio — Regra atual
 

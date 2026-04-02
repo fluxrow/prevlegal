@@ -42,6 +42,33 @@ Objetivo:
   - continuar a execucao do mobile sem desvio
   - amadurecer `PrevGlobal` em spec separado, sem competir com o core
 
+## Atualizacao 2026-04-01 - Portal mobile ganhou upload de documento pelo cliente
+
+- a frente mobile/core evoluiu sem interferir no backoffice principal
+- arquivos alterados:
+  - `src/app/api/portal/[token]/documentos/upload/route.ts`
+  - `src/app/portal/[token]/page.tsx`
+- mudancas principais:
+  - o portal agora permite envio de documento pelo proprio cliente/familiar
+  - o envio pode ser associado a uma pendencia existente
+  - o backend:
+    - valida o lead pelo `portal_token`
+    - envia o arquivo para `lead-documentos`
+    - grava em `lead_documentos` com `tenant_id`
+    - marca `portal_document_requests.status = enviado` quando aplicavel
+    - cria evento em `portal_timeline_events`
+    - gera notificacao interna para a equipe
+  - a aba `Documentos` do portal agora junta:
+    - upload
+    - pendencias abertas
+    - documentos ja disponiveis
+- efeito de produto:
+  - o cliente deixa de apenas acompanhar o caso
+  - ele passa a agir por dentro do proprio “app”
+- proximo passo recomendado:
+  - validar o upload real no celular
+  - depois desenhar pedido de remarcacao pelo portal
+
 ## Atualizacao 2026-04-01 - Backlog tecnico do app mobile do cliente
 
 - a frente mobile deixou de ser apenas direcao conceitual e ganhou backlog tecnico canonico em `docs/MOBILE_CLIENT_APP_BACKLOG.md`
