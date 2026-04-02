@@ -265,6 +265,19 @@ Ultima atualizacao: 2026-04-01
       - registra uso em `portal_access_links`
       - atualiza `ultimo_acesso_em` em `portal_users`
       - redireciona para o portal atual baseado em `portal_token`
+  - fase 1 continuada, passo 6:
+    - a migration `037_portal_session_foundation.sql` ja foi aplicada no operacional `lrqvvxmgimjlghpwavdb`
+    - nova tabela:
+      - `portal_sessions`
+    - `/portal/acesso/[token]` agora cria sessao real do portal via cookie httpOnly
+    - `GET /api/portal/[token]` agora reconhece o `viewer` quando existir sessao
+    - `PATCH /api/portal/[token]` agora permite editar o perfil do acesso persistente atual
+    - `DELETE /api/portal/session` encerra a sessao do portal
+    - o portal ganhou aba `Perfil` com:
+      - nome
+      - e-mail
+      - telefone
+      - sair do acesso
 - frente estrategica previdenciaria em 01/04:
   - foi registrada uma nota separada para concorrencia e expansao do produto:
     - `docs/PREVIDENCIARIO_EXPANSION_STRATEGY.md`
@@ -289,9 +302,13 @@ Ultima atualizacao: 2026-04-01
 Continuar o mobile do cliente:
 - validar no browser a nova secao `Acessos do portal` no detalhe do lead
 - testar a geracao e o uso de um link persistente individual
-- depois evoluir essa ponte para sessao/autenticacao real do portal
+- validar o ciclo completo da nova sessao do portal:
+  - gerar link persistente
+  - entrar no portal
+  - editar perfil
+  - sair do acesso
 - na sequencia:
-  - abrir a primeira camada de perfil do cliente/familiar
+  - decidir a primeira personalizacao por `viewer` dentro do app
   - manter a Z-API como trilha operacional separada assim que o chip estiver pronto
 
 ## Bloqueios e Cuidados

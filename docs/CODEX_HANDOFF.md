@@ -235,6 +235,41 @@ Objetivo:
   - evoluir o link persistente para sessao/autenticacao real do portal
   - depois abrir a primeira camada de perfil do cliente/familiar
 
+## Atualizacao 2026-04-01 - Sessao real do portal habilitada
+
+- a base mobile continuou sem interferir no backoffice
+- arquivos adicionados:
+  - `supabase/migrations/037_portal_session_foundation.sql`
+  - `src/lib/portal-auth.ts`
+  - `src/app/api/portal/session/route.ts`
+  - `src/app/portal/acesso/[token]/route.ts`
+- arquivo removido:
+  - `src/app/portal/acesso/[token]/page.tsx`
+- arquivos principais alterados:
+  - `src/app/api/portal/[token]/route.ts`
+  - `src/app/portal/[token]/page.tsx`
+- mudancas principais:
+  - o link persistente agora cria sessao real de portal via cookie httpOnly
+  - `GET /api/portal/[token]` passou a resolver o `viewer` da sessao
+  - `PATCH /api/portal/[token]` permite editar nome, e-mail e telefone do acesso persistente atual
+  - o portal ganhou aba `Perfil`
+  - existe logout proprio do portal em `DELETE /api/portal/session`
+- aplicacao operacional:
+  - a migration `037_portal_session_foundation.sql` ja foi aplicada diretamente no banco `lrqvvxmgimjlghpwavdb`
+  - confirmacao:
+    - `portal_sessions` existe
+- efeito de produto:
+  - o app do cliente deixa de ser apenas PWA por token
+  - passa a reconhecer quem esta usando o acesso persistente
+  - isso prepara o terreno para recursos personalizados por cliente/familiar sem misturar auth com o app interno
+- proximo passo recomendado:
+  - validar o ciclo completo:
+    - gerar link persistente
+    - entrar no portal
+    - editar perfil
+    - sair
+  - depois decidir a primeira personalizacao por `viewer`
+
 ## Atualizacao 2026-04-01 - Frente estrategica previdenciaria registrada
 
 - foi criada a nota canonica:

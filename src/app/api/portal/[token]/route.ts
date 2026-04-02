@@ -1,6 +1,7 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { getConfiguracaoAtual } from '@/lib/configuracoes'
+import { resolvePortalViewer } from '@/lib/portal-auth'
 
 function createAdminSupabase() {
   return createAdminClient(
@@ -97,7 +98,7 @@ function buildDerivedTimeline({
 }
 
 export async function GET(
-  request: Request,
+  request: NextRequest,
   { params }: { params: Promise<{ token: string }> },
 ) {
   const adminSupabase = createAdminSupabase()
@@ -126,6 +127,7 @@ export async function GET(
     { data: mensagens },
     { data: proximoAgendamento },
     { data: agendamentosRecentes },
+    viewerResult,
   ] =
     await Promise.all([
       lead.tenant_id
@@ -166,6 +168,7 @@ export async function GET(
         .eq('lead_id', lead.id)
         .order('data_hora', { ascending: false })
         .limit(6),
+      resolvePortalViewer(adminSupabase, request, lead.id),
     ])
 
   let pendenciasDocumento:
@@ -249,6 +252,11 @@ export async function GET(
             mensagens: mensagens || [],
             agendamentos: agendamentosRecentes || [],
           }),
+    viewer: viewerResult.viewer,
+    identity: {
+      foundation_pending: viewerResult.foundationPending,
+      has_session: Boolean(viewerResult.viewer),
+    },
     resumo: {
       documentos_compartilhados: documentos?.length || 0,
       mensagens_nao_lidas: mensagensNaoLidas,
@@ -305,4 +313,54 @@ export async function POST(
   })
 
   return NextResponse.json({ mensagem: data })
+}
+
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ token: string }> },
+) {
+  const adminSupabase = createAdminSupabase()
+  const { token } = await params
+
+  const { data: lead } = await adminSupabase
+    .from('leads')
+    .select('id')
+    .eq('portal_token', token)
+    .eq('portal_ativo', true)
+    .single()
+
+  if (!lead) {
+    return NextResponse.json({ error: 'Portal não encontrado' }, { status: 404 })
+  }
+
+  const viewerResult = await resolvePortalViewer(adminSupabase, request, lead.id)
+  if (viewerResult.foundationPending) {
+    return NextResponse.json({ error: 'A foundation de identidade do portal ainda não foi aplicada.' }, { status: 409 })
+  }
+
+  if (!viewerResult.viewer) {
+    return NextResponse.json({ error: 'Acesso persistente não encontrado para este portal.' }, { status: 401 })
+  }
+
+  const body = await request.json()
+  const payload: Record<string, unknown> = {
+    updated_at: new Date().toISOString(),
+  }
+
+  if (typeof body.nome === 'string' && body.nome.trim()) payload.nome = body.nome.trim()
+  if (body.email !== undefined) payload.email = typeof body.email === 'string' && body.email.trim() ? body.email.trim().toLowerCase() : null
+  if (body.telefone !== undefined) payload.telefone = typeof body.telefone === 'string' && body.telefone.trim() ? body.telefone.trim() : null
+
+  const { data, error } = await adminSupabase
+    .from('portal_users')
+    .update(payload)
+    .eq('id', viewerResult.viewer.id)
+    .select('id, nome, email, telefone, papel, ativo, ultimo_acesso_em')
+    .single()
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
+
+  return NextResponse.json({ viewer: data })
 }

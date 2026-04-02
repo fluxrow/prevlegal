@@ -244,6 +244,19 @@ Estratégia: entrar com R$ 1.997 para gerar cases, subir gradualmente.
       - registra o acesso em `portal_access_links`
       - atualiza `ultimo_acesso_em` em `portal_users`
       - redireciona para o portal tokenizado existente
+  - a foundation de sessao do portal tambem ja foi aberta:
+    - migration `037_portal_session_foundation.sql` aplicada no operacional
+    - nova tabela:
+      - `portal_sessions`
+    - o acesso por `/portal/acesso/[token]` agora:
+      - cria sessao real de portal em cookie httpOnly
+      - registra `ultimo_acesso_em` da sessao
+      - permite reconhecer o cliente/familiar dentro do app
+    - o portal agora tambem ganhou a primeira aba de `Perfil`:
+      - edicao de nome
+      - e-mail
+      - telefone
+      - acao de sair do acesso persistente
 
 ## Expansao Previdenciaria — Direcao atual
 

@@ -12,7 +12,9 @@ import {
   Loader2,
   MessageSquare,
   Send,
+  UserRound,
   XCircle,
+  LogOut,
 } from 'lucide-react'
 import PortalInstallPrompt from '@/components/portal-install-prompt'
 
@@ -127,6 +129,19 @@ interface PortalPayload {
   proximo_agendamento: ProximoAgendamento | null
   pendencias_documento: PendenciaDocumento[]
   timeline: TimelineEvent[]
+  viewer: {
+    id: string
+    nome: string
+    email?: string | null
+    telefone?: string | null
+    papel: 'cliente' | 'familiar' | 'cuidador'
+    ativo: boolean
+    ultimo_acesso_em?: string | null
+  } | null
+  identity: {
+    foundation_pending: boolean
+    has_session: boolean
+  }
   resumo: {
     documentos_compartilhados: number
     mensagens_nao_lidas: number
@@ -206,7 +221,9 @@ export default function PortalClientePage() {
   const [erro, setErro] = useState('')
   const [novaMensagem, setNovaMensagem] = useState('')
   const [enviando, setEnviando] = useState(false)
-  const [aba, setAba] = useState<'inicio' | 'documentos' | 'mensagens'>('inicio')
+  const [aba, setAba] = useState<'inicio' | 'documentos' | 'mensagens' | 'perfil'>('inicio')
+  const [perfil, setPerfil] = useState({ nome: '', email: '', telefone: '' })
+  const [salvandoPerfil, setSalvandoPerfil] = useState(false)
   const msgEndRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -216,6 +233,16 @@ export default function PortalClientePage() {
   useEffect(() => {
     msgEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [payload?.mensagens])
+
+  useEffect(() => {
+    if (payload?.viewer) {
+      setPerfil({
+        nome: payload.viewer.nome || '',
+        email: payload.viewer.email || '',
+        telefone: payload.viewer.telefone || '',
+      })
+    }
+  }, [payload?.viewer])
 
   async function fetchPortal() {
     setLoading(true)
@@ -255,6 +282,35 @@ export default function PortalClientePage() {
     setEnviando(false)
   }
 
+  async function salvarPerfil() {
+    if (!payload?.viewer) return
+    setSalvandoPerfil(true)
+    const res = await fetch(`/api/portal/${token}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(perfil),
+    })
+
+    const json = await res.json().catch(() => null)
+    if (res.ok && json?.viewer) {
+      setPayload((current) =>
+        current
+          ? {
+              ...current,
+              viewer: json.viewer,
+            }
+          : current,
+      )
+    }
+
+    setSalvandoPerfil(false)
+  }
+
+  async function sairDoAcesso() {
+    await fetch('/api/portal/session', { method: 'DELETE' })
+    window.location.reload()
+  }
+
   const lead = payload?.lead ?? null
   const documentos = payload?.documentos ?? []
   const mensagens = payload?.mensagens ?? []
@@ -262,6 +318,7 @@ export default function PortalClientePage() {
   const proximoAgendamento = payload?.proximo_agendamento ?? null
   const pendenciasDocumento = payload?.pendencias_documento ?? []
   const timeline = payload?.timeline ?? []
+  const viewer = payload?.viewer ?? null
 
   const statusInfo = lead ? STATUS_INFO[lead.status] || STATUS_INFO.new : null
   const msgNaoLidas = useMemo(
@@ -496,6 +553,7 @@ export default function PortalClientePage() {
             { key: 'inicio', label: 'Início' },
             { key: 'documentos', label: `Documentos${documentos.length > 0 ? ` (${documentos.length})` : ''}` },
             { key: 'mensagens', label: `Mensagens${msgNaoLidas > 0 ? ` (${msgNaoLidas})` : ''}` },
+            { key: 'perfil', label: 'Perfil' },
           ] as const).map((item) => (
             <button
               key={item.key}
@@ -1043,6 +1101,145 @@ export default function PortalClientePage() {
                   <Send size={15} color={novaMensagem.trim() ? '#fff' : '#4a5060'} />
                 )}
               </button>
+            </div>
+          </div>
+        )}
+
+        {aba === 'perfil' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div
+              style={{
+                background: '#111318',
+                border: '1px solid #ffffff0f',
+                borderRadius: '14px',
+                padding: '20px',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                <UserRound size={16} color={branding.cor_primaria} />
+                <p
+                  style={{
+                    fontSize: '11px',
+                    fontWeight: '700',
+                    color: '#6b7280',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.06em',
+                    margin: 0,
+                  }}
+                >
+                  Seu acesso
+                </p>
+              </div>
+
+              {viewer ? (
+                <>
+                  <div style={{ display: 'grid', gap: '10px', marginBottom: '14px' }}>
+                    <input
+                      value={perfil.nome}
+                      onChange={(e) => setPerfil((current) => ({ ...current, nome: e.target.value }))}
+                      placeholder="Seu nome"
+                      style={{
+                        background: '#080b14',
+                        border: '1px solid #ffffff0f',
+                        borderRadius: '10px',
+                        padding: '11px 14px',
+                        color: '#f0f2f5',
+                        fontSize: '13px',
+                        fontFamily: 'DM Sans, sans-serif',
+                        outline: 'none',
+                      }}
+                    />
+                    <input
+                      value={perfil.email}
+                      onChange={(e) => setPerfil((current) => ({ ...current, email: e.target.value }))}
+                      placeholder="Seu e-mail"
+                      style={{
+                        background: '#080b14',
+                        border: '1px solid #ffffff0f',
+                        borderRadius: '10px',
+                        padding: '11px 14px',
+                        color: '#f0f2f5',
+                        fontSize: '13px',
+                        fontFamily: 'DM Sans, sans-serif',
+                        outline: 'none',
+                      }}
+                    />
+                    <input
+                      value={perfil.telefone}
+                      onChange={(e) => setPerfil((current) => ({ ...current, telefone: e.target.value }))}
+                      placeholder="Seu telefone"
+                      style={{
+                        background: '#080b14',
+                        border: '1px solid #ffffff0f',
+                        borderRadius: '10px',
+                        padding: '11px 14px',
+                        color: '#f0f2f5',
+                        fontSize: '13px',
+                        fontFamily: 'DM Sans, sans-serif',
+                        outline: 'none',
+                      }}
+                    />
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+                    <button
+                      onClick={salvarPerfil}
+                      disabled={salvandoPerfil || !perfil.nome.trim()}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        background: perfil.nome.trim() ? branding.cor_primaria : '#1c2028',
+                        color: perfil.nome.trim() ? '#fff' : '#4a5060',
+                        borderRadius: '10px',
+                        padding: '10px 14px',
+                        border: 'none',
+                        fontSize: '12px',
+                        fontWeight: '700',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      {salvandoPerfil ? 'Salvando...' : 'Salvar perfil'}
+                    </button>
+                    <button
+                      onClick={sairDoAcesso}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        background: '#080b14',
+                        color: '#8b92a0',
+                        borderRadius: '10px',
+                        padding: '10px 14px',
+                        border: '1px solid #ffffff0f',
+                        fontSize: '12px',
+                        fontWeight: '700',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <LogOut size={13} />
+                      Sair deste acesso
+                    </button>
+                  </div>
+
+                  <p style={{ fontSize: '11px', color: '#6b7280', margin: '12px 0 0' }}>
+                    Perfil de acesso: {viewer.papel}. Este acesso fica vinculado ao seu link persistente.
+                  </p>
+                </>
+              ) : (
+                <div
+                  style={{
+                    background: '#080b14',
+                    border: '1px solid #ffffff0f',
+                    borderRadius: '12px',
+                    padding: '14px',
+                  }}
+                >
+                  <p style={{ fontSize: '13px', color: '#8b92a0', margin: 0 }}>
+                    Este portal ainda está usando o modo por link simples. Peça à equipe um link de acesso persistente para salvar seu perfil.
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         )}

@@ -224,6 +224,12 @@ export async function GET(
 **Correção:** Criar `portal_users` + `portal_access_links` e tratar o primeiro link persistente como ponte controlada para o portal atual
 **Padrão aplicado:** o link individual registra uso, atualiza `ultimo_acesso_em` e redireciona para `/portal/[portal_token]`
 **Regra prática:** Antes de abrir uma auth completa de cliente, vale criar uma camada de identidade observável e tenant-aware para aprender quem acessa o portal sem duplicar cedo demais a superfície de login
+
+### 34. O portal do cliente pode ganhar sessão real sem herdar a auth do backoffice
+**Problema:** O link persistente resolvia identidade, mas o app ainda não mantinha sessão do cliente/familiar dentro do portal
+**Correção:** Criar `portal_sessions` e fazer `/portal/acesso/[token]` gerar um cookie httpOnly próprio do portal
+**Padrão aplicado:** sessão separada do app interno, ligada a `portal_user`, `lead` e `tenant`, com logout próprio e fallback seguro se a foundation ainda não existir
+**Regra prática:** No PrevLegal, auth do portal do cliente deve ser uma trilha própria e mais leve, sem misturar sessão de cliente/familiar com sessão do operador interno
 **Regra prática:** Quando o produto sair do estágio de subdomínio temporário, migrar com ordem explícita: arquitetura -> Vercel -> DNS -> URLs canônicas -> links automáticos -> validação final
 
 ### 33. Migração de domínio precisa começar pelo inventário de URLs absolutas e fallbacks

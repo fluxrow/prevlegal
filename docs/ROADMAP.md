@@ -399,6 +399,34 @@ Mestra: [[MASTER_PREV_LEGAL]]
   - evoluir o link persistente para sessao/autenticacao real do portal
   - depois abrir a primeira camada de perfil do cliente/familiar dentro do proprio app
 
+## Atualizacao Mobile Cliente — 01/04/2026 (Fase 1, passo 6)
+
+- a ponte de identidade persistente evoluiu para sessao real do portal
+- a migration `037_portal_session_foundation.sql` ja foi aplicada diretamente no operacional `lrqvvxmgimjlghpwavdb`
+- confirmacao pos-aplicacao:
+  - `portal_sessions` existe no banco
+- novas superficies:
+  - `GET /portal/acesso/[token]` agora funciona como entrada de sessao
+  - `DELETE /api/portal/session` encerra o acesso persistente do cliente/familiar
+- o fluxo de entrada mudou:
+  - o link persistente continua registrando uso em `portal_access_links`
+  - agora tambem cria uma sessao real de portal com cookie httpOnly
+  - o portal passa a reconhecer o `viewer` ligado ao caso
+- o app do cliente tambem ganhou a primeira aba de `Perfil`
+  - mostra o acesso persistente atual
+  - permite editar `nome`, `email` e `telefone`
+  - permite sair do acesso
+- impacto de produto:
+  - o portal deixa de ser apenas um PWA por token e passa a se comportar como app com identidade real do cliente/familiar
+  - isso ainda nao interfere no backoffice nem cria uma auth separada pesada demais cedo
+- proximo passo recomendado:
+  - validar no browser o ciclo completo:
+    - gerar link persistente
+    - abrir o portal
+    - editar perfil
+    - sair do acesso
+  - depois decidir a primeira camada de timeline/documentos realmente personalizada por `viewer`
+
 ## Atualizacao Backlog Mobile Cliente — 01/04/2026
 
 - a frente mobile agora deixou de ser so tese de produto e ganhou backlog tecnico canonico em `docs/MOBILE_CLIENT_APP_BACKLOG.md`
