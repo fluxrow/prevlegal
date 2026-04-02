@@ -198,6 +198,43 @@ Objetivo:
   - validar a instalacao real no celular
   - depois desenhar a primeira camada de identidade persistente do cliente/familiar
 
+## Atualizacao 2026-04-01 - Foundation de identidade do portal aplicada
+
+- a frente mobile continuou sem abrir um auth pesado cedo demais
+- arquivos adicionados:
+  - `supabase/migrations/036_portal_identity_foundation.sql`
+  - `src/app/api/leads/[id]/portal-users/route.ts`
+  - `src/app/api/leads/[id]/portal-users/[userId]/route.ts`
+  - `src/app/api/leads/[id]/portal-access-links/route.ts`
+  - `src/app/portal/acesso/[token]/page.tsx`
+- arquivo principal alterado:
+  - `src/components/portal-lead.tsx`
+- mudancas principais:
+  - novas tabelas:
+    - `portal_users`
+    - `portal_access_links`
+  - o detalhe do lead agora permite:
+    - cadastrar cliente / familiar / cuidador para o portal
+    - pausar acesso
+    - excluir acesso
+    - gerar link persistente individual
+  - a rota publica `/portal/acesso/[token]`:
+    - valida o token hash
+    - registra uso em `portal_access_links`
+    - atualiza `ultimo_acesso_em` do `portal_user`
+    - redireciona para o portal atual baseado em `portal_token`
+- aplicacao operacional:
+  - a migration `036_portal_identity_foundation.sql` ja foi aplicada diretamente no banco `lrqvvxmgimjlghpwavdb`
+  - confirmacao:
+    - `portal_users` existe
+    - `portal_access_links` existe
+- efeito de produto:
+  - o portal deixa de depender apenas de um link unico e indistinto
+  - o escritorio ja consegue modelar cliente, familiar e cuidador sem abrir um sistema paralelo
+- proximo passo recomendado:
+  - evoluir o link persistente para sessao/autenticacao real do portal
+  - depois abrir a primeira camada de perfil do cliente/familiar
+
 ## Atualizacao 2026-04-01 - Frente estrategica previdenciaria registrada
 
 - foi criada a nota canonica:

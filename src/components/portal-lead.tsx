@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { Link2, Copy, Check, Eye, EyeOff, Send, Share2, Plus, Trash2, Clock3, ListTodo } from 'lucide-react'
+import { Link2, Copy, Check, Eye, EyeOff, Send, Share2, Plus, Trash2, Clock3, ListTodo, UserRound, KeyRound } from 'lucide-react'
 
 interface Props { leadId: string }
 
@@ -27,6 +27,17 @@ interface PortalTimelineEvent {
   created_at: string
   updated_at: string
 }
+interface PortalUser {
+  id: string
+  nome: string
+  email?: string | null
+  telefone?: string | null
+  papel: 'cliente' | 'familiar' | 'cuidador'
+  ativo: boolean
+  ultimo_acesso_em?: string | null
+  created_at: string
+  updated_at: string
+}
 
 export default function PortalLead({ leadId }: Props) {
   const [urlPortal, setUrlPortal] = useState('')
@@ -35,14 +46,18 @@ export default function PortalLead({ leadId }: Props) {
   const [mensagens, setMensagens] = useState<Mensagem[]>([])
   const [portalRequests, setPortalRequests] = useState<PortalDocumentRequest[]>([])
   const [timelineEvents, setTimelineEvents] = useState<PortalTimelineEvent[]>([])
+  const [portalUsers, setPortalUsers] = useState<PortalUser[]>([])
   const [novaMensagem, setNovaMensagem] = useState('')
   const [novaPendencia, setNovaPendencia] = useState({ titulo: '', descricao: '' })
   const [novoEvento, setNovoEvento] = useState({ titulo: '', descricao: '', visivel_cliente: true })
+  const [novoAcesso, setNovoAcesso] = useState({ nome: '', email: '', telefone: '', papel: 'cliente' as PortalUser['papel'] })
+  const [gerandoLinkUserId, setGerandoLinkUserId] = useState<string | null>(null)
+  const [salvandoAcesso, setSalvandoAcesso] = useState(false)
   const [enviando, setEnviando] = useState(false)
   const [salvandoPendencia, setSalvandoPendencia] = useState(false)
   const [salvandoEvento, setSalvandoEvento] = useState(false)
   const [loading, setLoading] = useState(true)
-  const [foundationPending, setFoundationPending] = useState({ requests: false, timeline: false })
+  const [foundationPending, setFoundationPending] = useState({ requests: false, timeline: false, users: false })
   const [erroPortalOps, setErroPortalOps] = useState('')
 
   useEffect(() => {
@@ -54,15 +69,18 @@ export default function PortalLead({ leadId }: Props) {
       fetch(`/api/leads/${leadId}/documentos`).then(r => r.json()),
       fetch(`/api/leads/${leadId}/portal-document-requests`).then(r => r.json()),
       fetch(`/api/leads/${leadId}/portal-timeline-events`).then(r => r.json()),
-    ]).then(([linkData, docsData, requestsData, timelineData]) => {
+      fetch(`/api/leads/${leadId}/portal-users`).then(r => r.json()),
+    ]).then(([linkData, docsData, requestsData, timelineData, usersData]) => {
       if (!ativo) return
       if (linkData.url) setUrlPortal(linkData.url)
       if (Array.isArray(docsData)) setDocumentos(docsData)
       if (Array.isArray(requestsData?.requests)) setPortalRequests(requestsData.requests)
       if (Array.isArray(timelineData?.events)) setTimelineEvents(timelineData.events)
+      if (Array.isArray(usersData?.users)) setPortalUsers(usersData.users)
       setFoundationPending({
         requests: Boolean(requestsData?.foundationPending),
         timeline: Boolean(timelineData?.foundationPending),
+        users: Boolean(usersData?.foundationPending),
       })
       setLoading(false)
     })
@@ -245,6 +263,73 @@ export default function PortalLead({ leadId }: Props) {
     }
   }
 
+  async function criarAcessoPortal() {
+    if (!novoAcesso.nome.trim()) return
+    setErroPortalOps('')
+    setSalvandoAcesso(true)
+    const res = await fetch(`/api/leads/${leadId}/portal-users`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(novoAcesso),
+    })
+    const json = await res.json().catch(() => null)
+    if (res.ok && json?.user) {
+      setPortalUsers((current) => [json.user, ...current])
+      setNovoAcesso({ nome: '', email: '', telefone: '', papel: 'cliente' })
+      setFoundationPending((current) => ({ ...current, users: false }))
+    } else {
+      setErroPortalOps(json?.error || 'Não foi possível criar o acesso persistente do portal.')
+    }
+    setSalvandoAcesso(false)
+  }
+
+  async function togglePortalUser(userId: string, ativo: boolean) {
+    setErroPortalOps('')
+    const res = await fetch(`/api/leads/${leadId}/portal-users/${userId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ativo: !ativo }),
+    })
+    const json = await res.json().catch(() => null)
+    if (res.ok && json?.user) {
+      setPortalUsers((current) => current.map((item) => (item.id === userId ? json.user : item)))
+    } else {
+      setErroPortalOps(json?.error || 'Não foi possível atualizar o acesso do portal.')
+    }
+  }
+
+  async function excluirPortalUser(userId: string) {
+    setErroPortalOps('')
+    const res = await fetch(`/api/leads/${leadId}/portal-users/${userId}`, {
+      method: 'DELETE',
+    })
+    const json = await res.json().catch(() => null)
+    if (res.ok) {
+      setPortalUsers((current) => current.filter((item) => item.id !== userId))
+    } else {
+      setErroPortalOps(json?.error || 'Não foi possível excluir o acesso do portal.')
+    }
+  }
+
+  async function gerarLinkPersistente(userId: string) {
+    setErroPortalOps('')
+    setGerandoLinkUserId(userId)
+    const res = await fetch(`/api/leads/${leadId}/portal-access-links`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ portal_user_id: userId }),
+    })
+    const json = await res.json().catch(() => null)
+    if (res.ok && json?.url) {
+      await navigator.clipboard.writeText(json.url)
+      setCopiado(true)
+      setTimeout(() => setCopiado(false), 2500)
+    } else {
+      setErroPortalOps(json?.error || 'Não foi possível gerar o link persistente.')
+    }
+    setGerandoLinkUserId(null)
+  }
+
   const inp: React.CSSProperties = {
     flex: 1, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: '9px',
     padding: '9px 12px', color: 'var(--text-primary)', fontSize: '13px', fontFamily: 'DM Sans', outline: 'none',
@@ -323,6 +408,104 @@ export default function PortalLead({ leadId }: Props) {
             style={{ display: 'flex', alignItems: 'center', gap: '6px', background: novaMensagem.trim() ? 'var(--accent)' : 'var(--bg-hover)', border: 'none', borderRadius: '9px', padding: '9px 14px', color: novaMensagem.trim() ? '#fff' : 'var(--text-muted)', fontSize: '12px', cursor: 'pointer', fontFamily: 'DM Sans', flexShrink: 0 }}>
             <Send size={12} /> {enviando ? '...' : 'Enviar'}
           </button>
+        </div>
+      </div>
+
+      <div style={{ marginTop: '24px' }}>
+        <p style={{ fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '10px' }}>
+          Acessos do portal
+        </p>
+        <div style={{ background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: '10px', padding: '12px', marginBottom: '10px' }}>
+          <div style={{ display: 'grid', gap: '8px', marginBottom: '10px' }}>
+            <input
+              value={novoAcesso.nome}
+              onChange={(e) => setNovoAcesso((current) => ({ ...current, nome: e.target.value }))}
+              placeholder="Nome do cliente ou familiar"
+              style={inp}
+            />
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+              <input
+                value={novoAcesso.email}
+                onChange={(e) => setNovoAcesso((current) => ({ ...current, email: e.target.value }))}
+                placeholder="E-mail"
+                style={inp}
+              />
+              <input
+                value={novoAcesso.telefone}
+                onChange={(e) => setNovoAcesso((current) => ({ ...current, telefone: e.target.value }))}
+                placeholder="Telefone"
+                style={inp}
+              />
+            </div>
+            <select
+              value={novoAcesso.papel}
+              onChange={(e) => setNovoAcesso((current) => ({ ...current, papel: e.target.value as PortalUser['papel'] }))}
+              style={inp}
+            >
+              <option value="cliente">Cliente</option>
+              <option value="familiar">Familiar</option>
+              <option value="cuidador">Cuidador</option>
+            </select>
+          </div>
+          <button
+            onClick={criarAcessoPortal}
+            disabled={salvandoAcesso || !novoAcesso.nome.trim()}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: novoAcesso.nome.trim() ? 'var(--accent)' : 'var(--bg-hover)', border: 'none', borderRadius: '9px', padding: '9px 14px', color: novoAcesso.nome.trim() ? '#fff' : 'var(--text-muted)', fontSize: '12px', cursor: 'pointer', fontFamily: 'DM Sans' }}
+          >
+            <Plus size={12} /> {salvandoAcesso ? 'Salvando...' : 'Novo acesso'}
+          </button>
+        </div>
+
+        {foundationPending.users ? (
+          <p style={{ fontSize: '11px', color: '#f5c842', margin: '0 0 10px' }}>
+            A foundation de identidade do portal ainda precisa ser aplicada no banco para salvar acessos persistentes.
+          </p>
+        ) : null}
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          {portalUsers.map((user) => (
+            <div key={user.id} style={{ background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: '10px', padding: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+                <UserRound size={14} color="var(--accent)" style={{ marginTop: '2px', flexShrink: 0 }} />
+                <div style={{ flex: 1 }}>
+                  <p style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text-primary)', margin: '0 0 4px' }}>{user.nome}</p>
+                  <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: '0 0 6px' }}>
+                    {[user.papel, user.email, user.telefone].filter(Boolean).join(' · ')}
+                  </p>
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+                    <button
+                      onClick={() => gerarLinkPersistente(user.id)}
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'var(--accent)', border: 'none', borderRadius: '8px', padding: '7px 10px', color: '#fff', fontSize: '11px', cursor: 'pointer', fontFamily: 'DM Sans' }}
+                    >
+                      <KeyRound size={11} /> {gerandoLinkUserId === user.id ? 'Gerando...' : 'Gerar link'}
+                    </button>
+                    <button
+                      onClick={() => togglePortalUser(user.id, user.ativo)}
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: user.ativo ? 'rgba(45,212,160,0.1)' : 'var(--bg-hover)', border: `1px solid ${user.ativo ? 'rgba(45,212,160,0.3)' : 'var(--border)'}`, borderRadius: '8px', padding: '7px 10px', color: user.ativo ? '#2dd4a0' : 'var(--text-muted)', fontSize: '11px', cursor: 'pointer', fontFamily: 'DM Sans' }}
+                    >
+                      {user.ativo ? <><Eye size={11} /> Ativo</> : <><EyeOff size={11} /> Pausado</>}
+                    </button>
+                    <button
+                      onClick={() => excluirPortalUser(user.id)}
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(255,87,87,0.1)', border: '1px solid rgba(255,87,87,0.2)', borderRadius: '8px', padding: '7px 10px', color: '#ff5757', fontSize: '11px', cursor: 'pointer', fontFamily: 'DM Sans' }}
+                    >
+                      <Trash2 size={11} /> Excluir
+                    </button>
+                    {user.ultimo_acesso_em ? (
+                      <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                        Último acesso: {new Date(user.ultimo_acesso_em).toLocaleString('pt-BR')}
+                      </span>
+                    ) : null}
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+          {portalUsers.length === 0 ? (
+            <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: 0 }}>
+              Nenhum acesso persistente cadastrado ainda.
+            </p>
+          ) : null}
         </div>
       </div>
 

@@ -230,6 +230,20 @@ Estratégia: entrar com R$ 1.997 para gerar cases, subir gradualmente.
     - `service worker` leve em `public/sw.js`
     - CTA `Instalar app` dentro do proprio portal
     - fallback instrucional para iPhone / iOS
+  - a foundation de identidade persistente do portal tambem ja foi aberta:
+    - migration `036_portal_identity_foundation.sql` aplicada no operacional
+    - novas tabelas:
+      - `portal_users`
+      - `portal_access_links`
+    - o detalhe do lead agora permite:
+      - cadastrar cliente / familiar / cuidador para o portal
+      - ativar / pausar acesso
+      - excluir acesso
+      - gerar link persistente individual
+    - o link persistente atual funciona como ponte segura:
+      - registra o acesso em `portal_access_links`
+      - atualiza `ultimo_acesso_em` em `portal_users`
+      - redireciona para o portal tokenizado existente
 
 ## Expansao Previdenciaria — Direcao atual
 

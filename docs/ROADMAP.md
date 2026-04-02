@@ -370,6 +370,35 @@ Mestra: [[MASTER_PREV_LEGAL]]
   - validar a instalacao real no celular
   - depois desenhar a primeira camada de identidade persistente do cliente/familiar
 
+## Atualizacao Mobile Cliente — 01/04/2026 (Fase 1, passo 5)
+
+- a primeira camada de identidade persistente do cliente/familiar foi implementada e aplicada no operacional
+- a migration `036_portal_identity_foundation.sql` ja foi executada diretamente no banco `lrqvvxmgimjlghpwavdb`
+- confirmacao pos-aplicacao:
+  - `portal_users` existe no banco
+  - `portal_access_links` existe no banco
+- novas superficies internas:
+  - `GET/POST /api/leads/[id]/portal-users`
+  - `PATCH/DELETE /api/leads/[id]/portal-users/[userId]`
+  - `POST /api/leads/[id]/portal-access-links`
+- nova superficie publica:
+  - `/portal/acesso/[token]`
+- o detalhe do lead agora permite:
+  - cadastrar acessos persistentes para `cliente`, `familiar` e `cuidador`
+  - ativar / pausar acesso
+  - excluir acesso
+  - gerar link persistente individual e copiar para envio
+- comportamento atual do link persistente:
+  - registra uso em `portal_access_links`
+  - atualiza `ultimo_acesso_em` em `portal_users`
+  - redireciona para o portal atual baseado em `portal_token`
+- impacto de produto:
+  - o escritorio sai do modelo de link unico e indistinto
+  - o portal passa a reconhecer quem acessa o caso, mesmo antes de existir sessao completa do cliente
+- proximo passo recomendado:
+  - evoluir o link persistente para sessao/autenticacao real do portal
+  - depois abrir a primeira camada de perfil do cliente/familiar dentro do proprio app
+
 ## Atualizacao Backlog Mobile Cliente — 01/04/2026
 
 - a frente mobile agora deixou de ser so tese de produto e ganhou backlog tecnico canonico em `docs/MOBILE_CLIENT_APP_BACKLOG.md`

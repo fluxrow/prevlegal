@@ -218,6 +218,12 @@ export async function GET(
 **Cenário:** O domínio `prevlegal.com.br` foi adquirido
 **Decisão recomendada:** usar `prevlegal.com.br` para site/LP e `app.prevlegal.com.br` para a plataforma
 **Motivo:** melhora organização, escalabilidade, clareza comercial e reduz acoplamento entre marketing, autenticação e links do produto
+
+### 33. Identidade persistente do portal pode nascer como ponte segura antes de virar auth completa
+**Problema:** O portal do cliente funcionava só com `portal_token`, o que bastava para o piloto, mas não distinguia cliente, familiar e cuidador nem registrava quem acessou o caso
+**Correção:** Criar `portal_users` + `portal_access_links` e tratar o primeiro link persistente como ponte controlada para o portal atual
+**Padrão aplicado:** o link individual registra uso, atualiza `ultimo_acesso_em` e redireciona para `/portal/[portal_token]`
+**Regra prática:** Antes de abrir uma auth completa de cliente, vale criar uma camada de identidade observável e tenant-aware para aprender quem acessa o portal sem duplicar cedo demais a superfície de login
 **Regra prática:** Quando o produto sair do estágio de subdomínio temporário, migrar com ordem explícita: arquitetura -> Vercel -> DNS -> URLs canônicas -> links automáticos -> validação final
 
 ### 33. Migração de domínio precisa começar pelo inventário de URLs absolutas e fallbacks

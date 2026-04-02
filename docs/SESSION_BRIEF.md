@@ -251,6 +251,20 @@ Ultima atualizacao: 2026-04-01
     - o portal passou a mostrar CTA `Instalar app`
     - em iPhone / iOS existe fallback instrucional para `Adicionar à Tela de Início`
     - o “app do cliente” agora pode ser visto e instalado a partir do proprio link do portal no lead
+  - fase 1 continuada, passo 5:
+    - a migration `036_portal_identity_foundation.sql` ja foi aplicada no operacional `lrqvvxmgimjlghpwavdb`
+    - novas tabelas:
+      - `portal_users`
+      - `portal_access_links`
+    - o detalhe do lead agora permite:
+      - cadastrar cliente / familiar / cuidador para o portal
+      - pausar acesso
+      - excluir acesso
+      - gerar link persistente individual
+    - o novo link persistente:
+      - registra uso em `portal_access_links`
+      - atualiza `ultimo_acesso_em` em `portal_users`
+      - redireciona para o portal atual baseado em `portal_token`
 - frente estrategica previdenciaria em 01/04:
   - foi registrada uma nota separada para concorrencia e expansao do produto:
     - `docs/PREVIDENCIARIO_EXPANSION_STRATEGY.md`
@@ -272,81 +286,13 @@ Ultima atualizacao: 2026-04-01
 
 ## Proximo Passo Recomendado
 
-Validar o runtime WhatsApp no tenant limpo:
-- responder uma conversa manualmente pela `Caixa de Entrada`
-- validar se a mensagem sai com o numero/origem do tenant correto
-- provocar uma inbound real e confirmar resposta automatica do agente
-- validar `Iniciar conversa` em um lead sem thread previa
-- criar e disparar uma campanha de teste
-- observar `campanha_mensagens`, webhook de status e atualizacao de contadores
-- retestar agora o envio manual e o `Iniciar conversa` com o canal default do tenant
-- identificar a causa operacional do `errorCode 63015` no sandbox Twilio e confirmar a adesao correta do numero de destino
-- provocar uma inbound de resposta no mesmo numero para validar roteamento pelo tenant
-- manter o mobile pausado ate o comando explicito:
-  - `vamos continuar o mobile`
-- quando esse comando vier, retomar daqui:
-  - validar no celular a instalacao do portal como PWA
-  - depois desenhar a identidade persistente do cliente/familiar
-- cadastrar o primeiro canal `Z-API` na nova UI do admin e validar um disparo de campanha ponta a ponta
-- amanha:
-  - plugar o chip `41984233554` na instancia Z-API
-  - preencher `instance_id` / `instance_token` no canal rascunho ja criado
-  - ativar o canal e manter warm-up ligado
-  - testar envio humano primeiro e so depois campanha curta
-- testar o fluxo de `Editar dados` no detalhe do lead e no drawer, validando persistencia imediata dos campos
-- testar a nova inbox humana:
-  - assumir uma conversa
-  - marcar `aguardando cliente`
-  - marcar `resolvido`
-  - reabrir manualmente
-  - confirmar se uma inbound real reabre automaticamente de `aguardando_cliente` / `resolvido` para `humano`
-- testar os agendamentos operacionais:
-  - criar um agendamento manual pela tela `/agendamentos`
-  - criar um agendamento manual pelo detalhe do lead
-  - criar um agendamento manual pelo `lead drawer`
-  - validar busca por nome e telefone dentro do modal manual
-  - validar se o `E-mail da reunião` sobrescreve corretamente o convite do Google Meet
-  - validar a visao mensal do calendario:
-    - troca de mes
-    - cores por status
-    - clique no evento
-    - edicao pelo modal do calendario
-  - retestar a busca do lead no modal de novo agendamento com:
-    - nome acentuado
-    - telefone formatado
-    - telefone so com digitos
-  - confirmar um agendamento
-  - remarcar com nova data/hora
-  - reatribuir responsável (admin)
-  - cancelar e validar reflexo no status do lead
-  - observacao mais recente:
-    - o fluxo de agendamento pelo detalhe do lead ja foi validado em runtime
-    - o convite chegou no e-mail sobrescrito da reuniao
-    - o ponto residual ficou na busca digitada do modal global de `/agendamentos`, e a causa raiz encontrada foi `email.ilike` em `GET /api/leads` mesmo sem a coluna `leads.email` existir no schema operacional
-- depois retomar os testes operacionais do tenant isolation canonico por `tenant_id`
-- plano fora do WhatsApp para as proximas 2 semanas:
-  - semana 1:
-    - multi-tenant residual
-    - inbox humana avancada
-    - fluxo lead <-> inbox
-  - semana 2:
-    - agendamentos operacionais
-    - saúde do tenant no admin
-    - preparação para campanhas inteligentes
-  - proximo bloco sugerido:
-    - ampliar isso para leitura consolidada de pipeline entre inbox, agendamentos e contratos
-- atualizacao mais recente:
-  - esse bloco foi iniciado em 31/03/2026 com um pipeline operacional unificado em `/relatorios`
-  - a leitura agora cruza por `lead_id` o caminho:
-    - conversa
-    - fila humana
-    - agendamento
-    - contrato
-  - o `Dashboard` tambem foi endurecido para ler leads com `tenant_id` explicito
-  - em 01/04/2026, esse pipeline deixou de ser so leitura e virou navegacao para filas reais:
-    - inbox por aba
-    - agendamentos por recorte de status
-    - financeiro por filtro
+Continuar o mobile do cliente:
+- validar no browser a nova secao `Acessos do portal` no detalhe do lead
+- testar a geracao e o uso de um link persistente individual
+- depois evoluir essa ponte para sessao/autenticacao real do portal
+- na sequencia:
+  - abrir a primeira camada de perfil do cliente/familiar
+  - manter a Z-API como trilha operacional separada assim que o chip estiver pronto
 
 ## Bloqueios e Cuidados
 
