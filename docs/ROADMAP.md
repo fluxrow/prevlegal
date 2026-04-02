@@ -11,6 +11,7 @@ Mestra: [[MASTER_PREV_LEGAL]]
 - [[LEARNINGS]]
 - [[SESSION_BRIEF]]
 - [[CODEX_HANDOFF]]
+- [[PRODUCT_PORTFOLIO_STRATEGY]]
 
 ## Sessões Relacionadas
 
@@ -210,6 +211,25 @@ Mestra: [[MASTER_PREV_LEGAL]]
   - `scheduled`
   - `converted`
   - `lost`
+
+## Diretriz de Portfólio — 01/04/2026
+
+- o crescimento do PrevLegal passa a seguir uma regra formal de portfólio
+- `PrevLegal Core` continua sendo a trilha principal de execução:
+  - captacao
+  - qualificacao
+  - inbox
+  - agendamento
+  - portal/mobile
+  - financeiro
+- novas frentes previdenciarias especializadas nao entram mais como “expansao difusa” dentro do core
+- elas passam a ser tratadas como modulos premium separados, com trilha propria de discovery e arquitetura
+- isso preserva:
+  - a identidade principal do produto
+  - o roadmap atual do mobile/core
+  - a clareza comercial da oferta
+- referencia canonica:
+  - `docs/PRODUCT_PORTFOLIO_STRATEGY.md`
 - a UX do kanban ganhou:
   - faixa de filtro ativo com CTA `Limpar filtro`
   - chips de status no topo para alternar rapidamente entre colunas

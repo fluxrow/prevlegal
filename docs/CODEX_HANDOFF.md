@@ -13,11 +13,34 @@ Este documento registra o que foi analisado, alterado, validado e combinado dura
 - [[ROADMAP]]
 - [[LEARNINGS]]
 - [[SESSION_PROTOCOL]]
+- [[PRODUCT_PORTFOLIO_STRATEGY]]
 
 Objetivo:
 - servir como memoria de trabalho local
 - facilitar o repasse posterior para o Claude
 - registrar decisoes, arquivos afetados, validacoes e proximos passos
+
+## Atualizacao 2026-04-01 - Regra de portfólio do PrevLegal formalizada
+
+- o crescimento do produto ganhou uma regra canonica para evitar que novas oportunidades descaracterizem o core
+- documento criado:
+  - `docs/PRODUCT_PORTFOLIO_STRATEGY.md`
+- decisao registrada:
+  - `PrevLegal Core` continua sendo o centro da plataforma:
+    - captacao
+    - qualificacao
+    - inbox humana
+    - agenda
+    - portal/mobile do cliente
+    - financeiro
+  - `PrevGlobal` e outras frentes tecnicas/previdenciarias avancadas entram como modulos premium
+  - novas iniciativas nao devem reescrever a identidade principal; devem se conectar a ela
+- efeito pratico:
+  - o roadmap de execucao continua focado no mobile/core
+  - a expansao previdenciaria segue em trilha propria de arquitetura e discovery
+- proximo passo direto recomendado:
+  - continuar a execucao do mobile sem desvio
+  - amadurecer `PrevGlobal` em spec separado, sem competir com o core
 
 ## Atualizacao 2026-04-01 - Backlog tecnico do app mobile do cliente
 

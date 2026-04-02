@@ -20,6 +20,15 @@ Mestra: [[MASTER_PREV_LEGAL]]
 - [[Sessoes/2026-03-18-prevlegal-admin-roi-obsidian]]
 - [[Sessoes/2026-03-18-sessoes-17-18-marco-prevlegal-completo]]
 
+### 33. Expansao de produto precisa entrar por arquitetura de portfólio, nao por mistura de narrativas
+**Problema:** Novas oportunidades reais, como `PrevGlobal`, CNIS com IA e modulos tecnicos premium, podem comecar a competir com o core operacional do PrevLegal se entrarem sem separacao clara
+**Causa:** O produto cresceu alem da ideia inicial e abriu adjacencias fortes, mas isso aumenta o risco de descaracterizar a oferta principal
+**Correção:** Formalizar uma arquitetura de portfólio com tres camadas:
+- `PrevLegal Core`
+- adjacencias operacionais
+- modulos premium
+**Regra pratica:** Novas frentes devem se conectar ao core, nao reescrever sua identidade. Sempre classificar a iniciativa como `core`, `adjacencia` ou `modulo premium` antes de executar
+
 ## Padrões TypeScript/Next.js 16
 
 ### 1. `createClient` admin no nível de módulo

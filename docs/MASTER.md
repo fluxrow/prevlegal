@@ -18,6 +18,7 @@ Mestra: [[MASTER_PREV_LEGAL]]
 - [[MOBILE_CLIENT_APP_PLAN]]
 - [[MOBILE_CLIENT_APP_BACKLOG]]
 - [[PREVIDENCIARIO_EXPANSION_STRATEGY]]
+- [[PRODUCT_PORTFOLIO_STRATEGY]]
 
 ## Produto
 
@@ -218,6 +219,23 @@ Estratégia: entrar com R$ 1.997 para gerar cases, subir gradualmente.
     - `timeline`
     - `resumo.documentos_pendentes`
   - a home do portal agora combina:
+
+## Arquitetura de Portfólio — Regra atual
+
+- `PrevLegal Core` continua sendo a plataforma principal:
+  - captacao
+  - qualificacao
+  - inbox humana
+  - agenda
+  - portal/app do cliente
+  - financeiro
+- expansoes nao substituem o core; elas se conectam a ele
+- `PrevGlobal` e demais frentes previdenciarias avancadas devem entrar como modulos premium
+- principio atual preservado:
+  - o produto central continua orientado a operacao previdenciaria ponta a ponta
+  - o crescimento acontece por camadas, nao por troca de identidade
+- referencia canonica:
+  - `docs/PRODUCT_PORTFOLIO_STRATEGY.md`
     - status macro do caso
     - proxima consulta
     - documentos pendentes

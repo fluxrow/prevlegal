@@ -13,6 +13,7 @@ Resumo curto para retomada rapida de contexto no inicio de qualquer sessao.
 - [[LEARNINGS]]
 - [[CODEX_HANDOFF]]
 - [[SESSION_PROTOCOL]]
+- [[PRODUCT_PORTFOLIO_STRATEGY]]
 
 ## Fonte de Verdade
 
@@ -218,6 +219,17 @@ Ultima atualizacao: 2026-04-01
     - avaliar app nativo depois
   - fase 1 iniciada:
     - `src/app/portal/[token]/page.tsx` agora usa branding dinâmico do tenant
+- diretriz de portfólio em 01/04:
+  - o crescimento do sistema nao deve reescrever a identidade principal do PrevLegal
+  - o core continua sendo:
+    - captacao
+    - qualificacao
+    - inbox
+    - agendamento
+    - portal/mobile
+    - financeiro
+  - frentes como `PrevGlobal` entram como modulo premium separado
+  - regra canonica registrada em `docs/PRODUCT_PORTFOLIO_STRATEGY.md`
     - `GET /api/portal/[token]` agora retorna `branding`, `proximo_agendamento` e `resumo`
     - o portal passou a exibir o próximo compromisso e o contato do escritório certo
   - fase 1 continuada:
