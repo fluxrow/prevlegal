@@ -42,6 +42,9 @@ Inclui:
 
 - leads e listas
 - campanhas e mensageria
+- agentes
+- cadências / follow-ups
+- colaboração interna contextual
 - inbox humana
 - agendamentos
 - portal/mobile do cliente
@@ -143,6 +146,16 @@ Se a resposta for “aumenta complexidade sem fortalecer o core nem aumentar tic
 - agenda
 - pipeline operacional
 
+### Próxima frente oficial do core
+
+- agentes por tenant
+- cadências configuráveis
+- colaboração interna contextual
+
+Referência canônica:
+
+- `docs/AGENTES_CADENCIAS_COLABORACAO_PLAN.md`
+
 ### Expansão em discovery / arquitetura
 
 - PrevGlobal
@@ -162,3 +175,4 @@ Enquanto o core estiver em execução ativa:
 - manter `PrevLegal` como marca mãe e plataforma principal
 - tratar `PrevGlobal` como módulo premium separado
 - continuar a execução do mobile/core sem desvio de identidade
+- preservar a leitura de que o motor conversacional e operacional poderá ser reutilizado em outras verticais jurídicas no futuro, sem descaracterizar o foco previdenciário atual

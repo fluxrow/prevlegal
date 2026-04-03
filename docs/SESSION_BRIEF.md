@@ -556,3 +556,18 @@ No final:
   - `npm run build` passou
 - leitura atual:
   - a entrada operacional de leads ficou mais alinhada ao contrato tenant-aware do resto do produto
+
+## Atualizacao 2026-04-03 - Proxima fase do core foi formalizada
+
+- a proxima grande frente do PrevLegal agora esta descrita como plano oficial
+- referencia principal:
+  - `docs/AGENTES_CADENCIAS_COLABORACAO_PLAN.md`
+- tese:
+  - transformar o produto em uma camada operacional conversacional mais forte para o escritorio
+- pilares:
+  - agentes por tenant
+  - cadencias / follow-ups
+  - colaboracao interna contextual
+- leitura atual:
+  - isso entra como evolucao do core, nao como modulo premium
+  - a execucao recomendada comeca por colaboracao interna minima e follow-up engine

@@ -1007,3 +1007,9 @@ Isso gera mais confianca e reduz sensacao de “portal vazio”
 **Causa:** Essas rotas continuaram funcionais por inercia e acabaram ficando fora do padrão que o resto da base adotou durante a migracao multi-tenant
 **Correcao aplicada:** Trocar a resolucao manual por `getTenantContext` e passar a usar `context.usuarioId`, `context.tenantId` e `context.isAdmin`
 **Regra pratica:** No PrevLegal, quando a regra de escopo ja estiver consolidada num helper canonico, manter rotas novas ou antigas em `auth.getUser()` + query manual so aumenta a chance de divergencia futura; alinhar cedo evita drift mesmo antes de aparecer um bug
+
+### 105. Chat interno solto vale menos que colaboracao operacional contextual
+**Problema:** A ideia de comunicacao interna pode parecer forte, mas um "mini Slack" embutido tende a criar ruido, perder contexto e competir com a execucao do caso
+**Causa:** Ferramentas internas genericas de conversa ajudam pouco quando o valor do produto esta em registrar decisao, dono, handoff e proxima acao no lugar exato do trabalho
+**Correcao aplicada:** Formalizar a proxima frente do core como combinacao de `agentes + cadencias + colaboracao interna contextual`, deixando claro que a colaboracao deve nascer em torno de lead, conversa, agendamento e contrato, e nao como chat solto
+**Regra pratica:** No PrevLegal, conversa interna so vira vantagem competitiva quando nasce presa ao fluxo operacional; se for livre demais, vira ferramenta paralela e nao camada de execucao

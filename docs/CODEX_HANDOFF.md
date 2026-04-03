@@ -2134,3 +2134,25 @@ Pontos que precisam ser preservados durante a implementacao:
   - `npm run build` passou
 - leitura de continuidade:
   - o que sobra com `auth.getUser()` em `api` agora esta basicamente concentrado em `perfil` e `session`, que sao superfícies de outra natureza
+
+## Atualizacao 2026-04-03 - Nova frente do core formalizada para proxima execucao
+
+- foi criada a referencia canônica da próxima fase em:
+  - `docs/AGENTES_CADENCIAS_COLABORACAO_PLAN.md`
+- tese central:
+  - o PrevLegal deve evoluir para um sistema operacional conversacional do escritorio
+- pilares oficiais da proxima fase:
+  - agentes por tenant
+  - cadencias/follow-ups
+  - colaboracao interna contextual
+- leitura estratégica importante:
+  - isso fortalece o core atual do produto
+  - nao entra como modulo premium
+  - a arquitetura deve nascer de forma que o motor possa ser reaproveitado no futuro para outras verticais juridicas, sem descaracterizar o foco previdenciario agora
+- ordem recomendada:
+  - Fase A: colaboracao interna minima
+  - Fase B: follow-up engine v1
+  - Fase C: multiagente por tenant
+  - Fase D: orquestracao avancada
+- proximo passo sugerido:
+  - transformar a Fase A em backlog tecnico e modelo de dados executavel

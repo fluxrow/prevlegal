@@ -1026,3 +1026,21 @@ Status atual em 18/03/2026:
   - rotas de entrada de dados nao precisam esperar vazar contexto para serem corrigidas; quando o helper canonico ja existe, vale cortar cedo a duplicacao de auth manual
 - validacao:
   - `npm run build` passou
+
+## Atualizacao Estrategica / Proxima Frente do Core — 03/04/2026
+
+- o proximo salto do produto foi formalizado como uma camada operacional conversacional mais completa
+- pilares oficiais:
+  - agentes por tenant
+  - cadencias / follow-ups
+  - colaboracao interna contextual
+- racional:
+  - isso reforca o core do PrevLegal sem misturar a narrativa do produto com modulos premium
+  - cria vantagem competitiva real ao juntar automacao, operacao humana e gestao dentro do mesmo fluxo
+- ordem de execucao recomendada:
+  - colaboracao interna minima
+  - follow-up engine v1
+  - multiagente por tenant
+  - orquestracao avancada
+- referencia canonica:
+  - `docs/AGENTES_CADENCIAS_COLABORACAO_PLAN.md`
