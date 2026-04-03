@@ -339,6 +339,10 @@ Exemplos:
 - dono atual
 - handoff simples
 
+Referência executável:
+
+- `docs/COLABORACAO_INTERNA_FASE_A_SPEC.md`
+
 ### Fase B — Follow-up engine v1
 
 - cadência manual

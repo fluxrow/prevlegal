@@ -1013,3 +1013,9 @@ Isso gera mais confianca e reduz sensacao de “portal vazio”
 **Causa:** Ferramentas internas genericas de conversa ajudam pouco quando o valor do produto esta em registrar decisao, dono, handoff e proxima acao no lugar exato do trabalho
 **Correcao aplicada:** Formalizar a proxima frente do core como combinacao de `agentes + cadencias + colaboracao interna contextual`, deixando claro que a colaboracao deve nascer em torno de lead, conversa, agendamento e contrato, e nao como chat solto
 **Regra pratica:** No PrevLegal, conversa interna so vira vantagem competitiva quando nasce presa ao fluxo operacional; se for livre demais, vira ferramenta paralela e nao camada de execucao
+
+### 106. Quando ja existe foundation de handoff, a nova fase deve expandir o eixo certo em vez de reiniciar do zero
+**Problema:** Seria facil desenhar a colaboracao interna como um modulo novo demais, ignorando que a inbox ja possui seme de dono, fila humana e handoff
+**Causa:** Em fases de arquitetura, a tentacao e redesenhar tudo como se o produto ainda nao tivesse estrutura operacional previa
+**Correcao aplicada:** Especificar a Fase A de colaboracao interna aproveitando `conversas.status`, `assumido_por` e `assumido_em`, fazendo a thread interna nascer no lead e se refletir depois na inbox
+**Regra pratica:** No PrevLegal, quando uma fase nova amplia uma capacidade operacional ja existente, a implementacao deve crescer a partir da foundation real do produto e nao abrir uma segunda trilha concorrente

@@ -571,3 +571,17 @@ No final:
 - leitura atual:
   - isso entra como evolucao do core, nao como modulo premium
   - a execucao recomendada comeca por colaboracao interna minima e follow-up engine
+
+## Atualizacao 2026-04-03 - Fase A da colaboracao interna ficou pronta para implementacao
+
+- a colaboracao interna minima agora tem spec tecnica propria
+- referencia principal:
+  - `docs/COLABORACAO_INTERNA_FASE_A_SPEC.md`
+- entrega prevista da Fase A:
+  - thread interna por lead
+  - notas internas
+  - handoff simples
+  - tasks internas
+  - resumo interno na inbox
+- leitura atual:
+  - a proxima execucao ja pode sair de discovery e entrar em migration + API + UI

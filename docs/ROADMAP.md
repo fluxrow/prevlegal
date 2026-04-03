@@ -1044,3 +1044,19 @@ Status atual em 18/03/2026:
   - orquestracao avancada
 - referencia canonica:
   - `docs/AGENTES_CADENCIAS_COLABORACAO_PLAN.md`
+
+## Atualizacao Estrategica / Fase A ganhou backlog tecnico — 03/04/2026
+
+- a primeira etapa da nova frente do core deixou de ser so visao e ganhou spec executavel
+- referencia principal:
+  - `docs/COLABORACAO_INTERNA_FASE_A_SPEC.md`
+- escopo da Fase A:
+  - thread interna por lead
+  - notas internas
+  - handoff simples
+  - tasks internas
+  - resumo interno na inbox
+- leitura de implementacao:
+  - aproveitar a foundation ja existente em `conversas`
+  - nascer primeiro no detalhe do lead
+  - integrar depois no painel da `Caixa de Entrada`

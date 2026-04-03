@@ -2156,3 +2156,20 @@ Pontos que precisam ser preservados durante a implementacao:
   - Fase D: orquestracao avancada
 - proximo passo sugerido:
   - transformar a Fase A em backlog tecnico e modelo de dados executavel
+
+## Atualizacao 2026-04-03 - Fase A da colaboracao interna foi especificada
+
+- a proxima execucao do core ja tem um recorte tecnico bem definido em:
+  - `docs/COLABORACAO_INTERNA_FASE_A_SPEC.md`
+- escopo aprovado para a primeira entrega:
+  - thread interna por lead
+  - mensagens/notas internas
+  - handoff simples
+  - task interna
+  - resumo interno no detalhe da conversa
+- leitura importante de implementacao:
+  - aproveitar a base existente de `conversas.status`, `assumido_por` e `assumido_em`
+  - evitar chat interno generico
+  - fazer o centro da colaboracao nascer no lead e nao num feed solto
+- proximo passo sugerido:
+  - abrir a implementação com migration SQL + rotas API do lead interno
