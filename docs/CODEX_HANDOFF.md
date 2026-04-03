@@ -2207,3 +2207,28 @@ Pontos que precisam ser preservados durante a implementacao:
 - proximo passo sugerido:
   - aplicar a `038`
   - refletir um resumo interno minimo na `Caixa de Entrada`
+
+## Atualizacao 2026-04-03 - Migration 038 aplicada e resumo interno na Caixa de Entrada
+
+- migration `038_internal_collaboration_phase_one.sql` aplicada com sucesso no banco operacional `lrqvvxmgimjlghpwavdb`
+- tabelas criadas:
+  - `lead_threads_internas`
+  - `lead_mensagens_internas`
+  - `lead_tasks`
+  - `lead_handoffs`
+- a `Caixa de Entrada` agora exibe uma strip de coordenação interna ao selecionar uma conversa
+- arquivo alterado:
+  - `src/app/(dashboard)/caixa-de-entrada/page.tsx`
+- comportamento:
+  - quando a conversa tem um lead associado, busca `GET /api/leads/[id]/interno`
+  - exibe strip compacta abaixo do header com:
+    - dono atual da thread interna
+    - contagem de tasks abertas/em andamento
+    - última nota interna (truncada)
+    - link direto para `Ver coordenação →` apontando para `/leads/[id]#interno`
+  - strip só aparece se houver ao menos um dado (dono, task ou nota)
+- validacao:
+  - `npm run build` passou
+- proximo passo sugerido:
+  - validar em produção se a strip aparece corretamente ao selecionar uma conversa com lead associado
+  - depois decidir se vale evoluir para um painel lateral recolhível com mais detalhes da coordenação interna

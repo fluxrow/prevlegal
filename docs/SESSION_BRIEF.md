@@ -614,3 +614,23 @@ No final:
 - leitura atual:
   - a Fase A saiu da spec e entrou de fato no core do produto
   - o proximo passo natural e aplicar a migration e depois levar um resumo minimo dessa coordenacao para a `Caixa de Entrada`
+
+## Atualizacao 2026-04-03 - Migration 038 aplicada e coordenacao interna na inbox
+
+- migration `038_internal_collaboration_phase_one.sql` aplicada no operacional `lrqvvxmgimjlghpwavdb`
+- tabelas agora ativas no banco: `lead_threads_internas`, `lead_mensagens_internas`, `lead_tasks`, `lead_handoffs`
+- a `Caixa de Entrada` agora exibe strip de coordenacao interna ao selecionar uma conversa:
+  - dono atual, tasks abertas e ultima nota interna
+  - link direto para coordenacao no detalhe do lead
+  - strip aparece apenas quando ha dados reais
+- arquivo principal:
+  - `src/app/(dashboard)/caixa-de-entrada/page.tsx`
+- validacao:
+  - `npm run build` passou
+
+## Proximo Passo Recomendado
+
+- validar em producao se a strip de coordenacao aparece na inbox ao selecionar conversa com lead associado
+- depois decidir a proxima frente:
+  - evoluir painel lateral recolhivel na inbox com mais detalhes
+  - ou partir para o follow-up engine (Fase B dos agentes/cadencias)

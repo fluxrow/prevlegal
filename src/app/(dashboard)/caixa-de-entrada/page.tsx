@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { MessageSquare, User, Bot, UserCheck, RotateCcw, Send } from 'lucide-react'
+import { MessageSquare, User, Bot, UserCheck, RotateCcw, Send, Users } from 'lucide-react'
 import { useOnboarding } from '@/hooks/useOnboarding'
 import OnboardingTooltip from '@/components/onboarding-tooltip'
 import { samePhone } from '@/lib/contact-shortcuts'
@@ -49,6 +49,12 @@ interface Mensagem {
   respondido_por_agente: boolean
   respondido_manualmente: boolean
   created_at: string
+}
+
+interface InternalSummary {
+  current_owner: { id: string; nome: string } | null
+  tasks_abertas: number
+  ultima_nota: string | null
 }
 
 interface ThreadPortal {
@@ -100,6 +106,7 @@ export default function CaixaDeEntradaPage() {
   const [msgsPortal, setMsgsPortal] = useState<PortalMensagem[]>([])
   const [textoPortal, setTextoPortal] = useState('')
   const [enviandoPortal, setEnviandoPortal] = useState(false)
+  const [internalSummary, setInternalSummary] = useState<InternalSummary | null>(null)
   const [textoResposta, setTextoResposta] = useState('')
   const [enviando, setEnviando] = useState(false)
   const [erroEnvio, setErroEnvio] = useState<string | null>(null)
@@ -143,6 +150,24 @@ export default function CaixaDeEntradaPage() {
   useEffect(() => {
     if (conversaSelecionada && abaAtiva !== 'portal') fetchMensagens(conversaSelecionada.id)
   }, [conversaSelecionada, abaAtiva])
+
+  useEffect(() => {
+    const leadId = conversaSelecionada?.leads?.id
+    if (!leadId) { setInternalSummary(null); return }
+    fetch(`/api/leads/${leadId}/interno`)
+      .then(r => r.ok ? r.json() : null)
+      .then(d => {
+        if (!d) { setInternalSummary(null); return }
+        const owner = d.thread?.current_owner_usuario_id
+          ? (d.usuarios as { id: string; nome: string }[])?.find((u) => u.id === d.thread.current_owner_usuario_id) ?? null
+          : null
+        const tasksAbertas = (d.tasks as { status: string }[] | undefined)?.filter((t) => t.status === 'aberta' || t.status === 'em_andamento').length ?? 0
+        const ultimaNota = (d.historico as { tipo: string; mensagem: string }[] | undefined)
+          ?.find((m) => m.tipo === 'comentario')?.mensagem ?? null
+        setInternalSummary({ current_owner: owner, tasks_abertas: tasksAbertas, ultima_nota: ultimaNota })
+      })
+      .catch(() => setInternalSummary(null))
+  }, [conversaSelecionada])
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -641,6 +666,35 @@ export default function CaixaDeEntradaPage() {
               )}
             </div>
           </div>
+
+          {internalSummary && (internalSummary.current_owner || internalSummary.tasks_abertas > 0 || internalSummary.ultima_nota) && (
+            <div style={{ padding: '8px 24px', borderBottom: '1px solid var(--border)', background: 'var(--bg-card)', display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '5px', color: 'var(--text-muted)', fontSize: '11px' }}>
+                <Users size={12} color="var(--accent)" />
+                <span style={{ color: 'var(--accent)', fontWeight: '600' }}>Interno</span>
+              </div>
+              {internalSummary.current_owner && (
+                <span style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <UserCheck size={11} /> Dono: <strong style={{ color: 'var(--text-secondary)' }}>{internalSummary.current_owner.nome}</strong>
+                </span>
+              )}
+              {internalSummary.tasks_abertas > 0 && (
+                <span style={{ fontSize: '11px', background: '#f59e0b20', color: '#f59e0b', padding: '2px 8px', borderRadius: '10px', fontWeight: '600' }}>
+                  {internalSummary.tasks_abertas} task{internalSummary.tasks_abertas > 1 ? 's' : ''} aberta{internalSummary.tasks_abertas > 1 ? 's' : ''}
+                </span>
+              )}
+              {internalSummary.ultima_nota && (
+                <span style={{ fontSize: '11px', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '220px', fontStyle: 'italic' }}>
+                  "{internalSummary.ultima_nota}"
+                </span>
+              )}
+              {conversaSelecionada.leads?.id && (
+                <a href={`/leads/${conversaSelecionada.leads.id}#interno`} style={{ marginLeft: 'auto', fontSize: '11px', color: 'var(--accent)', textDecoration: 'none', fontWeight: '500', flexShrink: 0 }}>
+                  Ver coordenação →
+                </a>
+              )}
+            </div>
+          )}
 
           <div style={{ flex: 1, overflowY: 'auto', padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {conversaSelecionada.status === 'aguardando_cliente' && (
