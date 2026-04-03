@@ -939,3 +939,9 @@ Isso gera mais confianca e reduz sensacao de “portal vazio”
 **Causa:** O sistema interno ja trabalhava com status `confirmado`, mas o mobile do cliente ainda nao acionava esse passo
 **Correcao aplicada:** Criar `POST /api/portal/[token]/confirmacao`, permitindo ao cliente/familiar confirmar presenca na proxima consulta, atualizar o agendamento e alimentar timeline/notificacao
 **Regra pratica:** No mobile do cliente, automacoes de baixo risco operacional devem entrar cedo quando ajudam a equipe e nao tiram o controle humano de decisoes sensiveis
+
+### 95. Novidades do portal precisam usar o ultimo acesso inicial da sessao, nao um corte que anda a cada refetch
+**Problema:** Ao tentar mostrar "novidades desde o ultimo acesso", o portal podia recalcular esse marco depois de a propria pagina disparar um novo fetch, fazendo algumas novidades desaparecerem cedo demais na mesma sessao
+**Causa:** `ultimo_acesso_em` e atualizado no backend a cada resolucao de sessao; se o front usar sempre o valor mais recente retornado pela API, o comparativo deixa de representar o retorno original do cliente ao portal
+**Correcao aplicada:** Fixar no front o baseline do `ultimo_acesso_em` recebido na entrada da sessao e usar esse ponto como referencia para resumir timeline, mensagens e pendencias
+**Regra pratica:** Em experiencias de "desde seu ultimo acesso", capture o marco de comparacao uma vez por sessao e nao deixe refetch interno reescrever essa memoria

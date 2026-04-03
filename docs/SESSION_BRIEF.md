@@ -387,3 +387,22 @@ No final:
 - proximo passo sugerido:
   - validar esse fluxo no celular
   - depois evoluir uma camada leve de novidades/notificacoes do portal
+
+## Atualizacao 2026-04-03 - Novidades desde o ultimo acesso no portal
+
+- a home do portal agora ganhou uma camada leve de novidades para orientar o cliente no retorno ao app
+- arquivo principal:
+  - `src/app/portal/[token]/page.tsx`
+- comportamento:
+  - o portal mostra um bloco `Novidades desde seu ultimo acesso`
+  - o corte de comparacao fica ancorado no `ultimo_acesso_em` inicial da sessao, evitando sumir com novidades apos refetch interno
+  - o card resume:
+    - atualizacoes recentes da timeline
+    - mensagens nao lidas da equipe
+    - pendencias de documento
+  - o cliente pode ir direto para `Mensagens` ou `Documentos` a partir desse bloco
+- validacao:
+  - `npm run build` passou
+- proximo passo sugerido:
+  - validar a experiencia no celular com fluxo real de retorno ao portal
+  - depois decidir se essa camada evolui para push/notificacao nativa

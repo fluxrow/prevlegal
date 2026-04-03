@@ -889,3 +889,20 @@ Status atual em 18/03/2026:
 - racional:
   - diferente da remarcacao, essa e uma automacao leve e de baixo risco operacional
   - melhora previsibilidade de comparecimento sem baguncar a agenda
+
+## Atualizacao Mobile / Novidades no Portal — 03/04/2026
+
+- a home do portal passou a destacar `Novidades desde seu ultimo acesso`
+- comportamento:
+  - resume atualizacoes recentes da timeline visivel ao cliente
+  - destaca mensagens nao lidas da equipe
+  - destaca pendencias de documento
+  - oferece atalhos para abrir `Mensagens` e `Documentos`
+- detalhe importante de produto:
+  - o corte de novidades fica preso ao `ultimo_acesso_em` inicial da sessao
+  - isso evita apagar novidades cedo demais quando o portal faz refetch apos uma acao do proprio cliente
+- validacao:
+  - `npm run build` passou
+- proximo passo:
+  - validar runtime no celular
+  - decidir depois se a camada deve evoluir para push/notificacao nativa

@@ -11,6 +11,7 @@ import {
   FileText,
   Loader2,
   MessageSquare,
+  Bell,
   Upload,
   Send,
   UserRound,
@@ -226,6 +227,7 @@ function timelineColor(tipo: string, fallback: string) {
 export default function PortalClientePage() {
   const { token } = useParams() as { token: string }
   const [payload, setPayload] = useState<PortalPayload | null>(null)
+  const [ultimoAcessoBase, setUltimoAcessoBase] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [erro, setErro] = useState('')
   const [novaMensagem, setNovaMensagem] = useState('')
@@ -256,6 +258,10 @@ export default function PortalClientePage() {
   }, [token])
 
   useEffect(() => {
+    setUltimoAcessoBase(null)
+  }, [token])
+
+  useEffect(() => {
     msgEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [payload?.mensagens])
 
@@ -268,6 +274,12 @@ export default function PortalClientePage() {
       })
     }
   }, [payload?.viewer])
+
+  useEffect(() => {
+    if (!ultimoAcessoBase && payload?.viewer?.ultimo_acesso_em) {
+      setUltimoAcessoBase(payload.viewer.ultimo_acesso_em)
+    }
+  }, [payload?.viewer?.ultimo_acesso_em, ultimoAcessoBase])
 
   async function fetchPortal() {
     setLoading(true)
@@ -437,6 +449,24 @@ export default function PortalClientePage() {
   const msgNaoLidas = useMemo(
     () => mensagens.filter((m) => m.remetente === 'escritorio' && !m.lida).length,
     [mensagens],
+  )
+  const ultimoAcesso = ultimoAcessoBase ? new Date(ultimoAcessoBase) : null
+  const novidadesRecentes = useMemo(() => {
+    if (!ultimoAcesso) return []
+    return timeline.filter((evento) => new Date(evento.created_at).getTime() > ultimoAcesso.getTime()).slice(0, 4)
+  }, [timeline, ultimoAcesso])
+  const resumoNovidades = useMemo(
+    () =>
+      [
+        novidadesRecentes.length > 0
+          ? `${novidadesRecentes.length} atualiza${novidadesRecentes.length > 1 ? 'ções' : 'ção'} na timeline`
+          : null,
+        msgNaoLidas > 0 ? `${msgNaoLidas} mensagem${msgNaoLidas > 1 ? 'ens' : ''} da equipe` : null,
+        pendenciasDocumento.length > 0
+          ? `${pendenciasDocumento.length} pendência${pendenciasDocumento.length > 1 ? 's' : ''} de documento`
+          : null,
+      ].filter(Boolean) as string[],
+    [msgNaoLidas, novidadesRecentes.length, pendenciasDocumento.length],
   )
 
   if (loading) {
@@ -1011,6 +1041,175 @@ export default function PortalClientePage() {
                 </p>
               )}
             </div>
+
+            {ultimoAcesso ? (
+              <div
+                style={{
+                  background: '#111318',
+                  border: '1px solid #ffffff0f',
+                  borderRadius: '14px',
+                  padding: '20px',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+                  <Bell size={16} color={branding.cor_primaria} />
+                  <p
+                    style={{
+                      fontSize: '11px',
+                      fontWeight: '700',
+                      color: '#6b7280',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.06em',
+                      margin: 0,
+                    }}
+                  >
+                    Novidades desde seu último acesso
+                  </p>
+                </div>
+                <p style={{ fontSize: '12px', color: '#4a5060', margin: '0 0 14px' }}>
+                  Último acesso em {formatarDataHora(ultimoAcessoBase || '')}
+                </p>
+                {resumoNovidades.length > 0 ? (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '14px' }}>
+                    {resumoNovidades.map((item) => (
+                      <span
+                        key={item}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          padding: '7px 10px',
+                          borderRadius: '999px',
+                          border: '1px solid #ffffff12',
+                          background: '#080b14',
+                          fontSize: '11px',
+                          fontWeight: '700',
+                          color: '#c7ccd6',
+                        }}
+                      >
+                        {item}
+                      </span>
+                    ))}
+                  </div>
+                ) : null}
+                {novidadesRecentes.length > 0 ? (
+                  <div style={{ display: 'grid', gap: '10px' }}>
+                    {novidadesRecentes.map((evento) => {
+                      const corEvento = timelineColor(evento.tipo, branding.cor_primaria)
+                      return (
+                        <div
+                          key={evento.id}
+                          style={{
+                            background: '#080b14',
+                            border: '1px solid #ffffff0f',
+                            borderRadius: '12px',
+                            padding: '12px 14px',
+                            display: 'flex',
+                            gap: '10px',
+                          }}
+                        >
+                          <div
+                            style={{
+                              width: '26px',
+                              height: '26px',
+                              borderRadius: '50%',
+                              background: `${corEvento}18`,
+                              color: corEvento,
+                              border: `1px solid ${corEvento}40`,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              flexShrink: 0,
+                            }}
+                          >
+                            {timelineIcon(evento.tipo)}
+                          </div>
+                          <div style={{ minWidth: 0 }}>
+                            <p
+                              style={{
+                                fontSize: '13px',
+                                fontWeight: '700',
+                                color: '#f0f2f5',
+                                margin: '0 0 4px',
+                              }}
+                            >
+                              {evento.titulo}
+                            </p>
+                            {evento.descricao ? (
+                              <p style={{ fontSize: '12px', color: '#8b92a0', margin: '0 0 4px', lineHeight: '1.5' }}>
+                                {evento.descricao}
+                              </p>
+                            ) : null}
+                            <p style={{ fontSize: '11px', color: '#4a5060', margin: 0 }}>
+                              {formatarDataHora(evento.created_at)}
+                            </p>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                ) : (
+                  <div
+                    style={{
+                      background: '#080b14',
+                      border: '1px solid #ffffff0f',
+                      borderRadius: '12px',
+                      padding: '12px 14px',
+                    }}
+                  >
+                    <p style={{ fontSize: '13px', color: '#8b92a0', margin: 0 }}>
+                      Nenhuma novidade registrada desde sua última visita.
+                    </p>
+                  </div>
+                )}
+                {msgNaoLidas > 0 || pendenciasDocumento.length > 0 ? (
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '14px' }}>
+                    {msgNaoLidas > 0 ? (
+                      <button
+                        onClick={() => setAba('mensagens')}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          background: '#080b14',
+                          color: '#f0f2f5',
+                          borderRadius: '10px',
+                          padding: '10px 14px',
+                          border: '1px solid #ffffff0f',
+                          fontSize: '12px',
+                          fontWeight: '700',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        <MessageSquare size={13} />
+                        Ver mensagens
+                      </button>
+                    ) : null}
+                    {pendenciasDocumento.length > 0 ? (
+                      <button
+                        onClick={() => setAba('documentos')}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          background: '#080b14',
+                          color: '#f0f2f5',
+                          borderRadius: '10px',
+                          padding: '10px 14px',
+                          border: '1px solid #ffffff0f',
+                          fontSize: '12px',
+                          fontWeight: '700',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        <FileText size={13} />
+                        Ver documentos
+                      </button>
+                    ) : null}
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
 
             <div
               style={{

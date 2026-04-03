@@ -1918,3 +1918,25 @@ Pontos que precisam ser preservados durante a implementacao:
 - proximo passo:
   - validar confirmacao no celular
   - depois evoluir uma camada de novidades/notificacoes do portal
+
+## Atualizacao 2026-04-03 - Camada leve de novidades no portal
+
+- o portal do cliente agora ajuda a retomar contexto quando a pessoa volta ao app
+- arquivo principal:
+  - `src/app/portal/[token]/page.tsx`
+- ajustes aplicados:
+  - bloco `Novidades desde seu ultimo acesso` na home do portal
+  - resumo rapido de:
+    - eventos recentes da timeline
+    - mensagens nao lidas da equipe
+    - pendencias de documento
+  - CTAs diretos para abrir `Mensagens` e `Documentos`
+  - o baseline de comparacao foi fixado no `ultimo_acesso_em` inicial da sessao
+- racional:
+  - sem esse baseline fixo, qualquer refetch interno podia atualizar o corte e esconder novidades ainda durante a mesma sessao
+  - a camada continua leve e sem push, mas ja entrega memoria operacional para o cliente
+- validacao:
+  - `npm run build` passou
+- proximo passo:
+  - validar no browser/celular um retorno real ao portal depois de nova mensagem, nova pendencia e novo evento
+  - depois decidir se vale evoluir para push/notificacao nativa
