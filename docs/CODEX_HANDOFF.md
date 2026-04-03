@@ -2232,3 +2232,28 @@ Pontos que precisam ser preservados durante a implementacao:
 - proximo passo sugerido:
   - validar em produção se a strip aparece corretamente ao selecionar uma conversa com lead associado
   - depois decidir se vale evoluir para um painel lateral recolhível com mais detalhes da coordenação interna
+
+## Atualizacao 2026-04-03 - Painel lateral de coordenacao interna na inbox
+
+- a Caixa de Entrada ganhou um painel lateral recolhivel de coordenacao interna
+- arquivo alterado:
+  - `src/app/(dashboard)/caixa-de-entrada/page.tsx`
+- comportamento:
+  - ao selecionar uma conversa com lead associado, aparece uma strip-toggle abaixo do header
+  - clicar na strip abre/fecha um painel lateral direito (272px)
+  - o painel exibe:
+    - responsavel atual da thread interna (dono)
+    - tasks abertas/em andamento com check-off direto (PATCH /api/leads/[id]/interno/tasks/[taskId])
+    - notas recentes (ultimas 4, tipo comentario) com autor e tempo
+    - quick note: textarea + botao "Adicionar nota" (POST /api/leads/[id]/interno/mensagens)
+    - link "Ver lead →" apontando para /leads/[id]#interno
+  - strip permanece visivel sempre que houver dados (dono, tasks ou nota)
+  - strip exibe resumo (dono, contagem de tasks, preview da ultima nota) quando painel fechado
+  - strip fica com fundo azul suave quando painel aberto
+- interfaces novas: InternoTask, InternoMensagem, InternoData
+- funcoes novas: fetchInternoData, adicionarNota, concluirTask
+- validacao:
+  - `npm run build` passou
+- proximo passo sugerido:
+  - validar em producao: selecionar conversa com lead, abrir painel, adicionar nota, concluir task
+  - decidir proxima frente: follow-up engine (Fase B) ou outra frente do core
