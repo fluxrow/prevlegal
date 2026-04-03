@@ -1060,3 +1060,33 @@ Status atual em 18/03/2026:
   - aproveitar a foundation ja existente em `conversas`
   - nascer primeiro no detalhe do lead
   - integrar depois no painel da `Caixa de Entrada`
+
+## Atualizacao Operacional / Foundation da Colaboracao Interna Fase A — 03/04/2026
+
+- a Fase A deixou de ser apenas spec e ganhou a primeira fundacao real em codigo
+- arquivos principais:
+  - `supabase/migrations/038_internal_collaboration_phase_one.sql`
+  - `src/lib/internal-collaboration.ts`
+  - `src/app/api/leads/[id]/interno/route.ts`
+  - `src/app/api/leads/[id]/interno/mensagens/route.ts`
+  - `src/app/api/leads/[id]/interno/tasks/route.ts`
+  - `src/app/api/leads/[id]/interno/tasks/[taskId]/route.ts`
+  - `src/app/api/leads/[id]/interno/handoff/route.ts`
+  - `src/app/(dashboard)/leads/[id]/page.tsx`
+- comportamento:
+  - cada lead passa a poder ter uma `thread interna` propria
+  - o detalhe do lead agora comporta:
+    - notas internas
+    - tarefas internas
+    - handoff simples entre usuarios do escritorio
+    - dono atual visivel no card de coordenacao
+  - o handoff interno ja conversa com `conversas.status` quando o destino for operacionalmente compativel
+  - criacao e update de task, assim como handoff, validam se o usuario de destino pertence ao tenant atual
+- validacao:
+  - `npm run build` passou
+- dependencia conhecida:
+  - a feature depende da aplicacao da migration `038_internal_collaboration_phase_one.sql` no banco operacional
+- proximo passo recomendado:
+  - aplicar a migration `038`
+  - refletir o resumo interno minimo na `Caixa de Entrada`
+  - depois conectar isso ao future `follow-up engine`

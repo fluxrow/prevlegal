@@ -2173,3 +2173,37 @@ Pontos que precisam ser preservados durante a implementacao:
   - fazer o centro da colaboracao nascer no lead e nao num feed solto
 - proximo passo sugerido:
   - abrir a implementação com migration SQL + rotas API do lead interno
+
+## Atualizacao 2026-04-03 - Fase A ganhou migration, APIs e card no detalhe do lead
+
+- a execucao da colaboracao interna minima foi iniciada de verdade
+- arquivos principais:
+  - `supabase/migrations/038_internal_collaboration_phase_one.sql`
+  - `src/lib/internal-collaboration.ts`
+  - `src/app/api/leads/[id]/interno/route.ts`
+  - `src/app/api/leads/[id]/interno/mensagens/route.ts`
+  - `src/app/api/leads/[id]/interno/tasks/route.ts`
+  - `src/app/api/leads/[id]/interno/tasks/[taskId]/route.ts`
+  - `src/app/api/leads/[id]/interno/handoff/route.ts`
+  - `src/app/(dashboard)/leads/[id]/page.tsx`
+- foundation criada:
+  - `lead_threads_internas`
+  - `lead_mensagens_internas`
+  - `lead_tasks`
+  - `lead_handoffs`
+- comportamento novo:
+  - `GET /api/leads/[id]/interno` devolve thread, historico, tasks, handoffs e usuarios do tenant
+  - `POST /api/leads/[id]/interno/mensagens` cria nota interna
+  - `POST /api/leads/[id]/interno/tasks` cria task interna
+  - `PATCH /api/leads/[id]/interno/tasks/[taskId]` atualiza status e campos basicos da task
+  - `POST /api/leads/[id]/interno/handoff` transfere responsabilidade, grava historico interno e atualiza `conversas.status` quando o destino for compativel
+  - task e handoff agora validam o usuario de destino dentro do tenant atual
+- UI nova:
+  - o detalhe do lead ganhou o card `Coordenacao interna` com dono atual, nota interna, criacao de task, handoff e historico
+- validacao:
+  - `npm run build` passou
+- dependencia conhecida:
+  - a feature ainda depende da aplicacao da migration `038_internal_collaboration_phase_one.sql` no banco operacional
+- proximo passo sugerido:
+  - aplicar a `038`
+  - refletir um resumo interno minimo na `Caixa de Entrada`

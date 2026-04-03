@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { ArrowLeft, User, FileText, CreditCard, MessageSquare, Upload, Trash2, File, ExternalLink, Send, MessageSquarePlus, Pencil, CalendarClock } from 'lucide-react'
+import { ArrowLeft, User, FileText, CreditCard, MessageSquare, Upload, Trash2, File, ExternalLink, Send, MessageSquarePlus, Pencil, CalendarClock, Users, CheckSquare, ArrowRightLeft } from 'lucide-react'
 import CalculadoraPrev from '@/components/calculadora-prev'
 import GeradorDocumentosIA from '@/components/gerador-documentos-ia'
 import PortalLead from '@/components/portal-lead'
@@ -47,6 +47,48 @@ interface Anotacao {
   texto: string
   created_at: string
   usuario_id: string
+}
+
+interface UsuarioTenant {
+  id: string
+  nome: string | null
+  email: string | null
+  role?: string | null
+}
+
+interface MensagemInterna {
+  id: string
+  tipo: string
+  mensagem: string
+  created_at: string
+  autor: UsuarioTenant | null
+}
+
+interface LeadTask {
+  id: string
+  titulo: string
+  descricao: string | null
+  status: string
+  prioridade: string
+  due_at: string | null
+  created_at: string
+  completed_at: string | null
+  assigned_to_usuario: UsuarioTenant | null
+  created_by_usuario: UsuarioTenant | null
+}
+
+interface HandoffInterno {
+  id: string
+  motivo: string | null
+  status_destino: string | null
+  created_at: string
+  from_usuario: UsuarioTenant | null
+  to_usuario: UsuarioTenant | null
+}
+
+interface ThreadInterna {
+  id: string
+  current_owner: UsuarioTenant | null
 }
 
 interface Documento {
@@ -117,6 +159,16 @@ const inputSt: React.CSSProperties = {
   fontSize: '13px', fontFamily: 'DM Sans, sans-serif', boxSizing: 'border-box',
 }
 
+function formatDateTime(value: string | null | undefined) {
+  if (!value) return '—'
+  return new Date(value).toLocaleString('pt-BR', {
+    day: '2-digit',
+    month: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+}
+
 export default function LeadDetailPage() {
   const { id } = useParams<{ id: string }>()
   const router = useRouter()
@@ -127,6 +179,18 @@ export default function LeadDetailPage() {
   const [showStartConversation, setShowStartConversation] = useState(false)
   const [showEditLead, setShowEditLead] = useState(false)
   const [showNovoAgendamento, setShowNovoAgendamento] = useState(false)
+  const [threadInterna, setThreadInterna] = useState<ThreadInterna | null>(null)
+  const [mensagensInternas, setMensagensInternas] = useState<MensagemInterna[]>([])
+  const [tasksInternas, setTasksInternas] = useState<LeadTask[]>([])
+  const [handoffsInternos, setHandoffsInternos] = useState<HandoffInterno[]>([])
+  const [usuariosInternos, setUsuariosInternos] = useState<UsuarioTenant[]>([])
+  const [mensagemInterna, setMensagemInterna] = useState('')
+  const [comentandoInterno, setComentandoInterno] = useState(false)
+  const [showTaskForm, setShowTaskForm] = useState(false)
+  const [savingTask, setSavingTask] = useState(false)
+  const [taskForm, setTaskForm] = useState({ titulo: '', descricao: '', prioridade: 'media', assigned_to: '', due_at: '' })
+  const [handoffForm, setHandoffForm] = useState({ to_usuario_id: '', motivo: '', status_destino: 'humano' })
+  const [handoffing, setHandoffing] = useState(false)
 
   const [documentos, setDocumentos] = useState<Documento[]>([])
   const [uploadingDoc, setUploadingDoc] = useState(false)
@@ -148,11 +212,27 @@ export default function LeadDetailPage() {
     }
     fetchLead()
     fetchDocumentos()
+    fetchInterno()
   }, [id])
 
   async function fetchDocumentos() {
     const res = await fetch(`/api/leads/${id}/documentos`)
     if (res.ok) setDocumentos(await res.json())
+  }
+
+  async function fetchInterno() {
+    const res = await fetch(`/api/leads/${id}/interno`)
+    if (!res.ok) return
+    const data = await res.json()
+    setThreadInterna(data.thread || null)
+    setMensagensInternas(data.mensagens || [])
+    setTasksInternas(data.tasks || [])
+    setHandoffsInternos(data.handoffs || [])
+    setUsuariosInternos(data.usuarios || [])
+    setHandoffForm((current) => ({
+      ...current,
+      to_usuario_id: current.to_usuario_id || data.thread?.current_owner?.id || '',
+    }))
   }
 
   async function handleUpload() {
@@ -194,6 +274,73 @@ export default function LeadDetailPage() {
     if (!confirm('Remover este documento?')) return
     await fetch(`/api/leads/${id}/documentos?docId=${docId}`, { method: 'DELETE' })
     fetchDocumentos()
+  }
+
+  async function handleComentInterno() {
+    if (!mensagemInterna.trim()) return
+    setComentandoInterno(true)
+    const res = await fetch(`/api/leads/${id}/interno/mensagens`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mensagem: mensagemInterna }),
+    })
+
+    if (res.ok) {
+      const data = await res.json()
+      setMensagensInternas((current) => [data.mensagem, ...current])
+      setMensagemInterna('')
+    }
+
+    setComentandoInterno(false)
+  }
+
+  async function handleCreateTask() {
+    if (!taskForm.titulo.trim()) return
+    setSavingTask(true)
+    const res = await fetch(`/api/leads/${id}/interno/tasks`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(taskForm),
+    })
+
+    if (res.ok) {
+      const data = await res.json()
+      setTasksInternas((current) => [data.task, ...current])
+      setTaskForm({ titulo: '', descricao: '', prioridade: 'media', assigned_to: '', due_at: '' })
+      setShowTaskForm(false)
+    }
+
+    setSavingTask(false)
+  }
+
+  async function handleUpdateTask(taskId: string, status: string) {
+    const res = await fetch(`/api/leads/${id}/interno/tasks/${taskId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status }),
+    })
+
+    if (res.ok) {
+      const data = await res.json()
+      setTasksInternas((current) => current.map((task) => (task.id === taskId ? data.task : task)))
+    }
+  }
+
+  async function handleHandoff() {
+    if (!handoffForm.to_usuario_id) return
+    setHandoffing(true)
+    const res = await fetch(`/api/leads/${id}/interno/handoff`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(handoffForm),
+    })
+
+    if (res.ok) {
+      setHandoffForm((current) => ({ ...current, motivo: '' }))
+      await fetchInterno()
+    }
+
+    setHandoffing(false)
   }
 
   if (loading) {
@@ -492,6 +639,277 @@ export default function LeadDetailPage() {
           </div>
         </div>
       )}
+
+      <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: '12px', padding: '20px', marginTop: '16px', marginBottom: '16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', marginBottom: '16px', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Users size={14} color="var(--accent)" />
+            <h3 style={{ fontSize: '11px', fontWeight: '600', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', fontFamily: 'DM Sans, sans-serif', margin: 0 }}>
+              Coordenação interna
+            </h3>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'DM Sans, sans-serif' }}>Dono atual:</span>
+            <span style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text-primary)', fontFamily: 'DM Sans, sans-serif' }}>
+              {threadInterna?.current_owner?.nome || threadInterna?.current_owner?.email || 'Ainda não definido'}
+            </span>
+          </div>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '16px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div style={{ background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: '10px', padding: '14px' }}>
+              <p style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text-primary)', fontFamily: 'DM Sans, sans-serif', margin: '0 0 8px' }}>
+                Nota interna
+              </p>
+              <textarea
+                value={mensagemInterna}
+                onChange={(e) => setMensagemInterna(e.target.value)}
+                placeholder="Registre contexto, decisão ou orientação para o time..."
+                style={{ ...inputSt, minHeight: '96px', resize: 'vertical' }}
+              />
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '8px' }}>
+                <button
+                  onClick={handleComentInterno}
+                  disabled={!mensagemInterna.trim() || comentandoInterno}
+                  style={{
+                    fontSize: '12px',
+                    fontWeight: '600',
+                    color: '#fff',
+                    background: !mensagemInterna.trim() || comentandoInterno ? '#2a2f45' : 'var(--accent)',
+                    border: 'none',
+                    borderRadius: '8px',
+                    padding: '8px 14px',
+                    cursor: !mensagemInterna.trim() || comentandoInterno ? 'not-allowed' : 'pointer',
+                    fontFamily: 'DM Sans, sans-serif',
+                  }}
+                >
+                  {comentandoInterno ? 'Salvando...' : 'Adicionar nota'}
+                </button>
+              </div>
+            </div>
+
+            <div style={{ background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: '10px', padding: '14px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+                <p style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text-primary)', fontFamily: 'DM Sans, sans-serif', margin: 0 }}>
+                  Tarefas internas
+                </p>
+                <button
+                  onClick={() => setShowTaskForm((current) => !current)}
+                  style={{ fontSize: '11px', color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'DM Sans, sans-serif', fontWeight: '600' }}
+                >
+                  {showTaskForm ? 'Fechar' : 'Nova tarefa'}
+                </button>
+              </div>
+
+              {showTaskForm ? (
+                <div style={{ display: 'grid', gap: '8px', marginBottom: '12px' }}>
+                  <input
+                    value={taskForm.titulo}
+                    onChange={(e) => setTaskForm((current) => ({ ...current, titulo: e.target.value }))}
+                    placeholder="Ex: confirmar documentos com cliente"
+                    style={inputSt}
+                  />
+                  <input
+                    value={taskForm.descricao}
+                    onChange={(e) => setTaskForm((current) => ({ ...current, descricao: e.target.value }))}
+                    placeholder="Descrição opcional"
+                    style={inputSt}
+                  />
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px' }}>
+                    <select
+                      value={taskForm.prioridade}
+                      onChange={(e) => setTaskForm((current) => ({ ...current, prioridade: e.target.value }))}
+                      style={inputSt}
+                    >
+                      <option value="baixa">Prioridade baixa</option>
+                      <option value="media">Prioridade média</option>
+                      <option value="alta">Prioridade alta</option>
+                    </select>
+                    <select
+                      value={taskForm.assigned_to}
+                      onChange={(e) => setTaskForm((current) => ({ ...current, assigned_to: e.target.value }))}
+                      style={inputSt}
+                    >
+                      <option value="">Sem responsável</option>
+                      {usuariosInternos.map((usuario) => (
+                        <option key={usuario.id} value={usuario.id}>
+                          {usuario.nome || usuario.email}
+                        </option>
+                      ))}
+                    </select>
+                    <input
+                      type="datetime-local"
+                      value={taskForm.due_at}
+                      onChange={(e) => setTaskForm((current) => ({ ...current, due_at: e.target.value }))}
+                      style={inputSt}
+                    />
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                    <button
+                      onClick={handleCreateTask}
+                      disabled={!taskForm.titulo.trim() || savingTask}
+                      style={{
+                        fontSize: '12px',
+                        fontWeight: '600',
+                        color: '#fff',
+                        background: !taskForm.titulo.trim() || savingTask ? '#2a2f45' : 'var(--accent)',
+                        border: 'none',
+                        borderRadius: '8px',
+                        padding: '8px 14px',
+                        cursor: !taskForm.titulo.trim() || savingTask ? 'not-allowed' : 'pointer',
+                        fontFamily: 'DM Sans, sans-serif',
+                      }}
+                    >
+                      {savingTask ? 'Salvando...' : 'Criar tarefa'}
+                    </button>
+                  </div>
+                </div>
+              ) : null}
+
+              {tasksInternas.length === 0 ? (
+                <p style={{ fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'DM Sans, sans-serif', margin: 0 }}>
+                  Nenhuma tarefa interna ainda.
+                </p>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {tasksInternas.map((task) => (
+                    <div key={task.id} style={{ border: '1px solid var(--border)', borderRadius: '8px', padding: '10px 12px', background: 'var(--bg-card)' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', gap: '8px', alignItems: 'flex-start' }}>
+                        <div>
+                          <p style={{ fontSize: '13px', color: 'var(--text-primary)', fontWeight: '600', fontFamily: 'DM Sans, sans-serif', margin: '0 0 3px' }}>
+                            {task.titulo}
+                          </p>
+                          {task.descricao ? (
+                            <p style={{ fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'DM Sans, sans-serif', margin: '0 0 4px', lineHeight: 1.4 }}>
+                              {task.descricao}
+                            </p>
+                          ) : null}
+                          <p style={{ fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'DM Sans, sans-serif', margin: 0 }}>
+                            {task.assigned_to_usuario?.nome || task.assigned_to_usuario?.email || 'Sem responsável'} · {task.prioridade} · {task.due_at ? `Vence ${formatDateTime(task.due_at)}` : 'Sem prazo'}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => handleUpdateTask(task.id, task.status === 'concluida' ? 'aberta' : 'concluida')}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            fontSize: '11px',
+                            fontWeight: '600',
+                            color: task.status === 'concluida' ? 'var(--text-muted)' : '#2dd4a0',
+                            background: 'none',
+                            border: 'none',
+                            cursor: 'pointer',
+                            fontFamily: 'DM Sans, sans-serif',
+                          }}
+                        >
+                          <CheckSquare size={12} />
+                          {task.status === 'concluida' ? 'Reabrir' : 'Concluir'}
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div style={{ background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: '10px', padding: '14px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '10px' }}>
+                <ArrowRightLeft size={13} color="var(--accent)" />
+                <p style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text-primary)', fontFamily: 'DM Sans, sans-serif', margin: 0 }}>
+                  Transferir responsabilidade
+                </p>
+              </div>
+              <div style={{ display: 'grid', gap: '8px' }}>
+                <select
+                  value={handoffForm.to_usuario_id}
+                  onChange={(e) => setHandoffForm((current) => ({ ...current, to_usuario_id: e.target.value }))}
+                  style={inputSt}
+                >
+                  <option value="">Escolha quem assume</option>
+                  {usuariosInternos.map((usuario) => (
+                    <option key={usuario.id} value={usuario.id}>
+                      {usuario.nome || usuario.email}
+                    </option>
+                  ))}
+                </select>
+                <select
+                  value={handoffForm.status_destino}
+                  onChange={(e) => setHandoffForm((current) => ({ ...current, status_destino: e.target.value }))}
+                  style={inputSt}
+                >
+                  <option value="humano">Em atendimento</option>
+                  <option value="aguardando_cliente">Aguardando cliente</option>
+                  <option value="resolvido">Resolvido</option>
+                  <option value="financeiro">Aguardando financeiro</option>
+                  <option value="juridico">Aguardando jurídico</option>
+                  <option value="agente">Devolver ao agente</option>
+                </select>
+                <textarea
+                  value={handoffForm.motivo}
+                  onChange={(e) => setHandoffForm((current) => ({ ...current, motivo: e.target.value }))}
+                  placeholder="Motivo da transferência"
+                  style={{ ...inputSt, minHeight: '82px', resize: 'vertical' }}
+                />
+                <button
+                  onClick={handleHandoff}
+                  disabled={!handoffForm.to_usuario_id || handoffing}
+                  style={{
+                    fontSize: '12px',
+                    fontWeight: '600',
+                    color: '#fff',
+                    background: !handoffForm.to_usuario_id || handoffing ? '#2a2f45' : 'var(--accent)',
+                    border: 'none',
+                    borderRadius: '8px',
+                    padding: '8px 14px',
+                    cursor: !handoffForm.to_usuario_id || handoffing ? 'not-allowed' : 'pointer',
+                    fontFamily: 'DM Sans, sans-serif',
+                  }}
+                >
+                  {handoffing ? 'Transferindo...' : 'Transferir'}
+                </button>
+              </div>
+            </div>
+
+            <div style={{ background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: '10px', padding: '14px' }}>
+              <p style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text-primary)', fontFamily: 'DM Sans, sans-serif', margin: '0 0 10px' }}>
+                Histórico interno
+              </p>
+              {mensagensInternas.length === 0 && handoffsInternos.length === 0 ? (
+                <p style={{ fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'DM Sans, sans-serif', margin: 0 }}>
+                  Nenhum registro interno ainda.
+                </p>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '360px', overflowY: 'auto' }}>
+                  {mensagensInternas.map((mensagem) => (
+                    <div key={mensagem.id} style={{ border: '1px solid var(--border)', borderRadius: '8px', padding: '10px 12px', background: 'var(--bg-card)' }}>
+                      <p style={{ fontSize: '12px', color: 'var(--text-primary)', fontFamily: 'DM Sans, sans-serif', margin: '0 0 5px', lineHeight: 1.45 }}>
+                        {mensagem.mensagem}
+                      </p>
+                      <p style={{ fontSize: '10px', color: 'var(--text-muted)', fontFamily: 'DM Sans, sans-serif', margin: 0 }}>
+                        {mensagem.autor?.nome || mensagem.autor?.email || 'Equipe'} · {formatDateTime(mensagem.created_at)}
+                      </p>
+                    </div>
+                  ))}
+                  {handoffsInternos.map((handoff) => (
+                    <div key={handoff.id} style={{ border: '1px dashed rgba(79,122,255,0.35)', borderRadius: '8px', padding: '10px 12px', background: 'rgba(79,122,255,0.05)' }}>
+                      <p style={{ fontSize: '12px', color: 'var(--text-primary)', fontFamily: 'DM Sans, sans-serif', margin: '0 0 5px', lineHeight: 1.45 }}>
+                        {handoff.from_usuario?.nome || handoff.from_usuario?.email || 'Equipe'} transferiu para {handoff.to_usuario?.nome || handoff.to_usuario?.email || 'equipe'}.
+                      </p>
+                      <p style={{ fontSize: '10px', color: 'var(--text-muted)', fontFamily: 'DM Sans, sans-serif', margin: 0 }}>
+                        {handoff.status_destino ? `Destino: ${handoff.status_destino}` : 'Sem destino definido'}{handoff.motivo ? ` · ${handoff.motivo}` : ''} · {formatDateTime(handoff.created_at)}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* Calculadora Previdenciária */}
       <div data-tour="lead-calculadora">

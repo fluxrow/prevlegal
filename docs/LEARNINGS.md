@@ -1019,3 +1019,15 @@ Isso gera mais confianca e reduz sensacao de “portal vazio”
 **Causa:** Em fases de arquitetura, a tentacao e redesenhar tudo como se o produto ainda nao tivesse estrutura operacional previa
 **Correcao aplicada:** Especificar a Fase A de colaboracao interna aproveitando `conversas.status`, `assumido_por` e `assumido_em`, fazendo a thread interna nascer no lead e se refletir depois na inbox
 **Regra pratica:** No PrevLegal, quando uma fase nova amplia uma capacidade operacional ja existente, a implementacao deve crescer a partir da foundation real do produto e nao abrir uma segunda trilha concorrente
+
+### 107. Colaboracao interna so e segura quando valida o usuario de destino dentro do tenant atual
+**Problema:** A primeira versao de handoff e task interna aceitava `to_usuario_id` e `assigned_to` sem provar que aquele usuario pertencia ao escritorio atual
+**Causa:** Em rotas novas de coordenacao interna, e facil focar no fluxo do lead e esquecer que o identificador do usuario tambem precisa de guarda tenant-aware
+**Correcao aplicada:** Criar validacao explicita do usuario de destino em `internal-collaboration.ts` e bloquear handoff/task quando o responsavel nao pertencer ao tenant ou nao estiver ativo
+**Regra pratica:** No PrevLegal, toda acao interna que direciona responsabilidade para uma pessoa deve validar o destino no tenant atual; `UUID` conhecido nao pode virar atalho para atravessar escritorios
+
+### 108. Fase nova so fica realmente pronta para uso quando schema e runtime andam juntos
+**Problema:** A foundation da colaboracao interna pode passar em build e ainda assim nao funcionar no operacional se a migration correspondente nao tiver sido aplicada no banco
+**Causa:** O produto esta evoluindo em camadas, e nem toda sessao consegue fechar codigo + schema remoto no mesmo momento
+**Correcao aplicada:** Registrar a fundacao da Fase A com honestidade operacional: rotas, UI e helper estao prontos, mas a feature depende da migration `038_internal_collaboration_phase_one.sql`
+**Regra pratica:** No PrevLegal, quando uma entrega nova depender de schema ainda nao aplicado, documentar isso como dependencia explicita de rollout; build verde sozinho nao significa prontidao operacional completa

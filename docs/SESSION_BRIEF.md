@@ -585,3 +585,32 @@ No final:
   - resumo interno na inbox
 - leitura atual:
   - a proxima execucao ja pode sair de discovery e entrar em migration + API + UI
+
+## Atualizacao 2026-04-03 - Foundation da colaboracao interna entrou no produto
+
+- a primeira entrega concreta da Fase A ja foi implementada em codigo
+- arquivos principais:
+  - `supabase/migrations/038_internal_collaboration_phase_one.sql`
+  - `src/lib/internal-collaboration.ts`
+  - `src/app/api/leads/[id]/interno/route.ts`
+  - `src/app/api/leads/[id]/interno/mensagens/route.ts`
+  - `src/app/api/leads/[id]/interno/tasks/route.ts`
+  - `src/app/api/leads/[id]/interno/tasks/[taskId]/route.ts`
+  - `src/app/api/leads/[id]/interno/handoff/route.ts`
+  - `src/app/(dashboard)/leads/[id]/page.tsx`
+- comportamento:
+  - o detalhe do lead ganhou o card `Coordenacao interna`
+  - agora existe `thread` interna por lead com:
+    - notas internas
+    - tarefas internas
+    - handoff simples
+    - dono atual visivel
+  - o handoff interno ja consegue refletir o destino operacional em `conversas` quando fizer sentido
+  - task e handoff validam o usuario de destino dentro do tenant atual
+- validacao:
+  - `npm run build` passou
+- dependencia atual:
+  - falta aplicar a migration `038_internal_collaboration_phase_one.sql` no banco para a feature operar em runtime
+- leitura atual:
+  - a Fase A saiu da spec e entrou de fato no core do produto
+  - o proximo passo natural e aplicar a migration e depois levar um resumo minimo dessa coordenacao para a `Caixa de Entrada`
