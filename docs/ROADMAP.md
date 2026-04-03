@@ -979,3 +979,16 @@ Status atual em 18/03/2026:
   - resumo executivo e detalhe analitico nao podem divergir no recorte de tenant; isso criaria falsa leitura de performance mesmo sem erro visivel na UI
 - validacao:
   - `npm run build` passou
+
+## Atualizacao Operacional / Hardening de Acesso a Portal e Documentos — 03/04/2026
+
+- um bloco antigo de rotas por lead foi reancorado na guarda canonica de acesso
+- comportamento:
+  - link do portal por lead agora exige `canAccessLeadId`
+  - compartilhamento de documento com cliente agora valida o lead do documento antes de atualizar
+  - `/api/portal/nao-lidas` agora soma apenas mensagens de leads acessiveis ao usuario
+  - listar, subir, criar e gerar documentos do lead agora respeitam o contexto tenant-aware por lead
+- racional:
+  - em superfícies operacionais por ID, autenticacao simples nao basta; sem guarda por lead o risco deixa de ser insight incorreto e vira acesso indevido
+- validacao:
+  - `npm run build` passou

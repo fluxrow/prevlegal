@@ -491,3 +491,23 @@ No final:
   - `npm run build` passou
 - leitura atual:
   - as duas visoes de campanhas deixam de poder divergir por tenant e ficam coerentes para seguir na auditoria multi-tenant residual
+
+## Atualizacao 2026-04-03 - Portal e documentos herdaram guarda canonica por lead
+
+- um bloco antigo de rotas autenticadas deixou de confiar apenas em `auth.getUser()`
+- arquivos principais:
+  - `src/app/api/portal/link/[leadId]/route.ts`
+  - `src/app/api/portal/compartilhar/route.ts`
+  - `src/app/api/portal/nao-lidas/route.ts`
+  - `src/app/api/leads/[id]/documentos/route.ts`
+  - `src/app/api/leads/[id]/documentos/upload/route.ts`
+  - `src/app/api/leads/[id]/gerar-documento/route.ts`
+- comportamento:
+  - geracao de link do portal agora exige `canAccessLeadId`
+  - compartilhamento de documento com cliente agora valida se o documento pertence a um lead acessivel
+  - badge de mensagens nao lidas do portal agora conta apenas leads visiveis ao usuario atual
+  - listar, criar, subir e gerar documentos agora exigem acesso canonico ao lead
+- validacao:
+  - `npm run build` passou
+- leitura atual:
+  - esse bloco reduz risco direto de acesso indevido e deixa a auditoria multi-tenant menos concentrada so em metricas

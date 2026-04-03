@@ -2046,3 +2046,29 @@ Pontos que precisam ser preservados durante a implementacao:
   - `npm run build` passou
 - leitura de continuidade:
   - multi-tenant residual continua sendo a frente certa, agora com mais uma superficie transversal de campanha fechada
+
+## Atualizacao 2026-04-03 - Portal links e documentos deixaram de confiar em auth sem guarda por lead
+
+- a auditoria multi-tenant residual avancou para rotas sensiveis de acesso a lead
+- arquivos principais:
+  - `src/app/api/portal/link/[leadId]/route.ts`
+  - `src/app/api/portal/compartilhar/route.ts`
+  - `src/app/api/portal/nao-lidas/route.ts`
+  - `src/app/api/leads/[id]/documentos/route.ts`
+  - `src/app/api/leads/[id]/documentos/upload/route.ts`
+  - `src/app/api/leads/[id]/gerar-documento/route.ts`
+- problema atacado:
+  - varias dessas rotas aceitavam apenas usuario autenticado e operavam por `leadId` ou `documento_id` sem validar acesso canonico ao lead
+- correcao aplicada:
+  - usar `getTenantContext`
+  - aplicar `canAccessLeadId` onde a rota trabalha com um lead especifico
+  - recontar `/api/portal/nao-lidas` apenas sobre `accessibleLeadIds`
+  - validar o `lead_id` do documento antes de compartilhar com o cliente
+  - gerar documentos usando o `usuarioId` canonico do contexto atual
+- impacto:
+  - links do portal, compartilhamento de documentos e operacoes de documentos do lead deixam de depender apenas da autenticacao do app
+  - reduz risco de acao cruzada por id conhecido ou badge do portal contaminado por leads fora do escopo do usuario
+- validacao:
+  - `npm run build` passou
+- leitura de continuidade:
+  - a auditoria residual continua valendo para outras rotas antigas de lead que ainda usam `auth.getUser()` sem guarda canonica

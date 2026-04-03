@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { buildPrompt, TipoDocumento, DadosDocumento } from '@/lib/doc-templates'
+import { canAccessLeadId, getTenantContext } from '@/lib/tenant-context'
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
@@ -10,10 +11,13 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const context = await getTenantContext(supabase)
+  if (!context) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { id } = await params
+  const allowed = await canAccessLeadId(supabase, context, id)
+  if (!allowed) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+
   const { tipo } = await request.json() as { tipo: TipoDocumento }
 
   // Busca dados do lead
@@ -24,18 +28,10 @@ export async function POST(
     .single()
   if (!lead) return NextResponse.json({ error: 'Lead não encontrado' }, { status: 404 })
 
-  // Busca perfil do advogado logado na tabela advogados
-  const { data: usuarioLogado } = await supabase
-    .from('usuarios')
-    .select('id')
-    .eq('auth_id', user.id)
-    .limit(1)
-    .single()
-
   const { data: config } = await supabase
     .from('advogados')
     .select('nome, email, oab_numero, oab_estado, escritorio_nome, escritorio_endereco, escritorio_cidade, escritorio_estado, assinatura_texto, assinatura_rodape')
-    .eq('usuario_id', usuarioLogado?.id)
+    .eq('usuario_id', context.usuarioId)
     .limit(1)
     .single()
 

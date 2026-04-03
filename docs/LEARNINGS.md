@@ -983,3 +983,9 @@ Isso gera mais confianca e reduz sensacao de “portal vazio”
 **Causa:** A camada de relatorios ficou parcialmente migrada: leads e pipeline ja usavam contexto tenant-aware, mas as consultas de `campanhas` ainda herdavam um modelo mais antigo
 **Correcao aplicada:** Reancorar ambas as rotas no contexto canonico do tenant, aplicar filtro por `tenant_id` nas campanhas e preservar o recorte por `responsavel_id` para usuario nao-admin
 **Regra pratica:** No PrevLegal, quando existir resumo executivo e aba detalhada da mesma entidade, os dois precisam ler o mesmo universo tenant-aware; se um deles escapar desse contrato, o produto passa confianca falsa em vez de insight real
+
+### 101. Em rota operacional por `leadId`, autenticacao nao substitui guarda canonica de acesso ao lead
+**Problema:** Rotas de link do portal, compartilhamento e documentos do lead ainda aceitavam usuario autenticado e operavam diretamente por `leadId` ou `documento_id`
+**Causa:** Parte dessa superficie nasceu antes da consolidacao de `getTenantContext` + `canAccessLeadId`, entao ficou presa a uma confianca implícita em RLS ou no simples fato de haver sessao
+**Correcao aplicada:** Reancorar essas rotas na guarda canonica, validar o `lead_id` do documento antes de compartilhar e contar `portal_mensagens` apenas sobre `accessibleLeadIds`
+**Regra pratica:** No PrevLegal, qualquer rota que toque um lead por ID deve provar acesso com `canAccessLeadId`; “usuario autenticado” por si so nao autoriza ler, gerar, compartilhar ou contabilizar dados daquele lead

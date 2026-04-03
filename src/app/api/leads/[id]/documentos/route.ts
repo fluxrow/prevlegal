@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
+import { canAccessLeadId, getTenantContext } from '@/lib/tenant-context'
 
 export async function GET(
   request: Request,
@@ -7,8 +8,10 @@ export async function GET(
 ) {
   const { id } = await params
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const context = await getTenantContext(supabase)
+  if (!context) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const allowed = await canAccessLeadId(supabase, context, id)
+  if (!allowed) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   const { data } = await supabase
     .from('lead_documentos')
@@ -25,15 +28,17 @@ export async function POST(
 ) {
   const { id } = await params
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const context = await getTenantContext(supabase)
+  if (!context) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const allowed = await canAccessLeadId(supabase, context, id)
+  if (!allowed) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   const body = await request.json()
   const { nome, tipo, arquivo_url, arquivo_nome, arquivo_tamanho, arquivo_tipo, descricao } = body
 
   const { data, error } = await supabase
     .from('lead_documentos')
-    .insert({ lead_id: id, nome, tipo, arquivo_url, arquivo_nome, arquivo_tamanho, arquivo_tipo, descricao, created_by: user.id })
+    .insert({ lead_id: id, nome, tipo, arquivo_url, arquivo_nome, arquivo_tamanho, arquivo_tipo, descricao, created_by: context.authUserId })
     .select()
     .single()
 
@@ -47,8 +52,10 @@ export async function DELETE(
 ) {
   const { id } = await params
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const context = await getTenantContext(supabase)
+  if (!context) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const allowed = await canAccessLeadId(supabase, context, id)
+  if (!allowed) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   const { searchParams } = new URL(request.url)
   const docId = searchParams.get('docId')
