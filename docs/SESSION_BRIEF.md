@@ -406,3 +406,23 @@ No final:
 - proximo passo sugerido:
   - validar a experiencia no celular com fluxo real de retorno ao portal
   - depois decidir se essa camada evolui para push/notificacao nativa
+
+## Atualizacao 2026-04-03 - Fila acionavel no portal mobile
+
+- a home do portal deixou de ser so leitura e passou a apontar para a proxima acao do cliente
+- arquivo principal:
+  - `src/app/portal/[token]/page.tsx`
+- comportamento:
+  - novo bloco `O que precisa da sua atencao agora`
+  - prioriza:
+    - confirmacao da proxima consulta
+    - mensagens nao lidas da equipe
+    - pendencias de documento
+  - cada item leva para uma acao real dentro do portal
+  - as pendencias na home agora tambem oferecem `Enviar agora`
+  - o card de suporte passou a abrir `Mensagens` direto
+- validacao:
+  - `npm run build` passou
+- proximo passo sugerido:
+  - validar no celular se a ordem dessas acoes esta intuitiva
+  - depois decidir se vale destacar visualmente qual item e o mais urgente

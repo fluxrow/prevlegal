@@ -906,3 +906,21 @@ Status atual em 18/03/2026:
 - proximo passo:
   - validar runtime no celular
   - decidir depois se a camada deve evoluir para push/notificacao nativa
+
+## Atualizacao Mobile / Fila Acionavel no Portal — 03/04/2026
+
+- a home do portal passou a priorizar o que realmente exige acao do cliente
+- comportamento:
+  - novo bloco `O que precisa da sua atencao agora`
+  - confirma consulta quando aplicavel
+  - leva direto para `Mensagens`
+  - leva direto para `Documentos` com pendencia preselecionada
+  - as pendencias da home agora oferecem CTA `Enviar agora`
+- racional:
+  - uma camada de notificacao leve so fecha bem quando aponta para uma fila acionavel
+  - isso melhora retorno mobile sem depender ainda de push nativo
+- validacao:
+  - `npm run build` passou
+- proximo passo:
+  - validar em runtime a ordem de prioridade dos cards
+  - depois decidir se a home precisa de destaque mais forte para a acao principal

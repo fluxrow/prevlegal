@@ -945,3 +945,12 @@ Isso gera mais confianca e reduz sensacao de “portal vazio”
 **Causa:** `ultimo_acesso_em` e atualizado no backend a cada resolucao de sessao; se o front usar sempre o valor mais recente retornado pela API, o comparativo deixa de representar o retorno original do cliente ao portal
 **Correcao aplicada:** Fixar no front o baseline do `ultimo_acesso_em` recebido na entrada da sessao e usar esse ponto como referencia para resumir timeline, mensagens e pendencias
 **Regra pratica:** Em experiencias de "desde seu ultimo acesso", capture o marco de comparacao uma vez por sessao e nao deixe refetch interno reescrever essa memoria
+
+### 96. Resumo mobile so vira valor real quando aponta para a proxima acao
+**Problema:** Mesmo com novidades e pendencias visiveis na home do portal, o cliente ainda precisava descobrir sozinho onde agir depois de entender o aviso
+**Causa:** A interface mostrava o contexto, mas nem sempre o proximo clique natural
+**Correcao aplicada:** Transformar a home em fila acionavel com:
+- bloco `O que precisa da sua atencao agora`
+- atalhos para `Mensagens` e `Documentos`
+- CTA `Enviar agora` nas pendencias
+**Regra pratica:** No portal mobile do PrevLegal, qualquer badge, resumo ou alerta so deve existir se levar para uma acao concreta dentro da propria jornada

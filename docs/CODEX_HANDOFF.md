@@ -1940,3 +1940,25 @@ Pontos que precisam ser preservados durante a implementacao:
 - proximo passo:
   - validar no browser/celular um retorno real ao portal depois de nova mensagem, nova pendencia e novo evento
   - depois decidir se vale evoluir para push/notificacao nativa
+
+## Atualizacao 2026-04-03 - Home do portal virou fila acionavel
+
+- a camada de novidades evoluiu de resumo para orientacao pratica
+- arquivo principal:
+  - `src/app/portal/[token]/page.tsx`
+- ajustes aplicados:
+  - novo bloco `O que precisa da sua atencao agora`
+  - fila priorizada para:
+    - confirmar consulta
+    - abrir mensagens da equipe
+    - enviar documentos pendentes
+  - CTA `Enviar agora` em cada pendencia da home
+  - CTA `Abrir mensagens` no card de contato com a equipe
+- racional:
+  - badge e resumo so valem quando apontam para uma fila/acao real
+  - isso reduz friccao principalmente para cliente/familiar que volta ao portal pelo celular sem querer “explorar” a interface
+- validacao:
+  - `npm run build` passou
+- proximo passo:
+  - validar no celular a ordem percebida das acoes
+  - decidir depois se o item mais urgente precisa de destaque visual adicional

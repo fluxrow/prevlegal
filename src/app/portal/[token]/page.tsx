@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useParams } from 'next/navigation'
 import {
   CalendarDays,
@@ -294,6 +294,15 @@ export default function PortalClientePage() {
     setLoading(false)
   }
 
+  function abrirMensagens() {
+    setAba('mensagens')
+  }
+
+  function abrirDocumentos(requestId = '') {
+    setRequestSelecionadaId(requestId)
+    setAba('documentos')
+  }
+
   async function enviarMensagem() {
     if (!novaMensagem.trim()) return
     setEnviando(true)
@@ -467,6 +476,63 @@ export default function PortalClientePage() {
           : null,
       ].filter(Boolean) as string[],
     [msgNaoLidas, novidadesRecentes.length, pendenciasDocumento.length],
+  )
+  const precisaAtencaoAgora = useMemo(
+    () =>
+      [
+        podeConfirmarPresenca && !consultaJaConfirmada
+          ? {
+              id: 'consulta',
+              titulo: 'Confirme sua próxima consulta',
+              descricao: 'Isso ajuda a equipe a organizar a agenda e reduz risco de desencontro.',
+              acao: 'Confirmar agora',
+              onClick: confirmarPresenca,
+              loading: confirmandoPresenca,
+              disabled: confirmandoPresenca,
+              icon: <CalendarDays size={14} />,
+            }
+          : null,
+        msgNaoLidas > 0
+          ? {
+              id: 'mensagens',
+              titulo: `${msgNaoLidas} mensagem${msgNaoLidas > 1 ? 'ens' : ''} aguardando sua leitura`,
+              descricao: 'Veja o que a equipe enviou e responda se precisar.',
+              acao: 'Abrir mensagens',
+              onClick: abrirMensagens,
+              loading: false,
+              disabled: false,
+              icon: <MessageSquare size={14} />,
+            }
+          : null,
+        pendenciasDocumento.length > 0
+          ? {
+              id: 'documentos',
+              titulo: `${pendenciasDocumento.length} pendência${pendenciasDocumento.length > 1 ? 's' : ''} de documento`,
+              descricao: 'Enviar esses arquivos acelera a análise do seu caso.',
+              acao: 'Enviar documento',
+              onClick: () => abrirDocumentos(pendenciasDocumento[0]?.id || ''),
+              loading: false,
+              disabled: false,
+              icon: <FileText size={14} />,
+            }
+          : null,
+      ].filter(Boolean) as Array<{
+        id: string
+        titulo: string
+        descricao: string
+        acao: string
+        onClick: () => void
+        loading: boolean
+        disabled: boolean
+        icon: ReactNode
+      }>,
+    [
+      confirmandoPresenca,
+      consultaJaConfirmada,
+      msgNaoLidas,
+      pendenciasDocumento,
+      podeConfirmarPresenca,
+    ],
   )
 
   if (loading) {
@@ -680,6 +746,102 @@ export default function PortalClientePage() {
             </div>
           ))}
         </div>
+
+        {precisaAtencaoAgora.length > 0 ? (
+          <div
+            style={{
+              background: '#111318',
+              border: '1px solid #ffffff0f',
+              borderRadius: '14px',
+              padding: '18px',
+              marginBottom: '18px',
+            }}
+          >
+            <p
+              style={{
+                fontSize: '11px',
+                fontWeight: '700',
+                color: '#6b7280',
+                textTransform: 'uppercase',
+                letterSpacing: '0.06em',
+                margin: '0 0 12px',
+              }}
+            >
+              O que precisa da sua atenção agora
+            </p>
+
+            <div style={{ display: 'grid', gap: '10px' }}>
+              {precisaAtencaoAgora.map((item) => (
+                <div
+                  key={item.id}
+                  style={{
+                    background: '#080b14',
+                    border: '1px solid #ffffff0f',
+                    borderRadius: '12px',
+                    padding: '14px',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+                    <div
+                      style={{
+                        width: '30px',
+                        height: '30px',
+                        borderRadius: '50%',
+                        background: `${branding.cor_primaria}18`,
+                        color: branding.cor_primaria,
+                        border: `1px solid ${branding.cor_primaria}40`,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0,
+                      }}
+                    >
+                      {item.icon}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ fontSize: '13px', color: '#f0f2f5', margin: '0 0 4px', fontWeight: '700' }}>
+                        {item.titulo}
+                      </p>
+                      <p style={{ fontSize: '12px', color: '#8b92a0', margin: 0, lineHeight: '1.5' }}>
+                        {item.descricao}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={item.onClick}
+                    disabled={item.disabled}
+                    style={{
+                      marginTop: '12px',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      background: item.disabled ? '#1c2028' : branding.cor_primaria,
+                      color: item.disabled ? '#4a5060' : '#fff',
+                      borderRadius: '10px',
+                      padding: '10px 14px',
+                      border: 'none',
+                      fontSize: '12px',
+                      fontWeight: '700',
+                      cursor: item.disabled ? 'wait' : 'pointer',
+                    }}
+                  >
+                    {item.loading ? (
+                      <>
+                        <Loader2 size={13} style={{ animation: 'spin 1s linear infinite' }} />
+                        Processando...
+                      </>
+                    ) : (
+                      <>
+                        {item.icon}
+                        {item.acao}
+                      </>
+                    )}
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : null}
 
         <div
           style={{
@@ -1166,7 +1328,7 @@ export default function PortalClientePage() {
                   <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '14px' }}>
                     {msgNaoLidas > 0 ? (
                       <button
-                        onClick={() => setAba('mensagens')}
+                        onClick={abrirMensagens}
                         style={{
                           display: 'inline-flex',
                           alignItems: 'center',
@@ -1187,7 +1349,7 @@ export default function PortalClientePage() {
                     ) : null}
                     {pendenciasDocumento.length > 0 ? (
                       <button
-                        onClick={() => setAba('documentos')}
+                        onClick={() => abrirDocumentos(pendenciasDocumento[0]?.id || '')}
                         style={{
                           display: 'inline-flex',
                           alignItems: 'center',
@@ -1265,6 +1427,26 @@ export default function PortalClientePage() {
                       <p style={{ fontSize: '11px', color: '#4a5060', margin: 0 }}>
                         Registrado em {formatarData(pendencia.created_at)}
                       </p>
+                      <button
+                        onClick={() => abrirDocumentos(pendencia.id)}
+                        style={{
+                          marginTop: '10px',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          background: '#111318',
+                          color: '#f0f2f5',
+                          borderRadius: '9px',
+                          padding: '8px 10px',
+                          border: '1px solid #ffffff0f',
+                          fontSize: '11px',
+                          fontWeight: '700',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        <Upload size={12} />
+                        Enviar agora
+                      </button>
                     </div>
                   ))}
                 </div>
@@ -1443,6 +1625,26 @@ export default function PortalClientePage() {
                 <p style={{ fontSize: '11px', color: '#4a5060', margin: 0 }}>
                   Use a aba Mensagens para tirar dúvidas ou mandar atualizações importantes sobre o caso.
                 </p>
+                <button
+                  onClick={abrirMensagens}
+                  style={{
+                    marginTop: '10px',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    background: '#080b14',
+                    color: '#f0f2f5',
+                    borderRadius: '9px',
+                    padding: '8px 10px',
+                    border: '1px solid #ffffff0f',
+                    fontSize: '11px',
+                    fontWeight: '700',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <MessageSquare size={12} />
+                  Abrir mensagens
+                </button>
               </div>
             </div>
 
