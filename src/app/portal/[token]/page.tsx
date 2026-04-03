@@ -151,6 +151,20 @@ interface PortalPayload {
   }
 }
 
+type PortalAttentionItem = {
+  prioridade: number
+  id: string
+  selo: string
+  titulo: string
+  descricao: string
+  acao: string
+  onClick: () => void
+  loading: boolean
+  disabled: boolean
+  icon: ReactNode
+  cor: string
+}
+
 const DOCUMENT_TYPE_OPTIONS = [
   { value: 'identidade', label: 'Identidade' },
   { value: 'cnis', label: 'CNIS' },
@@ -449,6 +463,7 @@ export default function PortalClientePage() {
   const pendenciasDocumento = payload?.pendencias_documento ?? []
   const timeline = payload?.timeline ?? []
   const viewer = payload?.viewer ?? null
+  const accentColor = branding?.cor_primaria || '#4f7aff'
   const podeConfirmarPresenca = Boolean(
     proximoAgendamento && ['agendado', 'remarcado'].includes(proximoAgendamento.status),
   )
@@ -478,11 +493,13 @@ export default function PortalClientePage() {
     [msgNaoLidas, novidadesRecentes.length, pendenciasDocumento.length],
   )
   const precisaAtencaoAgora = useMemo(
-    () =>
-      [
+    () => {
+      const items: Array<PortalAttentionItem | null> = [
         podeConfirmarPresenca && !consultaJaConfirmada
           ? {
+              prioridade: 1,
               id: 'consulta',
+              selo: 'Agora',
               titulo: 'Confirme sua próxima consulta',
               descricao: 'Isso ajuda a equipe a organizar a agenda e reduz risco de desencontro.',
               acao: 'Confirmar agora',
@@ -490,11 +507,14 @@ export default function PortalClientePage() {
               loading: confirmandoPresenca,
               disabled: confirmandoPresenca,
               icon: <CalendarDays size={14} />,
+              cor: accentColor,
             }
           : null,
         msgNaoLidas > 0
           ? {
+              prioridade: 2,
               id: 'mensagens',
+              selo: 'Novo',
               titulo: `${msgNaoLidas} mensagem${msgNaoLidas > 1 ? 'ens' : ''} aguardando sua leitura`,
               descricao: 'Veja o que a equipe enviou e responda se precisar.',
               acao: 'Abrir mensagens',
@@ -502,11 +522,14 @@ export default function PortalClientePage() {
               loading: false,
               disabled: false,
               icon: <MessageSquare size={14} />,
+              cor: '#f5c842',
             }
           : null,
         pendenciasDocumento.length > 0
           ? {
+              prioridade: 3,
               id: 'documentos',
+              selo: 'Importante',
               titulo: `${pendenciasDocumento.length} pendência${pendenciasDocumento.length > 1 ? 's' : ''} de documento`,
               descricao: 'Enviar esses arquivos acelera a análise do seu caso.',
               acao: 'Enviar documento',
@@ -514,19 +537,17 @@ export default function PortalClientePage() {
               loading: false,
               disabled: false,
               icon: <FileText size={14} />,
+              cor: '#2dd4a0',
             }
           : null,
-      ].filter(Boolean) as Array<{
-        id: string
-        titulo: string
-        descricao: string
-        acao: string
-        onClick: () => void
-        loading: boolean
-        disabled: boolean
-        icon: ReactNode
-      }>,
+      ]
+
+      return items
+        .filter((item): item is PortalAttentionItem => item !== null)
+        .sort((a, b) => a.prioridade - b.prioridade)
+    },
     [
+      accentColor,
       confirmandoPresenca,
       consultaJaConfirmada,
       msgNaoLidas,
@@ -534,6 +555,7 @@ export default function PortalClientePage() {
       podeConfirmarPresenca,
     ],
   )
+  const semPendenciasAgora = precisaAtencaoAgora.length === 0
 
   if (loading) {
     return (
@@ -771,25 +793,37 @@ export default function PortalClientePage() {
             </p>
 
             <div style={{ display: 'grid', gap: '10px' }}>
-              {precisaAtencaoAgora.map((item) => (
+              {precisaAtencaoAgora.map((item, index) => {
+                const destaquePrincipal = index === 0
+                return (
                 <div
                   key={item.id}
                   style={{
-                    background: '#080b14',
-                    border: '1px solid #ffffff0f',
+                    background: destaquePrincipal
+                      ? `linear-gradient(180deg, ${item.cor}16, #080b14)`
+                      : '#080b14',
+                    border: destaquePrincipal ? `1px solid ${item.cor}35` : '1px solid #ffffff0f',
                     borderRadius: '12px',
                     padding: '14px',
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'flex-start',
+                      justifyContent: 'space-between',
+                      gap: '10px',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', flex: 1, minWidth: 0 }}>
                     <div
                       style={{
                         width: '30px',
                         height: '30px',
                         borderRadius: '50%',
-                        background: `${branding.cor_primaria}18`,
-                        color: branding.cor_primaria,
-                        border: `1px solid ${branding.cor_primaria}40`,
+                        background: `${item.cor}18`,
+                        color: item.cor,
+                        border: `1px solid ${item.cor}40`,
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
@@ -799,13 +833,33 @@ export default function PortalClientePage() {
                       {item.icon}
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', flexWrap: 'wrap' }}>
                       <p style={{ fontSize: '13px', color: '#f0f2f5', margin: '0 0 4px', fontWeight: '700' }}>
                         {item.titulo}
                       </p>
+                        <span
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            padding: '4px 8px',
+                            borderRadius: '999px',
+                            background: `${item.cor}18`,
+                            border: `1px solid ${item.cor}30`,
+                            color: item.cor,
+                            fontSize: '10px',
+                            fontWeight: '700',
+                            letterSpacing: '0.04em',
+                            textTransform: 'uppercase',
+                          }}
+                        >
+                          {item.selo}
+                        </span>
+                      </div>
                       <p style={{ fontSize: '12px', color: '#8b92a0', margin: 0, lineHeight: '1.5' }}>
                         {item.descricao}
                       </p>
                     </div>
+                  </div>
                   </div>
                   <button
                     onClick={item.onClick}
@@ -814,8 +868,10 @@ export default function PortalClientePage() {
                       marginTop: '12px',
                       display: 'inline-flex',
                       alignItems: 'center',
+                      justifyContent: 'center',
                       gap: '6px',
-                      background: item.disabled ? '#1c2028' : branding.cor_primaria,
+                      width: destaquePrincipal ? '100%' : 'auto',
+                      background: item.disabled ? '#1c2028' : item.cor,
                       color: item.disabled ? '#4a5060' : '#fff',
                       borderRadius: '10px',
                       padding: '10px 14px',
@@ -838,7 +894,45 @@ export default function PortalClientePage() {
                     )}
                   </button>
                 </div>
-              ))}
+                )
+              })}
+            </div>
+          </div>
+        ) : semPendenciasAgora ? (
+          <div
+            style={{
+              background: 'linear-gradient(180deg, rgba(45,212,160,0.1), #111318)',
+              border: '1px solid rgba(45,212,160,0.18)',
+              borderRadius: '14px',
+              padding: '18px',
+              marginBottom: '18px',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div
+                style={{
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '50%',
+                  background: 'rgba(45,212,160,0.16)',
+                  color: '#2dd4a0',
+                  border: '1px solid rgba(45,212,160,0.24)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                }}
+              >
+                <CheckCircle size={16} />
+              </div>
+              <div>
+                <p style={{ fontSize: '13px', color: '#f0f2f5', margin: '0 0 4px', fontWeight: '700' }}>
+                  Tudo em dia por aqui
+                </p>
+                <p style={{ fontSize: '12px', color: '#8b92a0', margin: 0, lineHeight: '1.5' }}>
+                  No momento não há nenhuma ação pendente para você. Se a equipe precisar de algo novo, esta área será atualizada.
+                </p>
+              </div>
             </div>
           </div>
         ) : null}
@@ -855,10 +949,14 @@ export default function PortalClientePage() {
           }}
         >
           {([
-            { key: 'inicio', label: 'Início' },
-            { key: 'documentos', label: `Documentos${documentos.length > 0 ? ` (${documentos.length})` : ''}` },
-            { key: 'mensagens', label: `Mensagens${msgNaoLidas > 0 ? ` (${msgNaoLidas})` : ''}` },
-            { key: 'perfil', label: 'Perfil' },
+            { key: 'inicio', label: 'Início', badge: 0 },
+            {
+              key: 'documentos',
+              label: `Documentos${documentos.length > 0 ? ` (${documentos.length})` : ''}`,
+              badge: pendenciasDocumento.length,
+            },
+            { key: 'mensagens', label: `Mensagens${msgNaoLidas > 0 ? ` (${msgNaoLidas})` : ''}`, badge: msgNaoLidas },
+            { key: 'perfil', label: 'Perfil', badge: 0 },
           ] as const).map((item) => (
             <button
               key={item.key}
@@ -875,9 +973,35 @@ export default function PortalClientePage() {
                 transition: 'all 0.15s',
                 background: aba === item.key ? '#1c2028' : 'transparent',
                 color: aba === item.key ? '#f0f2f5' : '#4a5060',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '6px',
               }}
             >
               {item.label}
+              {item.badge > 0 ? (
+                <span
+                  style={{
+                    minWidth: '18px',
+                    height: '18px',
+                    padding: '0 5px',
+                    borderRadius: '999px',
+                    background: aba === item.key ? branding.cor_primaria : '#080b14',
+                    color: aba === item.key ? '#fff' : '#c7ccd6',
+                    border: aba === item.key ? 'none' : '1px solid #ffffff12',
+                    fontSize: '10px',
+                    fontWeight: '700',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    lineHeight: 1,
+                    flexShrink: 0,
+                  }}
+                >
+                  {item.badge > 9 ? '9+' : item.badge}
+                </span>
+              ) : null}
             </button>
           ))}
         </div>

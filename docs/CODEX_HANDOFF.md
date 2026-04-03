@@ -1962,3 +1962,21 @@ Pontos que precisam ser preservados durante a implementacao:
 - proximo passo:
   - validar no celular a ordem percebida das acoes
   - decidir depois se o item mais urgente precisa de destaque visual adicional
+
+## Atualizacao 2026-04-03 - Fila do portal ganhou hierarquia visual final
+
+- o portal mobile fechou mais uma rodada de UX antes de abrir a proxima frente
+- arquivo principal:
+  - `src/app/portal/[token]/page.tsx`
+- ajustes aplicados:
+  - o primeiro item da fila acionavel agora recebe destaque visual maior
+  - cada acao ganhou selo curto de prioridade
+  - abas de `Mensagens` e `Documentos` agora mostram badge visual de pendencia
+  - quando nao existe nenhuma acao aberta, a home mostra estado positivo `Tudo em dia por aqui`
+- racional:
+  - no mobile, a home precisa deixar obvio o que fazer agora e tambem sinalizar quando nao ha nada urgente
+  - isso reduz ansiedade do cliente e melhora leitura rapida de retorno
+- validacao:
+  - `npm run build` passou
+- conclusao pratica:
+  - a home do portal esta suficientemente madura para a equipe parar o polish e avancar para outras evolucoes do roadmap

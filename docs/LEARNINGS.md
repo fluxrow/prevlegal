@@ -954,3 +954,11 @@ Isso gera mais confianca e reduz sensacao de “portal vazio”
 - atalhos para `Mensagens` e `Documentos`
 - CTA `Enviar agora` nas pendencias
 **Regra pratica:** No portal mobile do PrevLegal, qualquer badge, resumo ou alerta so deve existir se levar para uma acao concreta dentro da propria jornada
+
+### 97. Home mobile madura precisa destacar urgencia sem parecer alarmista
+**Problema:** Depois de transformar a home do portal em fila acionavel, ainda faltava deixar claro o que era mais urgente e tambem quando nao havia nada para fazer
+**Causa:** Sem hierarquia visual, varias acoes competem entre si; sem estado positivo, a ausencia de pendencias pode parecer falta de dados
+**Correcao aplicada:** Dar destaque principal ao primeiro item da fila, adicionar selos curtos de prioridade, badges nas abas e um estado `Tudo em dia por aqui`
+**Regra pratica:** Em home mobile do PrevLegal, a interface deve responder duas perguntas em poucos segundos:
+- o que eu preciso fazer agora
+- esta tudo em ordem ou existe algo pendente

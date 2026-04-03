@@ -924,3 +924,18 @@ Status atual em 18/03/2026:
 - proximo passo:
   - validar em runtime a ordem de prioridade dos cards
   - depois decidir se a home precisa de destaque mais forte para a acao principal
+
+## Atualizacao Mobile / Polish Final da Home do Portal — 03/04/2026
+
+- a fila acionavel recebeu a rodada final de hierarquia visual
+- comportamento:
+  - destaque principal para a acao mais urgente
+  - selos simples de prioridade nas acoes
+  - badges visuais nas abas com pendencias
+  - estado positivo quando nao ha nenhuma acao aberta
+- racional:
+  - isso fecha a UX central da home mobile sem precisar ainda abrir uma frente de redesign maior
+- validacao:
+  - `npm run build` passou
+- estado concluido:
+  - a home do portal esta pronta para sair do ciclo de polish e abrir espaco para outras evolucoes agendadas

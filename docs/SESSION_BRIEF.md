@@ -426,3 +426,19 @@ No final:
 - proximo passo sugerido:
   - validar no celular se a ordem dessas acoes esta intuitiva
   - depois decidir se vale destacar visualmente qual item e o mais urgente
+
+## Atualizacao 2026-04-03 - Polish final de prioridade visual no portal
+
+- a home do portal ganhou uma camada final de hierarquia visual para mobile
+- arquivo principal:
+  - `src/app/portal/[token]/page.tsx`
+- comportamento:
+  - a acao mais urgente agora ganha destaque principal dentro da fila
+  - cada item da fila mostra um selo simples de prioridade (`Agora`, `Novo`, `Importante`)
+  - as abas `Mensagens` e `Documentos` mostram badge visual quando ha pendencias
+  - quando nao ha nada para fazer, a home mostra `Tudo em dia por aqui`
+- validacao:
+  - `npm run build` passou
+- leitura atual:
+  - o portal ficou maduro o suficiente para sair do ciclo de polish de home
+  - a proxima evolucao pode migrar para frentes novas sem deixar UX central mal resolvida
