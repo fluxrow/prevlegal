@@ -526,3 +526,18 @@ No final:
   - `npm run build` passou
 - leitura atual:
   - o bloco de rotas antigas do detalhe do lead ficou bem mais coerente com a fundacao tenant-aware atual do produto
+
+## Atualizacao 2026-04-03 - Base de conhecimento do agente deixou de ser global
+
+- a API de documentos do agente deixou de listar e apagar registros globalmente
+- arquivo principal:
+  - `src/app/api/agente/documentos/route.ts`
+- comportamento:
+  - agora exige usuario autenticado do produto
+  - o `GET` lista apenas documentos cujo `usuario_id` pertence ao tenant atual
+  - o `POST` grava com `context.usuarioId`
+  - o `DELETE` valida se o documento pertence a um usuario do tenant atual antes de remover
+- validacao:
+  - `npm run build` passou
+- leitura atual:
+  - essa superficie ficou `tenant-aware`, mas ainda nao `tenant-isolated`, porque `agent_documents` continua sem `tenant_id` proprio

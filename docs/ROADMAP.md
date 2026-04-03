@@ -1003,3 +1003,15 @@ Status atual em 18/03/2026:
   - o detalhe do lead nao pode ter bolsões legados onde `auth` simples ainda vale mais do que a guarda por lead
 - validacao:
   - `npm run build` passou
+
+## Atualizacao Operacional / Hardening da Base de Conhecimento do Agente — 03/04/2026
+
+- `agent_documents` deixou de ser consumida como superficie global
+- comportamento:
+  - `/api/agente/documentos` agora autentica o usuario do produto
+  - lista e apaga apenas documentos cujos autores pertencem ao tenant atual
+  - novos documentos passam a nascer com `usuario_id` do contexto canonico
+- racional:
+  - mesmo sem `tenant_id` na tabela, a base de conhecimento do agente nao podia continuar global entre escritorios
+- validacao:
+  - `npm run build` passou

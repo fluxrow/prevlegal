@@ -2093,3 +2093,24 @@ Pontos que precisam ser preservados durante a implementacao:
   - `npm run build` passou
 - leitura de continuidade:
   - a frente multi-tenant residual pode seguir depois para outras excecoes mais pontuais, mas o bloco legado mais obvio de `leadId` ja foi bastante enxugado
+
+## Atualizacao 2026-04-03 - Documentos do agente ficaram tenant-aware por usuario
+
+- a auditoria residual saiu do detalhe do lead e pegou uma superficie que ainda era global por acidente
+- arquivo principal:
+  - `src/app/api/agente/documentos/route.ts`
+- problema atacado:
+  - `GET` listava toda a tabela `agent_documents` com service role, sem autenticar o usuario do produto
+  - `DELETE` removia por `id` sem validar se o documento pertencia ao escritorio atual
+- correcao aplicada:
+  - autenticar via `getTenantContext`
+  - resolver os `usuarios.id` do tenant atual
+  - listar e deletar apenas documentos vinculados a esses usuarios
+  - gravar novos documentos com `context.usuarioId`
+- impacto:
+  - a base de conhecimento do agente deixa de ser uma superficie global entre escritorios
+  - o risco cai bastante, mesmo sem a tabela ter `tenant_id` proprio ainda
+- validacao:
+  - `npm run build` passou
+- leitura de continuidade:
+  - esta rota agora esta `tenant-aware`, mas ainda nao `tenant-isolated`; uma futura migration com `tenant_id` em `agent_documents` seria o fechamento ideal

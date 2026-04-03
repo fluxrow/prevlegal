@@ -995,3 +995,9 @@ Isso gera mais confianca e reduz sensacao de “portal vazio”
 **Causa:** A rota vinha de uma fase anterior da modelagem e permaneceu funcional por compatibilidade acidental, nao por contrato claro
 **Correcao aplicada:** Passar `anotacoes` e `calculadora` para `getTenantContext` + `canAccessLeadId` e gravar anotacoes direto com `context.usuarioId`
 **Regra pratica:** Quando uma rota legada migrar para o contexto canonico, nao basta trocar a autenticacao; vale remover tambem buscas antigas de usuario e gravar logo com o identificador que o produto reconhece como fonte da verdade
+
+### 103. Quando a tabela ainda nao tem `tenant_id`, o minimo aceitavel e recortar pelo vinculo canonico mais proximo
+**Problema:** `agent_documents` nao tinha `tenant_id`, mas a API usava service role para listar e deletar tudo como se a base de conhecimento do agente fosse global
+**Causa:** A tabela nasceu antes da consolidacao do isolamento real e ficou esquecida fora do contrato tenant-aware que o resto do produto passou a seguir
+**Correcao aplicada:** Reancorar `/api/agente/documentos` em `getTenantContext`, resolver os `usuarios.id` do tenant atual e limitar leitura/remoção a esse conjunto, gravando novos documentos com `context.usuarioId`
+**Regra pratica:** No PrevLegal, quando uma tabela legada ainda nao tem `tenant_id`, a rota nao pode continuar global por comodidade; ela deve ao menos herdar o escopo do tenant pelo relacionamento canonico mais proximo e documentar claramente que ainda e `tenant-aware`, nao `tenant-isolated`
