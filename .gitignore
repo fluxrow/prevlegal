@@ -43,3 +43,6 @@ next-env.d.ts
 # Backup manual de credenciais local
 project-credentials.txt
 .env*.local
+
+# Supabase local temp metadata
+supabase/.temp/
