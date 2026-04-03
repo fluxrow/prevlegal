@@ -966,3 +966,16 @@ Status atual em 18/03/2026:
   - notificacoes sao uma superficie transversal de alto risco para leitura cruzada quando ficam fora do recorte tenant-aware
 - validacao:
   - `npm run build` passou
+
+## Atualizacao Operacional / Hardening de Relatorios de Campanha — 03/04/2026
+
+- as leituras de campanha em `/relatorios` e `/relatorios/roi` foram fechadas no tenant atual
+- comportamento:
+  - `/api/relatorios` agora filtra campanhas por `tenant_id` antes de consolidar KPIs
+  - `/api/relatorios/roi` agora usa `getTenantContext`
+  - a aba de ROI respeita `tenant_id` e, para nao-admin, tambem `responsavel_id`
+  - quando nao existe `tenantId`, o ROI devolve estado vazio seguro
+- racional:
+  - resumo executivo e detalhe analitico nao podem divergir no recorte de tenant; isso criaria falsa leitura de performance mesmo sem erro visivel na UI
+- validacao:
+  - `npm run build` passou

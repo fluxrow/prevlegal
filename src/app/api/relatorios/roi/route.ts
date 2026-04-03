@@ -1,20 +1,45 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
+import { getTenantContext } from '@/lib/tenant-context'
+
+function applyTenantFilter(query: any, tenantId: string | null) {
+  return tenantId ? query.eq('tenant_id', tenantId) : query.is('tenant_id', null)
+}
 
 export async function GET() {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const context = await getTenantContext(supabase)
+  if (!context) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   try {
-    const { data: campanhas, error } = await supabase
+    if (!context.tenantId) {
+      return NextResponse.json({
+        campanhas: [],
+        totais: {
+          total_enviados: 0,
+          total_respondidos: 0,
+          total_convertidos: 0,
+          honorarios_gerados: 0,
+          taxa_conversao_geral: 0,
+        },
+      })
+    }
+
+    let campanhasQuery = supabase
       .from('campanhas')
       .select(`
-        id, nome, status, created_at, concluido_em,
+        id, nome, status, responsavel_id, created_at, concluido_em,
         total_enviados, total_entregues, total_lidos,
         total_respondidos, total_convertidos, honorarios_gerados
       `)
       .order('created_at', { ascending: false })
+    campanhasQuery = applyTenantFilter(campanhasQuery, context.tenantId)
+
+    if (!context.isAdmin) {
+      campanhasQuery = campanhasQuery.eq('responsavel_id', context.usuarioId)
+    }
+
+    const { data: campanhas, error } = await campanhasQuery
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 

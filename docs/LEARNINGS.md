@@ -977,3 +977,9 @@ Isso gera mais confianca e reduz sensacao de “portal vazio”
 **Causa:** A tabela `notificacoes` ganhou `tenant_id` na foundation multi-tenant, mas a rota antiga ficou presa a um modelo global anterior
 **Correcao aplicada:** Exigir `getTenantContext`, usar o `tenantId` canonico e limitar tanto leitura quanto update ao tenant atual
 **Regra pratica:** Em superfícies transversais como notificacoes, usar service role sem resolver antes o tenant do usuario e equivalente a abrir uma porta para leitura cruzada de contexto
+
+### 100. Resumo e detalhe analitico precisam compartilhar exatamente o mesmo recorte tenant-aware
+**Problema:** `/api/relatorios` e `/api/relatorios/roi` mostravam metricas de campanhas sem aplicar `tenant_id`, o que podia misturar performance de escritorios diferentes em uma UI aparentemente correta
+**Causa:** A camada de relatorios ficou parcialmente migrada: leads e pipeline ja usavam contexto tenant-aware, mas as consultas de `campanhas` ainda herdavam um modelo mais antigo
+**Correcao aplicada:** Reancorar ambas as rotas no contexto canonico do tenant, aplicar filtro por `tenant_id` nas campanhas e preservar o recorte por `responsavel_id` para usuario nao-admin
+**Regra pratica:** No PrevLegal, quando existir resumo executivo e aba detalhada da mesma entidade, os dois precisam ler o mesmo universo tenant-aware; se um deles escapar desse contrato, o produto passa confianca falsa em vez de insight real

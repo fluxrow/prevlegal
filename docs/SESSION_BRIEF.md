@@ -474,3 +474,20 @@ No final:
   - `npm run build` passou
 - leitura atual:
   - mais uma superficie transversal deixou de poder misturar contexto entre tenants
+
+## Atualizacao 2026-04-03 - Relatorios e ROI alinhados ao tenant atual
+
+- as leituras de campanhas em relatorios foram reancoradas no tenant canonico
+- arquivos principais:
+  - `src/app/api/relatorios/route.ts`
+  - `src/app/api/relatorios/roi/route.ts`
+- comportamento:
+  - `/api/relatorios` agora filtra campanhas por `tenant_id` antes de somar volume, leitura e resposta
+  - `/api/relatorios/roi` agora exige `getTenantContext`
+  - a aba de ROI passa a listar apenas campanhas do tenant atual
+  - quando nao existe `tenantId` configurado, a rota de ROI devolve estado vazio seguro em vez de correr o risco de leitura global
+  - para usuario nao-admin, o recorte continua respeitando `responsavel_id`
+- validacao:
+  - `npm run build` passou
+- leitura atual:
+  - as duas visoes de campanhas deixam de poder divergir por tenant e ficam coerentes para seguir na auditoria multi-tenant residual

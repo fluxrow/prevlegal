@@ -2024,3 +2024,25 @@ Pontos que precisam ser preservados durante a implementacao:
   - `npm run build` passou
 - leitura de continuidade:
   - multi-tenant residual continua sendo a frente certa, mas ja perdemos mais uma fonte real de leitura cruzada
+
+## Atualizacao 2026-04-03 - Relatorios de campanhas voltaram a obedecer o tenant
+
+- a trilha de multi-tenant residual seguiu para uma superficie analitica que ainda podia misturar contexto
+- arquivos principais:
+  - `src/app/api/relatorios/route.ts`
+  - `src/app/api/relatorios/roi/route.ts`
+- problema atacado:
+  - `/api/relatorios` somava KPIs de campanhas sem `tenant_id`
+  - `/api/relatorios/roi` validava so o usuario autenticado e listava campanhas sem ancora canonica de tenant
+- correcao aplicada:
+  - aplicar filtro por `tenant_id` nas campanhas do resumo executivo
+  - reancorar a rota de ROI em `getTenantContext`
+  - manter o recorte por `responsavel_id` para usuario nao-admin
+  - devolver estado vazio seguro no ROI quando o usuario nao tiver `tenantId` configurado
+- impacto:
+  - o resumo de campanhas em `/relatorios` e a aba dedicada de ROI passam a ler o mesmo universo de dados do escritorio atual
+  - reduz risco de insight falso ou comparativo contaminado por campanha de outro tenant
+- validacao:
+  - `npm run build` passou
+- leitura de continuidade:
+  - multi-tenant residual continua sendo a frente certa, agora com mais uma superficie transversal de campanha fechada
