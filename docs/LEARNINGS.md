@@ -971,3 +971,9 @@ Isso gera mais confianca e reduz sensacao de “portal vazio”
 - conversas humanas com nao lidas
 - agendamentos em `agendado` ou `remarcado`
 **Regra pratica:** No PrevLegal, badge operacional so deve nascer de estado real do produto e sempre com ancora canonica de tenant/escopo; se a modelagem futura ainda nao existe, a contagem precisa degradar para a fila concreta mais proxima
+
+### 99. Notificacao global sem tenant-aware e vazamento silencioso esperando acontecer
+**Problema:** A API `/api/notificacoes` lia e atualizava registros com service role sem autenticar o usuario do app e sem filtrar por `tenant_id`
+**Causa:** A tabela `notificacoes` ganhou `tenant_id` na foundation multi-tenant, mas a rota antiga ficou presa a um modelo global anterior
+**Correcao aplicada:** Exigir `getTenantContext`, usar o `tenantId` canonico e limitar tanto leitura quanto update ao tenant atual
+**Regra pratica:** Em superfícies transversais como notificacoes, usar service role sem resolver antes o tenant do usuario e equivalente a abrir uma porta para leitura cruzada de contexto

@@ -2004,3 +2004,23 @@ Pontos que precisam ser preservados durante a implementacao:
   - `npm run build` passou
 - proximo passo:
   - a proxima frente grande pode seguir para multi-tenant residual ou outra fase operacional sem esse passivo escondido
+
+## Atualizacao 2026-04-03 - Notificacoes sairam do modo global
+
+- outro residual sensivel de multi-tenant foi fechado logo em seguida
+- arquivo principal:
+  - `src/app/api/notificacoes/route.ts`
+- problema atacado:
+  - a rota antiga lia e atualizava `notificacoes` via service role sem autenticar o usuario do produto e sem recorte por tenant
+- correcao aplicada:
+  - autenticar via `createClient()` + `getTenantContext`
+  - usar service role apenas depois de resolver o tenant do usuario
+  - `GET` agora lista apenas `notificacoes` do `tenant_id` atual
+  - `PATCH` agora marca lidas apenas dentro do tenant atual
+- impacto:
+  - o sino de notificacoes deixa de ser uma superficie de vazamento global
+  - a leitura transversal de operacao fica mais alinhada ao escritorio certo
+- validacao:
+  - `npm run build` passou
+- leitura de continuidade:
+  - multi-tenant residual continua sendo a frente certa, mas ja perdemos mais uma fonte real de leitura cruzada

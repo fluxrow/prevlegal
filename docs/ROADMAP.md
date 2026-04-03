@@ -954,3 +954,15 @@ Status atual em 18/03/2026:
   - antes de seguir para fases maiores, os badges operacionais precisavam voltar a representar filas reais e existentes
 - validacao:
   - `npm run build` passou
+
+## Atualizacao Operacional / Hardening de Notificacoes — 03/04/2026
+
+- a rota de notificacoes do app deixou de operar em modo global
+- comportamento:
+  - exige contexto autenticado do produto
+  - resolve `tenantId` canonicamente
+  - lista e marca lidas apenas dentro do tenant atual
+- racional:
+  - notificacoes sao uma superficie transversal de alto risco para leitura cruzada quando ficam fora do recorte tenant-aware
+- validacao:
+  - `npm run build` passou

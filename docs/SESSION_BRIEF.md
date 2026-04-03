@@ -459,3 +459,18 @@ No final:
   - `npm run build` passou
 - leitura atual:
   - a operacao ficou mais confiavel para seguir para a proxima fase sem ruído de badge ou leitura cruzada
+
+## Atualizacao 2026-04-03 - Hardening tenant-aware das notificacoes
+
+- a API de notificacoes deixou de operar em modo global
+- arquivo principal:
+  - `src/app/api/notificacoes/route.ts`
+- comportamento:
+  - agora exige usuario autenticado do produto
+  - resolve o `tenantId` pelo contexto canonico
+  - filtra `GET` por `tenant_id`
+  - limita o `PATCH` de marcar lida ao tenant atual
+- validacao:
+  - `npm run build` passou
+- leitura atual:
+  - mais uma superficie transversal deixou de poder misturar contexto entre tenants
