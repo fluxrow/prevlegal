@@ -1001,3 +1001,9 @@ Isso gera mais confianca e reduz sensacao de “portal vazio”
 **Causa:** A tabela nasceu antes da consolidacao do isolamento real e ficou esquecida fora do contrato tenant-aware que o resto do produto passou a seguir
 **Correcao aplicada:** Reancorar `/api/agente/documentos` em `getTenantContext`, resolver os `usuarios.id` do tenant atual e limitar leitura/remoção a esse conjunto, gravando novos documentos com `context.usuarioId`
 **Regra pratica:** No PrevLegal, quando uma tabela legada ainda nao tem `tenant_id`, a rota nao pode continuar global por comodidade; ela deve ao menos herdar o escopo do tenant pelo relacionamento canonico mais proximo e documentar claramente que ainda e `tenant-aware`, nao `tenant-isolated`
+
+### 104. Quando o helper canonico ja existe, auth manual vira divida tecnica mesmo sem bug visivel
+**Problema:** `POST /api/leads` e `POST /api/import` ainda resolviam usuario, role e tenant por consultas manuais, apesar de o produto ja ter `getTenantContext`
+**Causa:** Essas rotas continuaram funcionais por inercia e acabaram ficando fora do padrão que o resto da base adotou durante a migracao multi-tenant
+**Correcao aplicada:** Trocar a resolucao manual por `getTenantContext` e passar a usar `context.usuarioId`, `context.tenantId` e `context.isAdmin`
+**Regra pratica:** No PrevLegal, quando a regra de escopo ja estiver consolidada num helper canonico, manter rotas novas ou antigas em `auth.getUser()` + query manual so aumenta a chance de divergencia futura; alinhar cedo evita drift mesmo antes de aparecer um bug

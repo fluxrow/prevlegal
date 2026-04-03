@@ -2114,3 +2114,23 @@ Pontos que precisam ser preservados durante a implementacao:
   - `npm run build` passou
 - leitura de continuidade:
   - esta rota agora esta `tenant-aware`, mas ainda nao `tenant-isolated`; uma futura migration com `tenant_id` em `agent_documents` seria o fechamento ideal
+
+## Atualizacao 2026-04-03 - Entrada de leads e importacao alinharam auth ao tenant-context
+
+- a passada residual fechou um bloco mais de consistencia do que de vazamento direto
+- arquivos principais:
+  - `src/app/api/leads/route.ts`
+  - `src/app/api/import/route.ts`
+- problema atacado:
+  - as duas rotas ainda resolviam `usuarios` manualmente via `auth.getUser()` + query extra, em vez de usar o contexto canonico do produto
+- correcao aplicada:
+  - trocar a resolucao manual por `getTenantContext`
+  - usar `context.usuarioId`, `context.tenantId` e `context.isAdmin` como fonte da verdade
+  - manter o comportamento de negocio de cadastro manual e importacao de listas
+- impacto:
+  - menos divergencia entre fluxos antigos e a fundacao tenant-aware atual
+  - reduz risco de futuras rotas irmas seguirem copiando o padrao manual de auth/tenant
+- validacao:
+  - `npm run build` passou
+- leitura de continuidade:
+  - o que sobra com `auth.getUser()` em `api` agora esta basicamente concentrado em `perfil` e `session`, que sao superfícies de outra natureza

@@ -105,8 +105,11 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const context = await getTenantContext(supabase)
+  if (!context) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!context.tenantId) {
+    return NextResponse.json({ error: 'Tenant do usuário não configurado' }, { status: 409 })
+  }
 
   const body = await request.json()
 
@@ -115,20 +118,10 @@ export async function POST(request: Request) {
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   )
 
-  const { data: usuario } = await supabase
-    .from('usuarios')
-    .select('id, tenant_id')
-    .eq('auth_id', user.id)
-    .maybeSingle()
-
-  if (!usuario?.tenant_id) {
-    return NextResponse.json({ error: 'Tenant do usuário não configurado' }, { status: 409 })
-  }
-
   let { data: listaManual } = await adminSupabase
     .from('listas')
     .select('id, total_registros, total_ativos, ganho_potencial_total')
-    .eq('tenant_id', usuario.tenant_id)
+    .eq('tenant_id', context.tenantId)
     .eq('nome', LISTA_MANUAL_NOME)
     .eq('fornecedor', LISTA_MANUAL_FORNECEDOR)
     .limit(1)
@@ -138,7 +131,7 @@ export async function POST(request: Request) {
     const { data: novaLista, error: listaError } = await adminSupabase
       .from('listas')
       .insert({
-        tenant_id: usuario.tenant_id,
+        tenant_id: context.tenantId,
         nome: LISTA_MANUAL_NOME,
         fornecedor: LISTA_MANUAL_FORNECEDOR,
         arquivo_original: null,
@@ -149,7 +142,7 @@ export async function POST(request: Request) {
         ganho_potencial_total: 0,
         ganho_potencial_medio: 0,
         percentual_com_telefone: 0,
-        importado_por: usuario?.id || null,
+        importado_por: context.usuarioId,
       })
       .select('id, total_registros, total_ativos, ganho_potencial_total')
       .single()
@@ -167,7 +160,7 @@ export async function POST(request: Request) {
   const { data, error } = await supabase
     .from('leads')
     .insert({
-      tenant_id: usuario.tenant_id,
+      tenant_id: context.tenantId,
       lista_id: listaManual.id,
       nome: body.nome,
       cpf: body.cpf || null,
@@ -179,7 +172,7 @@ export async function POST(request: Request) {
       status: body.status || 'new',
       tem_whatsapp: body.tem_whatsapp ?? true,
       origem: 'manual',
-      responsavel_id: usuario.id,
+      responsavel_id: context.usuarioId,
     })
     .select()
     .single()

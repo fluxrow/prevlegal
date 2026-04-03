@@ -1015,3 +1015,14 @@ Status atual em 18/03/2026:
   - mesmo sem `tenant_id` na tabela, a base de conhecimento do agente nao podia continuar global entre escritorios
 - validacao:
   - `npm run build` passou
+
+## Atualizacao Operacional / Cadastro e Importacao no Contexto Canonico — 03/04/2026
+
+- `POST /api/leads` e `POST /api/import` foram alinhadas ao `tenant-context`
+- comportamento:
+  - as duas rotas agora resolvem tenant, usuario e permissao a partir do helper canonico
+  - o fluxo de lista tecnica `Cadastro manual` continua igual, mas nasce com identificadores coerentes com o restante do produto
+- racional:
+  - rotas de entrada de dados nao precisam esperar vazar contexto para serem corrigidas; quando o helper canonico ja existe, vale cortar cedo a duplicacao de auth manual
+- validacao:
+  - `npm run build` passou

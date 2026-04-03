@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
 import * as XLSX from 'xlsx'
+import { getTenantContext } from '@/lib/tenant-context'
 
 // Mapeamento das colunas da planilha NOMES_RJ_BNG.xlsx
 // Baseado na análise real da planilha (índice base 0)
@@ -68,31 +69,19 @@ function calcScore(ganho: number | null, tipo: string): number {
 
 export async function POST(request: NextRequest) {
     const supabase = await createClient()
+    const context = await getTenantContext(supabase)
+    if (!context) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (!context.isAdmin) {
+        return NextResponse.json({ error: 'Apenas administradores podem importar listas' }, { status: 403 })
+    }
+    if (!context.tenantId) {
+        return NextResponse.json({ error: 'Tenant do usuário não configurado' }, { status: 409 })
+    }
+
     const adminSupabase = createAdminClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.SUPABASE_SERVICE_ROLE_KEY!
     )
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-
-    // Fetch internal public.usuarios ID e role
-    const { data: usuario, error: usuarioError } = await supabase
-        .from('usuarios')
-        .select('id, role, tenant_id')
-        .eq('auth_id', user.id)
-        .single()
-
-    if (usuarioError || !usuario) {
-        return NextResponse.json({ error: 'Usuário não encontrado na base de dados (sincronização pendente)' }, { status: 403 })
-    }
-
-    if (usuario.role !== 'admin') {
-        return NextResponse.json({ error: 'Apenas administradores podem importar listas' }, { status: 403 })
-    }
-
-    if (!usuario.tenant_id) {
-        return NextResponse.json({ error: 'Tenant do usuário não configurado' }, { status: 409 })
-    }
 
     const formData = await request.formData()
     const file = formData.get('file') as File
@@ -108,13 +97,13 @@ export async function POST(request: NextRequest) {
         adminSupabase
             .from('listas')
             .select('id, total_leads')
-            .eq('tenant_id', usuario.tenant_id)
+            .eq('tenant_id', context.tenantId)
             .eq('nome', listaNome)
             .limit(10),
         adminSupabase
             .from('listas')
             .select('id, total_leads')
-            .eq('tenant_id', usuario.tenant_id)
+            .eq('tenant_id', context.tenantId)
             .eq('arquivo_original', file.name)
             .limit(10),
     ])
@@ -154,12 +143,12 @@ export async function POST(request: NextRequest) {
     const { data: lista, error: listaError } = await adminSupabase
         .from('listas')
         .insert({
-            tenant_id: usuario.tenant_id,
+            tenant_id: context.tenantId,
             nome: listaNome,
             fornecedor,
             arquivo_original: file.name,
             total_registros: rows.length,
-            importado_por: usuario.id
+            importado_por: context.usuarioId
         })
         .select()
         .single()
@@ -198,9 +187,9 @@ export async function POST(request: NextRequest) {
         if (ganho) ganhoTotal += ganho
 
         leads.push({
-            tenant_id: usuario.tenant_id,
+            tenant_id: context.tenantId,
             lista_id: lista.id,
-            responsavel_id: usuario.id,
+            responsavel_id: context.usuarioId,
             nb: truncate(nb, 20),
             nome: truncate(nome, 255),
             cpf: cpf.slice(0, 14),

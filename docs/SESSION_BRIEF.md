@@ -541,3 +541,18 @@ No final:
   - `npm run build` passou
 - leitura atual:
   - essa superficie ficou `tenant-aware`, mas ainda nao `tenant-isolated`, porque `agent_documents` continua sem `tenant_id` proprio
+
+## Atualizacao 2026-04-03 - Cadastro manual e importacao passaram a usar contexto canonico
+
+- duas rotas importantes de entrada de dados deixaram de resolver usuario/tenant manualmente
+- arquivos principais:
+  - `src/app/api/leads/route.ts`
+  - `src/app/api/import/route.ts`
+- comportamento:
+  - `POST /api/leads` agora usa `getTenantContext`
+  - a lista tecnica `Cadastro manual` passa a nascer com `importado_por` e `responsavel_id` do contexto canonico
+  - `POST /api/import` agora usa `getTenantContext` para autenticar, validar admin e resolver `tenantId`
+- validacao:
+  - `npm run build` passou
+- leitura atual:
+  - a entrada operacional de leads ficou mais alinhada ao contrato tenant-aware do resto do produto
