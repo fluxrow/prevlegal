@@ -989,3 +989,9 @@ Isso gera mais confianca e reduz sensacao de “portal vazio”
 **Causa:** Parte dessa superficie nasceu antes da consolidacao de `getTenantContext` + `canAccessLeadId`, entao ficou presa a uma confianca implícita em RLS ou no simples fato de haver sessao
 **Correcao aplicada:** Reancorar essas rotas na guarda canonica, validar o `lead_id` do documento antes de compartilhar e contar `portal_mensagens` apenas sobre `accessibleLeadIds`
 **Regra pratica:** No PrevLegal, qualquer rota que toque um lead por ID deve provar acesso com `canAccessLeadId`; “usuario autenticado” por si so nao autoriza ler, gerar, compartilhar ou contabilizar dados daquele lead
+
+### 102. Corrigir auth legado nao e so trocar middleware; e alinhar o identificador canonico que a rota grava
+**Problema:** A rota de anotacoes do lead ainda buscava `usuarios` por `auth_user_id`, enquanto o contexto canonico do produto trabalha com `auth_id` e ja resolve `usuarioId`
+**Causa:** A rota vinha de uma fase anterior da modelagem e permaneceu funcional por compatibilidade acidental, nao por contrato claro
+**Correcao aplicada:** Passar `anotacoes` e `calculadora` para `getTenantContext` + `canAccessLeadId` e gravar anotacoes direto com `context.usuarioId`
+**Regra pratica:** Quando uma rota legada migrar para o contexto canonico, nao basta trocar a autenticacao; vale remover tambem buscas antigas de usuario e gravar logo com o identificador que o produto reconhece como fonte da verdade

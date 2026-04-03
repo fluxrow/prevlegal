@@ -2072,3 +2072,24 @@ Pontos que precisam ser preservados durante a implementacao:
   - `npm run build` passou
 - leitura de continuidade:
   - a auditoria residual continua valendo para outras rotas antigas de lead que ainda usam `auth.getUser()` sem guarda canonica
+
+## Atualizacao 2026-04-03 - Anotacoes e calculadora do lead alinharam auth ao contexto canonico
+
+- a passada residual fechou mais duas rotas antigas do detalhe do lead
+- arquivos principais:
+  - `src/app/api/leads/[id]/anotacoes/route.ts`
+  - `src/app/api/leads/[id]/calculadora/route.ts`
+- problema atacado:
+  - ambas aceitavam apenas usuario autenticado e operavam diretamente por `leadId`
+  - `anotacoes` ainda buscava `usuarios` por `auth_user_id`, diferente do contrato atual usado em `tenant-context`
+- correcao aplicada:
+  - exigir `getTenantContext`
+  - validar `canAccessLeadId`
+  - gravar anotacao com `context.usuarioId`
+- impacto:
+  - o detalhe do lead fica menos dependente de convencoes antigas de auth
+  - reduz risco de acesso cruzado e de gravacao com identificador de usuario inconsistente
+- validacao:
+  - `npm run build` passou
+- leitura de continuidade:
+  - a frente multi-tenant residual pode seguir depois para outras excecoes mais pontuais, mas o bloco legado mais obvio de `leadId` ja foi bastante enxugado

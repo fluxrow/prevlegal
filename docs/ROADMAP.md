@@ -992,3 +992,14 @@ Status atual em 18/03/2026:
   - em superfícies operacionais por ID, autenticacao simples nao basta; sem guarda por lead o risco deixa de ser insight incorreto e vira acesso indevido
 - validacao:
   - `npm run build` passou
+
+## Atualizacao Operacional / Hardening de Anotacoes e Calculadora — 03/04/2026
+
+- mais duas rotas antigas do detalhe do lead foram alinhadas ao contexto tenant-aware atual
+- comportamento:
+  - `anotacoes` e `calculadora` agora exigem `canAccessLeadId`
+  - `anotacoes` passa a gravar com `usuarioId` canonico do contexto atual
+- racional:
+  - o detalhe do lead nao pode ter bolsões legados onde `auth` simples ainda vale mais do que a guarda por lead
+- validacao:
+  - `npm run build` passou

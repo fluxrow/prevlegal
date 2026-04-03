@@ -1,14 +1,17 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
+import { canAccessLeadId, getTenantContext } from '@/lib/tenant-context'
 
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const context = await getTenantContext(supabase)
+  if (!context) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const { id } = await params
+  const allowed = await canAccessLeadId(supabase, context, id)
+  if (!allowed) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   const { data } = await supabase
     .from('calculadora_prev')
     .select('*')
@@ -22,9 +25,11 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const context = await getTenantContext(supabase)
+  if (!context) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const { id } = await params
+  const allowed = await canAccessLeadId(supabase, context, id)
+  if (!allowed) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   const body = await request.json()
 
   const { data: existing } = await supabase

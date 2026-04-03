@@ -511,3 +511,18 @@ No final:
   - `npm run build` passou
 - leitura atual:
   - esse bloco reduz risco direto de acesso indevido e deixa a auditoria multi-tenant menos concentrada so em metricas
+
+## Atualizacao 2026-04-03 - Anotacoes e calculadora do lead sairam do modelo legado
+
+- duas rotas antigas do detalhe do lead foram reancoradas no contexto canonico
+- arquivos principais:
+  - `src/app/api/leads/[id]/anotacoes/route.ts`
+  - `src/app/api/leads/[id]/calculadora/route.ts`
+- comportamento:
+  - ambas agora exigem `getTenantContext` + `canAccessLeadId`
+  - a gravacao de anotacoes passa a usar `context.usuarioId`
+  - a rota deixa de depender da busca legacy por `auth_user_id`
+- validacao:
+  - `npm run build` passou
+- leitura atual:
+  - o bloco de rotas antigas do detalhe do lead ficou bem mais coerente com a fundacao tenant-aware atual do produto
