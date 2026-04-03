@@ -939,3 +939,18 @@ Status atual em 18/03/2026:
   - `npm run build` passou
 - estado concluido:
   - a home do portal esta pronta para sair do ciclo de polish e abrir espaco para outras evolucoes agendadas
+
+## Atualizacao Operacional / Hardening de Pendencias — 03/04/2026
+
+- a camada de pendencias do sidebar foi corrigida para refletir filas reais do tenant atual
+- comportamento:
+  - `/api/pendencias` agora usa contexto tenant-aware canonico
+  - a contagem abandona dependencias de campos residuais de agendamento nao fechados localmente
+  - passa a somar:
+    - portal nao lido
+    - conversas humanas com retorno pendente
+    - agendamentos em `agendado` ou `remarcado`
+- racional:
+  - antes de seguir para fases maiores, os badges operacionais precisavam voltar a representar filas reais e existentes
+- validacao:
+  - `npm run build` passou

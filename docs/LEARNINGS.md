@@ -962,3 +962,12 @@ Isso gera mais confianca e reduz sensacao de “portal vazio”
 **Regra pratica:** Em home mobile do PrevLegal, a interface deve responder duas perguntas em poucos segundos:
 - o que eu preciso fazer agora
 - esta tudo em ordem ou existe algo pendente
+
+### 98. Badge operacional nao pode depender de campo fantasma nem ignorar o tenant atual
+**Problema:** O sidebar dependia de `/api/pendencias`, mas a rota misturava contagens nao tenant-aware e filtros de agendamento baseados em campos que nao estavam fechados no codigo/schema local
+**Causa:** A intencao de produto ("agendamentos novos do agente ainda nao visualizados") ficou registrada antes de a modelagem dessa origem/visualizacao existir de ponta a ponta
+**Correcao aplicada:** Reescrever `/api/pendencias` para usar `getTenantContext` + `getAccessibleLeadIds` e contar apenas filas reais:
+- portal nao lido
+- conversas humanas com nao lidas
+- agendamentos em `agendado` ou `remarcado`
+**Regra pratica:** No PrevLegal, badge operacional so deve nascer de estado real do produto e sempre com ancora canonica de tenant/escopo; se a modelagem futura ainda nao existe, a contagem precisa degradar para a fila concreta mais proxima

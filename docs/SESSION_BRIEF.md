@@ -442,3 +442,20 @@ No final:
 - leitura atual:
   - o portal ficou maduro o suficiente para sair do ciclo de polish de home
   - a proxima evolucao pode migrar para frentes novas sem deixar UX central mal resolvida
+
+## Atualizacao 2026-04-03 - Hardening das pendencias operacionais
+
+- a rota de pendencias do sidebar foi alinhada com filas reais do produto
+- arquivo principal:
+  - `src/app/api/pendencias/route.ts`
+- comportamento:
+  - a leitura agora usa `getTenantContext` + `getAccessibleLeadIds`
+  - o badge da sidebar deixa de depender de campos de agendamento nao fechados localmente
+  - as contagens passam a refletir:
+    - mensagens do portal nao lidas
+    - conversas humanas/aguardando cliente com nao lidas
+    - agendamentos em `agendado` ou `remarcado`
+- validacao:
+  - `npm run build` passou
+- leitura atual:
+  - a operacao ficou mais confiavel para seguir para a proxima fase sem ruído de badge ou leitura cruzada

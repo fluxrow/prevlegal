@@ -1980,3 +1980,27 @@ Pontos que precisam ser preservados durante a implementacao:
   - `npm run build` passou
 - conclusao pratica:
   - a home do portal esta suficientemente madura para a equipe parar o polish e avancar para outras evolucoes do roadmap
+
+## Atualizacao 2026-04-03 - Sidebar e pendencias operacionais ficaram tenant-aware de verdade
+
+- antes de abrir a proxima fase grande, foi corrigido um ponto silencioso de confiabilidade operacional
+- arquivo principal:
+  - `src/app/api/pendencias/route.ts`
+- problema atacado:
+  - o sidebar dependia de `/api/pendencias`, mas a rota antiga:
+    - nao usava o contexto tenant-aware canonico
+    - tentava contar agendamentos por campos (`visualizado`, `criado_por = agente`) que nao estavam fechados no codigo/schema local
+- correcao aplicada:
+  - usar `getTenantContext`
+  - usar `getAccessibleLeadIds`
+  - contar apenas filas reais e existentes:
+    - `portal_mensagens` nao lidas do cliente
+    - `conversas` em `humano` / `aguardando_cliente` com `nao_lidas > 0`
+    - `agendamentos` em `agendado` / `remarcado`
+- impacto:
+  - o badge da sidebar passa a refletir operacao real do usuario/tenant atual
+  - reduz risco de leitura cruzada e de badge quebrado por campos residuais
+- validacao:
+  - `npm run build` passou
+- proximo passo:
+  - a proxima frente grande pode seguir para multi-tenant residual ou outra fase operacional sem esse passivo escondido
