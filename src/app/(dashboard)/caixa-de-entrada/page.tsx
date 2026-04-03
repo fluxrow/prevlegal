@@ -51,10 +51,28 @@ interface Mensagem {
   created_at: string
 }
 
-interface InternalSummary {
-  current_owner: { id: string; nome: string } | null
-  tasks_abertas: number
-  ultima_nota: string | null
+interface InternoTask {
+  id: string
+  titulo: string
+  status: string
+  prioridade: string
+  assigned_to_usuario: { id: string; nome: string } | null
+  due_at: string | null
+  completed_at: string | null
+}
+
+interface InternoMensagem {
+  id: string
+  tipo: string
+  mensagem: string
+  autor: { id: string; nome: string } | null
+  created_at: string
+}
+
+interface InternoData {
+  thread: { id: string; current_owner: { id: string; nome: string } | null } | null
+  tasks: InternoTask[]
+  mensagens: InternoMensagem[]
 }
 
 interface ThreadPortal {
@@ -106,7 +124,10 @@ export default function CaixaDeEntradaPage() {
   const [msgsPortal, setMsgsPortal] = useState<PortalMensagem[]>([])
   const [textoPortal, setTextoPortal] = useState('')
   const [enviandoPortal, setEnviandoPortal] = useState(false)
-  const [internalSummary, setInternalSummary] = useState<InternalSummary | null>(null)
+  const [internoData, setInternoData] = useState<InternoData | null>(null)
+  const [panelInternoAberto, setPanelInternoAberto] = useState(false)
+  const [notaTexto, setNotaTexto] = useState('')
+  const [adicionandoNota, setAdicionandoNota] = useState(false)
   const [textoResposta, setTextoResposta] = useState('')
   const [enviando, setEnviando] = useState(false)
   const [erroEnvio, setErroEnvio] = useState<string | null>(null)
@@ -151,22 +172,23 @@ export default function CaixaDeEntradaPage() {
     if (conversaSelecionada && abaAtiva !== 'portal') fetchMensagens(conversaSelecionada.id)
   }, [conversaSelecionada, abaAtiva])
 
-  useEffect(() => {
-    const leadId = conversaSelecionada?.leads?.id
-    if (!leadId) { setInternalSummary(null); return }
+  const fetchInternoData = (leadId: string) =>
     fetch(`/api/leads/${leadId}/interno`)
       .then(r => r.ok ? r.json() : null)
       .then(d => {
-        if (!d) { setInternalSummary(null); return }
-        const owner = d.thread?.current_owner_usuario_id
-          ? (d.usuarios as { id: string; nome: string }[])?.find((u) => u.id === d.thread.current_owner_usuario_id) ?? null
-          : null
-        const tasksAbertas = (d.tasks as { status: string }[] | undefined)?.filter((t) => t.status === 'aberta' || t.status === 'em_andamento').length ?? 0
-        const ultimaNota = (d.historico as { tipo: string; mensagem: string }[] | undefined)
-          ?.find((m) => m.tipo === 'comentario')?.mensagem ?? null
-        setInternalSummary({ current_owner: owner, tasks_abertas: tasksAbertas, ultima_nota: ultimaNota })
+        if (!d) { setInternoData(null); return }
+        setInternoData({
+          thread: d.thread ?? null,
+          tasks: d.tasks ?? [],
+          mensagens: d.mensagens ?? [],
+        })
       })
-      .catch(() => setInternalSummary(null))
+      .catch(() => setInternoData(null))
+
+  useEffect(() => {
+    const leadId = conversaSelecionada?.leads?.id
+    if (!leadId) { setInternoData(null); setPanelInternoAberto(false); return }
+    void fetchInternoData(leadId)
   }, [conversaSelecionada])
 
   useEffect(() => {
@@ -349,6 +371,31 @@ export default function CaixaDeEntradaPage() {
       ))
     }
     setEnviandoPortal(false)
+  }
+
+  async function adicionarNota() {
+    const leadId = conversaSelecionada?.leads?.id
+    if (!notaTexto.trim() || !leadId) return
+    setAdicionandoNota(true)
+    await fetch(`/api/leads/${leadId}/interno/mensagens`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mensagem: notaTexto, tipo: 'comentario' }),
+    })
+    setNotaTexto('')
+    await fetchInternoData(leadId)
+    setAdicionandoNota(false)
+  }
+
+  async function concluirTask(taskId: string) {
+    const leadId = conversaSelecionada?.leads?.id
+    if (!leadId) return
+    await fetch(`/api/leads/${leadId}/interno/tasks/${taskId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: 'concluida' }),
+    })
+    await fetchInternoData(leadId)
   }
 
   const conversasFiltradas = conversas.filter(c =>
@@ -667,34 +714,41 @@ export default function CaixaDeEntradaPage() {
             </div>
           </div>
 
-          {internalSummary && (internalSummary.current_owner || internalSummary.tasks_abertas > 0 || internalSummary.ultima_nota) && (
-            <div style={{ padding: '8px 24px', borderBottom: '1px solid var(--border)', background: 'var(--bg-card)', display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '5px', color: 'var(--text-muted)', fontSize: '11px' }}>
-                <Users size={12} color="var(--accent)" />
-                <span style={{ color: 'var(--accent)', fontWeight: '600' }}>Interno</span>
-              </div>
-              {internalSummary.current_owner && (
-                <span style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <UserCheck size={11} /> Dono: <strong style={{ color: 'var(--text-secondary)' }}>{internalSummary.current_owner.nome}</strong>
+          {internoData && conversaSelecionada.leads?.id && (() => {
+            const tasksAbertas = internoData.tasks.filter(t => t.status === 'aberta' || t.status === 'em_andamento').length
+            const ultimaNota = internoData.mensagens.find(m => m.tipo === 'comentario')
+            const owner = internoData.thread?.current_owner
+            if (!owner && tasksAbertas === 0 && !ultimaNota) return null
+            return (
+              <button
+                onClick={() => setPanelInternoAberto(o => !o)}
+                style={{ padding: '7px 24px', borderTop: 'none', borderLeft: 'none', borderRight: 'none', borderBottom: '1px solid var(--border)', background: panelInternoAberto ? 'rgba(79,122,255,0.08)' : 'var(--bg-card)', display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap', cursor: 'pointer', width: '100%', textAlign: 'left' }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                  <Users size={12} color="var(--accent)" />
+                  <span style={{ fontSize: '11px', color: 'var(--accent)', fontWeight: '600', fontFamily: 'DM Sans, sans-serif' }}>Coordenação interna</span>
+                </div>
+                {owner && (
+                  <span style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px', fontFamily: 'DM Sans, sans-serif' }}>
+                    <UserCheck size={11} /> <strong style={{ color: 'var(--text-secondary)' }}>{owner.nome}</strong>
+                  </span>
+                )}
+                {tasksAbertas > 0 && (
+                  <span style={{ fontSize: '11px', background: '#f59e0b20', color: '#f59e0b', padding: '2px 8px', borderRadius: '10px', fontWeight: '600', fontFamily: 'DM Sans, sans-serif' }}>
+                    {tasksAbertas} task{tasksAbertas > 1 ? 's' : ''}
+                  </span>
+                )}
+                {ultimaNota && !panelInternoAberto && (
+                  <span style={{ fontSize: '11px', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '200px', fontStyle: 'italic', fontFamily: 'DM Sans, sans-serif' }}>
+                    "{ultimaNota.mensagem}"
+                  </span>
+                )}
+                <span style={{ marginLeft: 'auto', fontSize: '11px', color: 'var(--accent)', fontFamily: 'DM Sans, sans-serif' }}>
+                  {panelInternoAberto ? '▲ Fechar' : '▼ Abrir'}
                 </span>
-              )}
-              {internalSummary.tasks_abertas > 0 && (
-                <span style={{ fontSize: '11px', background: '#f59e0b20', color: '#f59e0b', padding: '2px 8px', borderRadius: '10px', fontWeight: '600' }}>
-                  {internalSummary.tasks_abertas} task{internalSummary.tasks_abertas > 1 ? 's' : ''} aberta{internalSummary.tasks_abertas > 1 ? 's' : ''}
-                </span>
-              )}
-              {internalSummary.ultima_nota && (
-                <span style={{ fontSize: '11px', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '220px', fontStyle: 'italic' }}>
-                  "{internalSummary.ultima_nota}"
-                </span>
-              )}
-              {conversaSelecionada.leads?.id && (
-                <a href={`/leads/${conversaSelecionada.leads.id}#interno`} style={{ marginLeft: 'auto', fontSize: '11px', color: 'var(--accent)', textDecoration: 'none', fontWeight: '500', flexShrink: 0 }}>
-                  Ver coordenação →
-                </a>
-              )}
-            </div>
-          )}
+              </button>
+            )
+          })()}
 
           <div style={{ flex: 1, overflowY: 'auto', padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {conversaSelecionada.status === 'aguardando_cliente' && (
@@ -800,6 +854,96 @@ export default function CaixaDeEntradaPage() {
               </p>
             </div>
           )}
+        </div>
+      )}
+
+      {panelInternoAberto && internoData && conversaSelecionada && abaAtiva !== 'portal' && (
+        <div style={{ width: '272px', flexShrink: 0, borderLeft: '1px solid var(--border)', display: 'flex', flexDirection: 'column', background: 'var(--bg-surface)', overflow: 'hidden' }}>
+          <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Users size={13} color="var(--accent)" />
+              <span style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text-primary)', fontFamily: 'DM Sans, sans-serif' }}>Coordenação interna</span>
+            </div>
+            {conversaSelecionada.leads?.id && (
+              <a href={`/leads/${conversaSelecionada.leads.id}#interno`} style={{ fontSize: '11px', color: 'var(--accent)', textDecoration: 'none', fontWeight: '500' }}>
+                Ver lead →
+              </a>
+            )}
+          </div>
+
+          <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0' }}>
+            {/* Dono */}
+            <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)' }}>
+              <p style={{ margin: '0 0 6px', fontSize: '10px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', fontFamily: 'DM Sans, sans-serif' }}>Responsável</p>
+              <span style={{ fontSize: '12px', color: internoData.thread?.current_owner ? 'var(--text-primary)' : 'var(--text-muted)', fontFamily: 'DM Sans, sans-serif', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                <UserCheck size={12} color="var(--accent)" />
+                {internoData.thread?.current_owner?.nome ?? 'Sem responsável'}
+              </span>
+            </div>
+
+            {/* Tasks */}
+            {internoData.tasks.filter(t => t.status !== 'concluida' && t.status !== 'cancelada').length > 0 && (
+              <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)' }}>
+                <p style={{ margin: '0 0 8px', fontSize: '10px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', fontFamily: 'DM Sans, sans-serif' }}>Tasks</p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  {internoData.tasks.filter(t => t.status !== 'concluida' && t.status !== 'cancelada').map(task => (
+                    <div key={task.id} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+                      <button
+                        onClick={() => void concluirTask(task.id)}
+                        title="Marcar como concluída"
+                        style={{ marginTop: '1px', width: '15px', height: '15px', borderRadius: '3px', border: '1.5px solid var(--border)', background: 'transparent', cursor: 'pointer', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                      />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p style={{ margin: 0, fontSize: '12px', color: 'var(--text-primary)', fontFamily: 'DM Sans, sans-serif', lineHeight: '1.3', wordBreak: 'break-word' }}>{task.titulo}</p>
+                        {task.assigned_to_usuario && (
+                          <p style={{ margin: '2px 0 0', fontSize: '10px', color: 'var(--text-muted)', fontFamily: 'DM Sans, sans-serif' }}>→ {task.assigned_to_usuario.nome}</p>
+                        )}
+                      </div>
+                      <span style={{ fontSize: '9px', padding: '1px 5px', borderRadius: '6px', background: task.prioridade === 'alta' ? '#ff6b6b20' : task.prioridade === 'media' ? '#f59e0b20' : '#4a506020', color: task.prioridade === 'alta' ? '#ff6b6b' : task.prioridade === 'media' ? '#f59e0b' : 'var(--text-muted)', fontWeight: '600', flexShrink: 0 }}>
+                        {task.prioridade}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Notas recentes */}
+            {internoData.mensagens.filter(m => m.tipo === 'comentario').length > 0 && (
+              <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)' }}>
+                <p style={{ margin: '0 0 8px', fontSize: '10px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', fontFamily: 'DM Sans, sans-serif' }}>Notas</p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {internoData.mensagens.filter(m => m.tipo === 'comentario').slice(0, 4).map(msg => (
+                    <div key={msg.id} style={{ padding: '7px 10px', borderRadius: '8px', background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+                      <p style={{ margin: '0 0 3px', fontSize: '12px', color: 'var(--text-primary)', fontFamily: 'DM Sans, sans-serif', lineHeight: '1.4', wordBreak: 'break-word' }}>{msg.mensagem}</p>
+                      <p style={{ margin: 0, fontSize: '10px', color: 'var(--text-muted)', fontFamily: 'DM Sans, sans-serif' }}>
+                        {msg.autor?.nome ?? 'Sistema'} · {formatTime(msg.created_at)}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Quick note */}
+          <div style={{ padding: '10px 14px', borderTop: '1px solid var(--border)', background: 'var(--bg-surface)' }}>
+            <textarea
+              value={notaTexto}
+              onChange={e => setNotaTexto(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter' && e.metaKey) void adicionarNota() }}
+              placeholder="Adicionar nota interna... (⌘Enter)"
+              rows={2}
+              style={{ width: '100%', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: '7px', padding: '7px 10px', color: 'var(--text-primary)', fontSize: '12px', fontFamily: 'DM Sans, sans-serif', resize: 'none', boxSizing: 'border-box', outline: 'none' }}
+            />
+            <button
+              onClick={() => void adicionarNota()}
+              disabled={adicionandoNota || !notaTexto.trim()}
+              style={{ marginTop: '6px', width: '100%', padding: '7px', background: notaTexto.trim() ? 'var(--accent)' : 'var(--bg-hover)', color: notaTexto.trim() ? '#fff' : 'var(--text-muted)', border: 'none', borderRadius: '7px', fontSize: '12px', fontWeight: '600', fontFamily: 'DM Sans, sans-serif', cursor: notaTexto.trim() ? 'pointer' : 'not-allowed' }}
+            >
+              {adicionandoNota ? 'Salvando...' : 'Adicionar nota'}
+            </button>
+          </div>
         </div>
       )}
 
