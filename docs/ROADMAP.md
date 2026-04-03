@@ -1090,3 +1090,20 @@ Status atual em 18/03/2026:
   - aplicar a migration `038`
   - refletir o resumo interno minimo na `Caixa de Entrada`
   - depois conectar isso ao future `follow-up engine`
+
+## Atualizacao — Migration 038 aplicada + Coordenacao interna na Inbox — 03/04/2026
+
+- migration `038_internal_collaboration_phase_one.sql` aplicada no banco operacional `lrqvvxmgimjlghpwavdb`
+- tabelas ativas: `lead_threads_internas`, `lead_mensagens_internas`, `lead_tasks`, `lead_handoffs`
+- a `Caixa de Entrada` ganhou painel lateral recolhivel de coordenacao interna:
+  - strip-toggle abaixo do header mostra resumo (dono, tasks abertas, ultima nota)
+  - clicar abre painel direito (272px) com:
+    - responsavel atual da thread
+    - tasks com check-off direto
+    - notas recentes (ultimas 4)
+    - quick note com POST imediato e refresh
+  - link "Ver lead →" para o detalhe completo
+- status: Fase A entregue e operacional no banco
+- proximo passo recomendado:
+  - validar em producao o painel lateral
+  - decidir: follow-up engine (Fase B) ou outra frente do core

@@ -1031,3 +1031,15 @@ Isso gera mais confianca e reduz sensacao de “portal vazio”
 **Causa:** O produto esta evoluindo em camadas, e nem toda sessao consegue fechar codigo + schema remoto no mesmo momento
 **Correcao aplicada:** Registrar a fundacao da Fase A com honestidade operacional: rotas, UI e helper estao prontos, mas a feature depende da migration `038_internal_collaboration_phase_one.sql`
 **Regra pratica:** No PrevLegal, quando uma entrega nova depender de schema ainda nao aplicado, documentar isso como dependencia explicita de rollout; build verde sozinho nao significa prontidao operacional completa
+
+### 109. Painel lateral contextual vale mais que nova aba na inbox
+**Problema:** A primeira opcao para expor coordenacao interna na inbox seria abrir uma aba nova (ao lado de Portal), mas isso fragmenta o foco do operador e esconde o contexto do caso
+**Causa:** A inbox e uma ferramenta de execucao e nao de navegacao; adicionar aba coloca a coordenacao em competicao com a conversa principal
+**Correcao aplicada:** Implementar strip-toggle abaixo do header que abre painel lateral (272px) sem sair da thread — dono, tasks e notas ficam visiveis enquanto o operador continua lendo a conversa
+**Regra pratica:** No PrevLegal, quando um recurso novo precisa coexistir com o fluxo principal da inbox, painel lateral recolhivel preserva contexto melhor do que nova aba; nova aba so se o recurso precisar de espaco vertical propio
+
+### 110. Quick note na inbox so e util se persistir e refletir imediatamente sem recarregar pagina
+**Problema:** Um campo de nota que requer navegar para o detalhe do lead para confirmar se foi salva quebra o fluxo operacional da inbox
+**Causa:** O operador esta na conversa — qualquer salto de pagina para confirmar uma acao interna tem custo cognitivo alto
+**Correcao aplicada:** Apos `POST /api/leads/[id]/interno/mensagens`, o painel chama `fetchInternoData` no mesmo componente e atualiza a lista de notas sem reload — confirmacao visual imediata dentro do painel
+**Regra pratica:** No PrevLegal, acoes rapidas de coordenacao interna (nota, check-off de task) precisam ter feedback imediato no proprio componente onde foram acionadas; redirecionamento ou reload quebra o contexto operacional
