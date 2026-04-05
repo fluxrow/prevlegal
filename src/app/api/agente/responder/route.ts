@@ -65,26 +65,79 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Mensagem não encontrada' }, { status: 404 })
     }
 
-    // 2. Buscar configurações do agente
+    // 2. Resolver agente — prioridade: campanha → tipo/estágio → padrão tenant → config global
     const tenantId = (mensagem.leads as any)?.tenant_id || null
+    const lead = mensagem.leads as any
+    const campanha_id = lead?.campanha_id || null
+    const leadStatus = lead?.status || null
 
-    // Tenta usar agente configurado (tabela `agentes`, is_default = true)
-    // Fallback: configurações globais da tabela `configuracoes`
-    const { data: agenteRow } = await supabase
-      .from('agentes')
-      .select('*')
-      .eq('tenant_id', tenantId)
-      .eq('is_default', true)
-      .eq('ativo', true)
-      .maybeSingle()
+    // Mapa de status do lead → tipo de agente (Fase D — roteamento por estágio)
+    const STATUS_TO_TIPO: Record<string, string> = {
+      novo: 'triagem',
+      em_contato: 'triagem',
+      qualificado: 'confirmacao_agenda',
+      agendado: 'confirmacao_agenda',
+      perdido: 'reativacao',
+      sem_resposta: 'reativacao',
+    }
 
+    let agenteRow: any = null
+
+    // 2a. Agente específico da campanha do lead
+    if (campanha_id) {
+      const { data: campanha } = await supabase
+        .from('campanhas')
+        .select('agente_id')
+        .eq('id', campanha_id)
+        .maybeSingle()
+
+      if (campanha?.agente_id) {
+        const { data: agenteCampanha } = await supabase
+          .from('agentes')
+          .select('*')
+          .eq('id', campanha.agente_id)
+          .eq('ativo', true)
+          .maybeSingle()
+        if (agenteCampanha) agenteRow = agenteCampanha
+      }
+    }
+
+    // 2b. Roteamento por tipo/estágio do lead (se não veio da campanha)
+    if (!agenteRow && tenantId && leadStatus) {
+      const tipoAlvo = STATUS_TO_TIPO[leadStatus]
+      if (tipoAlvo) {
+        const { data: agenteTipo } = await supabase
+          .from('agentes')
+          .select('*')
+          .eq('tenant_id', tenantId)
+          .eq('tipo', tipoAlvo)
+          .eq('ativo', true)
+          .limit(1)
+          .maybeSingle()
+        if (agenteTipo) agenteRow = agenteTipo
+      }
+    }
+
+    // 2c. Agente padrão do tenant (is_default = true — Fase C)
+    if (!agenteRow && tenantId) {
+      const { data: agentePadrao } = await supabase
+        .from('agentes')
+        .select('*')
+        .eq('tenant_id', tenantId)
+        .eq('is_default', true)
+        .eq('ativo', true)
+        .maybeSingle()
+      if (agentePadrao) agenteRow = agentePadrao
+    }
+
+    // 2d. Config global da tabela configuracoes (fallback original)
     const { data: globalConfig } = await getConfiguracaoAtual(
       supabase,
       tenantId,
       'agente_ativo, agente_nome, agente_prompt_sistema, agente_modelo, agente_max_tokens, agente_resposta_automatica, agente_horario_inicio, agente_horario_fim, agente_apenas_dias_uteis, agente_fluxo_qualificacao, agente_exemplos_dialogo, agente_gatilhos_escalada, agente_frases_proibidas, agente_objeccoes, agente_fallback',
     )
 
-    // Monta config unificada: agente por tenant tem prioridade sobre config global
+    // Monta config unificada (agente resolvido tem prioridade sobre config global)
     const config = agenteRow ? {
       agente_ativo: agenteRow.ativo,
       agente_nome: agenteRow.nome_publico,
@@ -123,7 +176,6 @@ export async function POST(request: NextRequest) {
     }
 
     // 4. Buscar histórico da conversa (últimas 10 mensagens do lead)
-    const lead = mensagem.leads as any
     const historico: { role: 'user' | 'assistant'; content: string }[] = []
 
     if (mensagem.lead_id) {
@@ -177,7 +229,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Resposta vazia do modelo' }, { status: 500 })
     }
 
-    // 7. Marcar mensagem como respondida pelo agente
+    // 7. Marcar mensagem como respondida + rastrear agente (Fase D)
     await supabase
       .from('mensagens_inbound')
       .update({
@@ -185,6 +237,7 @@ export async function POST(request: NextRequest) {
         resposta_agente: respostaTexto,
         lido: true,
         lido_em: new Date().toISOString(),
+        agente_respondente_id: agenteRow?.id ?? null,
       })
       .eq('id', mensagem_id)
 

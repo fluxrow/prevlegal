@@ -9,12 +9,14 @@ import {
   ChevronDown,
   ChevronUp,
   Star,
+  BarChart2,
 } from "lucide-react";
 
 interface Agente {
   id: string;
   nome_interno: string;
   nome_publico: string;
+  tipo: string;
   descricao: string | null;
   objetivo: string | null;
   persona: string | null;
@@ -37,9 +39,19 @@ interface Agente {
   created_at: string;
 }
 
+const TIPO_OPTIONS = [
+  { value: "geral", label: "Geral" },
+  { value: "triagem", label: "Triagem" },
+  { value: "reativacao", label: "Reativação" },
+  { value: "documental", label: "Documental" },
+  { value: "confirmacao_agenda", label: "Confirmação de Agenda" },
+  { value: "followup_comercial", label: "Follow-up Comercial" },
+];
+
 const AGENTE_VAZIO: Omit<Agente, "id" | "created_at"> = {
   nome_interno: "",
   nome_publico: "",
+  tipo: "geral",
   descricao: "",
   objetivo: "",
   persona: "",
@@ -129,6 +141,20 @@ function AgenteForm({
             onChange={(e) => set("nome_publico", e.target.value)}
             placeholder="Ex: Ana"
           />
+        </div>
+        <div>
+          <label style={labelStyle}>Tipo / Roteamento (Fase D)</label>
+          <select
+            style={inputStyle}
+            value={(form as any).tipo || "geral"}
+            onChange={(e) => set("tipo" as any, e.target.value)}
+          >
+            {TIPO_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
 
@@ -437,6 +463,103 @@ function AgenteForm({
   );
 }
 
+// Card de métricas lazy-loaded por agente (Fase D)
+function AgenteMetricas({ agenteId }: { agenteId: string }) {
+  const [metricas, setMetricas] = useState<any>(null);
+  const [aberto, setAberto] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  async function carregar() {
+    if (metricas) { setAberto((v) => !v); return; }
+    setAberto(true);
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/agentes/${agenteId}/metricas`);
+      const data = await res.json();
+      setMetricas(data.metricas || null);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div>
+      <button
+        onClick={carregar}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "5px",
+          background: "none",
+          border: "1px solid var(--border)",
+          borderRadius: "6px",
+          padding: "5px 10px",
+          fontSize: "12px",
+          cursor: "pointer",
+          color: "var(--text-muted)",
+        }}
+      >
+        <BarChart2 size={12} />
+        {aberto ? "Ocultar" : "Métricas"}
+      </button>
+
+      {aberto && (
+        <div
+          style={{
+            marginTop: "8px",
+            padding: "10px 14px",
+            background: "var(--bg-base)",
+            borderRadius: "8px",
+            border: "1px solid var(--border)",
+            display: "flex",
+            gap: "20px",
+            flexWrap: "wrap",
+          }}
+        >
+          {loading ? (
+            <span style={{ fontSize: "12px", color: "var(--text-muted)" }}>Carregando…</span>
+          ) : metricas ? (
+            <>
+              <div style={{ textAlign: "center" }}>
+                <div style={{ fontSize: "18px", fontWeight: "700", color: "var(--accent)" }}>
+                  {metricas.total_respostas}
+                </div>
+                <div style={{ fontSize: "11px", color: "var(--text-muted)" }}>Respostas</div>
+              </div>
+              <div style={{ textAlign: "center" }}>
+                <div style={{ fontSize: "18px", fontWeight: "700", color: "var(--text-primary)" }}>
+                  {metricas.total_leads_atendidos}
+                </div>
+                <div style={{ fontSize: "11px", color: "var(--text-muted)" }}>Leads atendidos</div>
+              </div>
+              <div style={{ textAlign: "center" }}>
+                <div
+                  style={{
+                    fontSize: "18px",
+                    fontWeight: "700",
+                    color: metricas.taxa_escalonamento_pct > 20 ? "#f59e0b" : "#22c55e",
+                  }}
+                >
+                  {metricas.taxa_escalonamento_pct}%
+                </div>
+                <div style={{ fontSize: "11px", color: "var(--text-muted)" }}>Escalonamentos</div>
+              </div>
+              <div style={{ textAlign: "center" }}>
+                <div style={{ fontSize: "18px", fontWeight: "700", color: "var(--text-secondary)" }}>
+                  {metricas.leads_via_campanha}
+                </div>
+                <div style={{ fontSize: "11px", color: "var(--text-muted)" }}>Leads via campanha</div>
+              </div>
+            </>
+          ) : (
+            <span style={{ fontSize: "12px", color: "var(--text-muted)" }}>Sem dados ainda</span>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function AgentesConfig() {
   const [agentes, setAgentes] = useState<Agente[]>([]);
   const [loading, setLoading] = useState(true);
@@ -642,6 +765,7 @@ export default function AgentesConfig() {
                   initial={{
                     nome_interno: agente.nome_interno,
                     nome_publico: agente.nome_publico,
+                    tipo: agente.tipo,
                     descricao: agente.descricao,
                     objetivo: agente.objetivo,
                     persona: agente.persona,
@@ -747,7 +871,8 @@ export default function AgentesConfig() {
                       ` · ${agente.janela_inicio}–${agente.janela_fim}`}
                   </div>
                 </div>
-                <div style={{ display: "flex", gap: "8px", flexShrink: 0 }}>
+                <div style={{ display: "flex", gap: "8px", flexShrink: 0, alignItems: "flex-start" }}>
+                  <AgenteMetricas agenteId={agente.id} />
                   <button
                     onClick={() => {
                       setEditandoId(agente.id);

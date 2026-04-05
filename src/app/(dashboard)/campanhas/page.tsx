@@ -103,6 +103,8 @@ interface Campanha {
   mensagem_template: string;
   created_at: string;
   listas?: { nome: string };
+  agentes?: { id: string; nome_interno: string; nome_publico: string } | null;
+  agente_id?: string | null;
 }
 
 interface Lista {
@@ -110,6 +112,14 @@ interface Lista {
   nome: string;
   total_leads: number;
   com_whatsapp: number;
+}
+
+interface Agente {
+  id: string;
+  nome_interno: string;
+  nome_publico: string;
+  tipo: string;
+  ativo: boolean;
 }
 
 const STATUS_LABEL: Record<
@@ -132,12 +142,14 @@ export default function CampanhasPage() {
   );
   const [campanhas, setCampanhas] = useState<Campanha[]>([]);
   const [listas, setListas] = useState<Lista[]>([]);
+  const [agentes, setAgentes] = useState<Agente[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [disparando, setDisparando] = useState<string | null>(null);
   const [form, setForm] = useState({
     nome: "",
     lista_id: "",
+    agente_id: "",
     mensagem_template: "",
     delay_min_ms: 1500,
     delay_max_ms: 3500,
@@ -182,12 +194,14 @@ export default function CampanhasPage() {
 
   async function fetchAll() {
     setLoading(true);
-    const [c, l] = await Promise.all([
+    const [c, l, a] = await Promise.all([
       fetch("/api/campanhas").then((r) => r.json()),
       fetch("/api/listas").then((r) => r.json()),
+      fetch("/api/agentes").then((r) => r.json()),
     ]);
     setCampanhas(c.campanhas || []);
     setListas(l.listas || []);
+    setAgentes((a.agentes || []).filter((ag: Agente) => ag.ativo));
     setLoading(false);
   }
 
@@ -203,6 +217,7 @@ export default function CampanhasPage() {
       setForm({
         nome: "",
         lista_id: "",
+        agente_id: "",
         mensagem_template: "",
         delay_min_ms: 1500,
         delay_max_ms: 3500,
@@ -613,6 +628,50 @@ export default function CampanhasPage() {
                     ))}
                   </select>
                 </div>
+              </div>
+
+              {/* Seletor de Agente IA — Fase D */}
+              <div style={{ marginBottom: "16px" }}>
+                <label
+                  style={{
+                    fontSize: "12px",
+                    color: "var(--text-secondary)",
+                    display: "block",
+                    marginBottom: "6px",
+                  }}
+                >
+                  Agente IA para esta campanha{" "}
+                  <span style={{ color: "var(--text-muted)", fontWeight: 400 }}>
+                    (opcional — usa o agente padrão do escritório se não selecionado)
+                  </span>
+                </label>
+                <select
+                  value={form.agente_id}
+                  onChange={(e) =>
+                    setForm((p) => ({ ...p, agente_id: e.target.value }))
+                  }
+                  style={{
+                    width: "100%",
+                    padding: "8px 12px",
+                    borderRadius: "8px",
+                    border: "1px solid var(--border)",
+                    background: "var(--bg-hover)",
+                    color: "var(--text-primary)",
+                    fontSize: "13px",
+                  }}
+                >
+                  <option value="">
+                    {agentes.length === 0
+                      ? "Nenhum agente configurado"
+                      : "Usar agente padrão do escritório"}
+                  </option>
+                  {agentes.map((ag) => (
+                    <option key={ag.id} value={ag.id}>
+                      {ag.nome_interno}
+                      {ag.tipo !== "geral" ? ` — ${ag.tipo.replace(/_/g, " ")}` : ""}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div style={{ marginBottom: "16px" }}>

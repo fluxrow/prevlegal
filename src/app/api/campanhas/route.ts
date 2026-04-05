@@ -29,7 +29,7 @@ export async function GET() {
     const adminClient = createAdminClient()
     let query = adminClient
       .from('campanhas')
-      .select('*, listas(nome)')
+      .select('*, listas(nome), agentes(id, nome_interno, nome_publico)')
       .order('created_at', { ascending: false })
     query = applyTenantFilter(query, context.tenantId)
     const { data, error } = await query
@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
 
     const adminClient = createAdminClient()
     const body = await request.json()
-    const { nome, lista_id, mensagem_template, delay_min_ms, delay_max_ms, tamanho_lote, pausa_entre_lotes_s, limite_diario, apenas_verificados, agendado_para } = body
+    const { nome, lista_id, mensagem_template, delay_min_ms, delay_max_ms, tamanho_lote, pausa_entre_lotes_s, limite_diario, apenas_verificados, agendado_para, agente_id } = body
 
     if (!nome || !lista_id || !mensagem_template) {
       return NextResponse.json({ error: 'nome, lista_id e mensagem_template são obrigatórios' }, { status: 400 })
@@ -114,6 +114,7 @@ export async function POST(request: NextRequest) {
         limite_diario: throttleSettings.limitDaily,
         apenas_verificados: apenas_verificados ?? true,
         agendado_para: agendado_para || null,
+        agente_id: agente_id || null,
       })
       .select()
       .single()
