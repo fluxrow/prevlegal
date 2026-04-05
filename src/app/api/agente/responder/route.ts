@@ -67,11 +67,41 @@ export async function POST(request: NextRequest) {
 
     // 2. Buscar configurações do agente
     const tenantId = (mensagem.leads as any)?.tenant_id || null
-    const { data: config } = await getConfiguracaoAtual(
+
+    // Tenta usar agente configurado (tabela `agentes`, is_default = true)
+    // Fallback: configurações globais da tabela `configuracoes`
+    const { data: agenteRow } = await supabase
+      .from('agentes')
+      .select('*')
+      .eq('tenant_id', tenantId)
+      .eq('is_default', true)
+      .eq('ativo', true)
+      .maybeSingle()
+
+    const { data: globalConfig } = await getConfiguracaoAtual(
       supabase,
       tenantId,
       'agente_ativo, agente_nome, agente_prompt_sistema, agente_modelo, agente_max_tokens, agente_resposta_automatica, agente_horario_inicio, agente_horario_fim, agente_apenas_dias_uteis, agente_fluxo_qualificacao, agente_exemplos_dialogo, agente_gatilhos_escalada, agente_frases_proibidas, agente_objeccoes, agente_fallback',
     )
+
+    // Monta config unificada: agente por tenant tem prioridade sobre config global
+    const config = agenteRow ? {
+      agente_ativo: agenteRow.ativo,
+      agente_nome: agenteRow.nome_publico,
+      agente_prompt_sistema: agenteRow.prompt_base,
+      agente_modelo: agenteRow.modelo,
+      agente_max_tokens: agenteRow.max_tokens,
+      agente_resposta_automatica: agenteRow.resposta_automatica,
+      agente_horario_inicio: agenteRow.janela_inicio,
+      agente_horario_fim: agenteRow.janela_fim,
+      agente_apenas_dias_uteis: agenteRow.dias_uteis_only,
+      agente_fluxo_qualificacao: agenteRow.fluxo_qualificacao,
+      agente_exemplos_dialogo: agenteRow.exemplos_dialogo,
+      agente_gatilhos_escalada: agenteRow.gatilhos_escalada,
+      agente_frases_proibidas: agenteRow.frases_proibidas,
+      agente_objeccoes: agenteRow.objeccoes,
+      agente_fallback: agenteRow.fallback,
+    } : globalConfig
 
     if (!config?.agente_ativo) {
       return NextResponse.json({ error: 'Agente não está ativo' }, { status: 403 })
