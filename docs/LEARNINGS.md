@@ -1055,3 +1055,15 @@ Isso gera mais confianca e reduz sensacao de “portal vazio”
 **Causa:** Implementar schema + API sem o worker é correto (fundação antes do motor), mas a UI precisa refletir esse estado
 **Correcao aplicada:** Card do lead mostra `proximo_envio_at` apenas quando `status = 'ativo'`, deixando claro que há um próximo passo agendado; documentado como dependência explícita no handoff
 **Regra pratica:** No PrevLegal, quando uma feature depende de um worker ainda não implementado, a UI deve mostrar o estado pendente com clareza e o handoff deve registrar a dependência antes de fechar a fase
+
+### 113. Vercel Cron é a forma mais simples de worker no mesmo codebase Next.js
+**Problema:** Edge Function separada no Supabase exige deploy independente, variáveis duplicadas e pipeline separado para um worker que usa as mesmas libs do app
+**Causa:** A tentação de usar Supabase Edge Functions é alta por já estar no ecossistema, mas o worker precisa de `whatsapp-provider`, `twilio` e outras libs do app
+**Correcao aplicada:** Criar `GET /api/followup/worker` protegido por `CRON_SECRET` e declarar o schedule em `vercel.json` — mesmo deploy, mesmas libs, zero infraestrutura extra
+**Regra pratica:** No PrevLegal, workers leves que dependem de libs do app devem nascer como rotas API + Vercel Cron; Edge Functions do Supabase ficam reservadas para lógica de banco que não depende do codebase Next.js
+
+### 114. Stop conditions no banco evitam mensagens indevidas mesmo se o worker rodar com atraso
+**Problema:** Se o cron rodar 5min depois do lead ser marcado como convertido, sem stop condition no worker ele ainda dispararia a mensagem de follow-up
+**Causa:** Crons têm delay inherente — nunca são exatos; qualquer lógica de parada que dependa só de "não ativar runs novas" ainda pode disparar steps já agendados
+**Correcao aplicada:** No início de cada run processada, o worker lê o `status` atual do lead e aplica stop automático antes de tentar enviar qualquer mensagem
+**Regra pratica:** No PrevLegal, stop conditions de follow-up precisam ser verificadas no momento do disparo, não só na ativação; o estado do lead pode mudar entre a ativação e o próximo ciclo do cron

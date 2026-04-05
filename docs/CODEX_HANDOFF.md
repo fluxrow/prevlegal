@@ -2283,3 +2283,34 @@ Pontos que precisam ser preservados durante a implementacao:
 - proximo passo sugerido:
   - criar tela de configuracao de regras em `/configuracoes?tab=followup`
   - depois implementar o worker de disparo (cron ou edge function)
+
+## Atualizacao 2026-04-05 - Tela de configuracao de regras e worker de disparo
+
+### Tela de configuracao (/configuracoes?tab=followup)
+- `src/app/(dashboard)/configuracoes/page.tsx` convertido para usar `ConfiguracoesTabs`
+- componentes novos:
+  - `src/components/configuracoes-tabs.tsx` — abas: Usuários / Follow-up / Geral
+  - `src/components/followup-config.tsx` — CRUD completo de regras com editor de steps
+- funcionalidades:
+  - criar regra com N passos (delay, canal, mensagem com variáveis {nome}/{nb}/{escritorio})
+  - editar regra e steps inline
+  - ativar/desativar sem excluir
+  - excluir (bloqueado se houver runs ativas)
+  - preview da sequência de steps antes de ativar no lead
+
+### Worker de disparo automatico
+- `src/app/api/followup/worker/route.ts` — rota GET/POST protegida por `CRON_SECRET`
+- `vercel.json` — cron a cada 5 minutos: `*/5 * * * *`
+- comportamento:
+  - busca runs com `status = ativo` e `proximo_envio_at <= now()` (até 50 por ciclo)
+  - stop conditions automáticas: `lead.status = converted` → `stop_convertido`; `lead.status = lost` → `stop_perdido`
+  - dispara step pelo canal (`whatsapp` via `sendWhatsAppMessage`, `portal` apenas registra evento)
+  - substitui variáveis {nome}, {nb}, {escritorio} na mensagem
+  - avança `proximo_step_ordem` e calcula `proximo_envio_at` do próximo step
+  - conclui a run quando não há mais steps
+  - registra evento em `followup_events` em todos os casos (step_disparado, step_falhou, concluido, stop_*)
+- dependencia: `CRON_SECRET` precisa ser configurado no Vercel como env var
+- proximo passo sugerido:
+  - adicionar `CRON_SECRET` nas env vars do Vercel
+  - testar: criar regra, ativar no lead, aguardar o cron disparar o step
+  - depois implementar stop condition `stop_humano_assumiu` no webhook de conversas

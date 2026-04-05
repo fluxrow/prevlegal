@@ -1118,3 +1118,13 @@ Status atual em 18/03/2026:
 - próximos passos:
   - tela de configuração de regras em `/configuracoes`
   - worker de disparo automático dos steps
+
+## Fase B completa — Follow-up engine v1 — 05/04/2026
+
+- schema: `followup_rules`, `followup_rule_steps`, `followup_runs`, `followup_events` ✅
+- API: CRUD regras, ativar/pausar/retomar/cancelar runs ✅
+- card no detalhe do lead ✅
+- tela de configuração em `/configuracoes?tab=followup` ✅
+- worker de disparo automático via Vercel Cron (a cada 5min) ✅
+- stop conditions: convertido, perdido ✅
+- pendente: CRON_SECRET no Vercel + stop condition `stop_humano_assumiu` no webhook
