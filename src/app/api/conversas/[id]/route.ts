@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getTenantContext } from '@/lib/tenant-context'
+import { createAdminSupabase } from '@/lib/internal-collaboration'
 
 const CONVERSA_STATUS = new Set([
   'agente',
@@ -140,5 +141,36 @@ export async function PATCH(
     .single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  // Stop automático de follow-up quando humano assume a conversa
+  const assumindo = body.action === 'assume' ||
+    (body.status === 'humano' && payload?.assumido_por)
+
+  if (assumindo && data.lead_id && context.tenantId) {
+    const admin = createAdminSupabase()
+    const { data: runAtiva } = await admin
+      .from('followup_runs')
+      .select('id, tenant_id')
+      .eq('lead_id', data.lead_id)
+      .eq('tenant_id', context.tenantId)
+      .eq('status', 'ativo')
+      .maybeSingle()
+
+    if (runAtiva) {
+      await admin
+        .from('followup_runs')
+        .update({ status: 'stop_automatico', motivo_parada: 'Humano assumiu a conversa' })
+        .eq('id', runAtiva.id)
+
+      await admin.from('followup_events').insert({
+        tenant_id: runAtiva.tenant_id,
+        run_id: runAtiva.id,
+        lead_id: data.lead_id,
+        tipo: 'stop_humano_assumiu',
+        metadata: { assumido_por: context.usuarioId, conversa_id: id },
+      })
+    }
+  }
+
   return NextResponse.json(data)
 }

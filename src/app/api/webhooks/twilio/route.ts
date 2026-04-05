@@ -205,6 +205,30 @@ export async function POST(request: NextRequest) {
         p_campanha_id: lead.campanha_id
       })
     }
+
+    // Stop automático de follow-up quando lead responde
+    const { data: runAtiva } = await supabase
+      .from('followup_runs')
+      .select('id, tenant_id')
+      .eq('lead_id', lead.id)
+      .eq('status', 'ativo')
+      .maybeSingle()
+
+    if (runAtiva) {
+      await supabase
+        .from('followup_runs')
+        .update({ status: 'stop_automatico', motivo_parada: 'Lead respondeu via WhatsApp' })
+        .eq('id', runAtiva.id)
+
+      await supabase.from('followup_events').insert({
+        tenant_id: runAtiva.tenant_id,
+        run_id: runAtiva.id,
+        lead_id: lead.id,
+        tipo: 'stop_lead_respondeu',
+        canal: 'whatsapp',
+        metadata: { mensagem: body_msg.slice(0, 200) },
+      })
+    }
   }
 
   // 7. Retornar TwiML vazio (Twilio exige resposta 200)
