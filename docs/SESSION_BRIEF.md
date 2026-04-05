@@ -634,3 +634,26 @@ No final:
 - depois decidir a proxima frente:
   - evoluir painel lateral recolhivel na inbox com mais detalhes
   - ou partir para o follow-up engine (Fase B dos agentes/cadencias)
+
+## Fase B completa + Stop conditions — 05/04/2026
+
+### O que foi entregue
+- Follow-up engine completo (Fase B):
+  - schema: `followup_rules`, `followup_rule_steps`, `followup_runs`, `followup_events`
+  - API: CRUD regras + ativar/pausar/retomar/cancelar runs por lead
+  - UI: card no detalhe do lead + tela em `/configuracoes?tab=followup`
+  - worker: `GET /api/followup/worker` + Vercel Cron a cada 5min
+  - stop conditions em 3 pontos:
+    - worker: convertido/perdido
+    - webhook Twilio: `stop_lead_respondeu`
+    - conversas PATCH: `stop_humano_assumiu`
+
+### Próximo passo — Fase C: multi-agente por tenant
+- criar tabela `agentes` com migration 040
+- campos: `id, tenant_id, nome_interno, nome_publico, descricao, objetivo, persona, prompt_base, ativo, is_default, whatsapp_number_id_default, janela_inicio, janela_fim, dias_uteis_only`
+- CRUD de agentes: `GET/POST /api/agentes` e `PATCH/DELETE /api/agentes/[id]`
+- UI em `/configuracoes?tab=agentes`
+- wire rota responder para usar agente do lead/campanha ao invés de config global
+
+### Pendência operacional
+- adicionar `CRON_SECRET` como env var no Vercel dashboard (manual)

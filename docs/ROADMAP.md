@@ -1128,3 +1128,10 @@ Status atual em 18/03/2026:
 - worker de disparo automático via Vercel Cron (a cada 5min) ✅
 - stop conditions: convertido, perdido ✅
 - pendente: CRON_SECRET no Vercel + stop condition `stop_humano_assumiu` no webhook
+
+## Stop conditions completas — Fase B encerrada — 05/04/2026
+
+- stop conditions implementadas no webhook Twilio e na rota conversas PATCH
+- stops cobertos: convertido, perdido, lead_respondeu, humano_assumiu
+- Fase B 100% fechada
+- próximo: Fase C — multi-agente por tenant (tabela `agentes`, CRUD, UI, wire no responder)

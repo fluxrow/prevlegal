@@ -2314,3 +2314,31 @@ Pontos que precisam ser preservados durante a implementacao:
   - adicionar `CRON_SECRET` nas env vars do Vercel
   - testar: criar regra, ativar no lead, aguardar o cron disparar o step
   - depois implementar stop condition `stop_humano_assumiu` no webhook de conversas
+
+## Atualizacao 2026-04-05 - Stop conditions automaticas do follow-up engine
+
+### O que foi feito
+- `src/app/api/webhooks/twilio/route.ts` — bloco `stop_lead_respondeu` adicionado após processar mensagem inbound
+  - quando lead tem `id` e há uma `followup_run` ativa, a run é marcada como `stop_automatico` com `motivo_parada = 'Lead respondeu via WhatsApp'`
+  - evento `stop_lead_respondeu` inserido em `followup_events` com canal `whatsapp` e preview da mensagem
+- `src/app/api/conversas/[id]/route.ts` — bloco `stop_humano_assumiu` adicionado após update bem-sucedido da conversa
+  - ativado quando `body.action === 'assume'` ou `body.status === 'humano'` com `assumido_por`
+  - usa `createAdminSupabase()` (importado de `@/lib/internal-collaboration`) por segurança (service role)
+  - evento `stop_humano_assumiu` inserido com `assumido_por` e `conversa_id` no metadata
+
+### Estado atual
+- Fase B 100% fechada com todos os stop conditions implementados:
+  - `stop_convertido` — lead marcado como convertido (worker)
+  - `stop_perdido` — lead marcado como perdido (worker)
+  - `stop_lead_respondeu` — lead responde via WhatsApp (webhook)
+  - `stop_automatico (stop_humano_assumiu)` — humano assume a conversa (conversas PATCH)
+- Pendência operacional: `CRON_SECRET` env var no Vercel dashboard (ação manual do usuário)
+- Próximo passo: Fase C — multi-agente por tenant
+
+### Fase C — multi-agente por tenant (estrutura planejada)
+- nova tabela `agentes` com campos: `id, tenant_id, nome_interno, nome_publico, descricao, objetivo, persona, prompt_base, ativo, is_default, whatsapp_number_id_default, janela_inicio, janela_fim, dias_uteis_only`
+- tipos sugeridos: `triagem`, `reativacao`, `documental`, `confirmacao_agenda`, `followup_comercial`
+- `GET/POST /api/agentes` — listar e criar agentes do tenant
+- `PATCH/DELETE /api/agentes/[id]` — atualizar/remover
+- UI em `/configuracoes?tab=agentes`
+- rota responder modificada para usar agente por lead/campanha ao invés de config global

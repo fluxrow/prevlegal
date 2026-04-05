@@ -1067,3 +1067,12 @@ Isso gera mais confianca e reduz sensacao de “portal vazio”
 **Causa:** Crons têm delay inherente — nunca são exatos; qualquer lógica de parada que dependa só de "não ativar runs novas" ainda pode disparar steps já agendados
 **Correcao aplicada:** No início de cada run processada, o worker lê o `status` atual do lead e aplica stop automático antes de tentar enviar qualquer mensagem
 **Regra pratica:** No PrevLegal, stop conditions de follow-up precisam ser verificadas no momento do disparo, não só na ativação; o estado do lead pode mudar entre a ativação e o próximo ciclo do cron
+
+### 115. Stop conditions devem ser implementadas em todos os pontos de entrada, não só no worker
+**Problema:** Implementar stop só no worker deixa janela: se o lead responde ou humano assume ANTES do próximo ciclo, o worker ainda poderia disparar na próxima rodada porque a run ainda está com status `ativo`
+**Causa:** O cron tem delay de até 5min — eventos de negócio (lead respondeu, humano assumiu) são imediatos e precisam parar a run imediatamente
+**Correcao aplicada:** Stop conditions implementadas em 3 pontos:
+  - worker (verificação no início de cada run processada)
+  - webhook Twilio inbound (lead responde → stop imediato)
+  - conversas PATCH (humano assume → stop imediato)
+**Regra pratica:** No PrevLegal, stop conditions de follow-up precisam existir em TODOS os pontos onde o estado relevante muda, não só no worker; o worker é última linha de defesa, não a única
