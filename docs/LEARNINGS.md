@@ -1043,3 +1043,15 @@ Isso gera mais confianca e reduz sensacao de “portal vazio”
 **Causa:** O operador esta na conversa — qualquer salto de pagina para confirmar uma acao interna tem custo cognitivo alto
 **Correcao aplicada:** Apos `POST /api/leads/[id]/interno/mensagens`, o painel chama `fetchInternoData` no mesmo componente e atualiza a lista de notas sem reload — confirmacao visual imediata dentro do painel
 **Regra pratica:** No PrevLegal, acoes rapidas de coordenacao interna (nota, check-off de task) precisam ter feedback imediato no proprio componente onde foram acionadas; redirecionamento ou reload quebra o contexto operacional
+
+### 111. Unique index parcial é a forma certa de garantir 1 run ativa por lead
+**Problema:** Sem restrição no banco, seria possível ativar dois follow-ups simultâneos no mesmo lead, criando conflito de mensagens e histórico inconsistente
+**Causa:** Controle só em código (checar antes de inserir) tem race condition — dois requests simultâneos passariam na verificação antes de qualquer um inserir
+**Correcao aplicada:** `create unique index idx_followup_runs_lead_ativo on followup_runs(lead_id) where status = 'ativo'` — o banco rejeita o segundo insert com conflito 409 antes de qualquer duplicidade
+**Regra pratica:** No PrevLegal, quando a regra de negócio é "no máximo 1 registro ativo por entidade pai", usar unique index parcial no banco é mais seguro do que validação em código
+
+### 112. Worker de disparo é dependência explícita — não esconder isso no produto
+**Problema:** O follow-up engine ficaria silencioso sem o worker: runs ficam com `proximo_envio_at` calculado mas nada dispara, criando expectativa falsa para o operador
+**Causa:** Implementar schema + API sem o worker é correto (fundação antes do motor), mas a UI precisa refletir esse estado
+**Correcao aplicada:** Card do lead mostra `proximo_envio_at` apenas quando `status = 'ativo'`, deixando claro que há um próximo passo agendado; documentado como dependência explícita no handoff
+**Regra pratica:** No PrevLegal, quando uma feature depende de um worker ainda não implementado, a UI deve mostrar o estado pendente com clareza e o handoff deve registrar a dependência antes de fechar a fase

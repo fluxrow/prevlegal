@@ -1107,3 +1107,14 @@ Status atual em 18/03/2026:
 - proximo passo recomendado:
   - validar em producao o painel lateral
   - decidir: follow-up engine (Fase B) ou outra frente do core
+
+## Fase B — Follow-up engine v1 — 05/04/2026
+
+- schema completo: `followup_rules`, `followup_rule_steps`, `followup_runs`, `followup_events`
+- API completa: CRUD de regras, ativar/pausar/retomar/cancelar runs por lead
+- card `Follow-up` no detalhe do lead operacional
+- unique index garante no máximo 1 run ativa por lead
+- status: fundação operacional entregue; disparos automáticos dependem de worker/cron (próxima sub-fase)
+- próximos passos:
+  - tela de configuração de regras em `/configuracoes`
+  - worker de disparo automático dos steps

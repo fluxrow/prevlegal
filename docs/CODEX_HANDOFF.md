@@ -2257,3 +2257,29 @@ Pontos que precisam ser preservados durante a implementacao:
 - proximo passo sugerido:
   - validar em producao: selecionar conversa com lead, abrir painel, adicionar nota, concluir task
   - decidir proxima frente: follow-up engine (Fase B) ou outra frente do core
+
+## Atualizacao 2026-04-05 - Fase B — Follow-up engine v1
+
+- migration `039_followup_engine_phase_one.sql` aplicada no banco operacional `lrqvvxmgimjlghpwavdb`
+- tabelas criadas:
+  - `followup_rules` — regras configuráveis por tenant (nome, descricao, ativo, is_default)
+  - `followup_rule_steps` — passos de cada regra (ordem, delay_horas, canal, mensagem)
+  - `followup_runs` — instâncias ativas por lead (1 run ativa por lead via unique index)
+  - `followup_events` — histórico de eventos por run (iniciado, step_disparado, pausado, cancelado, stops)
+- rotas de API:
+  - `GET/POST /api/followup/rules` — listar e criar regras com steps
+  - `PATCH/DELETE /api/followup/rules/[id]` — editar/remover (bloqueio se houver runs ativas)
+  - `PUT /api/followup/rules/[id]/steps` — substituir steps de uma regra
+  - `GET/POST /api/leads/[id]/followup` — listar runs e ativar follow-up no lead
+  - `PATCH /api/leads/[id]/followup/[runId]` — pausar/retomar/cancelar run
+- componente: `src/components/followup-lead.tsx`
+  - card no detalhe do lead com runs ativas
+  - seletor de regra para ativar
+  - resumo de steps da regra selecionada antes de confirmar
+  - controles pausar/retomar/cancelar por run
+  - histórico de eventos expansível por run
+- encaixado em `src/app/(dashboard)/leads/[id]/page.tsx` antes da calculadora
+- dependencia para disparos reais: worker/cron ainda nao implementado — runs ficam agendadas mas nao disparam mensagens automaticamente ainda
+- proximo passo sugerido:
+  - criar tela de configuracao de regras em `/configuracoes?tab=followup`
+  - depois implementar o worker de disparo (cron ou edge function)
