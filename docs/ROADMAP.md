@@ -1144,3 +1144,25 @@ Status atual em 18/03/2026:
 - UI: tab "Agentes" em /configuracoes com CRUD completo ✅
 - wire responder: usa agente padrão do tenant com fallback para config global ✅
 - próximo: Fase D — roteamento por campanha/estágio + métricas por agente
+
+## Fase D — Roteamento por campanha/estágio + Métricas por agente — 05/04/2026
+
+### O que foi entregue
+- **Migration 041**: enum `agente_tipo` (triagem/reativacao/documental/confirmacao_agenda/followup_comercial/geral), coluna `tipo` em `agentes`, FK `agente_id` nullable em `campanhas`, coluna `agente_respondente_id` em `mensagens_inbound` + índice
+- **Responder**: prioridade de roteamento campanha → tipo/estágio → padrão tenant → config global
+  - `STATUS_TO_TIPO`: novo/em_contato→triagem, qualificado/agendado→confirmacao_agenda, perdido/sem_resposta→reativacao
+  - persiste `agente_respondente_id` ao marcar mensagem respondida (base para métricas)
+- **API campanhas**: `PATCH/DELETE /api/campanhas/[id]` (novo), `POST /api/campanhas` aceita `agente_id`, `GET` faz join com `agentes`
+- **API métricas**: `GET /api/agentes/[id]/metricas` — total_respostas, leads_atendidos, taxa_escalonamento_pct, campanhas_vinculadas
+- **UI campanhas**: seletor de agente opcional no form de criação
+- **UI agentes**: seletor de tipo no form + botão "Métricas" lazy-loaded por card
+- commit: 34e3f92
+
+### Pendências operacionais
+- Aplicar migration 041 no banco operacional (SQL Editor do Supabase)
+- Adicionar `CRON_SECRET` como env var no Vercel dashboard (herdado da Fase B)
+
+### Próximo passo — Fase E (sugestão)
+- Orquestração avançada: múltiplos agentes em sequência por lead
+- Dashboard executivo: painel centralizado de performance por agente/campanha
+- Warm-up automático de números WhatsApp novos
