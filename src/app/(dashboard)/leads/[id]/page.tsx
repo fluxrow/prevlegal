@@ -12,6 +12,7 @@ import IniciarConversaModal from '@/components/iniciar-conversa-modal'
 import EditarLeadModal from '@/components/editar-lead-modal'
 import NovoAgendamentoModal from '@/components/novo-agendamento-modal'
 import { buildInboxHref, buildWhatsAppHref } from '@/lib/contact-shortcuts'
+import FollowupLead from '@/components/followup-lead'
 
 interface Lead {
   id: string
@@ -910,6 +911,9 @@ export default function LeadDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Follow-up */}
+      <FollowupLead leadId={id} />
 
       {/* Calculadora Previdenciária */}
       <div data-tour="lead-calculadora">
