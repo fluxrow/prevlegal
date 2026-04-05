@@ -1135,3 +1135,12 @@ Status atual em 18/03/2026:
 - stops cobertos: convertido, perdido, lead_respondeu, humano_assumiu
 - Fase B 100% fechada
 - próximo: Fase C — multi-agente por tenant (tabela `agentes`, CRUD, UI, wire no responder)
+
+## Fase C — Multi-agente por tenant — 05/04/2026
+
+- tabela `agentes` expandida com campos da Fase C ✅
+- unique index: 1 agente padrão por tenant ✅
+- API CRUD completa: GET/POST /api/agentes + PATCH/DELETE /api/agentes/[id] ✅
+- UI: tab "Agentes" em /configuracoes com CRUD completo ✅
+- wire responder: usa agente padrão do tenant com fallback para config global ✅
+- próximo: Fase D — roteamento por campanha/estágio + métricas por agente

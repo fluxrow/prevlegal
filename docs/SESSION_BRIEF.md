@@ -657,3 +657,15 @@ No final:
 
 ### Pendência operacional
 - adicionar `CRON_SECRET` como env var no Vercel dashboard (manual)
+
+## Fase C entregue — 05/04/2026
+
+- tabela `agentes` expandida + RLS + unique index is_default
+- CRUD completo via API e UI em /configuracoes?tab=agentes
+- responder usa agente padrão do tenant com fallback para config global
+- commit: 1e8ae47c
+
+## Próximo passo — Fase D
+- `agente_id` em `campanhas` para roteamento por campanha
+- roteamento por estágio do lead no responder
+- métricas por agente no dashboard

@@ -1076,3 +1076,9 @@ Isso gera mais confianca e reduz sensacao de “portal vazio”
   - webhook Twilio inbound (lead responde → stop imediato)
   - conversas PATCH (humano assume → stop imediato)
 **Regra pratica:** No PrevLegal, stop conditions de follow-up precisam existir em TODOS os pontos onde o estado relevante muda, não só no worker; o worker é última linha de defesa, não a única
+
+### 116. Fallback transparente é a estratégia correta ao migrar de config global para por-entidade
+**Problema:** Ao introduzir agentes por tenant, os clientes que não criaram nenhum agente ainda perderiam o funcionamento do responder se ele exigisse agente configurado
+**Causa:** Migrações de modelo de dados devem ser zero-disruption — o comportamento antigo precisa continuar enquanto o novo não está configurado
+**Correcao aplicada:** O responder busca agente `is_default=true` do tenant; se não existir, cai transparentemente para `configuracoes` global — nenhum cliente precisa reconfigurar nada
+**Regra pratica:** No PrevLegal, ao adicionar uma nova entidade de configuração mais granular (por agente, por campanha), sempre manter o fallback para o nível anterior; o novo nível é opt-in, não obrigatório

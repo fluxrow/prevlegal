@@ -2342,3 +2342,27 @@ Pontos que precisam ser preservados durante a implementacao:
 - `PATCH/DELETE /api/agentes/[id]` — atualizar/remover
 - UI em `/configuracoes?tab=agentes`
 - rota responder modificada para usar agente por lead/campanha ao invés de config global
+
+## Atualizacao 2026-04-05 - Fase C — Multi-agente por tenant
+
+### O que foi feito
+- **Migration 040** (`supabase/migrations/040_agentes_phase_c.sql`): altera tabela `agentes` (já existia com schema simples) adicionando colunas da Fase C — `nome_interno`, `nome_publico`, `persona`, `prompt_base`, `modelo`, `max_tokens`, `resposta_automatica`, `janela_inicio/fim`, `dias_uteis_only`, `is_default` + campos avançados herdados do agente global
+- **Unique index** `idx_agentes_tenant_default on agentes(tenant_id) where is_default = true` — garante no máximo um agente padrão por tenant
+- **APIs**:
+  - `GET /api/agentes` — lista agentes do tenant
+  - `POST /api/agentes` — cria agente (apenas admin)
+  - `PATCH /api/agentes/[id]` — atualiza (apenas admin, verifica pertença ao tenant)
+  - `DELETE /api/agentes/[id]` — exclui (apenas admin)
+- **UI**: `src/components/agentes-config.tsx` — CRUD completo com lista de cards, form de criação e edição inline, seção "Configurações avançadas" recolhível; tab "Agentes" em `/configuracoes?tab=agentes`
+- **Wire responder**: `src/app/api/agente/responder/route.ts` busca `agentes` com `is_default=true, ativo=true` para o tenant; se encontrar, usa as configs do agente (prompt_base, modelo, max_tokens etc.); fallback transparente para `configuracoes` global se não houver agente configurado
+
+### Comportamento do responder após Fase C
+1. Busca agente padrão do tenant na tabela `agentes`
+2. Se encontrado e ativo: usa prompt_base, modelo, max_tokens, janela, dias_uteis_only, campos avançados do agente
+3. Se não encontrado: usa config global da tabela `configuracoes` (comportamento anterior preservado)
+4. Lógica de horário e resposta automática funciona em ambos os casos
+
+### Próximo passo — Fase D (quando couber)
+- Roteamento por campanha: coluna `agente_id` em `campanhas` para escolher agente específico
+- Roteamento por estágio do lead: lógica no responder para selecionar agente por `lead.status`
+- Performance: card de métricas por agente (respostas enviadas, escaladas, taxas)
