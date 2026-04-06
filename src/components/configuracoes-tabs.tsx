@@ -1,17 +1,15 @@
-"use client";
+'use client';
 
 import { useSearchParams, useRouter } from "next/navigation";
 import GestaoUsuarios from "@/components/gestao-usuarios";
 import OnboardingResetSection from "@/components/onboarding-reset-section";
-import FollowupConfig from "@/components/followup-config";
 import AgentesConfig from "@/components/agentes-config";
-import { Users, Zap, Settings, Bot } from "lucide-react";
+import { Users, Settings, Bot } from "lucide-react";
 
-type Tab = "usuarios" | "followup" | "agentes" | "geral";
+type Tab = "usuarios" | "agentes" | "geral";
 
 const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
   { id: "usuarios", label: "Usuários", icon: <Users size={14} /> },
-  { id: "followup", label: "Follow-up", icon: <Zap size={14} /> },
   { id: "agentes", label: "Agentes", icon: <Bot size={14} /> },
   { id: "geral", label: "Geral", icon: <Settings size={14} /> },
 ];
@@ -79,19 +77,6 @@ export default function ConfiguracoesTabs() {
           }}
         >
           <GestaoUsuarios />
-        </div>
-      )}
-
-      {abaAtiva === "followup" && (
-        <div
-          style={{
-            background: "var(--bg-surface)",
-            border: "1px solid var(--border)",
-            borderRadius: "14px",
-            padding: "24px",
-          }}
-        >
-          <FollowupConfig />
         </div>
       )}
 

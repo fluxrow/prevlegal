@@ -6,7 +6,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import {
     LayoutDashboard, Users, List, Megaphone, Bot,
-    BarChart3, Settings, LogOut, Scale, CalendarDays, Inbox, UserCircle, DollarSign
+    BarChart3, Settings, LogOut, Scale, CalendarDays, Inbox, UserCircle, DollarSign, Zap
 } from 'lucide-react'
 
 const nav = [
@@ -16,6 +16,7 @@ const nav = [
     { href: '/caixa-de-entrada', icon: Inbox, label: 'Caixa de Entrada' },
     { href: '/listas', icon: List, label: 'Listas' },
     { href: '/campanhas', icon: Megaphone, label: 'Campanhas' },
+    { href: '/automacoes', icon: Zap, label: 'Automações' },
     { href: '/agente', icon: Bot, label: 'Agente IA' },
     { href: '/relatorios', icon: BarChart3, label: 'Relatórios' },
     { href: '/financeiro', icon: DollarSign, label: 'Financeiro' },
