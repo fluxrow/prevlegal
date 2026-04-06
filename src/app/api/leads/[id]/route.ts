@@ -133,6 +133,8 @@ export async function PATCH(
     payload.valor_rma = valorRma
   }
 
+  const { data: oldLead } = await supabase.from('leads').select('status').eq('id', id).single()
+
   const { data, error } = await supabase
     .from('leads')
     .update(payload)
@@ -142,6 +144,17 @@ export async function PATCH(
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 })
+  }
+
+  // Se o status mudou, dispara a orquestração via background (assíncrono)
+  if (oldLead && payload.status && oldLead.status !== payload.status) {
+    // Importa dinamicamente para não bloquear a inicialização ou apenas importa no topo
+    const { processEventTriggers } = await import('@/lib/events/orchestrator')
+    
+    // Executa e "esquece" (sem await estrito atrapalhando o tempo de resposta se não for necessário)
+    // Usamos await para não ser abortado no Vercel Edge/Serverless prematuramente, mas é rápido.
+    await processEventTriggers(context.tenantId, id, 'lead_status_mudou', payload.status as string)
+      .catch(err => console.error('[Orquestrador] Erro ao disparar gatilho:', err))
   }
 
   return NextResponse.json({ lead: data })

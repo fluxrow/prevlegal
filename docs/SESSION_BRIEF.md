@@ -16,32 +16,23 @@
 | B | Follow-up engine — worker Vercel Cron 5min, stop conditions em 4 pontos | e1a9027..8bea965 |
 | C | Multi-agente por tenant — tabela agentes, CRUD, UI, wire responder com fallback | 1e8ae47 |
 | D | Roteamento por campanha/estágio + métricas por agente | 34e3f92 |
+| E | Gatilhos de Ativação Automática (BD, APIs e Orquestrador backend) | a528367..atual |
 
-## Pendências operacionais (ação manual do usuário)
-- Nenhuma pendência no momento. `CRON_SECRET` e `Migration 041` já foram aplicados.
+## Pendências operacionais (próxima rodada)
+- Validar se o Vercel Cron das 5min foi oficialmente pausado na dashboard para usar o plano Hobby (atualmente 0 0 * * *).
+- Continuar desenhando a interface do Formulário Modal Avançado de Gatilhos na aba de `Automações`.
 
-## Arquitetura de roteamento do agente (Fase D)
-Prioridade no responder:
-1. Agente da campanha do lead (`campanhas.agente_id`)
-2. Agente por tipo do estágio do lead (`agentes.tipo` = STATUS_TO_TIPO[lead.status])
-3. Agente padrão do tenant (`is_default = true`)
-4. Config global (`configuracoes`)
+## Arquitetura de Roteamento (Fase D & E)
+Prioridade no responder mantém Fase D.
+Gatilho automático: a mudança de status do lead na API `PATCH` chama o *Orquestrador*, varrendo `event_triggers` e rodando followups (podendo cancelar os velhos).
 
-Mapa status → tipo:
-- novo/em_contato → triagem
-- qualificado/agendado → confirmacao_agenda
-- perdido/sem_resposta → reativacao
-
-## Próximo bloco — Fase E (Gatilhos e Orquestração)
-- Disparo automático de regras (Follow-up) por gatilhos de evento (ex: lead qualificado → ativa sequência manual).
-- Orquestração avançada: encadear múltiplos agentes por lead.
-- Dashboard executivo: painel centralizado por agente/campanha.
-- Warm-up automático de números WhatsApp.
+## Próximo bloco (Divisão Segura anti-timeout)
+1. Concluir a Interface Modal de Automações (`novo gatilho`).
+2. Fazer o Botão "Templates Seed" que injeta os padrões de mercado.
+3. Dashboard Executivo e Warm-up.
 
 ## Arquivos-chave para contexto rápido
-- `docs/ROADMAP.md` — histórico completo de fases
-- `docs/CODEX_HANDOFF.md` — log técnico detalhado
-- `docs/LEARNINGS.md` — aprendizados acumulados
-- `src/app/api/agente/responder/route.ts` — lógica de roteamento
-- `src/app/api/agentes/[id]/metricas/route.ts` — métricas por agente
-- `supabase/migrations/041_campanha_agente_routing.sql` — migration Fase D
+- `docs/ROADMAP.md` — histórico completo
+- `docs/SESSION_BRIEF.md` — estado atual e transição de IAs
+- `src/lib/events/orchestrator.ts` — orquestrador de gatilhos na mudança de status do lead
+- `supabase/migrations/042_event_triggers.sql` — infra de BD para eventos

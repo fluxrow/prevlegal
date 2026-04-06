@@ -1169,8 +1169,17 @@ Status atual em 18/03/2026:
 - **Nova página `/automacoes`**: Follow-up movido de uma tab obscura em Configurações para uma página própria de `/automacoes` no menu lateral principal.
 - **Preparação para Gatilhos**: A nova página de Automações divide espaço entre Sequências de Follow-up (ativas) e Gatilhos por Evento (Fase E).
 
-### Próximo passo — Fase E (Gatilhos e Orquestração)
-- Disparo automático de regras de follow-up por gatilhos de evento (ex: lead qualificado → dispara follow-up específico).
-- Orquestração avançada: múltiplos agentes em sequência por lead.
+## Fase E — Gatilhos de Evento e Orquestração (Fundação Concluída) — 06/04/2026
+
+### O que foi entregue
+- **Migration 042**: Nova tabela `event_triggers` e políticas RLS para mapeamento de eventos e ações (com toggles de autonomia).
+- **Backend API**: 4 novas rotas (`GET/POST/PATCH/DELETE /api/automacoes/triggers`) protegidas por tenant.
+- **Orquestrador de Eventos (`orchestrator.ts`)**: Interceptador injetado no `PATCH /api/leads/[id]` que roda em background quando o status do lead é alterado.
+- **UI Base (`TriggerConfig`)**: Novo componente de painel substituindo o aviso 'Em breve', puxando dados ativos do banco.
+
+### Pendências Imediatas (Próxima Sessão / Chunk)
+- **UI Formulário (Modal)**: Implementar complexidade visual de regras ("Quando X, mude para Y, Faça Z").
+- **Templates Seed**: Criar botão rápido que popule os gatilhos padrão (ex: Status Em Contato -> Régua Comercial).
+- Encadeamento visível no frontend.
 - Dashboard executivo: painel centralizado de performance por agente/campanha.
 - Warm-up automático de números WhatsApp novos.

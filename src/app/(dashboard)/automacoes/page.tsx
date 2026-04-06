@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import FollowupConfig from '@/components/followup-config'
+import TriggerConfig from '@/components/automacoes/trigger-config'
 import { Zap, GitMerge } from 'lucide-react'
 
 export const metadata = {
@@ -100,27 +101,20 @@ export default async function AutomacoesPage() {
               fontSize: '11px',
               padding: '2px 8px',
               borderRadius: '20px',
-              background: 'var(--bg-hover)',
-              color: 'var(--text-muted)',
+              background: 'var(--accent-glow)',
+              color: 'var(--accent)',
               fontWeight: '600',
             }}>
-              Em breve — Fase E
+              Ativo
             </span>
           </div>
           <div style={{
             background: 'var(--bg-surface)',
-            border: '1px dashed var(--border)',
+            border: '1px solid var(--border)',
             borderRadius: '14px',
-            padding: '40px 24px',
-            textAlign: 'center',
+            padding: '24px',
           }}>
-            <GitMerge size={28} color="var(--text-muted)" style={{ marginBottom: '12px', opacity: 0.4 }} />
-            <p style={{ margin: '0 0 4px', fontSize: '13px', color: 'var(--text-muted)', fontFamily: 'DM Sans, sans-serif' }}>
-              Gatilhos por evento em desenvolvimento
-            </p>
-            <p style={{ margin: 0, fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'DM Sans, sans-serif', opacity: 0.7 }}>
-              Ex: lead qualificado → ativa sequência de confirmação de agenda automaticamente
-            </p>
+            <TriggerConfig />
           </div>
         </section>
 
