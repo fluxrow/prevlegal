@@ -18,12 +18,7 @@
 | D | Roteamento por campanha/estágio + métricas por agente | 34e3f92 |
 
 ## Pendências operacionais (ação manual do usuário)
-1. **CRON_SECRET no Vercel** — adicionar env var no Vercel dashboard
-2. **Aplicar migration 041** — SQL Editor do Supabase:
-   ```sql
-   -- supabase/migrations/041_campanha_agente_routing.sql
-   -- enum agente_tipo, tipo em agentes, agente_id em campanhas, agente_respondente_id em mensagens_inbound
-   ```
+- Nenhuma pendência no momento. `CRON_SECRET` e `Migration 041` já foram aplicados.
 
 ## Arquitetura de roteamento do agente (Fase D)
 Prioridade no responder:
@@ -37,10 +32,11 @@ Mapa status → tipo:
 - qualificado/agendado → confirmacao_agenda
 - perdido/sem_resposta → reativacao
 
-## Próximo bloco — Fase E (sugestão)
-- Orquestração avançada: encadear múltiplos agentes por lead
-- Dashboard executivo: painel centralizado por agente/campanha
-- Warm-up automático de números WhatsApp
+## Próximo bloco — Fase E (Gatilhos e Orquestração)
+- Disparo automático de regras (Follow-up) por gatilhos de evento (ex: lead qualificado → ativa sequência manual).
+- Orquestração avançada: encadear múltiplos agentes por lead.
+- Dashboard executivo: painel centralizado por agente/campanha.
+- Warm-up automático de números WhatsApp.
 
 ## Arquivos-chave para contexto rápido
 - `docs/ROADMAP.md` — histórico completo de fases

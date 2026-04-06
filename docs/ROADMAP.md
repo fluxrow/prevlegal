@@ -1159,10 +1159,18 @@ Status atual em 18/03/2026:
 - commit: 34e3f92
 
 ### Pendências operacionais
-- Aplicar migration 041 no banco operacional (SQL Editor do Supabase)
-- Adicionar `CRON_SECRET` como env var no Vercel dashboard (herdado da Fase B)
+- ~~Aplicar migration 041 no banco operacional (SQL Editor do Supabase)~~ ✅ Concluído
+- ~~Adicionar `CRON_SECRET` como env var no Vercel dashboard~~ ✅ Concluído
 
-### Próximo passo — Fase E (sugestão)
-- Orquestração avançada: múltiplos agentes em sequência por lead
-- Dashboard executivo: painel centralizado de performance por agente/campanha
-- Warm-up automático de números WhatsApp novos
+## Atualização Crítica — Fix Follow-up e Automações — 06/04/2026
+
+### O que foi entregue
+- **Fix Follow-up API**: Corrige falha silenciosa na configuração de follow-up onde erros 401/409 na API `/api/followup/rules` não eram exibidos na UI. Adicionado try/catch com exibição de erros e botão de refresh.
+- **Nova página `/automacoes`**: Follow-up movido de uma tab obscura em Configurações para uma página própria de `/automacoes` no menu lateral principal.
+- **Preparação para Gatilhos**: A nova página de Automações divide espaço entre Sequências de Follow-up (ativas) e Gatilhos por Evento (Fase E).
+
+### Próximo passo — Fase E (Gatilhos e Orquestração)
+- Disparo automático de regras de follow-up por gatilhos de evento (ex: lead qualificado → dispara follow-up específico).
+- Orquestração avançada: múltiplos agentes em sequência por lead.
+- Dashboard executivo: painel centralizado de performance por agente/campanha.
+- Warm-up automático de números WhatsApp novos.
