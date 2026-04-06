@@ -20,6 +20,29 @@ Objetivo:
 - facilitar o repasse posterior para o Claude
 - registrar decisoes, arquivos afetados, validacoes e proximos passos
 
+## Atualizacao 2026-04-06 - Fase E (Gatilhos e Orquestracao Avançada) - Foundation Entregue
+
+- Construida a fundação completa do motor de gatilhos automáticos do PrevLegal
+- Arquivos adicionados/modificados:
+  - `supabase/migrations/042_event_triggers.sql`
+  - `src/app/api/automacoes/triggers/route.ts` (GET / POST)
+  - `src/app/api/automacoes/triggers/[id]/route.ts` (PATCH / DELETE)
+  - `src/lib/events/orchestrator.ts`
+  - `src/app/api/leads/[id]/route.ts`
+  - `src/components/automacoes/trigger-config.tsx`
+  - `src/app/(dashboard)/automacoes/page.tsx`
+- Mudanças principais no backend:
+  - O PATCH de status do Lead agora intercepta se `velho_status !== novo_status`
+  - Gatilhos escutam essa alteracao. Se houver mapeamento (`trigger_condicao === novo_status`), o orquestrador assincrono (`lib/events/orchestrator.ts`) aciona as réguas.
+  - O Orquestrador tem poderes para cancelar automaticamente followups concorrentes pre-existentes do usuário se a configuração pedir (autonomia no nível da rule).
+- Efeito prático: 
+  - A interface "Automações" nao esta mais apenas com recado de "em breve".
+  - Já consome do banco a visualizacao ON/OFF.
+- Ponto exato de retomada (para o AI sucessor):
+  - Iniciar focando puramente no Frontend
+  - Criar o *Modal de Formulário* dentro de `trigger-config.tsx` contendo o mapeamento de: Evento de disparo -> Status -> Acao -> Checkboxes de cancelamento e mensagem de transição.
+  - Implementar o disparo dummy de "Template Seed PrevLegal" nesse mesmo componente (injecao automatica do padrao de mercado).
+
 ## Atualizacao 2026-04-01 - Regra de portfólio do PrevLegal formalizada
 
 - o crescimento do produto ganhou uma regra canonica para evitar que novas oportunidades descaracterizem o core
