@@ -124,31 +124,47 @@ function RuleForm({
     setSalvando(true)
     setErro(null)
 
-    if (initial) {
-      // Editar nome/descricao
-      await fetch(`/api/followup/rules/${initial.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nome: nome.trim(), descricao: descricao.trim() || null }),
-      })
-      // Substituir steps
-      await fetch(`/api/followup/rules/${initial.id}/steps`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ steps: passos.map((s, i) => ({ ...s, ordem: i + 1 })) }),
-      })
-    } else {
-      const res = await fetch('/api/followup/rules', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nome: nome.trim(), descricao: descricao.trim() || null, steps: passos.map((s, i) => ({ ...s, ordem: i + 1 })) }),
-      })
-      if (!res.ok) {
-        const d = await res.json().catch(() => null)
-        setErro(d?.error || 'Erro ao salvar')
-        setSalvando(false)
-        return
+    try {
+      if (initial) {
+        const r1 = await fetch(`/api/followup/rules/${initial.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ nome: nome.trim(), descricao: descricao.trim() || null }),
+        })
+        if (!r1.ok) {
+          const d = await r1.json().catch(() => null)
+          setErro(d?.error || `Erro ao salvar (${r1.status})`)
+          setSalvando(false)
+          return
+        }
+        const r2 = await fetch(`/api/followup/rules/${initial.id}/steps`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ steps: passos.map((s, i) => ({ ...s, ordem: i + 1 })) }),
+        })
+        if (!r2.ok) {
+          const d = await r2.json().catch(() => null)
+          setErro(d?.error || `Erro ao salvar passos (${r2.status})`)
+          setSalvando(false)
+          return
+        }
+      } else {
+        const res = await fetch('/api/followup/rules', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ nome: nome.trim(), descricao: descricao.trim() || null, steps: passos.map((s, i) => ({ ...s, ordem: i + 1 })) }),
+        })
+        if (!res.ok) {
+          const d = await res.json().catch(() => null)
+          setErro(d?.error || `Erro ao criar regra (${res.status})`)
+          setSalvando(false)
+          return
+        }
       }
+    } catch (e: any) {
+      setErro(`Erro de rede: ${e?.message || 'desconhecido'}`)
+      setSalvando(false)
+      return
     }
 
     setSalvando(false)
@@ -217,6 +233,7 @@ function RuleForm({
 export default function FollowupConfig() {
   const [rules, setRules] = useState<Rule[]>([])
   const [loading, setLoading] = useState(true)
+  const [erroFetch, setErroFetch] = useState<string | null>(null)
   const [criando, setCriando] = useState(false)
   const [editando, setEditando] = useState<string | null>(null)
   const [expandido, setExpandido] = useState<string | null>(null)
@@ -224,9 +241,22 @@ export default function FollowupConfig() {
   const [erroRemover, setErroRemover] = useState<string | null>(null)
 
   async function fetchRules() {
-    const res = await fetch('/api/followup/rules')
-    if (res.ok) setRules(await res.json())
-    setLoading(false)
+    setErroFetch(null)
+    setLoading(true)
+    try {
+      const res = await fetch('/api/followup/rules')
+      if (res.ok) {
+        const data = await res.json()
+        setRules(Array.isArray(data) ? data : [])
+      } else {
+        const d = await res.json().catch(() => null)
+        setErroFetch(`Erro ao carregar regras: ${d?.error || res.status}`)
+      }
+    } catch (e: any) {
+      setErroFetch(`Erro de rede: ${e?.message || 'desconhecido'}`)
+    } finally {
+      setLoading(false)
+    }
   }
 
   useEffect(() => { void fetchRules() }, [])
@@ -280,9 +310,16 @@ export default function FollowupConfig() {
         </div>
       )}
 
+      {erroFetch && (
+        <div style={{ padding: '12px 16px', background: '#ff6b6b15', border: '1px solid #ff6b6b40', borderRadius: '10px', marginBottom: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+          <p style={{ margin: 0, fontSize: '12px', color: '#ff6b6b', fontFamily: 'DM Sans, sans-serif' }}>{erroFetch}</p>
+          <button onClick={() => void fetchRules()} style={{ background: 'transparent', border: '1px solid #ff6b6b40', borderRadius: '6px', padding: '4px 10px', fontSize: '11px', color: '#ff6b6b', cursor: 'pointer', whiteSpace: 'nowrap' }}>Tentar novamente</button>
+        </div>
+      )}
+
       {loading ? (
         <p style={{ fontSize: '13px', color: 'var(--text-muted)', fontFamily: 'DM Sans, sans-serif' }}>Carregando...</p>
-      ) : rules.length === 0 && !criando ? (
+      ) : rules.length === 0 && !criando && !erroFetch ? (
         <div style={{ padding: '40px 20px', textAlign: 'center', borderRadius: '12px', border: '1px dashed var(--border)' }}>
           <Zap size={28} color="var(--text-muted)" style={{ marginBottom: '8px' }} />
           <p style={{ color: 'var(--text-muted)', fontSize: '13px', fontFamily: 'DM Sans, sans-serif', margin: 0 }}>Nenhuma regra cadastrada ainda.</p>
