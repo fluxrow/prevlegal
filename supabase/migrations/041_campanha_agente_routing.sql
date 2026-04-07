@@ -1,39 +1,20 @@
--- Migration 041: Roteamento de agente por campanha e por estágio do lead (Fase D)
--- Aplica: enum tipo, coluna tipo em agentes, FK agente_id em campanhas,
---         rastreamento agente_respondente_id em mensagens_inbound
+-- Migration 041: Roteamento de agente por campanha (Fase D)
+--
+-- A coluna campanhas.agente_id e a FK campanhas_agente_id_fkey para agentes(id)
+-- já existem no banco. Esta migration formaliza o estado e adiciona o índice
+-- de performance para lookup do agente pelo responder.
 
--- 1. Tipo enum para categorização e roteamento por estágio
-do $$ begin
-  create type agente_tipo as enum (
-    'triagem',
-    'reativacao',
-    'documental',
-    'confirmacao_agenda',
-    'followup_comercial',
-    'geral'
-  );
-exception when duplicate_object then null;
-end $$;
+-- Índice para busca eficiente de campanhas por agente
+create index if not exists idx_campanhas_agente_id
+  on campanhas(agente_id)
+  where agente_id is not null;
 
--- 2. Adicionar tipo ao agente (default 'geral' para retrocompatibilidade)
-alter table agentes
-  add column if not exists tipo agente_tipo not null default 'geral';
+-- Comentários descritivos para documentar a lógica de roteamento
+comment on column campanhas.agente_id is
+  'Agente responsável por responder os leads desta campanha. '
+  'Se nulo, usa o agente padrão do tenant (agentes.is_default = true). '
+  'Se nenhum agente configurado, usa config global da tabela configuracoes.';
 
-comment on column agentes.tipo is 'Categoria do agente — usada para roteamento automático por estágio do lead';
-
--- 3. FK agente_id em campanhas (nullable — usa padrão do tenant se null)
-alter table campanhas
-  add column if not exists agente_id uuid references agentes(id) on delete set null;
-
-comment on column campanhas.agente_id is 'Agente específico para leads desta campanha; sobrescreve agente padrão do tenant';
-
--- 4. Rastrear qual agente respondeu cada mensagem (para métricas)
-alter table mensagens_inbound
-  add column if not exists agente_respondente_id uuid references agentes(id) on delete set null;
-
-comment on column mensagens_inbound.agente_respondente_id is 'Agente que gerou a resposta automática desta mensagem';
-
--- Índice para queries de métricas por agente
-create index if not exists idx_mensagens_inbound_agente_respondente
-  on mensagens_inbound(agente_respondente_id)
-  where agente_respondente_id is not null;
+comment on table agentes is
+  'Agentes de IA configuráveis por tenant. '
+  'Prioridade de uso no responder: campanha.agente_id > agentes.is_default > configuracoes global.';
