@@ -20,6 +20,40 @@ Objetivo:
 - facilitar o repasse posterior para o Claude
 - registrar decisoes, arquivos afetados, validacoes e proximos passos
 
+## Atualizacao 2026-04-08 - Loop de login corrigido com separacao entre auth e acesso operacional
+
+- problema reportado:
+  - ao autenticar, o usuário parecia entrar e em seguida voltava para `/login`
+- leitura técnica:
+  - o produto estava tratando ausência de `TenantContext` como falha de login
+  - isso mascara dois estados diferentes:
+    - usuário sem sessão
+    - usuário com sessão, mas sem `usuarios` ativo / sem `tenant_id` / sem liberação operacional
+- arquivos alterados:
+  - `src/app/(dashboard)/layout.tsx`
+  - `src/app/(auth)/login/page.tsx`
+  - `src/lib/supabase/middleware.ts`
+  - `src/app/acesso-pendente/page.tsx`
+- mudanças principais:
+  - o layout do dashboard agora:
+    - manda para `/login` quando não há sessão
+    - manda para `/acesso-pendente` quando há sessão, mas não há contexto operacional válido
+  - o login passou a:
+    - tocar `POST /api/session/touch`
+    - usar `router.replace('/dashboard')`
+    - fazer `router.refresh()` logo após autenticar
+  - o `proxy` passou a liberar `/acesso-pendente`
+- efeito prático:
+  - reduz diagnóstico falso de “login quebrado”
+  - acelera troubleshooting porque o estado visível já indica “falta provisionamento / acesso do escritório”
+- próximo passo operacional:
+  - testar com o usuário afetado
+  - se ele cair em `/acesso-pendente`, auditar:
+    - `usuarios.auth_id`
+    - `usuarios.ativo`
+    - `usuarios.tenant_id`
+    - bloqueio por contenção de e-mail
+
 ## Atualizacao 2026-04-08 - Templates de automação agora podem ser editados
 
 - a interface de `Automações` foi endurecida para uso real do escritório, não só para seed inicial

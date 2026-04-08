@@ -7,11 +7,14 @@ import UsuarioAvatar from '@/components/usuario-avatar'
 import SessionActivityTracker from '@/components/session-activity-tracker'
 import ThemeToggle from '@/components/theme-toggle'
 import { APP_IDLE_MINUTES } from '@/lib/session-config'
+import { getTenantContext } from '@/lib/tenant-context'
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) redirect('/login')
+    const context = await getTenantContext(supabase)
+    if (!context) redirect('/acesso-pendente')
 
     return (
         <div style={{ display: 'flex', minHeight: '100vh' }}>

@@ -18,6 +18,37 @@ Mestra: [[MASTER_PREV_LEGAL]]
 - [[Sessoes/2026-03-18-prevlegal-admin-roi-obsidian]]
 - [[Sessoes/2026-03-18-fase-24-inbox-operacional-unificada-roadmap-final]]
 
+## Atualizacao Login / Acesso do Escritório — 08/04/2026
+
+- foi corrigido o fluxo que dava sensação de “entra e volta para o login” logo após autenticar
+- arquivos principais:
+  - `src/app/(dashboard)/layout.tsx`
+  - `src/app/(auth)/login/page.tsx`
+  - `src/lib/supabase/middleware.ts`
+  - `src/app/acesso-pendente/page.tsx`
+- causa identificada:
+  - o sistema tratava ausência de contexto do escritório como se fosse falha de login
+  - na prática, o usuário podia autenticar no Supabase, mas não ter vínculo ativo em `usuarios` / `tenant_id`
+  - isso gerava um loop ruim: aparentava entrar e era devolvido para `/login`
+- correção aplicada:
+  - o layout do dashboard agora separa:
+    - `sem sessão` -> `/login`
+    - `sessão válida sem contexto operacional` -> `/acesso-pendente`
+  - o login passou a tocar `/api/session/touch` antes de redirecionar e usa `router.replace('/dashboard')`
+  - a rota pública `/acesso-pendente` foi liberada no `proxy`
+- impacto operacional:
+  - elimina o falso diagnóstico de “senha/login quebrado”
+  - deixa explícito quando o problema é provisionamento do usuário no escritório
+- validacao:
+  - `npm run build` passou
+- proximo passo recomendado:
+  - validar com o usuário que estava entrando e sendo devolvido ao login
+  - se cair em `/acesso-pendente`, revisar no banco:
+    - `usuarios.auth_id`
+    - `usuarios.ativo`
+    - `usuarios.tenant_id`
+    - contenção temporária por e-mail
+
 ## Atualizacao Importação Inteligente — 08/04/2026
 
 - o importador deixou de depender apenas do layout fixo da planilha clássica

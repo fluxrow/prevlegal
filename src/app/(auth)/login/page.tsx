@@ -20,7 +20,13 @@ export default function LoginPage() {
             setError('E-mail ou senha incorretos.')
             setLoading(false)
         } else {
-            router.push('/dashboard')
+            await fetch('/api/session/touch', {
+                method: 'POST',
+                credentials: 'include',
+                cache: 'no-store',
+            }).catch(() => null)
+            router.replace('/dashboard')
+            router.refresh()
         }
     }
 

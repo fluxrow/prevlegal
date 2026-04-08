@@ -49,7 +49,7 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const pathname = request.nextUrl.pathname
-  const publicPaths = ["/login", "/reauth", "/admin/login", "/admin/reauth", "/portal", "/auth/", "/lp.html", "/isolamento-em-andamento"];
+  const publicPaths = ["/login", "/reauth", "/admin/login", "/admin/reauth", "/portal", "/auth/", "/lp.html", "/isolamento-em-andamento", "/acesso-pendente"];
   const publicApiPrefixes = [
     '/api/admin/auth',
     '/api/admin/reauth',

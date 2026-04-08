@@ -1191,3 +1191,12 @@ Isso gera mais confianca e reduz sensacao de “portal vazio”
 **Causa:** O produto ganhou mais de um caminho de edição de `lead.status`, e só um deles tinha sido ligado ao `processEventTriggers`
 **Correcao aplicada:** `PATCH /api/leads/[id]/status` agora também lê o status anterior e dispara o orquestrador quando houver mudança real
 **Regra pratica:** No PrevLegal, sempre que uma automação depender de um evento de domínio como “status mudou”, todos os endpoints que produzem esse evento precisam chamar a mesma orquestração; não confiar em apenas um caminho da UI
+
+### 123. Sessao valida e acesso operacional valido nao sao a mesma coisa
+**Problema:** O usuario conseguia autenticar, via a plataforma por um instante e era devolvido para `/login`, criando a impressao de login quebrado
+**Causa:** O produto tratava `TenantContext = null` como se fosse falha de autenticacao, mas esse estado tambem acontece quando o usuario existe no Supabase e ainda nao tem vinculo ativo/utilizavel em `usuarios`
+**Correcao aplicada:** Separar os estados no app:
+- sem sessao -> `/login`
+- sessao valida sem contexto operacional -> `/acesso-pendente`
+e reforcar o pos-login com `POST /api/session/touch` antes de navegar para o dashboard
+**Regra pratica:** No PrevLegal, nunca colapsar `auth` e `provisionamento` no mesmo redirect de login; quando o problema for acesso do escritorio, a UI deve dizer isso explicitamente

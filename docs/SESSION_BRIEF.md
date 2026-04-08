@@ -37,6 +37,28 @@ Gatilho automático: a mudança de status do lead na API `PATCH` chama o *Orques
 - `src/lib/events/orchestrator.ts` — orquestrador de gatilhos na mudança de status do lead
 - `supabase/migrations/042_event_triggers.sql` — infra de BD para eventos
 
+## Atualização 2026-04-08 - Loop de login virou estado explícito de acesso pendente
+
+- sintoma reportado:
+  - usuário conseguia autenticar, entrava na plataforma e quase em seguida era devolvido ao login
+- causa confirmada em código:
+  - o app distinguia mal `sessão Supabase válida` de `acesso operacional válido ao escritório`
+  - quando o usuário não tinha contexto resolvível em `usuarios`, a experiência parecia “login quebrado”
+- arquivos principais:
+  - `src/app/(dashboard)/layout.tsx`
+  - `src/app/(auth)/login/page.tsx`
+  - `src/lib/supabase/middleware.ts`
+  - `src/app/acesso-pendente/page.tsx`
+- correção:
+  - dashboard agora manda para `/acesso-pendente` quando há sessão mas não há contexto do escritório
+  - login passou a estabilizar o pós-auth com `POST /api/session/touch` e `router.replace('/dashboard')`
+  - middleware passou a tratar `/acesso-pendente` como rota pública
+- leitura prática:
+  - daqui para frente, se o usuário cair em `acesso-pendente`, o problema não é senha
+  - o ponto a revisar é provisionamento / vínculo do usuário no tenant
+- validação:
+  - `npm run build` passou
+
 ## Atualização 2026-04-08 - Templates Seed da Fase E fechados
 
 - a aba `Automações` agora aplica templates padrão direto no banco
