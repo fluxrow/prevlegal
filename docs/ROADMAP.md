@@ -104,6 +104,35 @@ Mestra: [[MASTER_PREV_LEGAL]]
   - validar login real do `Fluxrow`
   - depois aplicar `043` e `044` em produção para liberar a experiência completa sem fallback
 
+## Atualizacao Agenda / Google resiliente a schema pendente — 08/04/2026
+
+- a camada de agendamento e status do Google foi endurecida para produção ainda sem `043`
+- arquivos principais:
+  - `src/lib/google-calendar.ts`
+  - `src/app/api/agendamentos/route.ts`
+  - `src/app/api/google/status/route.ts`
+  - `src/app/api/google/callback/route.ts`
+  - `src/app/(dashboard)/agendamentos/page.tsx`
+- causa identificada:
+  - o modal de novo agendamento ainda consultava `usuarios.google_calendar_email`
+  - a verificação de status do Google também podia quebrar ao ler colunas da agenda por usuário ainda não migradas
+  - isso gerava:
+    - erro vermelho ao tentar agendar
+    - estado de verificação que não concluía
+- correção aplicada:
+  - o responsável do agendamento agora usa fallback para schema mínimo de `usuarios`
+  - a leitura de status do Google não quebra mais quando as colunas de agenda por usuário ainda não existem
+  - o callback de OAuth por usuário deixa de estourar o runtime nesse cenário e devolve erro controlado
+  - a tela de agendamentos passou a tratar resposta não-`ok` do status do Google como estado neutro, sem spinner preso
+- impacto operacional:
+  - o escritório pode continuar agendando com fallback do calendário padrão do tenant
+  - a ausência da migration `043` deixa de travar a operação básica da agenda
+- validacao:
+  - `npm run build` passou
+- proximo passo recomendado:
+  - validar no runtime se o modal cria agendamento sem erro
+  - depois aplicar `043` para liberar conexão Google realmente individual por usuário
+
 ## Atualizacao Importação Inteligente — 08/04/2026
 
 - o importador deixou de depender apenas do layout fixo da planilha clássica

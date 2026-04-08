@@ -1,5 +1,6 @@
 import { google } from 'googleapis'
 import { getConfiguracaoAtual } from '@/lib/configuracoes'
+import { isMissingUserCalendarColumnError } from '@/lib/permissions'
 
 type SupabaseLike = {
   from: (table: string) => any
@@ -77,6 +78,9 @@ async function getUserCalendarConnection(
     .maybeSingle()
 
   if (error) {
+    if (isMissingUserCalendarColumnError(error)) {
+      return null
+    }
     throw new Error(error.message)
   }
 

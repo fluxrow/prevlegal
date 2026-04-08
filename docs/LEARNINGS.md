@@ -1232,3 +1232,13 @@ e mover o login principal para uma rota server-side (`POST /api/session/login`) 
 - mínimo sem agenda própria nem permissões
 e a API de listagem de usuários ganhou a mesma resiliência
 **Regra pratica:** No PrevLegal, quando o runtime precisa sobreviver a migrations pendentes, o fallback deve cobrir todo o grupo de colunas opcionais daquela fase e não apenas a primeira coluna nova que causou erro
+
+### 128. Agenda por usuário não pode travar o agendamento básico enquanto a migration ainda não existe
+**Problema:** Depois que o login foi destravado, o modal de novo agendamento ainda falhava com `column usuarios.google_calendar_email does not exist`, e a verificação do Google podia parecer infinita
+**Causa:** A fase de agenda por usuário foi implementada no código, mas a produção ainda não tem a `043`; algumas rotas de agenda continuavam consultando as colunas novas de `usuarios` sem fallback
+**Correcao aplicada:** Tornar a camada de agenda resiliente:
+- fallback do responsável do agendamento para schema mínimo (`id, nome, email`)
+- status do Google devolvendo estado neutro em vez de erro fatal
+- leitura da conexão por usuário retornando `null` quando as colunas da `043` ainda não existem
+- callback de OAuth por usuário falhando de forma controlada, sem quebrar a navegação
+**Regra pratica:** No PrevLegal, capacidades novas como Google por usuário podem degradar para fallback do escritório, mas nunca devem bloquear a criação do agendamento básico por coluna ausente

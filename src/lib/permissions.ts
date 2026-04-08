@@ -83,3 +83,11 @@ export function isMissingUsuarioOptionalColumnError(error: unknown) {
     'google_calendar_connected_at',
   ])
 }
+
+export function isMissingUserCalendarColumnError(error: unknown) {
+  return isMissingColumnError(error, [
+    'google_calendar_token',
+    'google_calendar_email',
+    'google_calendar_connected_at',
+  ])
+}

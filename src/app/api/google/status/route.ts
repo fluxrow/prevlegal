@@ -14,11 +14,20 @@ export async function GET() {
     })
   }
 
-  const status = await getGoogleCalendarStatus({
-    supabase,
-    tenantId: context.tenantId,
-    usuarioId: context.usuarioId,
-  })
+  try {
+    const status = await getGoogleCalendarStatus({
+      supabase,
+      tenantId: context.tenantId,
+      usuarioId: context.usuarioId,
+    })
 
-  return NextResponse.json(status)
+    return NextResponse.json(status)
+  } catch (error) {
+    console.warn('Falha ao verificar status do Google Calendar:', error)
+    return NextResponse.json({
+      currentUser: { connected: false, email: null, connectedAt: null },
+      tenantDefault: { connected: false, email: null, connectedAt: null },
+      effective: { connected: false, source: 'none', email: null },
+    })
+  }
 }

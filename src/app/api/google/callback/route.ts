@@ -3,6 +3,7 @@ import { getTenantContext } from '@/lib/tenant-context'
 import { ensureConfiguracaoAtual } from '@/lib/configuracoes'
 import { NextRequest, NextResponse } from 'next/server'
 import { google } from 'googleapis'
+import { isMissingUserCalendarColumnError } from '@/lib/permissions'
 
 type GoogleAuthTarget = 'tenant' | 'user'
 
@@ -116,6 +117,11 @@ export async function GET(request: NextRequest) {
         .eq('tenant_id', context.tenantId)
 
       if (updateError) {
+        if (isMissingUserCalendarColumnError(updateError)) {
+          return NextResponse.redirect(
+            buildReturnUrl(next, { google: 'erro', google_target: target }),
+          )
+        }
         throw new Error(updateError.message)
       }
     }

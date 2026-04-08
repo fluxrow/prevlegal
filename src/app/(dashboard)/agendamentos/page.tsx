@@ -152,7 +152,15 @@ export default function AgendamentosPage() {
   async function checkGoogle() {
     try {
       const res = await fetch('/api/google/status')
-      if (res.ok) setGoogleStatus(await res.json())
+      if (!res.ok) {
+        setGoogleStatus({
+          currentUser: { connected: false, email: null, connectedAt: null },
+          tenantDefault: { connected: false, email: null, connectedAt: null },
+          effective: { connected: false, source: 'none', email: null },
+        })
+        return
+      }
+      setGoogleStatus(await res.json())
     } catch {
       setGoogleStatus({
         currentUser: { connected: false, email: null, connectedAt: null },

@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server'
 import { criarEventoCalendar } from '@/lib/google-calendar'
 import { getTenantContext } from '@/lib/tenant-context'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
+import { isMissingUserCalendarColumnError } from '@/lib/permissions'
 
 async function getScopedLead(
   supabase: any,
@@ -38,13 +39,23 @@ async function getScopedUsuario(
   const resolvedId = usuarioId || context.usuarioId
   if (!context.tenantId || !resolvedId) return null
 
-  const { data, error } = await supabase
+  let result = await supabase
     .from('usuarios')
     .select('id, nome, email, google_calendar_email, google_calendar_connected_at')
     .eq('id', resolvedId)
     .eq('tenant_id', context.tenantId)
     .maybeSingle()
 
+  if (isMissingUserCalendarColumnError(result.error)) {
+    result = await supabase
+      .from('usuarios')
+      .select('id, nome, email')
+      .eq('id', resolvedId)
+      .eq('tenant_id', context.tenantId)
+      .maybeSingle()
+  }
+
+  const { data, error } = result
   if (error) {
     throw new Error(error.message)
   }
