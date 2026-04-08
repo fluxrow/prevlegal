@@ -9,42 +9,119 @@ function createAdminClient() {
   )
 }
 
-export async function resolveUsuarioAtual(authUser: User) {
-  const adminClient = createAdminClient()
-  const normalizedEmail = (authUser.email || '').trim().toLowerCase()
-
+async function findUsuarioByAuthId(adminClient: ReturnType<typeof createAdminClient>, authUserId: string) {
   let query = await adminClient
     .from('usuarios')
     .select('id, auth_id, tenant_id, nome, email, role, permissions, ativo, google_calendar_email, google_calendar_connected_at')
-    .eq('auth_id', authUser.id)
+    .eq('auth_id', authUserId)
     .maybeSingle()
 
   if (isMissingPermissionsColumnError(query.error)) {
     query = await adminClient
       .from('usuarios')
       .select('id, auth_id, tenant_id, nome, email, role, ativo, google_calendar_email, google_calendar_connected_at')
-      .eq('auth_id', authUser.id)
+      .eq('auth_id', authUserId)
       .maybeSingle()
   }
 
-  let usuario = query.data
-  let error = query.error
+  return query
+}
 
-  if ((!usuario || error) && normalizedEmail) {
-    let fallbackQuery = await adminClient
+async function findUsuarioByEmail(adminClient: ReturnType<typeof createAdminClient>, email: string) {
+  let query = await adminClient
+    .from('usuarios')
+    .select('id, auth_id, tenant_id, nome, email, role, permissions, ativo, google_calendar_email, google_calendar_connected_at')
+    .eq('email', email)
+    .maybeSingle()
+
+  if (isMissingPermissionsColumnError(query.error)) {
+    query = await adminClient
+      .from('usuarios')
+      .select('id, auth_id, tenant_id, nome, email, role, ativo, google_calendar_email, google_calendar_connected_at')
+      .eq('email', email)
+      .maybeSingle()
+  }
+
+  return query
+}
+
+async function ensureResponsibleTenantAccess(
+  adminClient: ReturnType<typeof createAdminClient>,
+  authUser: User,
+  normalizedEmail: string,
+) {
+  const { data: tenantMatches, error: tenantError } = await adminClient
+    .from('tenants')
+    .select('id, nome, responsavel_nome, responsavel_email')
+    .eq('responsavel_email', normalizedEmail)
+    .limit(2)
+
+  if (tenantError || !tenantMatches || tenantMatches.length !== 1) return null
+
+  const tenant = tenantMatches[0]
+
+  const usuarioPorEmail = await findUsuarioByEmail(adminClient, normalizedEmail)
+  let usuario = usuarioPorEmail.data
+
+  if (!usuario) {
+    let usuarioAdminTenant = await adminClient
       .from('usuarios')
       .select('id, auth_id, tenant_id, nome, email, role, permissions, ativo, google_calendar_email, google_calendar_connected_at')
-      .eq('email', normalizedEmail)
+      .eq('tenant_id', tenant.id)
+      .eq('role', 'admin')
+      .order('convidado_em', { ascending: true })
+      .limit(1)
       .maybeSingle()
 
-    if (isMissingPermissionsColumnError(fallbackQuery.error)) {
-      fallbackQuery = await adminClient
+    if (isMissingPermissionsColumnError(usuarioAdminTenant.error)) {
+      usuarioAdminTenant = await adminClient
         .from('usuarios')
         .select('id, auth_id, tenant_id, nome, email, role, ativo, google_calendar_email, google_calendar_connected_at')
-        .eq('email', normalizedEmail)
+        .eq('tenant_id', tenant.id)
+        .eq('role', 'admin')
+        .order('convidado_em', { ascending: true })
+        .limit(1)
         .maybeSingle()
     }
 
+    usuario = usuarioAdminTenant.data
+  }
+
+  const payload = {
+    auth_id: authUser.id,
+    tenant_id: tenant.id,
+    email: normalizedEmail,
+    nome: tenant.responsavel_nome || usuario?.nome || tenant.nome,
+    role: 'admin',
+    ativo: true,
+    updated_at: new Date().toISOString(),
+  }
+
+  if (usuario) {
+    await adminClient
+      .from('usuarios')
+      .update(payload)
+      .eq('id', usuario.id)
+  } else {
+    await adminClient
+      .from('usuarios')
+      .insert(payload)
+  }
+
+  const repaired = await findUsuarioByAuthId(adminClient, authUser.id)
+  return repaired.data || null
+}
+
+export async function resolveUsuarioAtual(authUser: User) {
+  const adminClient = createAdminClient()
+  const normalizedEmail = (authUser.email || '').trim().toLowerCase()
+
+  const authQuery = await findUsuarioByAuthId(adminClient, authUser.id)
+  let usuario = authQuery.data
+  let error = authQuery.error
+
+  if ((!usuario || error) && normalizedEmail) {
+    const fallbackQuery = await findUsuarioByEmail(adminClient, normalizedEmail)
     usuario = fallbackQuery.data
     error = fallbackQuery.error
 
@@ -54,6 +131,11 @@ export async function resolveUsuarioAtual(authUser: User) {
         .update({ auth_id: authUser.id, updated_at: new Date().toISOString() })
         .eq('id', usuario.id)
     }
+  }
+
+  if ((!usuario || error) && normalizedEmail) {
+    usuario = await ensureResponsibleTenantAccess(adminClient, authUser, normalizedEmail)
+    error = null
   }
 
   if (error || !usuario || !usuario.ativo) return null

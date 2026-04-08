@@ -1214,4 +1214,5 @@ e mover o login principal para uma rota server-side (`POST /api/session/login`) 
 - tenta achar por `auth_id`
 - faz fallback por e-mail autenticado
 - autocorrige `usuarios.auth_id` quando encontra o registro certo
+ - se ainda assim não existir `usuarios` compatível, tenta derivar o acesso pelo próprio `tenants.responsavel_email` e garante um admin operacional mínimo para o responsável
 **Regra pratica:** No PrevLegal, identidade operacional do usuário deve preferir `auth_id`, mas precisa ter caminho seguro de auto-heal por e-mail para evitar bloqueio após reprovisionamento legítimo
