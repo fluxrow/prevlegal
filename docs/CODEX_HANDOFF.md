@@ -2484,3 +2484,17 @@ Pontos que precisam ser preservados durante a implementacao:
 - proximo passo sugerido:
   - validar em runtime o seed de agentes no tenant atual
   - depois clicar novamente no seed dos gatilhos
+
+## Atualizacao 2026-04-08 - Rota rapida de status foi alinhada ao orquestrador
+
+- a verificacao do codigo mostrou uma lacuna real:
+  - `PATCH /api/leads/[id]` ja disparava `processEventTriggers`
+  - `PATCH /api/leads/[id]/status` ainda nao disparava
+- correcao aplicada:
+  - `src/app/api/leads/[id]/status/route.ts`
+  - agora a rota le o status anterior e chama `processEventTriggers` quando houver mudanca real
+- impacto:
+  - a Fase E passa a ser consistente entre os dois caminhos de mudanca de status na UI
+  - isso reduz falso negativo de QA, onde a automacao parecia “funcionar em um lugar e em outro nao”
+- validacao:
+  - `npm run build` passou

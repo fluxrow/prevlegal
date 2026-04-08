@@ -122,3 +122,17 @@ Gatilho automático: a mudança de status do lead na API `PATCH` chama o *Orques
   - `npm run build` passou
 - próximo passo recomendado:
   - validar o seed dos agentes em runtime no tenant atual e depois voltar ao seed dos gatilhos
+
+## Atualização 2026-04-08 - Rota rápida de status agora também dispara a Fase E
+
+- foi corrigida uma inconsistência entre os dois caminhos de atualização de status do lead
+- arquivo principal:
+  - `src/app/api/leads/[id]/status/route.ts`
+- correção:
+  - a rota rápida de status agora também chama `processEventTriggers` quando o status realmente muda
+  - antes disso, os gatilhos da Fase E só rodavam no `PATCH /api/leads/[id]`, o que criava comportamento diferente dependendo do ponto da UI usado pelo operador
+- impacto:
+  - o teste e a operação ficam mais confiáveis
+  - mudar o status pelo fluxo rápido ou pelo update completo do lead passa a acionar a mesma automação
+- validação:
+  - `npm run build` passou

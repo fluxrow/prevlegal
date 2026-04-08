@@ -21,6 +21,12 @@ export async function PATCH(
   const allowed = await canAccessLeadId(supabase, context, id)
   if (!allowed) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
+  const { data: oldLead } = await supabase
+    .from('leads')
+    .select('status')
+    .eq('id', id)
+    .single()
+
   const { data, error } = await supabase
     .from('leads')
     .update({ status, updated_at: new Date().toISOString() })
@@ -29,5 +35,13 @@ export async function PATCH(
     .single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  if (oldLead && oldLead.status !== status) {
+    const { processEventTriggers } = await import('@/lib/events/orchestrator')
+
+    await processEventTriggers(context.tenantId, id, 'lead_status_mudou', status)
+      .catch(err => console.error('[Orquestrador] Erro ao disparar gatilho pela rota de status:', err))
+  }
+
   return NextResponse.json({ success: true, lead: data })
 }

@@ -1267,3 +1267,15 @@ Status atual em 18/03/2026:
 - próximo passo recomendado:
   - usar o seed de agentes no tenant atual
   - depois reexecutar o `Templates PrevLegal` de gatilhos
+
+## Atualização 2026-04-08 — Status rápido do lead foi alinhado ao orquestrador
+
+- a rota `PATCH /api/leads/[id]/status` passou a acionar `processEventTriggers`
+- isso fecha a lacuna onde a Fase E só rodava pelo update completo em `PATCH /api/leads/[id]`
+- impacto prático:
+  - o operador pode trocar status pelo caminho rápido sem perder automação
+  - o QA de gatilhos deixa de depender de qual tela fez a mudança
+- validação:
+  - `npm run build` passou
+- próximo passo recomendado:
+  - com agentes já seeded, ativar uma régua e testar o seed dos gatilhos de novo

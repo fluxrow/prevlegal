@@ -1116,3 +1116,9 @@ Isso gera mais confianca e reduz sensacao de “portal vazio”
 **Causa:** O produto já tinha um papel suficientemente próximo (`followup_comercial`), então forçar uma categoria nova agora geraria complexidade antes da hora
 **Correcao aplicada:** O agente de fechamento entrou nesta rodada modelado como `followup_comercial`, com naming e objetivo explícitos de proposta/fechamento
 **Regra pratica:** No PrevLegal, quando uma nova função operacional cabe semanticamente em um papel já existente, prefira encaixar no tipo compatível e só abrir novo enum/estágio quando houver necessidade real de roteamento ou métrica separados
+
+### 122. Gatilho por status precisa disparar em todos os caminhos de troca de status
+**Problema:** A automação da Fase E podia parecer instável porque o gatilho rodava no update completo do lead, mas não no endpoint rápido de mudança de status
+**Causa:** O produto ganhou mais de um caminho de edição de `lead.status`, e só um deles tinha sido ligado ao `processEventTriggers`
+**Correcao aplicada:** `PATCH /api/leads/[id]/status` agora também lê o status anterior e dispara o orquestrador quando houver mudança real
+**Regra pratica:** No PrevLegal, sempre que uma automação depender de um evento de domínio como “status mudou”, todos os endpoints que produzem esse evento precisam chamar a mesma orquestração; não confiar em apenas um caminho da UI
