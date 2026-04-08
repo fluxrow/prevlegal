@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient as createAdmin } from '@supabase/supabase-js'
 import { getUsuarioLogado, hasPermission } from '@/lib/auth-role'
+import { isMissingPermissionsColumnError } from '@/lib/permissions'
 
 function createAdminClient() {
   return createAdmin(
@@ -32,7 +33,7 @@ export async function PATCH(
     if (body[key] !== undefined) update[key] = body[key]
   }
 
-  const { data, error } = await adminClient
+  let result = await adminClient
     .from('usuarios')
     .update({ ...update, updated_at: new Date().toISOString() })
     .eq('id', id)
@@ -40,6 +41,23 @@ export async function PATCH(
     .select()
     .single()
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  return NextResponse.json({ success: true, usuario: data })
+  if (isMissingPermissionsColumnError(result.error)) {
+    const { permissions: _permissions, ...fallbackUpdate } = update
+    result = await adminClient
+      .from('usuarios')
+      .update({ ...fallbackUpdate, updated_at: new Date().toISOString() })
+      .eq('id', id)
+      .eq('tenant_id', usuarioLogado.tenant_id)
+      .select()
+      .single()
+  }
+
+  if (result.error) return NextResponse.json({ error: result.error.message }, { status: 500 })
+  return NextResponse.json({
+    success: true,
+    usuario: {
+      ...result.data,
+      permissions: result.data && 'permissions' in result.data ? result.data.permissions : null,
+    },
+  })
 }

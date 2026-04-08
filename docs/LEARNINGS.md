@@ -1200,3 +1200,9 @@ Isso gera mais confianca e reduz sensacao de “portal vazio”
 - sessao valida sem contexto operacional -> `/acesso-pendente`
 e mover o login principal para uma rota server-side (`POST /api/session/login`) para a sessao nascer no servidor antes do redirect para o dashboard
 **Regra pratica:** No PrevLegal, nunca colapsar `auth` e `provisionamento` no mesmo redirect de login; quando o problema for acesso do escritorio, a UI deve dizer isso explicitamente
+
+### 124. Migracao de permissao granular nao pode derrubar o login do tenant se ainda nao estiver aplicada em producao
+**Problema:** Depois da rodada de permissões granulares, usuários do app podiam cair em `acesso-pendente` mesmo com tenant e login antes funcionais
+**Causa:** O código passou a selecionar `usuarios.permissions`, mas a produção ainda pode estar sem a migration `044_user_permissions_foundation.sql`; nesse caso, `getTenantContext()` falha e o app interpreta como ausência de contexto operacional
+**Correcao aplicada:** Adicionar fallback nos pontos críticos (`getTenantContext`, `getUsuarioLogado`, APIs de usuários) para reexecutar a consulta sem a coluna `permissions` e operar só com os presets por `role`
+**Regra pratica:** No PrevLegal, quando uma migration de segurança/governança ainda não está garantida em todos os ambientes, o runtime deve degradar com segurança em vez de bloquear autenticação e contexto base do tenant

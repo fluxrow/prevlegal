@@ -163,6 +163,9 @@ Mestra: [[MASTER_PREV_LEGAL]]
   - abre espaço para secretária, coordenador e operador sênior terem acesso sob medida sem virar admin total
 - limite explicitado:
   - esta fase aplica permissão granular nos módulos críticos, mas ainda não substitui todo e qualquer `isAdmin` espalhado no produto
+- compatibilidade runtime adicionada depois:
+  - a produção ainda pode estar sem a migration `044`
+  - por isso o app ganhou fallback para continuar operando só com `role` quando a coluna `usuarios.permissions` ainda não existe
 - validacao:
   - `npm run build` passou
 - proximo passo recomendado:

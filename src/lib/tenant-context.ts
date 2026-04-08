@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import type { PermissionKey, PermissionMap, Role } from '@/lib/permissions'
-import { hasPermission as hasResolvedPermission } from '@/lib/permissions'
+import { hasPermission as hasResolvedPermission, isMissingPermissionsColumnError } from '@/lib/permissions'
 
 export interface TenantContext {
   authUserId: string
@@ -18,11 +18,21 @@ export async function getTenantContext(existingSupabase?: Awaited<ReturnType<typ
 
   if (userError || !user) return null
 
-  const { data: usuario, error: usuarioError } = await supabase
+  let usuarioQuery = await supabase
     .from('usuarios')
     .select('id, tenant_id, email, role, permissions, ativo')
     .eq('auth_id', user.id)
     .maybeSingle()
+
+  if (isMissingPermissionsColumnError(usuarioQuery.error)) {
+    usuarioQuery = await supabase
+      .from('usuarios')
+      .select('id, tenant_id, email, role, ativo')
+      .eq('auth_id', user.id)
+      .maybeSingle()
+  }
+
+  const { data: usuario, error: usuarioError } = usuarioQuery
 
   if (usuarioError || !usuario || !usuario.ativo) return null
 
@@ -32,7 +42,7 @@ export async function getTenantContext(existingSupabase?: Awaited<ReturnType<typ
     tenantId: usuario.tenant_id || null,
     email: (user.email || usuario.email || '').toLowerCase(),
     role: usuario.role as Role,
-    permissions: (usuario.permissions || null) as Partial<PermissionMap> | null,
+    permissions: ('permissions' in usuario ? (usuario.permissions || null) : null) as Partial<PermissionMap> | null,
     isAdmin: usuario.role === 'admin',
   } satisfies TenantContext
 }

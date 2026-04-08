@@ -61,3 +61,13 @@ export function hasPermission(
 ) {
   return resolvePermissions(source.role, source.permissions)[permission]
 }
+
+export function isMissingPermissionsColumnError(error: unknown) {
+  if (!error || typeof error !== 'object') return false
+
+  const message = 'message' in error && typeof error.message === 'string' ? error.message.toLowerCase() : ''
+  const details = 'details' in error && typeof error.details === 'string' ? error.details.toLowerCase() : ''
+
+  return (message.includes('permissions') || details.includes('permissions'))
+    && (message.includes('column') || details.includes('column'))
+}
