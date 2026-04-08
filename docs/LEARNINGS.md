@@ -1098,3 +1098,9 @@ Isso gera mais confianca e reduz sensacao de “portal vazio”
 **Causa:** O componente usava `var(--bg-default)`, mas essa variável não existe no tema atual; o navegador caía para cores inválidas e o CTA perdia contraste
 **Correcao aplicada:** Trocar a dependência por cores explícitas e variáveis reais do design system (`var(--accent)` + `#fff`) e revisar outros pontos da mesma tela que ainda usavam `--bg-default`
 **Regra pratica:** No PrevLegal, CTA operacional importante não deve depender de variável de tema inexistente ou ambígua; em ações primárias, prefira contraste explícito e previsível
+
+### 119. Seed operacional precisa dizer com clareza quando o problema é falta de prerequisito, nao erro de sistema
+**Problema:** A UI de automações parecia “quebrada” quando o seed retornava `Nenhum template novo foi inserido`, mesmo com o backend funcionando corretamente
+**Causa:** O tenant real ainda nao tinha agentes ativos nem regua ativa, mas a tela devolvia um feedback visual que soava como sucesso generico ou falha ambigua
+**Correcao aplicada:** O feedback do seed passou a diferenciar `warning` de `success`, o modal bloqueia selecoes sem recurso disponivel e a UI explica exatamente o que falta no tenant para criar gatilhos
+**Regra pratica:** No PrevLegal, quando uma automacao depende de configuracao previa do escritorio, a interface deve expor o prerequisito faltante e orientar o proximo passo; nao deixar o operador adivinhar se houve bug ou apenas setup incompleto

@@ -74,3 +74,22 @@ Gatilho automático: a mudança de status do lead na API `PATCH` chama o *Orques
   - a UI também passou a avisar quando faltam pré-requisitos do tenant para o `Templates PrevLegal`
 - validação:
   - `npm run build` passou
+
+## Atualização 2026-04-08 - Pré-requisitos dos gatilhos ficaram explícitos na UI
+
+- a validação em runtime mostrou que o seed estava correto, mas o tenant atual ainda não tem base suficiente para popular todos os templates
+- estado observado no tenant operacional:
+  - nenhuma régua de follow-up ativa
+  - nenhum agente ativo
+  - nenhum `event_trigger` criado ainda
+- ajustes aplicados em `src/components/automacoes/trigger-config.tsx`:
+  - `Novo Gatilho` e `Salvar Gatilho` passaram a usar contraste e aparência explícitos, reduzindo risco de botão “bloco preto” por override visual
+  - o feedback do seed deixa de parecer “sucesso verde” quando nada foi inserido por falta de recurso e passa a sinalizar aviso
+  - o modal desabilita opções sem recurso real e explica o que falta no tenant:
+    - régua ativa
+    - agente ativo
+  - quando houver só 1 agente ativo, a UI informa isso explicitamente
+- validação:
+  - `npm run build` passou
+- próximo passo recomendado:
+  - criar pelo menos 1 agente de triagem, 1 de confirmação, 1 de reativação e ativar 1 régua para que o `Templates PrevLegal` consiga popular a base

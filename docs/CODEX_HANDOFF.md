@@ -2424,3 +2424,29 @@ Pontos que precisam ser preservados durante a implementacao:
 - próximo passo sugerido:
   - validar em runtime o clique do seed na tela `/automacoes`
   - depois voltar ao refinamento do modal avançado de criação/edição de gatilhos
+
+## Atualizacao 2026-04-08 - Runtime do seed validado e modal ficou honesto com o tenant
+
+- a validacao em runtime mostrou que o seed estava coerente com o banco operacional atual
+- estado real do tenant durante o teste:
+  - `followup_rules`: existe 1 regra, mas `ativo = false`
+  - `agentes`: nenhum registro ativo
+  - `event_triggers`: vazio
+- por isso a UI mostrava `Nenhum template novo foi inserido. 4 indisponível(is)`; isso nao era erro do seed, e sim falta de prerequisitos reais
+- ajustes finais feitos em `src/components/automacoes/trigger-config.tsx`:
+  - `Novo Gatilho` e `Salvar Gatilho` reforcados com gradiente/contraste explicito e `appearance` travado para evitar regressao visual no browser
+  - feedback do seed ganhou estado `warning` quando nada entra por indisponibilidade
+  - modal de criacao desabilita radio/select sem recurso real disponivel
+  - links de ajuda apontam para:
+    - `/automacoes` para ativar/criar regua
+    - `/configuracoes?tab=agentes` para cadastrar agentes
+  - quando houver apenas 1 agente ativo, a UI deixa isso claro
+- validacao:
+  - `npm run build` passou
+- proximo passo sugerido:
+  - provisionar a base minima do tenant:
+    - 1 agente de triagem
+    - 1 agente de confirmacao
+    - 1 agente de reativacao
+    - 1 regua ativa
+  - depois reexecutar o seed dos templates

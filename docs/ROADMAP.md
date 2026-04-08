@@ -1223,3 +1223,20 @@ Status atual em 18/03/2026:
     - agente de reativação
 - validação:
   - `npm run build` passou
+
+## Atualização 2026-04-08 — Seed validado em runtime e pré-requisitos expostos na UI
+
+- a validação do tenant real confirmou que o seed de `event_triggers` não estava falhando
+- o comportamento observado foi coerente com a configuração atual do escritório:
+  - `0` réguas ativas
+  - `0` agentes ativos
+  - `0` gatilhos existentes
+- a UI de `Automações` foi endurecida para refletir esse cenário com honestidade operacional:
+  - feedback do seed vira aviso quando nada é inserido por indisponibilidade de recursos
+  - modal de gatilhos desabilita seleção sem recurso válido
+  - mensagens orientam o operador para criar agentes em `/configuracoes?tab=agentes` e ativar réguas em `/automacoes`
+  - os CTAs `Novo Gatilho` e `Salvar Gatilho` receberam contraste visual explícito para evitar regressão de legibilidade
+- validação:
+  - `npm run build` passou
+- próximo passo recomendado:
+  - criar a base mínima de agentes/régua no tenant atual e então reexecutar `Templates PrevLegal`

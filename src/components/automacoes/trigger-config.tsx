@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { GitMerge, Plus, AlertCircle, RefreshCw, Trash2, Settings, Play, X, ChevronDown, ChevronUp } from 'lucide-react'
+import { GitMerge, Plus, RefreshCw, Trash2, Play, X, ChevronDown, ChevronUp } from 'lucide-react'
 
 export interface EventTrigger {
   id: string
@@ -22,12 +22,12 @@ export default function TriggerConfig() {
   const [triggers, setTriggers] = useState<EventTrigger[]>([])
   
   // Data for Selects
-  const [followupRules, setFollowupRules] = useState<{id: string, nome: string}[]>([])
-  const [agentes, setAgentes] = useState<{id: string, nome_interno: string}[]>([])
+  const [followupRules, setFollowupRules] = useState<{id: string, nome: string, ativo?: boolean}[]>([])
+  const [agentes, setAgentes] = useState<{id: string, nome_interno: string, tipo?: string, ativo?: boolean}[]>([])
 
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [seedFeedback, setSeedFeedback] = useState<{ tone: 'success' | 'error'; text: string } | null>(null)
+  const [seedFeedback, setSeedFeedback] = useState<{ tone: 'success' | 'warning' | 'error'; text: string } | null>(null)
   const [isSeeding, setIsSeeding] = useState(false)
 
   // Modal State
@@ -82,16 +82,20 @@ export default function TriggerConfig() {
     }
   }
 
-  const regrasAtivas = followupRules.length
-  const agentesTriagem = agentes.filter((agente: any) => agente.tipo === 'triagem').length
-  const agentesConfirmacao = agentes.filter((agente: any) => agente.tipo === 'confirmacao_agenda').length
-  const agentesReativacao = agentes.filter((agente: any) => agente.tipo === 'reativacao').length
+  const regrasAtivas = followupRules.filter((regra) => regra.ativo !== false)
+  const agentesAtivos = agentes.filter((agente) => agente.ativo !== false)
+  const agentesTriagem = agentesAtivos.filter((agente) => agente.tipo === 'triagem').length
+  const agentesConfirmacao = agentesAtivos.filter((agente) => agente.tipo === 'confirmacao_agenda').length
+  const agentesReativacao = agentesAtivos.filter((agente) => agente.tipo === 'reativacao').length
   const faltasSeed: string[] = []
 
-  if (regrasAtivas === 0) faltasSeed.push('nenhuma régua ativa de follow-up')
+  if (regrasAtivas.length === 0) faltasSeed.push('nenhuma régua ativa de follow-up')
   if (agentesTriagem === 0) faltasSeed.push('nenhum agente de triagem')
   if (agentesConfirmacao === 0) faltasSeed.push('nenhum agente de confirmação')
   if (agentesReativacao === 0) faltasSeed.push('nenhum agente de reativação')
+
+  const podeUsarFollowup = regrasAtivas.length > 0
+  const podeUsarAgentes = agentesAtivos.length > 0
 
   function getAcaoNome(trigger: EventTrigger) {
     if (trigger.acao_tipo === 'iniciar_followup') {
@@ -176,9 +180,20 @@ export default function TriggerConfig() {
         data?.unavailable_count ? `${data.unavailable_count} indisponível(is)` : null,
       ].filter(Boolean).join(' · ')
 
+      const unavailableDetails = Array.isArray(data?.unavailable) && data.unavailable.length > 0
+        ? ` ${data.unavailable.map((item: { label: string; reason: string }) => `${item.label}: ${item.reason}`).join(' | ')}`
+        : ''
+
+      const feedbackTone =
+        (data?.inserted_count ?? 0) > 0
+          ? 'success'
+          : (data?.unavailable_count ?? 0) > 0
+            ? 'warning'
+            : 'success'
+
       setSeedFeedback({
-        tone: 'success',
-        text: detalhes ? `${data?.message || 'Templates aplicados.'} ${detalhes}` : (data?.message || 'Templates aplicados.'),
+        tone: feedbackTone,
+        text: `${detalhes ? `${data?.message || 'Templates aplicados.'} ${detalhes}` : (data?.message || 'Templates aplicados.')}${unavailableDetails}`,
       })
     } catch (err: any) {
       setSeedFeedback({
@@ -197,9 +212,10 @@ export default function TriggerConfig() {
         <div style={{ display: 'flex', gap: '8px' }}>
           <button
             onClick={() => setIsModalOpen(true)}
-            style={{ padding: '8px 16px', background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 8px 20px rgba(79,122,255,0.22)' }}
+            style={{ padding: '10px 18px', minWidth: '160px', background: 'linear-gradient(135deg, #315efb 0%, #4d74ff 100%)', color: '#ffffff', WebkitTextFillColor: '#ffffff', border: '1px solid rgba(49,94,251,0.35)', borderRadius: '10px', fontSize: '12px', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', boxShadow: '0 10px 24px rgba(49,94,251,0.24)', fontFamily: 'DM Sans, sans-serif', lineHeight: 1, whiteSpace: 'nowrap', appearance: 'none', WebkitAppearance: 'none' }}
           >
-            <Plus size={14} /> Novo Gatilho
+            <Plus size={14} color="#ffffff" strokeWidth={2.25} />
+            <span style={{ color: '#ffffff', WebkitTextFillColor: '#ffffff', fontWeight: 700, letterSpacing: '0.01em' }}>Novo Gatilho</span>
           </button>
           <button
             onClick={handleSeedTemplates}
@@ -219,7 +235,7 @@ export default function TriggerConfig() {
       )}
 
       {seedFeedback && (
-        <div style={{ padding: '12px', background: seedFeedback.tone === 'success' ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)', color: seedFeedback.tone === 'success' ? '#22c55e' : '#ef4444', border: `1px solid ${seedFeedback.tone === 'success' ? 'rgba(34,197,94,0.25)' : 'rgba(239,68,68,0.25)'}`, borderRadius: '8px', marginBottom: '16px', fontSize: '12px' }}>
+        <div style={{ padding: '12px', background: seedFeedback.tone === 'success' ? 'rgba(34,197,94,0.1)' : seedFeedback.tone === 'warning' ? 'rgba(245,200,66,0.12)' : 'rgba(239,68,68,0.1)', color: seedFeedback.tone === 'success' ? '#22c55e' : seedFeedback.tone === 'warning' ? 'var(--yellow)' : '#ef4444', border: `1px solid ${seedFeedback.tone === 'success' ? 'rgba(34,197,94,0.25)' : seedFeedback.tone === 'warning' ? 'rgba(245,200,66,0.25)' : 'rgba(239,68,68,0.25)'}`, borderRadius: '8px', marginBottom: '16px', fontSize: '12px', lineHeight: 1.5 }}>
           {seedFeedback.text}
         </div>
       )}
@@ -306,33 +322,63 @@ export default function TriggerConfig() {
                  
                  <div style={{ display: 'flex', gap: '12px', marginBottom: '12px' }}>
                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: 'var(--text-primary)', cursor: 'pointer' }}>
-                     <input type="radio" checked={formData.acao_tipo === 'iniciar_followup'} onChange={() => setFormData({...formData, acao_tipo: 'iniciar_followup', acao_ref_id: followupRules[0]?.id || ''})} />
+                     <input type="radio" checked={formData.acao_tipo === 'iniciar_followup'} disabled={!podeUsarFollowup} onChange={() => setFormData({...formData, acao_tipo: 'iniciar_followup', acao_ref_id: regrasAtivas[0]?.id || ''})} />
                      Iniciar Régua (Follow-up)
                    </label>
                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: 'var(--text-primary)', cursor: 'pointer' }}>
-                     <input type="radio" checked={formData.acao_tipo === 'trocar_agente'} onChange={() => setFormData({...formData, acao_tipo: 'trocar_agente', acao_ref_id: agentes[0]?.id || ''})} />
+                     <input type="radio" checked={formData.acao_tipo === 'trocar_agente'} disabled={!podeUsarAgentes} onChange={() => setFormData({...formData, acao_tipo: 'trocar_agente', acao_ref_id: agentesAtivos[0]?.id || ''})} />
                      Transferir IA (Agente)
                    </label>
                  </div>
 
                  {formData.acao_tipo === 'iniciar_followup' ? (
-                     <select 
+                     <select
+                        disabled={!podeUsarFollowup}
                         value={formData.acao_ref_id}
                         onChange={(e) => setFormData({...formData, acao_ref_id: e.target.value})}
-                        style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text-primary)', fontSize: '14px', outline: 'none' }}
+                        style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: podeUsarFollowup ? 'var(--bg)' : 'var(--bg-hover)', color: 'var(--text-primary)', fontSize: '14px', outline: 'none' }}
                      >
-                        <option value="" disabled>Selecione a Régua...</option>
-                        {followupRules.map(r => <option key={r.id} value={r.id}>{r.nome}</option>)}
+                        <option value="" disabled>{podeUsarFollowup ? 'Selecione a Régua...' : 'Nenhuma régua ativa disponível'}</option>
+                        {regrasAtivas.map(r => <option key={r.id} value={r.id}>{r.nome}</option>)}
                      </select>
                  ) : (
-                     <select 
+                     <select
+                        disabled={!podeUsarAgentes}
                         value={formData.acao_ref_id}
                         onChange={(e) => setFormData({...formData, acao_ref_id: e.target.value})}
-                        style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text-primary)', fontSize: '14px', outline: 'none' }}
+                        style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: podeUsarAgentes ? 'var(--bg)' : 'var(--bg-hover)', color: 'var(--text-primary)', fontSize: '14px', outline: 'none' }}
                      >
-                        <option value="" disabled>Selecione o Agente de IA...</option>
-                        {agentes.map(a => <option key={a.id} value={a.id}>{a.nome_interno}</option>)}
+                        <option value="" disabled>{podeUsarAgentes ? 'Selecione o Agente de IA...' : 'Nenhum agente ativo disponível'}</option>
+                        {agentesAtivos.map(a => <option key={a.id} value={a.id}>{a.nome_interno}</option>)}
                      </select>
+                 )}
+
+                 {!podeUsarFollowup && formData.acao_tipo === 'iniciar_followup' && (
+                    <p style={{ marginTop: '8px', fontSize: '12px', color: 'var(--text-muted)', lineHeight: 1.45 }}>
+                      Você ainda não tem nenhuma régua ativa.
+                      {' '}Ative ou crie uma em <a href="/automacoes" style={{ color: 'var(--accent)', textDecoration: 'none', fontWeight: '600' }}>Sequências de Follow-up</a>.
+                    </p>
+                 )}
+
+                 {!podeUsarAgentes && formData.acao_tipo === 'trocar_agente' && (
+                    <p style={{ marginTop: '8px', fontSize: '12px', color: 'var(--text-muted)', lineHeight: 1.45 }}>
+                      Nenhum agente ativo foi encontrado neste tenant.
+                      {' '}Cadastre agentes em <a href="/configuracoes?tab=agentes" style={{ color: 'var(--accent)', textDecoration: 'none', fontWeight: '600' }}>Configurações &gt; Agentes</a>.
+                    </p>
+                 )}
+
+                 {podeUsarAgentes && agentesAtivos.length === 1 && formData.acao_tipo === 'trocar_agente' && (
+                    <p style={{ marginTop: '8px', fontSize: '12px', color: 'var(--text-muted)', lineHeight: 1.45 }}>
+                      Só existe 1 agente ativo disponível neste tenant no momento.
+                    </p>
+                 )}
+
+                 {faltasSeed.length > 0 && (
+                    <div style={{ marginTop: '12px', padding: '10px 12px', borderRadius: '8px', background: 'rgba(245,200,66,0.08)', border: '1px solid rgba(245,200,66,0.18)' }}>
+                      <p style={{ margin: 0, fontSize: '12px', color: 'var(--yellow)', lineHeight: 1.45 }}>
+                        Os templates completos ainda não vão funcionar neste tenant porque faltam: {faltasSeed.join(', ')}.
+                      </p>
+                    </div>
                  )}
               </div>
 
@@ -395,8 +441,8 @@ export default function TriggerConfig() {
                  </button>
                  <button 
                    onClick={handleSave}
-                   disabled={isSaving}
-                   style={{ padding: '10px 20px', background: 'var(--accent)', color: 'white', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: '600', cursor: isSaving ? 'wait' : 'pointer', opacity: isSaving ? 0.7 : 1 }}
+                   disabled={isSaving || !formData.acao_ref_id}
+                   style={{ padding: '10px 20px', background: 'linear-gradient(135deg, #315efb 0%, #4d74ff 100%)', color: '#ffffff', WebkitTextFillColor: '#ffffff', border: '1px solid rgba(49,94,251,0.35)', borderRadius: '8px', fontSize: '13px', fontWeight: '700', cursor: isSaving || !formData.acao_ref_id ? 'not-allowed' : 'pointer', opacity: isSaving || !formData.acao_ref_id ? 0.7 : 1, fontFamily: 'DM Sans, sans-serif', lineHeight: 1, appearance: 'none', WebkitAppearance: 'none' }}
                  >
                    {isSaving ? 'Salvando...' : 'Salvar Gatilho'}
                  </button>
