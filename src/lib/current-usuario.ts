@@ -146,3 +146,28 @@ export async function resolveUsuarioAtual(authUser: User) {
     permissions: 'permissions' in usuario ? (usuario.permissions || null) : null,
   }
 }
+
+export async function touchUsuarioUltimoAcesso(authUser: User) {
+  const usuario = await resolveUsuarioAtual(authUser)
+  if (!usuario) return null
+
+  const adminClient = createAdminClient()
+  const now = new Date().toISOString()
+
+  const { error } = await adminClient
+    .from('usuarios')
+    .update({
+      auth_id: authUser.id,
+      ultimo_acesso: now,
+      updated_at: now,
+    })
+    .eq('id', usuario.id)
+
+  if (error) throw error
+
+  return {
+    ...usuario,
+    auth_id: authUser.id,
+    ultimo_acesso: now,
+  }
+}

@@ -50,6 +50,29 @@ Mestra: [[MASTER_PREV_LEGAL]]
     - `usuarios.tenant_id`
     - contenção temporária por e-mail
 
+## Atualizacao Tenant Health / Último Acesso da Equipe — 08/04/2026
+
+- foi corrigida a origem do sinal `Último acesso da equipe` no admin
+- arquivos principais:
+  - `src/lib/current-usuario.ts`
+  - `src/app/api/session/login/route.ts`
+  - `src/app/api/session/touch/route.ts`
+- causa identificada:
+  - a plataforma autenticava e renovava a sessão corretamente
+  - mas o runtime do app não persistia `usuarios.ultimo_acesso`
+  - com isso, o admin podia mostrar `Sem acesso` e `0 usuários ativos 7D` mesmo quando a equipe realmente usava o app
+- correção aplicada:
+  - criar `touchUsuarioUltimoAcesso(authUser)` como caminho canônico para registrar o acesso operacional do usuário
+  - o login server-side agora grava `usuarios.ultimo_acesso` logo após autenticar
+  - o heartbeat de sessão (`POST /api/session/touch`) também atualiza esse campo sem depender de navegação específica
+- impacto operacional:
+  - a saúde do tenant passa a refletir uso real da equipe
+  - reduz falso diagnóstico de onboarding incompleto quando o problema era apenas ausência de telemetria de acesso
+- validacao:
+  - `npm run build` passou
+- proximo passo recomendado:
+  - validar em runtime se o tenant `Fluxrow` passa a refletir acesso real no painel admin após novo login/uso do app
+
 ## Atualizacao Importação Inteligente — 08/04/2026
 
 - o importador deixou de depender apenas do layout fixo da planilha clássica

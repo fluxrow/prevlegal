@@ -1214,5 +1214,11 @@ e mover o login principal para uma rota server-side (`POST /api/session/login`) 
 - tenta achar por `auth_id`
 - faz fallback por e-mail autenticado
 - autocorrige `usuarios.auth_id` quando encontra o registro certo
- - se ainda assim não existir `usuarios` compatível, tenta derivar o acesso pelo próprio `tenants.responsavel_email` e garante um admin operacional mínimo para o responsável
+- se ainda assim não existir `usuarios` compatível, tenta derivar o acesso pelo próprio `tenants.responsavel_email` e garante um admin operacional mínimo para o responsável
 **Regra pratica:** No PrevLegal, identidade operacional do usuário deve preferir `auth_id`, mas precisa ter caminho seguro de auto-heal por e-mail para evitar bloqueio após reprovisionamento legítimo
+
+### 126. Métrica de adoção do tenant não pode depender de acesso que o app nunca persiste
+**Problema:** O admin podia mostrar `Último acesso da equipe: Sem acesso` e `Usuários ativos 7D: 0` mesmo quando o responsável realmente usava a plataforma havia dias
+**Causa:** O app renovava a sessão com `POST /api/session/touch`, mas não atualizava `usuarios.ultimo_acesso`; a métrica do tenant lia esse campo e acabava parecendo prova de falta de uso quando era só telemetria faltando
+**Correcao aplicada:** Criar um caminho canônico para registrar `ultimo_acesso` do usuário operacional e chamá-lo tanto no login server-side quanto no heartbeat de sessão do app
+**Regra pratica:** No PrevLegal, qualquer métrica de saúde operacional usada no admin precisa nascer de um write real no runtime correspondente; não inferir adoção a partir de campo que a própria sessão nunca atualiza

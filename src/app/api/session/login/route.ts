@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { setSessionActivityCookie } from '@/lib/session-security'
+import { touchUsuarioUltimoAcesso } from '@/lib/current-usuario'
 import { createClient } from '@/lib/supabase/server'
 
 export async function POST(request: Request) {
@@ -10,13 +11,21 @@ export async function POST(request: Request) {
   }
 
   const supabase = await createClient()
-  const { error } = await supabase.auth.signInWithPassword({
+  const { data, error } = await supabase.auth.signInWithPassword({
     email,
     password,
   })
 
   if (error) {
     return NextResponse.json({ error: 'E-mail ou senha incorretos.' }, { status: 401 })
+  }
+
+  if (data.user) {
+    try {
+      await touchUsuarioUltimoAcesso(data.user)
+    } catch (touchError) {
+      console.error('Falha ao registrar ultimo acesso no login', touchError)
+    }
   }
 
   await setSessionActivityCookie('app')
