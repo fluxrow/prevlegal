@@ -49,6 +49,28 @@ Mestra: [[MASTER_PREV_LEGAL]]
     - versionamento
     - análise documental com IA
 
+## Atualizacao Follow-up / Reativação — 08/04/2026
+
+- a validação operacional com o lead `VALTERLINO AQUINO S RIBEIRO` confirmou que os gatilhos da Fase E estavam criando `followup_runs` corretamente no banco
+- leitura confirmada:
+  - o gatilho `contacted` iniciou uma run
+  - a mudança seguinte para `lost` cancelou a run anterior e abriu uma nova run ativa
+- dois ajustes foram feitos a partir desse teste:
+  - `src/app/api/followup/worker/route.ts`
+  - `src/components/followup-lead.tsx`
+- correções:
+  - o worker deixou de parar automaticamente runs só porque o lead está `lost`
+  - agora ele para automaticamente apenas em `converted`
+  - o card `Follow-up` no detalhe do lead passou a atualizar automaticamente e ganhou botão `Atualizar`
+- impacto operacional:
+  - a automação de reativação deixa de se sabotar
+  - o escritório consegue enxergar com mais clareza quando um run nasceu após mudança de status
+- validacao:
+  - `npm run build` passou
+- proximo passo recomendado:
+  - recarregar o lead e confirmar a visualização do run ativo
+  - depois validar o worker manualmente ou pelo cron para observar o primeiro disparo real do follow-up
+
 ## Atualização Crítica — 19/03/2026
 
 - O pacote `supabase/reset/combined_apply_031_and_reset.sql` foi executado diretamente no banco operacional `lrqvvxmgimjlghpwavdb`

@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
     const tenant = run.tenants as unknown as { nome: string } | null;
 
     // Stop conditions automáticas
-    const shouldStop = lead?.status === "converted" || lead?.status === "lost";
+    const shouldStop = lead?.status === "converted";
 
     if (shouldStop) {
       await supabase
@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
         tenant_id: run.tenant_id,
         run_id: run.id,
         lead_id: run.lead_id,
-        tipo: lead?.status === "converted" ? "stop_convertido" : "stop_perdido",
+        tipo: "stop_convertido",
         metadata: { status_lead: lead?.status },
       });
       resultados.push({ run_id: run.id, status: "stop_automatico" });

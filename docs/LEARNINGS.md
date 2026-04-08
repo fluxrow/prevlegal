@@ -35,6 +35,18 @@ Mestra: [[MASTER_PREV_LEGAL]]
 - o que executa
 - e um resumo em linguagem operacional
 
+### 38. Reativação por status `lost` não pode herdar a regra antiga de stop por `lost`
+**Problema:** O template novo `lost -> follow-up/reativação` chegava a criar `followup_runs`, mas o worker ainda carregava a regra antiga que parava runs quando o lead estivesse `lost`
+**Causa:** O motor de follow-up foi criado antes da Fase E de gatilhos por status. Na lógica antiga, `lost` significava encerrar tudo; na nova lógica, `lost` pode ser exatamente o gatilho para reativar
+**Correção:** Remover `lost` das stop conditions automáticas do worker e manter stop automático apenas para `converted`
+**Regra pratica:** Quando um status passa a virar gatilho de automação, ele não pode continuar tratado globalmente como motivo obrigatório de parada no worker
+
+### 39. Teste de automação precisa ter confirmação visual no detalhe do lead
+**Problema:** O operador pode mudar o status do lead e não perceber que o `followup_run` foi criado, concluindo erroneamente que a automação falhou
+**Causa:** O componente `FollowupLead` buscava dados apenas no mount e não se atualizava após mudança de status na mesma tela
+**Correção:** Adicionar atualização periódica, refresh ao voltar foco para a aba e botão explícito de atualizar
+**Regra pratica:** Toda automação testável no PrevLegal deve ter algum feedback visível de curto prazo na própria tela operacional, sem depender de reload manual
+
 ### 33. Expansao de produto precisa entrar por arquitetura de portfólio, nao por mistura de narrativas
 **Problema:** Novas oportunidades reais, como `PrevGlobal`, CNIS com IA e modulos tecnicos premium, podem comecar a competir com o core operacional do PrevLegal se entrarem sem separacao clara
 **Causa:** O produto cresceu alem da ideia inicial e abriu adjacencias fortes, mas isso aumenta o risco de descaracterizar a oferta principal

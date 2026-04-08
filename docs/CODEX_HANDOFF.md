@@ -75,6 +75,31 @@ Objetivo:
   - testar em runtime a criação dos 3 documentos beta
   - validar um gatilho real por mudança de status do lead para confirmar a Fase E ponta a ponta
 
+## Atualizacao 2026-04-08 - Validação real dos gatilhos mostrou sucesso no banco e lacuna na UX
+
+- o usuário testou a Fase E com o lead `VALTERLINO AQUINO S RIBEIRO`
+- resultado validado por consulta direta ao banco operacional:
+  - lead terminou com `status = lost`
+  - existiam duas runs para esse lead:
+    - uma `cancelado` com motivo `Cancelado por novo gatilho (lost)`
+    - uma nova `ativo`
+- conclusao:
+  - os gatilhos por status estavam criando/cancelando runs corretamente
+  - o problema percebido pelo usuário era principalmente de visibilidade na tela do lead
+- arquivos alterados:
+  - `src/components/followup-lead.tsx`
+  - `src/app/api/followup/worker/route.ts`
+- correções:
+  - `FollowupLead` agora:
+    - atualiza sozinho a cada 10 segundos
+    - refaz fetch ao voltar foco para a aba
+    - ganhou botão manual `Atualizar`
+  - o worker deixou de aplicar `stop_automatico` em leads com `status = lost`
+  - isso era incompatível com o template novo de reativação por `lost`
+- observacao importante:
+  - o follow-up ainda nao registrou `followup_events` para esse teste porque o step 1 da régua está com `delay_horas = 72`
+  - ou seja: o run nasceu agora, mas o primeiro disparo do worker só fica vencido cerca de 3 dias depois
+
 ## Atualizacao 2026-04-06 - Fase E (Gatilhos e Orquestracao Avançada) - Foundation Entregue
 
 - Construida a fundação completa do motor de gatilhos automáticos do PrevLegal

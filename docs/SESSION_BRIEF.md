@@ -181,3 +181,26 @@ Gatilho automático: a mudança de status do lead na API `PATCH` chama o *Orques
     - revisão
     - versionamento
     - análise documental por IA
+
+## Atualização 2026-04-08 - Follow-up por status validado no banco e visibilidade melhorada
+
+- o teste com o lead `VALTERLINO AQUINO S RIBEIRO` confirmou que os gatilhos por status estavam funcionando no backend
+- estado confirmado:
+  - mudança para `contacted` criou uma run
+  - mudança seguinte para `lost` cancelou a anterior e abriu nova run ativa
+- isso mostrou dois pontos:
+  - não dependia de WhatsApp conectado para a run nascer
+  - a UI do lead ainda não dava feedback bom o suficiente logo após a troca de status
+- ajustes aplicados:
+  - `src/components/followup-lead.tsx`
+    - atualização automática a cada 10 segundos
+    - refresh ao voltar foco para a aba
+    - botão `Atualizar`
+  - `src/app/api/followup/worker/route.ts`
+    - remoção da regra antiga que dava stop automático em `lost`
+    - stop automático mantido apenas para `converted`
+- efeito de produto:
+  - o template `lost -> reativação` deixa de entrar em conflito com o worker
+  - a validação operacional fica mais legível para o escritório
+- validação:
+  - `npm run build` passou

@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Zap, Play, Pause, X, ChevronDown, ChevronUp, Clock } from 'lucide-react'
+import { Zap, Play, Pause, X, ChevronDown, ChevronUp, Clock, RefreshCw } from 'lucide-react'
 
 interface FollowupRule {
   id: string
@@ -66,6 +66,7 @@ export default function FollowupLead({ leadId }: { leadId: string }) {
   const [ativando, setAtivando] = useState(false)
   const [expandedRun, setExpandedRun] = useState<string | null>(null)
   const [erro, setErro] = useState<string | null>(null)
+  const [refreshing, setRefreshing] = useState(false)
 
   const fetchRuns = async () => {
     const res = await fetch(`/api/leads/${leadId}/followup`)
@@ -83,7 +84,30 @@ export default function FollowupLead({ leadId }: { leadId: string }) {
     void fetchRules()
   }, [leadId])
 
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      void fetchRuns()
+    }, 10000)
+
+    const handleFocus = () => {
+      void fetchRuns()
+    }
+
+    window.addEventListener('focus', handleFocus)
+
+    return () => {
+      window.clearInterval(interval)
+      window.removeEventListener('focus', handleFocus)
+    }
+  }, [leadId])
+
   const runAtiva = runs.find(r => r.status === 'ativo' || r.status === 'pausado')
+
+  async function refreshNow() {
+    setRefreshing(true)
+    await fetchRuns()
+    setRefreshing(false)
+  }
 
   async function ativarFollowup() {
     if (!ruleSelecionada) return
@@ -138,15 +162,27 @@ export default function FollowupLead({ leadId }: { leadId: string }) {
             Follow-up
           </span>
         </div>
-        {!runAtiva && rules.length > 0 && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <button
-            onClick={() => setShowAtivar(o => !o)}
-            style={btnStyle('var(--accent)', 'rgba(79,122,255,0.1)')}
+            onClick={() => void refreshNow()}
+            style={btnStyle('var(--text-secondary)', 'var(--bg-card)')}
           >
-            <Play size={11} /> Ativar follow-up
+            <RefreshCw size={11} style={refreshing ? { animation: 'spin 1s linear infinite' } : undefined} /> Atualizar
           </button>
-        )}
+          {!runAtiva && rules.length > 0 && (
+            <button
+              onClick={() => setShowAtivar(o => !o)}
+              style={btnStyle('var(--accent)', 'rgba(79,122,255,0.1)')}
+            >
+              <Play size={11} /> Ativar follow-up
+            </button>
+          )}
+        </div>
       </div>
+
+      <p style={{ fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'DM Sans, sans-serif', margin: '0 0 14px' }}>
+        Este bloco atualiza automaticamente a cada 10 segundos e também ao voltar o foco para a aba.
+      </p>
 
       {/* Painel de ativação */}
       {showAtivar && (
