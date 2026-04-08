@@ -204,3 +204,22 @@ Gatilho automático: a mudança de status do lead na API `PATCH` chama o *Orques
   - a validação operacional fica mais legível para o escritório
 - validação:
   - `npm run build` passou
+
+## Atualização 2026-04-08 - Execução manual do follow-up adicionada ao detalhe do lead
+
+- para fechar a validação sem depender do cron, a run ativa do lead agora pode executar o passo atual manualmente
+- arquivos principais:
+  - `src/app/api/leads/[id]/followup/[runId]/route.ts`
+  - `src/components/followup-lead.tsx`
+- mudanças:
+  - nova ação `executar_agora` na API da run
+  - o botão `Executar agora` aparece nas runs ativas do detalhe do lead
+  - a execução manual:
+    - usa o canal real do step
+    - registra `step_disparado` ou `step_falhou`
+    - avança o próximo passo ou conclui a run
+- efeito de produto:
+  - a Fase E fica testável ponta a ponta sem depender exclusivamente do cron
+  - a operação ganha um mecanismo seguro de validação e destravamento
+- validação:
+  - `npm run build` passou

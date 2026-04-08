@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Zap, Play, Pause, X, ChevronDown, ChevronUp, Clock, RefreshCw } from 'lucide-react'
+import { Zap, Play, Pause, X, ChevronDown, ChevronUp, Clock, RefreshCw, Send } from 'lucide-react'
 
 interface FollowupRule {
   id: string
@@ -67,6 +67,7 @@ export default function FollowupLead({ leadId }: { leadId: string }) {
   const [expandedRun, setExpandedRun] = useState<string | null>(null)
   const [erro, setErro] = useState<string | null>(null)
   const [refreshing, setRefreshing] = useState(false)
+  const [executandoRunId, setExecutandoRunId] = useState<string | null>(null)
 
   const fetchRuns = async () => {
     const res = await fetch(`/api/leads/${leadId}/followup`)
@@ -138,6 +139,25 @@ export default function FollowupLead({ leadId }: { leadId: string }) {
     await fetchRuns()
   }
 
+  async function executarAgora(runId: string) {
+    setExecutandoRunId(runId)
+    setErro(null)
+
+    const res = await fetch(`/api/leads/${leadId}/followup/${runId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'executar_agora' }),
+    })
+
+    if (!res.ok) {
+      const data = await res.json().catch(() => null)
+      setErro(data?.error || 'Erro ao executar follow-up agora')
+    }
+
+    await fetchRuns()
+    setExecutandoRunId(null)
+  }
+
   const cardStyle: React.CSSProperties = {
     background: 'var(--bg-surface)',
     border: '1px solid var(--border)',
@@ -180,8 +200,9 @@ export default function FollowupLead({ leadId }: { leadId: string }) {
         </div>
       </div>
 
-      <p style={{ fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'DM Sans, sans-serif', margin: '0 0 14px' }}>
+      <p style={{ fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'DM Sans, sans-serif', margin: '0 0 14px', lineHeight: 1.5 }}>
         Este bloco atualiza automaticamente a cada 10 segundos e também ao voltar o foco para a aba.
+        {' '}Use <strong style={{ color: 'var(--text-primary)' }}>Executar agora</strong> para validar o próximo passo sem esperar o cron.
       </p>
 
       {/* Painel de ativação */}
@@ -266,6 +287,15 @@ export default function FollowupLead({ leadId }: { leadId: string }) {
                     </span>
                   )}
                   {/* Ações */}
+                  {run.status === 'ativo' && (
+                    <button
+                      onClick={e => { e.stopPropagation(); void executarAgora(run.id) }}
+                      disabled={executandoRunId === run.id}
+                      style={{ ...btnStyle('#4f7aff', '#4f7aff20'), padding: '3px 9px', fontSize: '11px', opacity: executandoRunId === run.id ? 0.7 : 1, cursor: executandoRunId === run.id ? 'wait' : 'pointer' }}
+                    >
+                      <Send size={10} /> {executandoRunId === run.id ? 'Executando...' : 'Executar agora'}
+                    </button>
+                  )}
                   {run.status === 'ativo' && (
                     <button onClick={e => { e.stopPropagation(); void acao(run.id, 'pausar') }} style={{ ...btnStyle('#f59e0b', '#f59e0b20'), padding: '3px 9px', fontSize: '11px' }}>
                       <Pause size={10} /> Pausar

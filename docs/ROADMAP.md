@@ -71,6 +71,29 @@ Mestra: [[MASTER_PREV_LEGAL]]
   - recarregar o lead e confirmar a visualização do run ativo
   - depois validar o worker manualmente ou pelo cron para observar o primeiro disparo real do follow-up
 
+## Atualizacao Follow-up / Execução Manual — 08/04/2026
+
+- para fechar a validação da Fase E sem depender do cron, o detalhe do lead agora ganhou ação manual de execução do passo atual
+- arquivos principais:
+  - `src/app/api/leads/[id]/followup/[runId]/route.ts`
+  - `src/components/followup-lead.tsx`
+- comportamento novo:
+  - runs ativas agora podem usar `Executar agora`
+  - a ação reaproveita a mesma lógica operacional do follow-up:
+    - monta a mensagem do step atual
+    - tenta enviar pelo canal configurado
+    - avança ou conclui a run
+    - registra `step_disparado` ou `step_falhou` em `followup_events`
+- efeito de produto:
+  - acelera QA
+  - ajuda suporte/operação em casos onde o time precisa validar ou destravar a cadência sem aguardar o agendamento natural
+- validacao:
+  - `npm run build` passou
+- proximo passo recomendado:
+  - clicar em `Executar agora` no lead de teste
+  - conferir se entra evento no histórico da run
+  - depois encerrar esta frente e seguir para a próxima prioridade do roadmap
+
 ## Atualização Crítica — 19/03/2026
 
 - O pacote `supabase/reset/combined_apply_031_and_reset.sql` foi executado diretamente no banco operacional `lrqvvxmgimjlghpwavdb`

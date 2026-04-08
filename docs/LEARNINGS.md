@@ -47,6 +47,12 @@ Mestra: [[MASTER_PREV_LEGAL]]
 **Correção:** Adicionar atualização periódica, refresh ao voltar foco para a aba e botão explícito de atualizar
 **Regra pratica:** Toda automação testável no PrevLegal deve ter algum feedback visível de curto prazo na própria tela operacional, sem depender de reload manual
 
+### 40. Validação de follow-up não deve depender exclusivamente do cron
+**Problema:** Mesmo com a run criada corretamente, a equipe ainda ficava bloqueada para validar o disparo do próximo passo se o cron não estivesse imediatamente acessível ou se a regra estivesse com delay longo
+**Causa:** A engine tinha worker e cron, mas não havia uma ação operacional controlada para executar o passo atual sob demanda
+**Correção:** Adicionar ação manual `executar_agora` na run do lead, reaproveitando a mesma engine de envio e registrando `step_disparado` ou `step_falhou` em `followup_events`
+**Regra pratica:** Em fluxos automatizados críticos, além do cron, vale ter um caminho manual autenticado para validação e suporte operacional, desde que ele use a mesma lógica do runtime real
+
 ### 33. Expansao de produto precisa entrar por arquitetura de portfólio, nao por mistura de narrativas
 **Problema:** Novas oportunidades reais, como `PrevGlobal`, CNIS com IA e modulos tecnicos premium, podem comecar a competir com o core operacional do PrevLegal se entrarem sem separacao clara
 **Causa:** O produto cresceu alem da ideia inicial e abriu adjacencias fortes, mas isso aumenta o risco de descaracterizar a oferta principal

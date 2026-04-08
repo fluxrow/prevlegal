@@ -100,6 +100,30 @@ Objetivo:
   - o follow-up ainda nao registrou `followup_events` para esse teste porque o step 1 da régua está com `delay_horas = 72`
   - ou seja: o run nasceu agora, mas o primeiro disparo do worker só fica vencido cerca de 3 dias depois
 
+## Atualizacao 2026-04-08 - Execução manual segura para validar e destravar runs
+
+- foi adicionada uma execução manual da run ativa direto no detalhe do lead
+- arquivos alterados:
+  - `src/app/api/leads/[id]/followup/[runId]/route.ts`
+  - `src/components/followup-lead.tsx`
+- mudancas principais:
+  - `PATCH /api/leads/[id]/followup/[runId]` agora aceita `action = executar_agora`
+  - a ação:
+    - carrega lead, tenant, rule e step atual
+    - monta a mensagem com as variáveis
+    - envia pelo canal configurado
+    - cria `followup_events`
+    - avança ou conclui a run
+  - o detalhe do lead ganhou botão `Executar agora` nas runs ativas
+- efeito pratico:
+  - nao precisamos esperar o cron nem um delay grande para validar se a régua dispara
+  - a operação ganha uma alavanca de teste/controlada para suporte
+- validacao:
+  - `npm run build` passou
+- proximo passo recomendado:
+  - usar `Executar agora` no lead de teste
+  - verificar o evento da run e, se houver canal WhatsApp conectado, observar o disparo real
+
 ## Atualizacao 2026-04-06 - Fase E (Gatilhos e Orquestracao Avançada) - Foundation Entregue
 
 - Construida a fundação completa do motor de gatilhos automáticos do PrevLegal
