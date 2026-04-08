@@ -1183,3 +1183,27 @@ Status atual em 18/03/2026:
 - Encadeamento visível no frontend.
 - Dashboard executivo: painel centralizado de performance por agente/campanha.
 - Warm-up automático de números WhatsApp novos.
+
+## Atualização 2026-04-08 — Templates Seed da UI de Automações
+
+- a pendência `Templates Seed` da Fase E foi fechada
+- arquivos principais:
+  - `src/app/api/automacoes/triggers/route.ts`
+  - `src/app/api/automacoes/triggers/[id]/route.ts`
+  - `src/app/api/automacoes/triggers/seed/route.ts`
+  - `src/components/automacoes/trigger-config.tsx`
+- comportamento:
+  - o botão `Templates PrevLegal` agora popula o banco com gatilhos padrão do tenant atual
+  - o seed é idempotente e só insere slots ainda vazios
+  - os templates dependem de recursos reais já configurados:
+    - régua ativa de follow-up
+    - agente ativo de triagem
+    - agente ativo de confirmação
+    - régua ou agente ativo de reativação
+  - quando o tenant ainda não tiver a peça necessária, a UI informa como `indisponível` em vez de falhar silenciosamente
+- endurecimento técnico no mesmo pacote:
+  - rotas de `event_triggers` deixaram de resolver tenant por caminho legado e passaram a usar `getTenantContext`
+- validação:
+  - `npm run build` passou
+- próximo passo recomendado:
+  - validar o seed em runtime e depois voltar ao modal avançado de criação/edição de gatilhos

@@ -2389,3 +2389,38 @@ Pontos que precisam ser preservados durante a implementacao:
 - Roteamento por campanha: coluna `agente_id` em `campanhas` para escolher agente específico
 - Roteamento por estágio do lead: lógica no responder para selecionar agente por `lead.status`
 - Performance: card de métricas por agente (respostas enviadas, escaladas, taxas)
+
+## Atualizacao 2026-04-08 - Templates Seed das automacoes implementado
+
+- a pendência direta da Fase E foi fechada na UI de automações
+- arquivos alterados:
+  - `src/app/api/automacoes/triggers/route.ts`
+  - `src/app/api/automacoes/triggers/[id]/route.ts`
+  - `src/app/api/automacoes/triggers/seed/route.ts`
+  - `src/components/automacoes/trigger-config.tsx`
+- correção estrutural feita junto:
+  - `GET/POST/PATCH/DELETE` de `event_triggers` deixaram de resolver tenant pelo caminho frágil `auth.getUser() -> usuarios.id`
+  - agora usam `getTenantContext`, alinhando a Fase E ao contrato canônico atual do produto
+- seed novo:
+  - endpoint `POST /api/automacoes/triggers/seed`
+  - comportamento idempotente por tenant
+  - tenta popular apenas slots padrão ainda vazios:
+    - `new` -> agente de triagem
+    - `contacted` -> régua comercial/default
+    - `scheduled` -> agente de confirmação
+    - `lost` -> régua ou agente de reativação
+  - só insere template quando o recurso de apoio existe e está ativo
+  - se o slot já estiver ocupado, marca como `skip`
+  - se faltar régua/agente compatível, devolve `indisponível` com motivo legível
+- UI:
+  - botão `Templates PrevLegal` deixou de ser `alert('Em breve')`
+  - agora executa o seed real
+  - mostra feedback visual de sucesso/erro
+  - exibe resumo com contagem de inseridos, já existentes e indisponíveis
+  - lista de gatilhos agora marca templates com badge `Template`
+  - a ação exibida ficou mais legível usando nome real da régua/agente quando disponível
+- validação:
+  - `npm run build` passou
+- próximo passo sugerido:
+  - validar em runtime o clique do seed na tela `/automacoes`
+  - depois voltar ao refinamento do modal avançado de criação/edição de gatilhos

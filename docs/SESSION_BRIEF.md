@@ -36,3 +36,29 @@ Gatilho automático: a mudança de status do lead na API `PATCH` chama o *Orques
 - `docs/SESSION_BRIEF.md` — estado atual e transição de IAs
 - `src/lib/events/orchestrator.ts` — orquestrador de gatilhos na mudança de status do lead
 - `supabase/migrations/042_event_triggers.sql` — infra de BD para eventos
+
+## Atualização 2026-04-08 - Templates Seed da Fase E fechados
+
+- a aba `Automações` agora aplica templates padrão direto no banco
+- arquivos principais:
+  - `src/app/api/automacoes/triggers/route.ts`
+  - `src/app/api/automacoes/triggers/[id]/route.ts`
+  - `src/app/api/automacoes/triggers/seed/route.ts`
+  - `src/components/automacoes/trigger-config.tsx`
+- comportamento:
+  - o botão `Templates PrevLegal` deixou de ser placeholder
+  - agora dispara um seed idempotente por tenant
+  - insere apenas gatilhos faltantes para slots padrão:
+    - `new`
+    - `contacted`
+    - `scheduled`
+    - `lost`
+  - o seed só usa regras e agentes ativos realmente existentes no tenant atual
+  - se já houver gatilho no slot, preserva a configuração atual e sinaliza `skip`
+  - a UI mostra feedback com contagem de inseridos, já existentes e indisponíveis
+- ajuste técnico importante:
+  - as rotas de `event_triggers` foram alinhadas ao `tenant-context` canônico
+- validação:
+  - `npm run build` passou
+- próximo passo:
+  - validar em runtime o clique do seed e depois voltar ao modal avançado de criação/edição de gatilhos

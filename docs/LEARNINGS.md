@@ -1082,3 +1082,13 @@ Isso gera mais confianca e reduz sensacao de “portal vazio”
 **Causa:** Migrações de modelo de dados devem ser zero-disruption — o comportamento antigo precisa continuar enquanto o novo não está configurado
 **Correcao aplicada:** O responder busca agente `is_default=true` do tenant; se não existir, cai transparentemente para `configuracoes` global — nenhum cliente precisa reconfigurar nada
 **Regra pratica:** No PrevLegal, ao adicionar uma nova entidade de configuração mais granular (por agente, por campanha), sempre manter o fallback para o nível anterior; o novo nível é opt-in, não obrigatório
+
+### 117. Seed de automação bom precisa ser idempotente e respeitar a configuração real do tenant
+**Problema:** Um botão de `Templates Seed` pode criar duplicidade, competição entre gatilhos e sobrescrita indireta da operação do escritório se inserir padrões cegamente
+**Causa:** É fácil tratar seed como massa fixa sem verificar se aquele status já tem gatilho configurado ou se o tenant realmente possui a régua/agente necessário
+**Correcao aplicada:** O seed de `event_triggers` passou a:
+- usar apenas regras e agentes ativos realmente disponíveis
+- preservar slots já configurados
+- inserir só o que está faltando
+- devolver resumo explícito de `inseridos`, `já existentes` e `indisponíveis`
+**Regra pratica:** No PrevLegal, qualquer seed operacional por tenant deve ser repetível sem efeito colateral e nunca assumir que todos os recursos de apoio já estão configurados

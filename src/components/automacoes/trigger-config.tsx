@@ -27,6 +27,8 @@ export default function TriggerConfig() {
 
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [seedFeedback, setSeedFeedback] = useState<{ tone: 'success' | 'error'; text: string } | null>(null)
+  const [isSeeding, setIsSeeding] = useState(false)
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -48,6 +50,7 @@ export default function TriggerConfig() {
   const fetchData = async () => {
     try {
       setLoading(true)
+      setError('')
       const [trigRes, rulesRes, agentRes] = await Promise.all([
         fetch('/api/automacoes/triggers'),
         fetch('/api/followup/rules'),
@@ -74,6 +77,16 @@ export default function TriggerConfig() {
     } finally {
       setLoading(false)
     }
+  }
+
+  function getAcaoNome(trigger: EventTrigger) {
+    if (trigger.acao_tipo === 'iniciar_followup') {
+      const regra = followupRules.find((rule) => rule.id === trigger.acao_ref_id)
+      return regra ? `Inicia Régua: ${regra.nome}` : 'Inicia Régua'
+    }
+
+    const agente = agentes.find((item) => item.id === trigger.acao_ref_id)
+    return agente ? `Troca para IA: ${agente.nome_interno}` : 'Troca Agente'
   }
 
   useEffect(() => {
@@ -129,6 +142,40 @@ export default function TriggerConfig() {
     }
   }
 
+  const handleSeedTemplates = async () => {
+    try {
+      setIsSeeding(true)
+      setSeedFeedback(null)
+
+      const res = await fetch('/api/automacoes/triggers/seed', { method: 'POST' })
+      const data = await res.json().catch(() => null)
+
+      if (!res.ok) {
+        throw new Error(data?.error || 'Erro ao aplicar templates')
+      }
+
+      await fetchData()
+
+      const detalhes = [
+        data?.inserted_count ? `${data.inserted_count} inserido(s)` : null,
+        data?.skipped_count ? `${data.skipped_count} já existentes` : null,
+        data?.unavailable_count ? `${data.unavailable_count} indisponível(is)` : null,
+      ].filter(Boolean).join(' · ')
+
+      setSeedFeedback({
+        tone: 'success',
+        text: detalhes ? `${data?.message || 'Templates aplicados.'} ${detalhes}` : (data?.message || 'Templates aplicados.'),
+      })
+    } catch (err: any) {
+      setSeedFeedback({
+        tone: 'error',
+        text: err?.message || 'Erro ao aplicar templates PrevLegal',
+      })
+    } finally {
+      setIsSeeding(false)
+    }
+  }
+
   return (
     <div style={{ fontFamily: 'DM Sans, sans-serif' }}>
       {/* HEADER */}
@@ -141,10 +188,11 @@ export default function TriggerConfig() {
             <Plus size={14} /> Novo Gatilho
           </button>
           <button
-            onClick={() => alert('Em breve: Função Seed')}
-            style={{ padding: '8px 16px', background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '12px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+            onClick={handleSeedTemplates}
+            disabled={isSeeding}
+            style={{ padding: '8px 16px', background: 'var(--bg-hover)', color: isSeeding ? 'var(--text-muted)' : 'var(--text-primary)', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '12px', fontWeight: '600', cursor: isSeeding ? 'wait' : 'pointer', display: 'flex', alignItems: 'center', gap: '6px', opacity: isSeeding ? 0.75 : 1 }}
           >
-            <Play size={14} /> Templates PrevLegal
+            <Play size={14} /> {isSeeding ? 'Aplicando templates...' : 'Templates PrevLegal'}
           </button>
         </div>
         {loading && <RefreshCw size={14} style={{ animation: 'spin 1.5s linear infinite', color: 'var(--text-muted)' }} />}
@@ -153,6 +201,12 @@ export default function TriggerConfig() {
       {error && (
         <div style={{ padding: '12px', background: 'rgba(239,68,68,0.1)', color: '#ef4444', borderRadius: '8px', marginBottom: '16px', fontSize: '12px' }}>
           {error}
+        </div>
+      )}
+
+      {seedFeedback && (
+        <div style={{ padding: '12px', background: seedFeedback.tone === 'success' ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)', color: seedFeedback.tone === 'success' ? '#22c55e' : '#ef4444', border: `1px solid ${seedFeedback.tone === 'success' ? 'rgba(34,197,94,0.25)' : 'rgba(239,68,68,0.25)'}`, borderRadius: '8px', marginBottom: '16px', fontSize: '12px' }}>
+          {seedFeedback.text}
         </div>
       )}
 
@@ -172,9 +226,14 @@ export default function TriggerConfig() {
                   <span style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text-primary)' }}>
                     Quando lead for para <span style={{ color: 'var(--accent)', background: 'var(--accent-glow)', padding: '2px 6px', borderRadius: '4px' }}>{t.trigger_condicao}</span>
                   </span>
+                  {t.is_template_default && (
+                    <span style={{ fontSize: '10px', padding: '2px 6px', borderRadius: '999px', background: 'rgba(79,122,255,0.12)', color: 'var(--accent)', fontWeight: '700' }}>
+                      Template
+                    </span>
+                  )}
                 </div>
                 <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                  Ação: {t.acao_tipo === 'iniciar_followup' ? 'Inicia Régua' : 'Troca Agente'}
+                  Ação: {getAcaoNome(t)}
                 </div>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>

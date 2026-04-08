@@ -1,29 +1,24 @@
 import { NextResponse } from 'next/server'
+import { getTenantContext } from '@/lib/tenant-context'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminSupabase } from '@/lib/internal-collaboration'
 
 export async function GET() {
     try {
-        const supabase = await createClient()
-
-        const { data: userData, error: authError } = await supabase.auth.getUser()
-        if (authError || !userData?.user) {
+        const authSupabase = await createClient()
+        const context = await getTenantContext(authSupabase)
+        if (!context) {
             return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
         }
-
-        const { data: dbUser } = await supabase
-            .from('usuarios')
-            .select('tenant_id')
-            .eq('id', userData.user.id)
-            .single()
-
-        if (!dbUser?.tenant_id) {
+        if (!context.tenantId) {
             return NextResponse.json({ error: 'Tenant não encontrado' }, { status: 400 })
         }
 
+        const supabase = createAdminSupabase()
         const { data, error } = await supabase
             .from('event_triggers')
             .select('*')
-            .eq('tenant_id', dbUser.tenant_id)
+            .eq('tenant_id', context.tenantId)
             .order('created_at', { ascending: false })
 
         if (error) {
@@ -40,23 +35,16 @@ export async function GET() {
 
 export async function POST(req: Request) {
     try {
-        const supabase = await createClient()
-
-        const { data: userData, error: authError } = await supabase.auth.getUser()
-        if (authError || !userData?.user) {
+        const authSupabase = await createClient()
+        const context = await getTenantContext(authSupabase)
+        if (!context) {
             return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
         }
-
-        const { data: dbUser } = await supabase
-            .from('usuarios')
-            .select('tenant_id')
-            .eq('id', userData.user.id)
-            .single()
-
-        if (!dbUser?.tenant_id) {
+        if (!context.tenantId) {
             return NextResponse.json({ error: 'Tenant não encontrado' }, { status: 400 })
         }
 
+        const supabase = createAdminSupabase()
         const body = await req.json()
 
         const {
@@ -75,7 +63,7 @@ export async function POST(req: Request) {
         }
 
         const triggerData = {
-            tenant_id: dbUser.tenant_id,
+            tenant_id: context.tenantId,
             trigger_evento,
             trigger_condicao,
             acao_tipo,
