@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
+import { getConfiguracaoAtual } from '@/lib/configuracoes'
 
 export async function GET() {
   const supabase = await createClient()
@@ -8,7 +9,7 @@ export async function GET() {
 
   const { data: usuario } = await supabase
     .from('usuarios')
-    .select('id, nome, email, role')
+    .select('id, nome, email, role, tenant_id, google_calendar_email, google_calendar_connected_at')
     .eq('auth_id', user.id)
     .limit(1)
     .single()
@@ -21,7 +22,28 @@ export async function GET() {
     .limit(1)
     .single()
 
-  return NextResponse.json({ perfil: perfil || {}, usuario })
+  const { data: config } = await getConfiguracaoAtual(
+    supabase,
+    usuario.tenant_id || null,
+    'google_calendar_email, google_calendar_connected_at, google_calendar_token',
+  )
+
+  return NextResponse.json({
+    perfil: perfil || {},
+    usuario,
+    google: {
+      currentUser: {
+        connected: Boolean(usuario.google_calendar_connected_at),
+        email: usuario.google_calendar_email || null,
+        connectedAt: usuario.google_calendar_connected_at || null,
+      },
+      tenantDefault: {
+        connected: Boolean(config?.google_calendar_token),
+        email: config?.google_calendar_email || null,
+        connectedAt: config?.google_calendar_connected_at || null,
+      },
+    },
+  })
 }
 
 export async function PUT(request: Request) {

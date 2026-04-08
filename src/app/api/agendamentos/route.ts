@@ -40,7 +40,7 @@ async function getScopedUsuario(
 
   const { data, error } = await supabase
     .from('usuarios')
-    .select('id, nome, email')
+    .select('id, nome, email, google_calendar_email, google_calendar_connected_at')
     .eq('id', resolvedId)
     .eq('tenant_id', context.tenantId)
     .maybeSingle()
@@ -111,6 +111,9 @@ export async function POST(request: Request) {
 
     let googleEventId: string | null = null
     let meetLink: string | null = null
+    let calendarOwnerScope: 'tenant' | 'user' | null = null
+    let calendarOwnerUsuarioId: string | null = null
+    let calendarOwnerEmail: string | null = null
     const emailReuniao =
       typeof email_reuniao === 'string' && email_reuniao.trim()
         ? email_reuniao.trim()
@@ -119,6 +122,9 @@ export async function POST(request: Request) {
 
     try {
       const resultado = await criarEventoCalendar({
+        supabase: adminSupabase,
+        tenantId: context.tenantId,
+        ownerUsuarioId: usuarioResponsavel.id,
         titulo: `Consulta Previdenciária — ${lead?.nome ?? 'Lead'}`,
         descricao: observacoes ?? '',
         dataHora: data_hora,
@@ -128,6 +134,9 @@ export async function POST(request: Request) {
       })
       googleEventId = resultado.googleEventId
       meetLink = resultado.meetLink
+      calendarOwnerScope = resultado.calendarOwnerScope
+      calendarOwnerUsuarioId = resultado.calendarOwnerUsuarioId
+      calendarOwnerEmail = resultado.calendarOwnerEmail
     } catch (err) {
       console.warn('Google Calendar não conectado, agendando sem evento:', err)
     }
@@ -144,6 +153,9 @@ export async function POST(request: Request) {
         honorario,
         google_event_id: googleEventId,
         meet_link: meetLink,
+        calendar_owner_scope: calendarOwnerScope,
+        calendar_owner_usuario_id: calendarOwnerUsuarioId,
+        calendar_owner_email: calendarOwnerEmail,
         status: 'agendado',
       })
       .select(`*, leads(id, nome, telefone), usuarios(id, nome)`)

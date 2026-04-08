@@ -1,19 +1,24 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { getConfiguracaoAtual } from '@/lib/configuracoes'
 import { getTenantContext } from '@/lib/tenant-context'
+import { getGoogleCalendarStatus } from '@/lib/google-calendar'
 
 export async function GET() {
   const supabase = await createClient()
   const context = await getTenantContext(supabase)
-  if (!context) return NextResponse.json({ connected: false })
+  if (!context) {
+    return NextResponse.json({
+      currentUser: { connected: false, email: null, connectedAt: null },
+      tenantDefault: { connected: false, email: null, connectedAt: null },
+      effective: { connected: false, source: 'none', email: null },
+    })
+  }
 
-  const { data: config } = await getConfiguracaoAtual(
+  const status = await getGoogleCalendarStatus({
     supabase,
-    context.tenantId,
-    'google_calendar_token',
-  )
+    tenantId: context.tenantId,
+    usuarioId: context.usuarioId,
+  })
 
-  const connected = !!(config?.google_calendar_token)
-  return NextResponse.json({ connected })
+  return NextResponse.json(status)
 }

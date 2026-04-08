@@ -162,6 +162,59 @@ Objetivo:
   - fontes sem `NB` nao foram “forçadas” no import existente
   - Google Maps / Places e listas comerciais externas entram na próxima fase, com staging, templates e confirmação de mapeamento
 
+## Atualizacao 2026-04-08 - Google Calendar saiu do singleton do escritório
+
+- a necessidade veio do uso real: escritório com mais de uma pessoa agendando, inclusive secretária marcando consulta para advogado/sócio
+- problema confirmado:
+  - a integração Google estava inteira no nível do tenant (`configuracoes.google_calendar_token`)
+  - o agendamento já tinha `usuario_id` como responsável, mas o evento ainda nascia sempre a partir da conexão padrão do escritório
+- correção estrutural aplicada:
+  - migration nova: `supabase/migrations/043_user_calendar_ownership.sql`
+  - `usuarios` agora pode armazenar:
+    - `google_calendar_token`
+    - `google_calendar_email`
+    - `google_calendar_connected_at`
+  - `configuracoes` agora também guarda:
+    - `google_calendar_email`
+    - `google_calendar_connected_at`
+  - `agendamentos` passa a registrar:
+    - `calendar_owner_scope`
+    - `calendar_owner_usuario_id`
+    - `calendar_owner_email`
+- runtime novo em `src/lib/google-calendar.ts`:
+  - criação do evento tenta:
+    1. Google do responsável
+    2. fallback do escritório
+  - remarcação/cancelamento usam o `calendar_owner_scope` salvo no agendamento, para voltar na mesma origem do evento
+- OAuth atualizado:
+  - `src/app/api/google/auth/route.ts`
+  - `src/app/api/google/callback/route.ts`
+  - agora aceitam dois targets:
+    - `user`
+    - `tenant`
+  - o callback redireciona de volta para `/agendamentos` ou `/perfil` com feedback contextual
+- status/UX:
+  - `src/app/api/google/status/route.ts` agora devolve:
+    - `currentUser`
+    - `tenantDefault`
+    - `effective`
+  - `/agendamentos` passou a explicar quando usa o calendário do responsável e quando cai no do escritório
+  - `/perfil` virou a área natural para o usuário conectar o próprio Google
+  - `GestaoUsuarios` agora mostra quem já tem agenda própria conectada
+  - `NovoAgendamentoModal` deixa claro se o responsável selecionado tem agenda própria ou vai depender do fallback
+- decisao importante:
+  - isso resolve a fundação correta de agenda por usuário sem remover o fallback do escritório
+  - reatribuir um agendamento já criado continua sendo principalmente uma troca operacional de responsável; o `calendar_owner` do evento já existente permanece o da origem original, o que evita mexer no Meet/evento silenciosamente
+- validacao:
+  - `npm run build` passou
+- próximo passo sugerido:
+  - aplicar `043_user_calendar_ownership.sql`
+  - testar:
+    - usuário conectando o próprio Google em `/perfil`
+    - admin conectando o calendário padrão do escritório
+    - agendamento criado para responsável com agenda própria
+    - agendamento criado para responsável sem agenda própria, usando fallback
+
 ## Atualizacao 2026-04-06 - Fase E (Gatilhos e Orquestracao Avançada) - Foundation Entregue
 
 - Construida a fundação completa do motor de gatilhos automáticos do PrevLegal

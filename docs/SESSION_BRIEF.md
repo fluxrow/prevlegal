@@ -267,3 +267,39 @@ Gatilho automático: a mudança de status do lead na API `PATCH` chama o *Orques
   - `docs/IMPORTADOR_INTELIGENTE_PLAN.md`
 - validação:
   - `npm run build` passou
+
+## Atualização 2026-04-08 - Agenda passou a suportar Google por usuário com fallback do escritório
+
+- a frente de agendamentos ganhou a foundation correta para operação de equipe real
+- arquivos principais:
+  - `supabase/migrations/043_user_calendar_ownership.sql`
+  - `src/lib/google-calendar.ts`
+  - `src/app/api/google/auth/route.ts`
+  - `src/app/api/google/callback/route.ts`
+  - `src/app/api/google/status/route.ts`
+  - `src/app/api/agendamentos/route.ts`
+  - `src/app/api/agendamentos/[id]/route.ts`
+  - `src/app/(dashboard)/agendamentos/page.tsx`
+  - `src/app/(dashboard)/perfil/page.tsx`
+  - `src/components/novo-agendamento-modal.tsx`
+  - `src/components/gestao-usuarios.tsx`
+- mudanças:
+  - cada usuário agora pode conectar o próprio Google Calendar
+  - admin continua podendo conectar um calendário padrão do escritório
+  - o sistema tenta usar primeiro o calendário do responsável do agendamento
+  - se ele não tiver conexão própria, usa o calendário padrão do escritório como fallback
+  - cada agendamento agora registra de onde veio o evento:
+    - `calendar_owner_scope = user`
+    - `calendar_owner_scope = tenant`
+  - remarcação e cancelamento voltam para a mesma origem do evento
+  - a UI de `Agendamentos` ficou mais explícita sobre:
+    - meu Google
+    - fallback do escritório
+    - qual calendário será usado
+  - o `Perfil` virou a área natural para o usuário conectar o próprio Google
+  - a gestão de usuários passou a sinalizar quem já tem agenda própria conectada
+- efeito de produto:
+  - permite cenário de secretária/admin agendando para outro responsável sem concentrar tudo no calendário do admin
+  - reduz ruído operacional entre criação do agendamento e propriedade real do compromisso
+- validação:
+  - `npm run build` passou

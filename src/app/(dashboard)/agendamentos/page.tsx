@@ -52,6 +52,8 @@ interface Agendamento {
   honorario: number | null
   google_event_id: string | null
   meet_link: string | null
+  calendar_owner_scope?: 'tenant' | 'user' | null
+  calendar_owner_email?: string | null
   leads: { id: string; nome: string; telefone: string; banco?: string } | null
   usuarios: { id: string; nome: string } | null
 }
@@ -59,6 +61,14 @@ interface Agendamento {
 interface UsuarioOpcao {
   id: string
   nome: string
+  googleCalendarConnected?: boolean
+  googleCalendarEmail?: string | null
+}
+
+interface GoogleConnectionStatus {
+  currentUser: { connected: boolean; email: string | null; connectedAt: string | null }
+  tenantDefault: { connected: boolean; email: string | null; connectedAt: string | null }
+  effective: { connected: boolean; source: 'user' | 'tenant' | 'none'; email: string | null }
 }
 
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
@@ -89,7 +99,7 @@ export default function AgendamentosPage() {
   const [usuarios, setUsuarios] = useState<UsuarioOpcao[]>([])
   const [role, setRole] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
-  const [googleConnected, setGoogleConnected] = useState<boolean | null>(null)
+  const [googleStatus, setGoogleStatus] = useState<GoogleConnectionStatus | null>(null)
   const [savingId, setSavingId] = useState<string | null>(null)
   const [editandoId, setEditandoId] = useState<string | null>(null)
   const [novaDataHora, setNovaDataHora] = useState('')
@@ -99,12 +109,24 @@ export default function AgendamentosPage() {
   const [selectedAgendamento, setSelectedAgendamento] = useState<Agendamento | null>(null)
 
   useEffect(() => {
+    const googleTarget = searchParams.get('google_target')
     if (searchParams.get('google') === 'conectado') {
-      toast.success('Google Calendar conectado com sucesso!')
-      setGoogleConnected(true)
+      toast.success(
+        googleTarget === 'tenant'
+          ? 'Calendário padrão do escritório conectado com sucesso!'
+          : 'Seu Google Calendar foi conectado com sucesso!',
+      )
+      void checkGoogle()
     }
     if (searchParams.get('google') === 'erro') {
-      toast.error('Erro ao conectar Google Calendar. Tente novamente.')
+      toast.error(
+        googleTarget === 'tenant'
+          ? 'Erro ao conectar o calendário do escritório. Tente novamente.'
+          : 'Erro ao conectar seu Google Calendar. Tente novamente.',
+      )
+    }
+    if (searchParams.get('google') === 'forbidden') {
+      toast.error('Apenas admins podem conectar o calendário padrão do escritório.')
     }
   }, [searchParams])
 
@@ -130,9 +152,13 @@ export default function AgendamentosPage() {
   async function checkGoogle() {
     try {
       const res = await fetch('/api/google/status')
-      if (res.ok) setGoogleConnected((await res.json()).connected)
+      if (res.ok) setGoogleStatus(await res.json())
     } catch {
-      setGoogleConnected(false)
+      setGoogleStatus({
+        currentUser: { connected: false, email: null, connectedAt: null },
+        tenantDefault: { connected: false, email: null, connectedAt: null },
+        effective: { connected: false, source: 'none', email: null },
+      })
     }
   }
 
@@ -144,7 +170,17 @@ export default function AgendamentosPage() {
       setUsuarios(
         (data.usuarios || [])
           .filter((usuario: { ativo: boolean }) => usuario.ativo)
-          .map((usuario: { id: string; nome: string }) => ({ id: usuario.id, nome: usuario.nome })),
+          .map((usuario: {
+            id: string
+            nome: string
+            google_calendar_connected_at?: string | null
+            google_calendar_email?: string | null
+          }) => ({
+            id: usuario.id,
+            nome: usuario.nome,
+            googleCalendarConnected: Boolean(usuario.google_calendar_connected_at),
+            googleCalendarEmail: usuario.google_calendar_email || null,
+          })),
       )
       setRole(data.role || null)
     } catch {
@@ -252,6 +288,7 @@ export default function AgendamentosPage() {
   function renderAgendamentoDetail(ag: Agendamento, compact = false) {
     const statusInfo = STATUS_LABELS[ag.status] ?? { label: ag.status, color: 'text-slate-400 bg-slate-400/10' }
     const statusCalendar = STATUS_CALENDAR_STYLES[ag.status] ?? STATUS_CALENDAR_STYLES.agendado
+    const calendarOwnerLabel = ag.calendar_owner_scope === 'user' ? 'Calendário do responsável' : 'Calendário do escritório'
     const date = parseISO(ag.data_hora)
     const urgente = ag.status !== 'realizado' && ag.status !== 'cancelado' && (isToday(date) || isPast(date))
     const inboxHref = buildInboxHref({ telefone: ag.leads?.telefone })
@@ -281,7 +318,7 @@ export default function AgendamentosPage() {
               </span>
               <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium ${statusCalendar.badge} ${statusCalendar.border}`}>
                 <span className={`h-1.5 w-1.5 rounded-full ${statusCalendar.dot}`} />
-                Calendário
+                {calendarOwnerLabel}
               </span>
               {urgente ? (
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-medium text-amber-300 bg-amber-400/10">
@@ -516,35 +553,79 @@ export default function AgendamentosPage() {
       </div>
 
       <div data-tour="agendamentos-google" className="mb-6">
-        {googleConnected === false ? (
-          <div className="flex items-center justify-between p-4 rounded-xl border border-yellow-500/20 bg-yellow-500/5">
+        {googleStatus && !googleStatus.effective.connected ? (
+          <div className="flex items-center justify-between p-4 rounded-xl border border-yellow-500/20 bg-yellow-500/5 gap-4 flex-wrap">
             <div className="flex items-center gap-3">
               <AlertCircle className="w-5 h-5 text-yellow-400 flex-shrink-0" />
               <div>
-                <p className="text-sm font-medium text-yellow-300">Google Calendar não conectado</p>
+                <p className="text-sm font-medium text-yellow-300">Nenhum Google Calendar conectado</p>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  Conecte para criar links do Google Meet automaticamente
+                  O PrevLegal tenta usar o calendário do responsável e, se ele não tiver conexão própria, usa o padrão do escritório.
                 </p>
               </div>
             </div>
-            <a
-              href="/api/google/auth"
-              className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium transition-colors flex items-center gap-2"
-            >
-              <Video className="w-4 h-4" />
-              Conectar Google
-            </a>
+            <div className="flex items-center gap-2 flex-wrap">
+              <a
+                href="/api/google/auth?target=user&next=/agendamentos"
+                className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium transition-colors flex items-center gap-2"
+              >
+                <Video className="w-4 h-4" />
+                Conectar meu Google
+              </a>
+              {role === 'admin' ? (
+                <a
+                  href="/api/google/auth?target=tenant&next=/agendamentos"
+                  className="px-4 py-2 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 text-slate-200 text-sm font-medium transition-colors flex items-center gap-2"
+                >
+                  <Video className="w-4 h-4" />
+                  Conectar calendário do escritório
+                </a>
+              ) : null}
+            </div>
           </div>
         ) : null}
 
-        {googleConnected === true ? (
-          <div className="flex items-center gap-2 text-sm text-emerald-400">
-            <CheckCircle2 className="w-4 h-4" />
-            Google Calendar conectado
+        {googleStatus?.effective.connected ? (
+          <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4">
+            <div className="flex items-center gap-2 text-sm text-emerald-400">
+              <CheckCircle2 className="w-4 h-4" />
+              {googleStatus.currentUser.connected
+                ? 'Seu Google Calendar está conectado'
+                : 'Calendário padrão do escritório disponível como fallback'}
+            </div>
+            <div className="mt-2 flex flex-wrap gap-2 text-xs">
+              <span className={`rounded-full px-2.5 py-1 ${googleStatus.currentUser.connected ? 'bg-emerald-500/10 text-emerald-300' : 'bg-white/5 text-slate-400'}`}>
+                Meu calendário: {googleStatus.currentUser.connected ? (googleStatus.currentUser.email || 'conectado') : 'não conectado'}
+              </span>
+              <span className={`rounded-full px-2.5 py-1 ${googleStatus.tenantDefault.connected ? 'bg-blue-500/10 text-blue-300' : 'bg-white/5 text-slate-400'}`}>
+                Escritório: {googleStatus.tenantDefault.connected ? (googleStatus.tenantDefault.email || 'conectado') : 'não conectado'}
+              </span>
+            </div>
+            <p className="mt-2 text-xs text-slate-500">
+              Ao criar um agendamento, o PrevLegal tenta usar o calendário do responsável. Sem conexão individual, ele cai no padrão do escritório.
+            </p>
+            <div className="mt-3 flex gap-2 flex-wrap">
+              <a
+                href="/api/google/auth?target=user&next=/agendamentos"
+                className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-slate-200 transition-colors hover:bg-white/10"
+              >
+                <Video className="w-3.5 h-3.5" />
+                {googleStatus.currentUser.connected ? 'Reconectar meu Google' : 'Conectar meu Google'}
+              </a>
+              {role === 'admin' ? (
+                <a
+                  href="/api/google/auth?target=tenant&next=/agendamentos"
+                  className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-slate-200 transition-colors hover:bg-white/10"
+                >
+                  <Video className="w-3.5 h-3.5" />
+                  {googleStatus.tenantDefault.connected ? 'Reconectar calendário do escritório' : 'Conectar calendário do escritório'}
+                </a>
+              ) : null}
+            </div>
           </div>
         ) : null}
 
-        {googleConnected === null ? (
+        {googleStatus === null ? (
           <div className="text-sm text-slate-500">
             Verificando integração com Google Calendar...
           </div>

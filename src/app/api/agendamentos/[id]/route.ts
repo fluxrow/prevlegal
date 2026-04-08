@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 import { cancelarEventoCalendar, atualizarEventoCalendar } from '@/lib/google-calendar'
 import { canAccessLeadId, getTenantContext } from '@/lib/tenant-context'
+import { createClient as createAdminClient } from '@supabase/supabase-js'
 
 export async function PATCH(
   request: Request,
@@ -9,6 +10,10 @@ export async function PATCH(
 ) {
   const { id } = await params
   const supabase = await createClient()
+  const adminSupabase = createAdminClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  )
   const context = await getTenantContext(supabase)
   if (!context) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
@@ -16,9 +21,9 @@ export async function PATCH(
   const { status, data_hora, duracao_minutos, observacoes, honorario, usuario_id } = body
 
   // Busca agendamento atual
-  let atualQuery = supabase
+  let atualQuery = adminSupabase
     .from('agendamentos')
-    .select('id, tenant_id, google_event_id, lead_id, status, usuario_id')
+    .select('id, tenant_id, google_event_id, lead_id, status, usuario_id, calendar_owner_scope, calendar_owner_usuario_id')
     .eq('id', id)
     .eq('tenant_id', context.tenantId)
 
@@ -46,9 +51,13 @@ export async function PATCH(
   if (atual?.google_event_id && data_hora) {
     try {
       await atualizarEventoCalendar({
+        supabase: adminSupabase,
+        tenantId: context.tenantId,
         googleEventId: atual.google_event_id,
         dataHora: data_hora,
         duracaoMinutos: duracao_minutos ?? 30,
+        ownerScope: atual.calendar_owner_scope,
+        ownerUsuarioId: atual.calendar_owner_usuario_id,
       })
     } catch (err) {
       console.warn('Erro ao atualizar evento Google Calendar:', err)
@@ -58,7 +67,13 @@ export async function PATCH(
   // Cancela no Google Calendar se status = cancelado
   if (status === 'cancelado' && atual?.google_event_id) {
     try {
-      await cancelarEventoCalendar(atual.google_event_id)
+      await cancelarEventoCalendar({
+        supabase: adminSupabase,
+        tenantId: context.tenantId,
+        googleEventId: atual.google_event_id,
+        ownerScope: atual.calendar_owner_scope,
+        ownerUsuarioId: atual.calendar_owner_usuario_id,
+      })
     } catch (err) {
       console.warn('Erro ao cancelar evento Google Calendar:', err)
     }
@@ -77,7 +92,7 @@ export async function PATCH(
     await supabase.from('leads').update({ status: 'awaiting' }).eq('id', atual.lead_id).eq('status', 'scheduled')
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await adminSupabase
     .from('agendamentos')
     .update(updates)
     .eq('id', id)
@@ -95,12 +110,16 @@ export async function DELETE(
 ) {
   const { id } = await params
   const supabase = await createClient()
+  const adminSupabase = createAdminClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  )
   const context = await getTenantContext(supabase)
   if (!context) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { data: atual } = await supabase
+  const { data: atual } = await adminSupabase
     .from('agendamentos')
-    .select('google_event_id, lead_id')
+    .select('google_event_id, lead_id, calendar_owner_scope, calendar_owner_usuario_id')
     .eq('id', id)
     .eq('tenant_id', context.tenantId)
     .single()
@@ -114,15 +133,21 @@ export async function DELETE(
 
   if (atual?.google_event_id) {
     try {
-      await cancelarEventoCalendar(atual.google_event_id)
+      await cancelarEventoCalendar({
+        supabase: adminSupabase,
+        tenantId: context.tenantId,
+        googleEventId: atual.google_event_id,
+        ownerScope: atual.calendar_owner_scope,
+        ownerUsuarioId: atual.calendar_owner_usuario_id,
+      })
     } catch (err) {
       console.warn('Erro ao cancelar evento Google Calendar:', err)
     }
   }
 
-  await supabase.from('leads').update({ status: 'awaiting' }).eq('id', atual.lead_id).eq('status', 'scheduled')
+  await adminSupabase.from('leads').update({ status: 'awaiting' }).eq('id', atual.lead_id).eq('status', 'scheduled')
 
-  const { error } = await supabase.from('agendamentos').delete().eq('id', id).eq('tenant_id', context.tenantId)
+  const { error } = await adminSupabase.from('agendamentos').delete().eq('id', id).eq('tenant_id', context.tenantId)
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json({ success: true })
 }

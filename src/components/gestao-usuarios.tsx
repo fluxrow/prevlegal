@@ -5,6 +5,8 @@ import { UserPlus, Copy, Check, Shield, Eye, Edit3, Crown, ToggleLeft, ToggleRig
 interface Usuario {
   id: string; nome: string; email: string; role: string
   ativo: boolean; convidado_em: string; ultimo_acesso: string | null
+  google_calendar_email?: string | null
+  google_calendar_connected_at?: string | null
 }
 interface Convite {
   id: string; email: string; role: string; created_at: string; expires_at: string
@@ -111,7 +113,23 @@ export default function GestaoUsuarios() {
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <p style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text-primary)', margin: '0 0 2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{u.nome}</p>
-                <p style={{ fontSize: '11px', color: 'var(--text-muted)', margin: 0 }}>{u.email}</p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                  <p style={{ fontSize: '11px', color: 'var(--text-muted)', margin: 0 }}>{u.email}</p>
+                  <span style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    borderRadius: '20px',
+                    padding: '2px 8px',
+                    fontSize: '10px',
+                    fontWeight: '600',
+                    background: u.google_calendar_connected_at ? 'rgba(45,212,160,0.12)' : 'rgba(148,163,184,0.08)',
+                    color: u.google_calendar_connected_at ? '#2dd4a0' : '#94a3b8',
+                    border: u.google_calendar_connected_at ? '1px solid rgba(45,212,160,0.18)' : '1px solid rgba(148,163,184,0.16)',
+                  }}>
+                    {u.google_calendar_connected_at ? 'Agenda conectada' : 'Sem agenda própria'}
+                  </span>
+                </div>
               </div>
               <span style={{ display: 'flex', alignItems: 'center', gap: '4px', background: `${ri.cor}15`, color: ri.cor, border: `1px solid ${ri.cor}30`, borderRadius: '20px', padding: '3px 10px', fontSize: '11px', fontWeight: '600', flexShrink: 0 }}>
                 {ri.icon} {ri.label}

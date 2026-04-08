@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
-import { User, Building2, FileText, Camera, Save, CheckCircle, AlertCircle, Upload } from 'lucide-react'
+import { User, Building2, FileText, Camera, Save, CheckCircle, AlertCircle, Upload, Calendar } from 'lucide-react'
 
 const ESTADOS = ['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO']
 
@@ -25,6 +25,19 @@ interface Perfil {
   escritorio_logo_url?: string
   assinatura_texto?: string
   assinatura_rodape?: string
+}
+
+interface GoogleStatus {
+  currentUser: {
+    connected: boolean
+    email: string | null
+    connectedAt: string | null
+  }
+  tenantDefault: {
+    connected: boolean
+    email: string | null
+    connectedAt: string | null
+  }
 }
 
 type Toast = { tipo: 'ok' | 'erro'; msg: string } | null
@@ -126,6 +139,8 @@ function PerfilSelectField({
 
 export default function PerfilPage() {
   const [perfil, setPerfil] = useState<Perfil>({})
+  const [googleStatus, setGoogleStatus] = useState<GoogleStatus | null>(null)
+  const [userRole, setUserRole] = useState('')
   const [loading, setLoading] = useState(true)
   const [salvando, setSalvando] = useState(false)
   const [toast, setToast] = useState<Toast>(null)
@@ -146,8 +161,27 @@ export default function PerfilPage() {
           perfilData.email = d.usuario.email
         }
         setPerfil(perfilData)
+        setGoogleStatus(d.google || null)
+        setUserRole(d.usuario?.role || '')
         setLoading(false)
       })
+  }, [])
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const google = params.get('google')
+    const googleTarget = params.get('google_target')
+    if (!google) return
+
+    if (google === 'conectado') {
+      showToast('ok', googleTarget === 'tenant' ? 'Calendário do escritório conectado' : 'Seu Google Calendar foi conectado')
+    } else if (google === 'erro') {
+      showToast('erro', googleTarget === 'tenant' ? 'Falha ao conectar o calendário do escritório' : 'Falha ao conectar seu Google Calendar')
+    } else if (google === 'forbidden') {
+      showToast('erro', 'Apenas admins podem conectar o calendário padrão do escritório')
+    }
+
+    window.history.replaceState({}, '', '/perfil')
   }, [])
 
   function set(field: keyof Perfil, value: string) {
@@ -245,6 +279,84 @@ export default function PerfilPage() {
           <Save size={14} /> {salvando ? 'Salvando...' : 'Salvar perfil'}
         </button>
       </div>
+
+      <PerfilSection icon={<Calendar size={16} />} title="Agenda e Google Calendar">
+        <div style={{ display: 'grid', gap: '14px' }}>
+          <div style={{ background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: '12px', padding: '16px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
+              <div>
+                <p style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-primary)', margin: '0 0 6px' }}>
+                  Meu calendário
+                </p>
+                <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: 0, lineHeight: 1.5 }}>
+                  {googleStatus?.currentUser.connected
+                    ? `Conectado${googleStatus.currentUser.email ? ` como ${googleStatus.currentUser.email}` : ''}.`
+                    : 'Ainda não conectado. Quando você for o responsável, o PrevLegal tentará usar o calendário padrão do escritório como fallback.'}
+                </p>
+              </div>
+              <a
+                href="/api/google/auth?target=user&next=/perfil"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  background: 'var(--accent)',
+                  color: '#fff',
+                  padding: '10px 14px',
+                  borderRadius: '10px',
+                  textDecoration: 'none',
+                  fontSize: '12px',
+                  fontWeight: '700',
+                  fontFamily: 'DM Sans, sans-serif',
+                }}
+              >
+                <Upload size={14} />
+                {googleStatus?.currentUser.connected ? 'Reconectar meu Google' : 'Conectar meu Google'}
+              </a>
+            </div>
+          </div>
+
+          <div style={{ background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: '12px', padding: '16px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
+              <div>
+                <p style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-primary)', margin: '0 0 6px' }}>
+                  Calendário padrão do escritório
+                </p>
+                <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: 0, lineHeight: 1.5 }}>
+                  {googleStatus?.tenantDefault.connected
+                    ? `Disponível como fallback${googleStatus.tenantDefault.email ? ` (${googleStatus.tenantDefault.email})` : ''}.`
+                    : 'Ainda não conectado. Esse calendário pode servir como fallback quando o responsável não tiver conexão própria.'}
+                </p>
+              </div>
+              {userRole === 'admin' ? (
+                <a
+                  href="/api/google/auth?target=tenant&next=/perfil"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    background: 'var(--bg-hover)',
+                    color: 'var(--text-primary)',
+                    padding: '10px 14px',
+                    borderRadius: '10px',
+                    textDecoration: 'none',
+                    fontSize: '12px',
+                    fontWeight: '700',
+                    fontFamily: 'DM Sans, sans-serif',
+                    border: '1px solid var(--border)',
+                  }}
+                >
+                  <Upload size={14} />
+                  {googleStatus?.tenantDefault.connected ? 'Reconectar calendário do escritório' : 'Conectar calendário do escritório'}
+                </a>
+              ) : null}
+            </div>
+            <p style={{ fontSize: '11px', color: 'var(--text-muted)', margin: '10px 0 0', lineHeight: 1.6 }}>
+              Cada usuário pode conectar o próprio Google. Quando uma secretária ou admin agenda para outra pessoa, o PrevLegal tenta usar o calendário do responsável; se ele não estiver conectado, usa o padrão do escritório.
+            </p>
+          </div>
+        </div>
+      </PerfilSection>
 
       <PerfilSection icon={<User size={16} />} title="Dados Pessoais">
         <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '20px' }}>

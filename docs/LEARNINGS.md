@@ -71,6 +71,12 @@ Mestra: [[MASTER_PREV_LEGAL]]
 **Correção:** Formalizar em `docs/IMPORTADOR_INTELIGENTE_PLAN.md` que o importador atual resolve variedade de layout, mas a entrada de fontes sem `NB` exige uma Fase 2 com staging, templates de importação e confirmação de mapeamento
 **Regra pratica:** Quando a nova fonte muda o modelo de identidade do lead, isso deve virar evolução explícita de arquitetura, não gambiarra no parser existente
 
+### 44. Agendamento precisa separar criador, responsável e dono do calendário
+**Problema:** Em operação real de escritório, uma secretária pode criar um agendamento para outro advogado, mas o evento não deve necessariamente nascer no Google do admin/secretária
+**Causa:** A integração inicial com Google Calendar era singleton por tenant em `configuracoes.google_calendar_token`, o que misturava quem agenda com quem realmente atende
+**Correção:** Evoluir a integração para conexão por usuário com fallback do escritório e registrar no agendamento quem foi o `calendar_owner`
+**Regra pratica:** No PrevLegal, `quem criou`, `quem é o responsável` e `em qual calendário o evento foi salvo` são conceitos diferentes e devem ser modelados separadamente
+
 ### 33. Expansao de produto precisa entrar por arquitetura de portfólio, nao por mistura de narrativas
 **Problema:** Novas oportunidades reais, como `PrevGlobal`, CNIS com IA e modulos tecnicos premium, podem comecar a competir com o core operacional do PrevLegal se entrarem sem separacao clara
 **Causa:** O produto cresceu alem da ideia inicial e abriu adjacencias fortes, mas isso aumenta o risco de descaracterizar a oferta principal

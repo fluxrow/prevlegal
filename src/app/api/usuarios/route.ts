@@ -10,7 +10,7 @@ export async function GET() {
 
   const { data: usuarios } = await supabase
     .from('usuarios')
-    .select('id, nome, email, role, ativo, convidado_em, ultimo_acesso')
+    .select('id, nome, email, role, ativo, convidado_em, ultimo_acesso, google_calendar_email, google_calendar_connected_at')
     .eq('tenant_id', usuario.tenant_id)
     .order('convidado_em', { ascending: true })
 

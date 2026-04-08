@@ -46,6 +46,48 @@ Mestra: [[MASTER_PREV_LEGAL]]
 - proximo passo recomendado:
   - abrir a Fase 2 do importador com preview, confirmação de mapeamento e templates por fonte
 
+## Atualizacao Agendamentos / Google Calendar por Usuário — 08/04/2026
+
+- a camada de agenda deixou de depender apenas da conexão Google global do tenant
+- arquivos principais:
+  - `supabase/migrations/043_user_calendar_ownership.sql`
+  - `src/lib/google-calendar.ts`
+  - `src/app/api/google/auth/route.ts`
+  - `src/app/api/google/callback/route.ts`
+  - `src/app/api/google/status/route.ts`
+  - `src/app/api/agendamentos/route.ts`
+  - `src/app/api/agendamentos/[id]/route.ts`
+  - `src/app/(dashboard)/agendamentos/page.tsx`
+  - `src/app/(dashboard)/perfil/page.tsx`
+  - `src/components/novo-agendamento-modal.tsx`
+  - `src/components/gestao-usuarios.tsx`
+- melhorias entregues:
+  - cada usuário agora pode conectar o próprio Google Calendar
+  - admin continua podendo conectar um calendário padrão do escritório
+  - criação de agendamento tenta usar primeiro o calendário do responsável
+  - se o responsável não tiver conexão própria, o sistema usa o calendário padrão do escritório como fallback
+  - o agendamento passa a registrar quem foi o dono do calendário do evento:
+    - `tenant`
+    - `user`
+  - remarcação e cancelamento agora voltam para a mesma origem do evento
+  - a UI de `Agendamentos` e `Perfil` passou a explicar claramente:
+    - o status do meu Google
+    - o fallback do escritório
+    - quando o calendário do responsável será usado
+  - a gestão de usuários agora sinaliza quem já tem agenda própria conectada
+- impacto operacional:
+  - permite cenário real de secretaria agendando para advogado/sócio sem obrigar tudo a cair no Google do admin
+  - reduz confusão entre `quem criou`, `quem é o responsável` e `em qual calendário o evento nasce`
+- validacao:
+  - `npm run build` passou
+- proximo passo recomendado:
+  - aplicar a migration `043`
+  - validar em runtime:
+    - usuário conectando o próprio Google em `/perfil`
+    - admin conectando o calendário padrão do escritório
+    - agendamento criado para responsável com agenda própria
+    - agendamento criado para responsável sem agenda própria, usando fallback do escritório
+
 ## Atualizacao Automações / Documentos IA — 08/04/2026
 
 - a aba `Automações` saiu do modo “templates fechados” e passou a permitir leitura e ajuste real dos gatilhos sem apagar e recriar

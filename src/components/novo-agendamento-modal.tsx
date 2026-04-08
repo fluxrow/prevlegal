@@ -15,6 +15,8 @@ type LeadOption = {
 type UsuarioOption = {
   id: string
   nome: string
+  google_calendar_connected_at?: string | null
+  google_calendar_email?: string | null
 }
 
 type InitialLead = {
@@ -125,6 +127,10 @@ export default function NovoAgendamentoModal({
     () => leadOptions.find((lead) => lead.id === selectedLeadId) || initialLead || null,
     [leadOptions, selectedLeadId, initialLead],
   )
+  const selectedUsuario = useMemo(
+    () => usuarios.find((usuario) => usuario.id === usuarioId) || null,
+    [usuarios, usuarioId],
+  )
 
   useEffect(() => {
     if (!open) return
@@ -178,7 +184,17 @@ export default function NovoAgendamentoModal({
       const data = await res.json()
       const ativos = (data.usuarios || [])
         .filter((usuario: { ativo: boolean }) => usuario.ativo)
-        .map((usuario: { id: string; nome: string }) => ({ id: usuario.id, nome: usuario.nome }))
+        .map((usuario: {
+          id: string
+          nome: string
+          google_calendar_connected_at?: string | null
+          google_calendar_email?: string | null
+        }) => ({
+          id: usuario.id,
+          nome: usuario.nome,
+          google_calendar_connected_at: usuario.google_calendar_connected_at || null,
+          google_calendar_email: usuario.google_calendar_email || null,
+        }))
       setUsuarios(ativos)
       setUsuarioId((current) => current || ativos[0]?.id || '')
     } catch {
@@ -434,19 +450,34 @@ export default function NovoAgendamentoModal({
             </FormField>
 
             <FormField label="Responsável">
-              <select
-                value={usuarioId}
-                onChange={(e) => setUsuarioId(e.target.value)}
-                style={inputStyle}
-                disabled={loadingUsuarios}
-              >
-                <option value="">{loadingUsuarios ? 'Carregando equipe...' : 'Selecione'}</option>
-                {usuarios.map((usuario) => (
-                  <option key={usuario.id} value={usuario.id}>
-                    {usuario.nome}
-                  </option>
-                ))}
-              </select>
+              <div style={{ display: 'grid', gap: '8px' }}>
+                <select
+                  value={usuarioId}
+                  onChange={(e) => setUsuarioId(e.target.value)}
+                  style={inputStyle}
+                  disabled={loadingUsuarios}
+                >
+                  <option value="">{loadingUsuarios ? 'Carregando equipe...' : 'Selecione'}</option>
+                  {usuarios.map((usuario) => (
+                    <option key={usuario.id} value={usuario.id}>
+                      {usuario.nome}
+                    </option>
+                  ))}
+                </select>
+                <div style={{ fontSize: '11px', color: 'var(--text-muted)', lineHeight: 1.5 }}>
+                  {selectedUsuario?.google_calendar_connected_at ? (
+                    <>
+                      Esse responsável tem Google próprio conectado
+                      {selectedUsuario.google_calendar_email ? ` (${selectedUsuario.google_calendar_email})` : ''}.
+                      O agendamento tentará entrar direto no calendário dele.
+                    </>
+                  ) : (
+                    <>
+                      Esse responsável ainda não conectou o próprio Google. Se existir um calendário padrão do escritório, ele será usado como fallback.
+                    </>
+                  )}
+                </div>
+              </div>
             </FormField>
 
             <FormField label="Data e hora">
@@ -494,7 +525,7 @@ export default function NovoAgendamentoModal({
             <div style={{ display: 'flex', alignItems: 'flex-end', paddingBottom: '10px' }}>
               <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', borderRadius: '10px', background: 'rgba(79,122,255,0.08)', border: '1px solid rgba(79,122,255,0.18)', padding: '10px 12px', fontSize: '12px', color: 'var(--text-secondary)' }}>
                 <Video size={14} color="var(--accent)" />
-                Se o Google Calendar estiver conectado, o Meet será criado automaticamente.
+                O PrevLegal tenta usar o calendário do responsável e, se ele não tiver conexão própria, usa o calendário padrão do escritório para gerar o Meet.
               </div>
             </div>
           </div>
