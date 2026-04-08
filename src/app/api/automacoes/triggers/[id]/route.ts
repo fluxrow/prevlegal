@@ -19,14 +19,21 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         const body = await req.json()
 
         const {
+            trigger_evento,
+            trigger_condicao,
+            acao_tipo,
+            acao_ref_id,
             ativo,
             cancelar_followups_rodando,
             enviar_mensagem_transicao,
             mensagem_transicao_texto
         } = body
 
-        // Apenas permite atualizar configurações ou status ativo
         const updateData: any = {}
+        if (trigger_evento !== undefined) updateData.trigger_evento = trigger_evento
+        if (trigger_condicao !== undefined) updateData.trigger_condicao = trigger_condicao
+        if (acao_tipo !== undefined) updateData.acao_tipo = acao_tipo
+        if (acao_ref_id !== undefined) updateData.acao_ref_id = acao_ref_id
         if (ativo !== undefined) updateData.ativo = ativo
         if (cancelar_followups_rodando !== undefined) updateData.cancelar_followups_rodando = cancelar_followups_rodando
         if (enviar_mensagem_transicao !== undefined) updateData.enviar_mensagem_transicao = enviar_mensagem_transicao

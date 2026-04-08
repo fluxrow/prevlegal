@@ -18,6 +18,37 @@ Mestra: [[MASTER_PREV_LEGAL]]
 - [[Sessoes/2026-03-18-prevlegal-admin-roi-obsidian]]
 - [[Sessoes/2026-03-18-fase-24-inbox-operacional-unificada-roadmap-final]]
 
+## Atualizacao Automações / Documentos IA — 08/04/2026
+
+- a aba `Automações` saiu do modo “templates fechados” e passou a permitir leitura e ajuste real dos gatilhos sem apagar e recriar
+- arquivos principais:
+  - `src/components/automacoes/trigger-config.tsx`
+  - `src/app/api/automacoes/triggers/[id]/route.ts`
+- melhorias aplicadas:
+  - cada card de gatilho agora explica melhor:
+    - em qual status dispara
+    - qual ação executa
+    - por que esse status é útil
+  - os templates padrão do PrevLegal agora podem ser editados direto na UI
+  - o modal de criação/edição passou a resumir em linguagem humana o que vai acontecer, reduzindo dependência do time técnico para configurar
+- impacto operacional:
+  - a camada de automações fica mais segura para uso assistido pelo próprio escritório
+  - templates passam a funcionar como ponto de partida, não como configuração opaca
+- na mesma rodada, o beta de documentos IA foi corrigido para obedecer o schema real:
+  - `src/app/api/leads/[id]/gerar-documento/route.ts`
+  - os documentos gerados por IA agora são enviados para o bucket `lead-documentos`
+  - o backend grava `arquivo_url`, `arquivo_nome`, `arquivo_tamanho`, `arquivo_tipo`, `tenant_id` e `created_by`
+  - isso elimina o erro:
+    - `null value in column "arquivo_url" of relation "lead_documentos" violates not-null constraint`
+- validacao:
+  - `npm run build` passou
+- proximo passo recomendado:
+  - validar ponta a ponta um gatilho real via mudança de status do lead
+  - testar a geração dos três documentos beta no runtime e decidir a próxima camada:
+    - revisão
+    - versionamento
+    - análise documental com IA
+
 ## Atualização Crítica — 19/03/2026
 
 - O pacote `supabase/reset/combined_apply_031_and_reset.sql` foi executado diretamente no banco operacional `lrqvvxmgimjlghpwavdb`

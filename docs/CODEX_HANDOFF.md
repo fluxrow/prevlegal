@@ -20,6 +20,61 @@ Objetivo:
 - facilitar o repasse posterior para o Claude
 - registrar decisoes, arquivos afetados, validacoes e proximos passos
 
+## Atualizacao 2026-04-08 - Templates de automação agora podem ser editados
+
+- a interface de `Automações` foi endurecida para uso real do escritório, não só para seed inicial
+- arquivos alterados:
+  - `src/components/automacoes/trigger-config.tsx`
+  - `src/app/api/automacoes/triggers/[id]/route.ts`
+- mudanças principais:
+  - cada gatilho passou a mostrar:
+    - status em linguagem mais amigável
+    - ação resumida de forma operacional
+    - um texto curto explicando por que aquele estágio é útil
+  - foi adicionado botão `Editar` também nos templates padrão do PrevLegal
+  - o modal de gatilho passou a ser híbrido:
+    - cria
+    - edita
+  - o `PATCH /api/automacoes/triggers/[id]` agora aceita ajustar:
+    - `trigger_evento`
+    - `trigger_condicao`
+    - `acao_tipo`
+    - `acao_ref_id`
+    - além das flags já existentes
+- efeito prático:
+  - templates deixam de ser configuração opaca
+  - a operação consegue adaptar os playbooks sem apagar o gatilho pronto e recriar do zero
+
+## Atualizacao 2026-04-08 - Beta de documentos IA corrigido no backend
+
+- foi corrigido o erro reportado ao gerar `Petição Inicial`, `Procuração` e `Requerimento INSS`
+- arquivo alterado:
+  - `src/app/api/leads/[id]/gerar-documento/route.ts`
+- causa identificada:
+  - a geração IA tentava inserir em `lead_documentos` sem `arquivo_url`, mas a tabela exige arquivo persistido
+- correção aplicada:
+  - o backend agora:
+    - gera o texto com Claude
+    - sobe um `.txt` no bucket `lead-documentos`
+    - gera `signedUrl`
+    - salva o documento com metadados completos
+    - remove o arquivo do bucket se o insert falhar
+- campos agora persistidos:
+  - `tenant_id`
+  - `arquivo_url`
+  - `arquivo_nome`
+  - `arquivo_tamanho`
+  - `arquivo_tipo`
+  - `created_by`
+- efeito prático:
+  - o beta passa a obedecer o mesmo contrato dos documentos normais do lead
+  - o front continua podendo baixar/copiar o conteúdo, mas o lead também fica com registro salvo de verdade
+- validacao:
+  - `npm run build` passou
+- proximo passo recomendado:
+  - testar em runtime a criação dos 3 documentos beta
+  - validar um gatilho real por mudança de status do lead para confirmar a Fase E ponta a ponta
+
 ## Atualizacao 2026-04-06 - Fase E (Gatilhos e Orquestracao Avançada) - Foundation Entregue
 
 - Construida a fundação completa do motor de gatilhos automáticos do PrevLegal

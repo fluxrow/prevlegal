@@ -20,6 +20,21 @@ Mestra: [[MASTER_PREV_LEGAL]]
 - [[Sessoes/2026-03-18-prevlegal-admin-roi-obsidian]]
 - [[Sessoes/2026-03-18-sessoes-17-18-marco-prevlegal-completo]]
 
+### 36. Documento IA não pode contornar o contrato do módulo de documentos
+**Problema:** Ao gerar `Petição Inicial`, `Procuração` ou `Requerimento INSS`, o backend falhava com `null value in column "arquivo_url" of relation "lead_documentos" violates not-null constraint`
+**Causa:** A geração por IA salvava apenas `conteudo_texto` em `lead_documentos`, mas a tabela foi desenhada para sempre ter arquivo persistido e `arquivo_url`
+**Correção:** Fazer a geração IA subir um `.txt` real no bucket `lead-documentos`, gerar URL assinada e só então inserir o registro completo com metadados de arquivo, `tenant_id` e `created_by`
+**Regra pratica:** No PrevLegal, features beta não devem criar um “subtipo informal” de documento fora do contrato principal de `lead_documentos`; se entra na mesma tabela, precisa obedecer o mesmo padrão de storage/metadados
+
+### 37. Template de automação precisa nascer editável e explicável
+**Problema:** O seed dos gatilhos funcionava, mas a operação ficava sem botão de editar e com pouca clareza sobre o que cada template realmente faria
+**Causa:** O foco inicial foi colocar a Fase E para rodar no banco e no orquestrador, deixando a superfície de ajuste ainda crua
+**Correção:** Reaproveitar a mesma UI de gatilhos para permitir edição dos templates padrão e adicionar leitura humana do disparo, da ação e do motivo operacional de cada status
+**Regra pratica:** Template no PrevLegal deve ser “atalho configurável”, não “preset travado”. Sempre expor:
+- quando dispara
+- o que executa
+- e um resumo em linguagem operacional
+
 ### 33. Expansao de produto precisa entrar por arquitetura de portfólio, nao por mistura de narrativas
 **Problema:** Novas oportunidades reais, como `PrevGlobal`, CNIS com IA e modulos tecnicos premium, podem comecar a competir com o core operacional do PrevLegal se entrarem sem separacao clara
 **Causa:** O produto cresceu alem da ideia inicial e abriu adjacencias fortes, mas isso aumenta o risco de descaracterizar a oferta principal

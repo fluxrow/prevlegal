@@ -18,6 +18,34 @@ export interface EventTrigger {
   created_at: string
 }
 
+type TriggerFormData = {
+  trigger_evento: string
+  trigger_condicao: string
+  acao_tipo: string
+  acao_ref_id: string
+  cancelar_followups_rodando: boolean
+  enviar_mensagem_transicao: boolean
+  mensagem_transicao_texto: string | null
+}
+
+const STATUS_LABELS: Record<string, string> = {
+  new: 'Lead novo',
+  contacted: 'Lead em contato',
+  awaiting: 'Lead em triagem',
+  scheduled: 'Lead agendado',
+  converted: 'Lead convertido',
+  lost: 'Lead perdido',
+}
+
+const STATUS_HELPERS: Record<string, string> = {
+  new: 'Bom para acionar a primeira abordagem ou entregar o lead para a IA de triagem.',
+  contacted: 'Bom para iniciar uma régua de follow-up comercial quando o lead entrou em contato.',
+  awaiting: 'Bom para redistribuir ou revisar quem assume a próxima conversa.',
+  scheduled: 'Bom para transferir o atendimento para confirmação de presença e preparação da consulta.',
+  converted: 'Bom para encerrar automações comerciais e iniciar o pós-fechamento.',
+  lost: 'Bom para reacender contatos frios ou iniciar uma cadência de reativação.',
+}
+
 export default function TriggerConfig() {
   const [triggers, setTriggers] = useState<EventTrigger[]>([])
   
@@ -34,9 +62,11 @@ export default function TriggerConfig() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [showAdvanced, setShowAdvanced] = useState(false)
+  const [editingTrigger, setEditingTrigger] = useState<EventTrigger | null>(null)
+  const [modalError, setModalError] = useState('')
 
   // Form State
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<TriggerFormData>({
     trigger_evento: 'lead_status_mudou',
     trigger_condicao: 'contacted',
     acao_tipo: 'iniciar_followup',
@@ -72,7 +102,7 @@ export default function TriggerConfig() {
       setFollowupRules(rData)
       setAgentes(aData)
       
-      if (rData.length > 0 && formData.acao_tipo === 'iniciar_followup') {
+      if (!editingTrigger && rData.length > 0 && formData.acao_tipo === 'iniciar_followup' && !formData.acao_ref_id) {
           setFormData(prev => ({...prev, acao_ref_id: rData[0].id}))
       }
     } catch (e: any) {
@@ -97,6 +127,61 @@ export default function TriggerConfig() {
   const podeUsarFollowup = regrasAtivas.length > 0
   const podeUsarAgentes = agentesAtivos.length > 0
 
+  function createDefaultFormData(acaoTipo: 'iniciar_followup' | 'trocar_agente' = 'iniciar_followup'): TriggerFormData {
+    return {
+      trigger_evento: 'lead_status_mudou',
+      trigger_condicao: 'contacted',
+      acao_tipo: acaoTipo,
+      acao_ref_id: acaoTipo === 'trocar_agente' ? (agentesAtivos[0]?.id || '') : (regrasAtivas[0]?.id || ''),
+      cancelar_followups_rodando: true,
+      enviar_mensagem_transicao: false,
+      mensagem_transicao_texto: 'Oi! Passando por aqui para avisar que transferi o seu atendimento para o nosso time de especialistas. Eles já vão falar com você!',
+    }
+  }
+
+  function openCreateModal() {
+    setEditingTrigger(null)
+    setModalError('')
+    setShowAdvanced(false)
+    setFormData(createDefaultFormData())
+    setIsModalOpen(true)
+  }
+
+  function openEditModal(trigger: EventTrigger) {
+    setEditingTrigger(trigger)
+    setModalError('')
+    setShowAdvanced(
+      trigger.cancelar_followups_rodando ||
+      trigger.enviar_mensagem_transicao ||
+      Boolean(trigger.mensagem_transicao_texto),
+    )
+    setFormData({
+      trigger_evento: trigger.trigger_evento,
+      trigger_condicao: trigger.trigger_condicao,
+      acao_tipo: trigger.acao_tipo,
+      acao_ref_id: trigger.acao_ref_id,
+      cancelar_followups_rodando: trigger.cancelar_followups_rodando,
+      enviar_mensagem_transicao: trigger.enviar_mensagem_transicao,
+      mensagem_transicao_texto: trigger.mensagem_transicao_texto || 'Oi! Passando por aqui para avisar que transferi o seu atendimento para o nosso time de especialistas. Eles já vão falar com você!',
+    })
+    setIsModalOpen(true)
+  }
+
+  function closeModal() {
+    setIsModalOpen(false)
+    setEditingTrigger(null)
+    setModalError('')
+    setShowAdvanced(false)
+  }
+
+  function getStatusLabel(status: string) {
+    return STATUS_LABELS[status] || status
+  }
+
+  function getStatusHelper(status: string) {
+    return STATUS_HELPERS[status] || 'Ação disparada quando o lead entrar neste estágio.'
+  }
+
   function getAcaoNome(trigger: EventTrigger) {
     if (trigger.acao_tipo === 'iniciar_followup') {
       const regra = followupRules.find((rule) => rule.id === trigger.acao_ref_id)
@@ -107,6 +192,20 @@ export default function TriggerConfig() {
     return agente ? `Troca para IA: ${agente.nome_interno}` : 'Troca Agente'
   }
 
+  function getActionHumanSummary(data: { acao_tipo: string; acao_ref_id: string }) {
+    if (data.acao_tipo === 'iniciar_followup') {
+      const regra = followupRules.find((rule) => rule.id === data.acao_ref_id)
+      return regra
+        ? `Inicia automaticamente a régua "${regra.nome}".`
+        : 'Inicia uma régua de follow-up.'
+    }
+
+    const agente = agentes.find((item) => item.id === data.acao_ref_id)
+    return agente
+      ? `Transfere o atendimento para a IA "${agente.nome_interno}".`
+      : 'Transfere o atendimento para outro agente.'
+  }
+
   useEffect(() => {
     fetchData()
   }, [])
@@ -114,22 +213,24 @@ export default function TriggerConfig() {
   // Handlers
   const handleSave = async () => {
     if (!formData.acao_ref_id) {
-        alert('Selecione a ação (Regra ou Agente)')
+        setModalError('Selecione a ação que será executada por este gatilho.')
         return
     }
 
     try {
         setIsSaving(true)
-        const res = await fetch('/api/automacoes/triggers', {
-            method: 'POST',
+        setModalError('')
+        const res = await fetch(editingTrigger ? `/api/automacoes/triggers/${editingTrigger.id}` : '/api/automacoes/triggers', {
+            method: editingTrigger ? 'PATCH' : 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(formData)
         })
-        if (!res.ok) throw new Error('Erro ao salvar')
+        const data = await res.json().catch(() => null)
+        if (!res.ok) throw new Error(data?.error || 'Erro ao salvar')
         await fetchData()
-        setIsModalOpen(false)
+        closeModal()
     } catch (err) {
-        alert(String(err))
+        setModalError(err instanceof Error ? err.message : 'Erro ao salvar gatilho')
     } finally {
         setIsSaving(false)
     }
@@ -211,7 +312,7 @@ export default function TriggerConfig() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
         <div style={{ display: 'flex', gap: '8px' }}>
           <button
-            onClick={() => setIsModalOpen(true)}
+            onClick={openCreateModal}
             style={{ padding: '10px 18px', minWidth: '160px', background: 'linear-gradient(135deg, #315efb 0%, #4d74ff 100%)', color: '#ffffff', WebkitTextFillColor: '#ffffff', border: '1px solid rgba(49,94,251,0.35)', borderRadius: '10px', fontSize: '12px', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', boxShadow: '0 10px 24px rgba(49,94,251,0.24)', fontFamily: 'DM Sans, sans-serif', lineHeight: 1, whiteSpace: 'nowrap', appearance: 'none', WebkitAppearance: 'none' }}
           >
             <Plus size={14} color="#ffffff" strokeWidth={2.25} />
@@ -261,7 +362,7 @@ export default function TriggerConfig() {
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
                   <span style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text-primary)' }}>
-                    Quando lead for para <span style={{ color: 'var(--accent)', background: 'var(--accent-glow)', padding: '2px 6px', borderRadius: '4px' }}>{t.trigger_condicao}</span>
+                    Quando lead for para <span style={{ color: 'var(--accent)', background: 'var(--accent-glow)', padding: '2px 6px', borderRadius: '4px' }}>{getStatusLabel(t.trigger_condicao)}</span>
                   </span>
                   {t.is_template_default && (
                     <span style={{ fontSize: '10px', padding: '2px 6px', borderRadius: '999px', background: 'rgba(79,122,255,0.12)', color: 'var(--accent)', fontWeight: '700' }}>
@@ -269,14 +370,23 @@ export default function TriggerConfig() {
                     </span>
                   )}
                 </div>
-                <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '4px' }}>
                   Ação: {getAcaoNome(t)}
+                </div>
+                <div style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                  {getActionHumanSummary(t)}
+                </div>
+                <div style={{ fontSize: '11px', color: 'var(--text-muted)', lineHeight: 1.45, marginTop: '6px' }}>
+                  {getStatusHelper(t.trigger_condicao)}
                 </div>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                 <span onClick={() => toggleAtivo(t)} style={{ fontSize: '11px', padding: '4px 8px', backgroundColor: t.ativo ? 'rgba(34,197,94,0.1)' : 'var(--bg-hover)', color: t.ativo ? '#22c55e' : 'var(--text-muted)', borderRadius: '12px', fontWeight: '600', cursor: 'pointer' }}>
                   {t.ativo ? 'ON' : 'OFF'}
                 </span>
+                <button onClick={() => openEditModal(t)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: 'var(--accent)', fontSize: '12px', fontWeight: '700' }}>
+                  Editar
+                </button>
                 <button onClick={() => handleDelete(t.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', color: '#ef4444' }}>
                   <Trash2 size={15} />
                 </button>
@@ -291,11 +401,18 @@ export default function TriggerConfig() {
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 999 }}>
           <div style={{ background: 'var(--bg-surface)', width: '100%', maxWidth: '500px', borderRadius: '16px', padding: '24px', position: 'relative', border: '1px solid var(--border)', boxShadow: '0 10px 40px rgba(0,0,0,0.2)' }}>
             
-            <button onClick={() => setIsModalOpen(false)} style={{ position: 'absolute', top: '20px', right: '20px', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}>
+            <button onClick={closeModal} style={{ position: 'absolute', top: '20px', right: '20px', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}>
               <X size={20} />
             </button>
 
-            <h2 style={{ margin: '0 0 24px', fontSize: '18px', fontWeight: '600', color: 'var(--text-primary)', fontFamily: 'Syne, sans-serif' }}>Novo Gatilho</h2>
+            <h2 style={{ margin: '0 0 10px', fontSize: '18px', fontWeight: '600', color: 'var(--text-primary)', fontFamily: 'Syne, sans-serif' }}>
+              {editingTrigger ? 'Editar Gatilho' : 'Novo Gatilho'}
+            </h2>
+            <p style={{ margin: '0 0 20px', fontSize: '12px', color: 'var(--text-muted)', lineHeight: 1.5 }}>
+              {editingTrigger
+                ? 'Ajuste quando este gatilho entra em ação e o que ele faz no lead.'
+                : 'Defina em qual estágio o lead dispara a automação e qual ação deve começar automaticamente.'}
+            </p>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               
@@ -314,6 +431,9 @@ export default function TriggerConfig() {
                     <option value="converted">Lead Fechado Contrato</option>
                     <option value="lost">Lead Perdido</option>
                 </select>
+                <p style={{ margin: '8px 0 0', fontSize: '12px', color: 'var(--text-muted)', lineHeight: 1.45 }}>
+                  {getStatusHelper(formData.trigger_condicao)}
+                </p>
               </div>
 
               {/* Ação */}
@@ -347,11 +467,17 @@ export default function TriggerConfig() {
                         value={formData.acao_ref_id}
                         onChange={(e) => setFormData({...formData, acao_ref_id: e.target.value})}
                         style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: podeUsarAgentes ? 'var(--bg)' : 'var(--bg-hover)', color: 'var(--text-primary)', fontSize: '14px', outline: 'none' }}
-                     >
+                    >
                         <option value="" disabled>{podeUsarAgentes ? 'Selecione o Agente de IA...' : 'Nenhum agente ativo disponível'}</option>
                         {agentesAtivos.map(a => <option key={a.id} value={a.id}>{a.nome_interno}</option>)}
                      </select>
                  )}
+
+                 <div style={{ marginTop: '10px', padding: '10px 12px', borderRadius: '8px', background: 'rgba(79,122,255,0.06)', border: '1px solid rgba(79,122,255,0.14)' }}>
+                   <p style={{ margin: 0, fontSize: '12px', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                     {getActionHumanSummary(formData)}
+                   </p>
+                 </div>
 
                  {!podeUsarFollowup && formData.acao_tipo === 'iniciar_followup' && (
                     <p style={{ marginTop: '8px', fontSize: '12px', color: 'var(--text-muted)', lineHeight: 1.45 }}>
@@ -363,7 +489,7 @@ export default function TriggerConfig() {
                  {!podeUsarAgentes && formData.acao_tipo === 'trocar_agente' && (
                     <p style={{ marginTop: '8px', fontSize: '12px', color: 'var(--text-muted)', lineHeight: 1.45 }}>
                       Nenhum agente ativo foi encontrado neste tenant.
-                      {' '}Cadastre agentes em <a href="/configuracoes?tab=agentes" style={{ color: 'var(--accent)', textDecoration: 'none', fontWeight: '600' }}>Configurações &gt; Agentes</a>.
+                      {' '}Cadastre agentes em <a href="/agente" style={{ color: 'var(--accent)', textDecoration: 'none', fontWeight: '600' }}>Agente IA</a>.
                     </p>
                  )}
 
@@ -381,6 +507,12 @@ export default function TriggerConfig() {
                     </div>
                  )}
               </div>
+
+              {modalError && (
+                <div style={{ padding: '10px 12px', background: 'rgba(239,68,68,0.1)', color: '#ef4444', borderRadius: '8px', fontSize: '12px', lineHeight: 1.45 }}>
+                  {modalError}
+                </div>
+              )}
 
               {/* Accordion Avançado */}
               <div style={{ marginTop: '4px' }}>
@@ -434,7 +566,7 @@ export default function TriggerConfig() {
                {/* Ações */}
                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '16px' }}>
                  <button 
-                   onClick={() => setIsModalOpen(false)}
+                   onClick={closeModal}
                    style={{ padding: '10px 16px', background: 'transparent', color: 'var(--text-muted)', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: '600', cursor: 'pointer' }}
                  >
                    Cancelar
@@ -444,7 +576,7 @@ export default function TriggerConfig() {
                    disabled={isSaving || !formData.acao_ref_id}
                    style={{ padding: '10px 20px', background: 'linear-gradient(135deg, #315efb 0%, #4d74ff 100%)', color: '#ffffff', WebkitTextFillColor: '#ffffff', border: '1px solid rgba(49,94,251,0.35)', borderRadius: '8px', fontSize: '13px', fontWeight: '700', cursor: isSaving || !formData.acao_ref_id ? 'not-allowed' : 'pointer', opacity: isSaving || !formData.acao_ref_id ? 0.7 : 1, fontFamily: 'DM Sans, sans-serif', lineHeight: 1, appearance: 'none', WebkitAppearance: 'none' }}
                  >
-                   {isSaving ? 'Salvando...' : 'Salvar Gatilho'}
+                   {isSaving ? 'Salvando...' : editingTrigger ? 'Salvar Alterações' : 'Salvar Gatilho'}
                  </button>
                </div>
 

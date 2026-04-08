@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto'
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
@@ -5,6 +6,16 @@ import { buildPrompt, TipoDocumento, DadosDocumento } from '@/lib/doc-templates'
 import { canAccessLeadId, getTenantContext } from '@/lib/tenant-context'
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+
+function sanitizeFileName(name: string) {
+  return name
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-zA-Z0-9._-]+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '')
+    .toLowerCase()
+}
 
 export async function POST(
   request: Request,
@@ -98,21 +109,55 @@ export async function POST(
     requerimento_inss: 'outro',
   }
 
+  const baseFileName = sanitizeFileName(`${nomes[tipo]}-${lead.nome}`) || 'documento-gerado'
+  const storagePath = `${id}/ia/${Date.now()}-${randomUUID()}-${baseFileName}.txt`
+  const fileContent = new Blob([conteudo], { type: 'text/plain;charset=utf-8' })
+
+  const uploadResult = await supabase.storage
+    .from('lead-documentos')
+    .upload(storagePath, fileContent, {
+      contentType: 'text/plain;charset=utf-8',
+      upsert: false,
+    })
+
+  if (uploadResult.error) {
+    return NextResponse.json({ error: uploadResult.error.message }, { status: 500 })
+  }
+
+  const { data: signedData, error: signedError } = await supabase.storage
+    .from('lead-documentos')
+    .createSignedUrl(storagePath, 60 * 60 * 24 * 365)
+
+  if (signedError) {
+    await supabase.storage.from('lead-documentos').remove([storagePath])
+    return NextResponse.json({ error: signedError.message }, { status: 500 })
+  }
+
   const { data: doc, error } = await supabase
     .from('lead_documentos')
     .insert({
+      tenant_id: context.tenantId,
       lead_id: id,
       nome: `${nomes[tipo]} — ${lead.nome}`,
       tipo: tipoDoc[tipo],
+      arquivo_url: signedData?.signedUrl || '',
+      arquivo_nome: `${nomes[tipo]} — ${lead.nome}.txt`,
+      arquivo_tamanho: Buffer.byteLength(conteudo, 'utf8'),
+      arquivo_tipo: 'text/plain;charset=utf-8',
+      descricao: 'Documento gerado por IA',
       conteudo_texto: conteudo,
       gerado_por_ia: true,
       tipo_documento: tipo,
       modelo_ia: 'claude-sonnet-4-20250514',
       prompt_usado: prompt,
+      created_by: context.authUserId,
     })
     .select()
     .single()
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) {
+    await supabase.storage.from('lead-documentos').remove([storagePath])
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
   return NextResponse.json({ documento: doc, conteudo })
 }

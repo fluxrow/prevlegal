@@ -136,3 +136,48 @@ Gatilho automático: a mudança de status do lead na API `PATCH` chama o *Orques
   - mudar o status pelo fluxo rápido ou pelo update completo do lead passa a acionar a mesma automação
 - validação:
   - `npm run build` passou
+
+## Atualização 2026-04-08 - Templates de gatilho ficaram editáveis e legíveis
+
+- a tela de `Automações` deixou de depender de apagar/recriar para ajustar templates padrão
+- arquivos principais:
+  - `src/components/automacoes/trigger-config.tsx`
+  - `src/app/api/automacoes/triggers/[id]/route.ts`
+- mudanças:
+  - cada card de gatilho agora mostra:
+    - status com nome mais legível
+    - resumo humano da ação
+    - explicação rápida de por que aquele estágio costuma ser útil
+  - foi adicionado botão `Editar` também nos templates padrão
+  - o modal passou a servir tanto para criação quanto para edição
+  - o modal agora explica em linguagem natural o que vai acontecer quando salvar
+- efeito de produto:
+  - reduz dependência operacional do time técnico
+  - torna os templates do PrevLegal mais próximos de um playbook configurável
+- validação:
+  - `npm run build` passou
+
+## Atualização 2026-04-08 - Geração de documentos IA agora salva no módulo canônico
+
+- o beta de documentos IA foi alinhado ao contrato real da tabela `lead_documentos`
+- arquivo principal:
+  - `src/app/api/leads/[id]/gerar-documento/route.ts`
+- correção:
+  - o backend agora gera o conteúdo com Claude e sobe um `.txt` real para o bucket `lead-documentos`
+  - depois grava o documento com:
+    - `arquivo_url`
+    - `arquivo_nome`
+    - `arquivo_tamanho`
+    - `arquivo_tipo`
+    - `tenant_id`
+    - `created_by`
+  - em caso de falha no insert, o arquivo é removido para evitar lixo órfão no bucket
+- erro eliminado:
+  - `null value in column "arquivo_url" of relation "lead_documentos" violates not-null constraint`
+- validação:
+  - `npm run build` passou
+- próximo passo recomendado:
+  - testar os três documentos beta em runtime e depois decidir a próxima camada de produto:
+    - revisão
+    - versionamento
+    - análise documental por IA
