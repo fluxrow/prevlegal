@@ -223,6 +223,25 @@ Mestra: [[MASTER_PREV_LEGAL]]
   - agendamento criado para responsável com agenda própria
   - agendamento criado para responsável sem agenda própria, usando fallback do escritório
 
+## Atualizacao Go-live / Rollout de Banco — 08/04/2026
+
+- a estabilização para go-live ganhou um caminho operacional canônico de banco
+- documentos novos:
+  - `docs/EXECUTION_TRACK.md`
+  - `docs/PRODUCTION_DB_ROLLOUT_043_044_045.md`
+  - `supabase/manual/2026-04-08_apply_043_044_045.sql`
+- leitura confirmada:
+  - o projeto operacional correto continua sendo `lrqvvxmgimjlghpwavdb`
+  - o repo foi ligado com sucesso ao projeto no Supabase CLI
+  - mas o `db push` não é o caminho seguro agora porque:
+    - o histórico remoto usa versões em timestamp diferentes dos nomes locais
+    - o CLI da sessão não tem senha válida do Postgres remoto para aplicar migrations diretamente
+- decisão operacional:
+  - a etapa oficial de produção passa a ser aplicar o patch SQL idempotente de `043`, `044` e `045`
+  - depois rodar smoke test de agenda, permissões e parsing documental
+- próximo passo oficial:
+  - executar `supabase/manual/2026-04-08_apply_043_044_045.sql` no projeto operacional
+
 ## Atualizacao Inbox / Permissões Granulares — 08/04/2026
 
 - a rodada seguinte atacou duas dores operacionais reais:

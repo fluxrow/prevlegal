@@ -1289,3 +1289,12 @@ e a API de listagem de usuários ganhou a mesma resiliência
 - células do calendário mais compactas
 - empilhamento mobile mantido só abaixo de `lg`
 **Regra pratica:** No PrevLegal, telas operacionais de uso diário devem revelar fila e contexto no primeiro breakpoint desktop real; se a ação principal some em notebook, o layout ainda está priorizando a superfície errada
+
+### 135. Quando o histórico remoto do Supabase diverge dos nomes locais, o caminho seguro é patch SQL idempotente, não `db push` no escuro
+**Problema:** Na etapa de estabilização para go-live, o repo precisava aplicar `043`, `044` e `045`, mas o `supabase db push` não era confiável
+**Causa:** O projeto operacional remoto está com histórico de migration em timestamps antigos, enquanto o repo local usa a sequência canônica `001..045`; além disso, o CLI da sessão não tinha senha válida do Postgres remoto para `db push`
+**Correcao aplicada:** Foi formalizado um caminho operacional seguro:
+- patch SQL idempotente contendo `043`, `044` e `045`
+- runbook curto para aplicação e validação
+- trilho executivo apontando para esse fluxo como etapa oficial de go-live
+**Regra pratica:** No PrevLegal, quando o histórico do Supabase divergir e o CLI não puder empurrar schema com segurança, aplique apenas o delta necessário via SQL idempotente e registre isso como runbook, em vez de tentar “consertar tudo” no histórico remoto no impulso

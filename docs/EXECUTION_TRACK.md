@@ -73,6 +73,9 @@ Quando houver dúvida sobre “o que fazemos agora”, a ordem oficial vem daqui
 3. aplicar `045`
 4. validar runtime sem fallback estrutural
 
+Runbook canônico:
+- `docs/PRODUCTION_DB_ROLLOUT_043_044_045.md`
+
 ### Etapa 2 — Google Calendar real
 
 1. testar meu Google
