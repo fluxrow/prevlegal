@@ -1,6 +1,12 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 import { canAccessLeadId, getTenantContext } from '@/lib/tenant-context'
+import {
+  deleteDocumentProcessingArtifacts,
+  mergeLeadDocumentsWithProcessing,
+  queueDocumentProcessingJob,
+  shouldQueueDocumentProcessing,
+} from '@/lib/document-processing'
 
 export async function GET(
   request: Request,
@@ -19,7 +25,8 @@ export async function GET(
     .eq('lead_id', id)
     .order('created_at', { ascending: false })
 
-  return NextResponse.json(data || [])
+  const enriched = await mergeLeadDocumentsWithProcessing(supabase, data || [])
+  return NextResponse.json(enriched)
 }
 
 export async function POST(
@@ -38,11 +45,44 @@ export async function POST(
 
   const { data, error } = await supabase
     .from('lead_documentos')
-    .insert({ lead_id: id, nome, tipo, arquivo_url, arquivo_nome, arquivo_tamanho, arquivo_tipo, descricao, created_by: context.authUserId })
+    .insert({
+      tenant_id: context.tenantId,
+      lead_id: id,
+      nome,
+      tipo,
+      arquivo_url,
+      arquivo_nome,
+      arquivo_tamanho,
+      arquivo_tipo,
+      descricao,
+      created_by: context.authUserId,
+    })
     .select()
     .single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  const storagePath = typeof arquivo_url === 'string'
+    ? arquivo_url.split('/lead-documentos/')[1]?.split('?')[0] || null
+    : null
+
+  if (
+    data?.id &&
+    storagePath &&
+    shouldQueueDocumentProcessing(arquivo_tipo, arquivo_nome)
+  ) {
+    await queueDocumentProcessingJob(supabase, {
+      tenantId: context.tenantId,
+      leadId: id,
+      sourceType: 'lead_documento',
+      sourceId: data.id,
+      storageBucket: 'lead-documentos',
+      storagePath,
+      fileName: arquivo_nome,
+      mimeType: arquivo_tipo,
+    })
+  }
+
   return NextResponse.json(data)
 }
 
@@ -76,6 +116,7 @@ export async function DELETE(
     }
   }
 
+  await deleteDocumentProcessingArtifacts(supabase, 'lead_documento', docId)
   await supabase.from('lead_documentos').delete().eq('id', docId).eq('lead_id', id)
   return NextResponse.json({ ok: true })
 }

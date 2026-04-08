@@ -2857,3 +2857,42 @@ Pontos que precisam ser preservados durante a implementacao:
     - contexto pesquisavel para agentes e operacao
 - proximo passo sugerido:
   - abrir a implementacao da `Fase A` com schema + worker + status visual de processamento
+
+## Atualizacao 2026-04-08 - Fase A da foundation documental foi implementada
+
+- entregas principais:
+  - `supabase/migrations/045_document_processing_foundation.sql`
+  - `src/lib/document-processing.ts`
+  - `src/app/api/document-processing/worker/route.ts`
+  - `workers/docling/app.py`
+  - `workers/docling/requirements.txt`
+  - `workers/docling/README.md`
+- pontos do produto ligados:
+  - `src/app/api/leads/[id]/documentos/route.ts`
+  - `src/app/api/leads/[id]/gerar-documento/route.ts`
+  - `src/app/api/portal/[token]/documentos/upload/route.ts`
+  - `src/app/(dashboard)/leads/[id]/page.tsx`
+- o que passou a existir:
+  - fila canônica `document_processing_jobs`
+  - persistência de conteúdo estruturado em `document_parsed_contents`
+  - foundation de `document_chunks`
+  - worker protegido por `CRON_SECRET`
+  - status visual por documento no detalhe do lead
+- comportamento novo:
+  - ao criar um `lead_documento`, o sistema tenta enfileirar parsing automático
+  - a listagem do lead mescla documento + status do processamento
+  - exclusão do documento também limpa artefatos de parsing
+  - documentos `text/plain` podem ser processados inline
+  - documentos binários dependem do serviço Docling externo
+- decisão de arquitetura:
+  - nesta fase, o worker externo fica explícito e desacoplado
+  - não foi adicionado cron no `vercel.json` ainda para evitar rodar foundation incompleta sem `DOCLING_SERVICE_URL`
+- hardening de rollout:
+  - se a migration `045` ainda não existir, o enqueue vira no-op e a UI não quebra
+  - isso evita repetir o tipo de regressão que já tivemos com schema pendente em produção
+- pendências reais para virar operação completa:
+  - aplicar a migration `045` no banco
+  - subir o serviço Docling e apontar `DOCLING_SERVICE_URL`
+  - decidir a agenda de execução automática do worker
+- validação:
+  - `npm run build` passou

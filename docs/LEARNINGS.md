@@ -1260,3 +1260,13 @@ e a API de listagem de usuários ganhou a mesma resiliência
 **Causa:** A evolução inicial priorizou captura, compartilhamento e geração, sem ainda introduzir uma camada canônica de parsing estrutural
 **Correcao aplicada:** Formalizar a direção de inteligência documental com `Docling` como motor de parsing para `lead_documentos` e depois `agent_documents`, com fila assíncrona, persistência de texto/markdown/JSON e chunks para consumo por agentes, busca e análise
 **Regra pratica:** No PrevLegal, antes de investir pesado em “gerar novos documentos”, o maior ganho costuma estar em transformar o acervo já enviado em conteúdo entendível, pesquisável e reutilizável pelo sistema
+
+### 132. Foundation documental nova precisa degradar sem quebrar quando a migration ou o serviço externo ainda não chegaram
+**Problema:** O PrevLegal já sofreu com regressões quando o código passou a depender de colunas/tabelas novas antes do rollout completo no banco de produção
+**Causa:** Features foundation como permissões granulares, agenda por usuário e agora parsing documental nascem no código antes de a migration estar garantida em todos os ambientes
+**Correcao aplicada:** A camada de `document_processing_jobs` e `document_parsed_contents` foi introduzida com fallback seguro:
+- enqueue vira no-op se a `045` ainda não existir
+- listagem do lead continua funcionando sem status de parsing quando a schema ainda não foi aplicada
+- o worker devolve estado neutro quando a foundation ainda não está disponível
+- documentos `text/plain` podem ser parseados inline; binários dependem do serviço Docling externo
+**Regra pratica:** No PrevLegal, foundations que dependem de schema novo e serviço externo devem sempre degradar para “sem processamento”, nunca bloquear upload, leitura ou operação do lead

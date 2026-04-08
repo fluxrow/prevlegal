@@ -386,3 +386,30 @@ Gatilho automático: a mudança de status do lead na API `PATCH` chama o *Orques
   - o produto passa a consumir isso em busca, agentes e análise futura
 - próximo passo sugerido:
   - implementar a `Fase A` da foundation documental
+
+## Atualização 2026-04-08 - Fase A da inteligência documental entrou no código
+
+- a foundation documental saiu do plano e entrou no runtime:
+  - `supabase/migrations/045_document_processing_foundation.sql`
+  - `src/lib/document-processing.ts`
+  - `src/app/api/document-processing/worker/route.ts`
+- comportamento novo:
+  - uploads manuais do lead entram na fila de processamento
+  - uploads do portal entram na fila de processamento
+  - documentos gerados por IA também entram na fila
+  - a listagem de documentos do lead agora pode mostrar:
+    - `Na fila do Docling`
+    - `Processando`
+    - `Estruturado`
+    - `Falhou`
+- tela principal atualizada:
+  - `src/app/(dashboard)/leads/[id]/page.tsx`
+- foundation externa já preparada:
+  - `workers/docling/app.py`
+  - `workers/docling/requirements.txt`
+  - `workers/docling/README.md`
+- limite atual:
+  - parsing binário real ainda depende de `DOCLING_SERVICE_URL`
+  - sem isso, o sistema só processa inline arquivos textuais e mantém os demais como fila pendente/foundation
+- validação:
+  - `npm run build` passou

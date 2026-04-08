@@ -2,6 +2,7 @@ import { randomUUID } from 'crypto'
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { resolvePortalViewer } from '@/lib/portal-auth'
+import { queueDocumentProcessingJob } from '@/lib/document-processing'
 
 function createAdminSupabase() {
   return createAdminClient(
@@ -117,6 +118,17 @@ export async function POST(
   if (docError) {
     return NextResponse.json({ error: docError.message }, { status: 500 })
   }
+
+  await queueDocumentProcessingJob(adminSupabase, {
+    tenantId: lead.tenant_id,
+    leadId: lead.id,
+    sourceType: 'lead_documento',
+    sourceId: documento.id,
+    storageBucket: 'lead-documentos',
+    storagePath,
+    fileName: file.name,
+    mimeType: file.type || null,
+  })
 
   if (requestId) {
     const { error: requestUpdateError } = await adminSupabase

@@ -1218,6 +1218,15 @@ Status atual em 18/03/2026:
   - parsing de documentos do lead
   - status de processamento
   - preview/resumo estruturado
+- Estado atual em 08/04/2026:
+  - migration `045_document_processing_foundation.sql` criada
+  - worker foundation exposto em `POST/GET /api/document-processing/worker`
+  - uploads do lead, portal e documentos IA já entram na fila de processamento
+  - detalhe do lead já exibe status de parsing por documento
+  - dependências abertas:
+    - aplicar a `045` no banco operacional
+    - plugar `DOCLING_SERVICE_URL` para parsing binário real
+    - decidir se a execução vai por cron do Vercel ou worker externo dedicado
 
 ### Fase 31 — Campanhas inteligentes
 - Comparar templates, horários e listas por performance
@@ -1239,7 +1248,7 @@ Status atual em 18/03/2026:
 - [ ] Fila dedicada de agendamentos criados pelo agente com confirmação operacional
 - [ ] Sinais de risco de churn e adoção no detalhe do tenant
 - [ ] Migração segura para `prevlegal.com.br` + `app.prevlegal.com.br`
-- [ ] Foundation de inteligência documental com `Docling` para `lead_documentos`
+- [ ] Aplicar a `045` e conectar o serviço Docling externo para ativar parsing binário dos documentos do lead
 
 ### Baixa prioridade
 - [ ] Repo GitHub privado

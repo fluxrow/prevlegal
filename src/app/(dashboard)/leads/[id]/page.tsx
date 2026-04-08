@@ -102,6 +102,12 @@ interface Documento {
   arquivo_tipo: string
   descricao: string
   created_at: string
+  processing_status?: 'pending' | 'processing' | 'done' | 'failed' | null
+  processing_error?: string | null
+  processing_finished_at?: string | null
+  parsed_doc_type_guess?: string | null
+  parsed_excerpt?: string | null
+  parsed_updated_at?: string | null
 }
 
 const STATUS_LABEL: Record<string, { label: string; color: string }> = {
@@ -123,6 +129,13 @@ const TIPO_LABEL: Record<string, string> = {
 }
 
 const TIPOS_DOC = ['cnis', 'procuracao', 'identidade', 'laudo', 'peticao', 'outro']
+
+const PROCESSING_STATUS_LABEL: Record<string, { label: string; bg: string; color: string }> = {
+  pending: { label: 'Na fila do Docling', bg: 'rgba(245, 200, 66, 0.12)', color: '#f5c842' },
+  processing: { label: 'Processando', bg: 'rgba(79,122,255,0.12)', color: 'var(--accent)' },
+  done: { label: 'Estruturado', bg: 'rgba(45,212,160,0.12)', color: '#2dd4a0' },
+  failed: { label: 'Falhou', bg: 'rgba(255,87,87,0.12)', color: '#ff5757' },
+}
 
 function formatBytes(bytes: number) {
   if (!bytes) return ''
@@ -516,6 +529,12 @@ export default function LeadDetailPage() {
           </button>
         </div>
 
+        <div style={{ marginBottom: '16px', padding: '12px 14px', borderRadius: '10px', background: 'var(--bg)', border: '1px solid var(--border)' }}>
+          <p style={{ margin: 0, fontSize: '12px', color: 'var(--text-secondary)', fontFamily: 'DM Sans, sans-serif', lineHeight: 1.5 }}>
+            Documentos do lead agora podem entrar numa fila de leitura inteligente. Quando a foundation documental estiver aplicada no banco, cada arquivo passa a mostrar se já foi estruturado, se ainda está na fila ou se o parsing falhou.
+          </p>
+        </div>
+
         {/* Formulário de upload */}
         {showUploadForm && (
           <div style={{ background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: '10px', padding: '16px', marginBottom: '16px' }}>
@@ -593,11 +612,46 @@ export default function LeadDetailPage() {
               {TIPO_LABEL[doc.tipo]?.split(' ')[0] || '📄'}
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
+              {doc.processing_status && PROCESSING_STATUS_LABEL[doc.processing_status] ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px', flexWrap: 'wrap' }}>
+                  <span
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      borderRadius: '999px',
+                      padding: '3px 8px',
+                      fontSize: '10px',
+                      fontWeight: '700',
+                      fontFamily: 'DM Sans, sans-serif',
+                      background: PROCESSING_STATUS_LABEL[doc.processing_status].bg,
+                      color: PROCESSING_STATUS_LABEL[doc.processing_status].color,
+                    }}
+                  >
+                    {PROCESSING_STATUS_LABEL[doc.processing_status].label}
+                  </span>
+                  {doc.parsed_doc_type_guess && doc.parsed_doc_type_guess !== 'outro' ? (
+                    <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontFamily: 'DM Sans, sans-serif' }}>
+                      Tipo provável: {doc.parsed_doc_type_guess}
+                    </span>
+                  ) : null}
+                </div>
+              ) : null}
               <p style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text-primary)', fontFamily: 'DM Sans, sans-serif', margin: '0 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{doc.nome}</p>
               <p style={{ fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'DM Sans, sans-serif', margin: 0 }}>
                 {TIPO_LABEL[doc.tipo]}{doc.arquivo_tamanho ? ` · ${formatBytes(doc.arquivo_tamanho)}` : ''} · {new Date(doc.created_at).toLocaleDateString('pt-BR')}
               </p>
               {doc.descricao && <p style={{ fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'DM Sans, sans-serif', margin: '2px 0 0' }}>{doc.descricao}</p>}
+              {doc.parsed_excerpt ? (
+                <p style={{ fontSize: '12px', color: 'var(--text-secondary)', fontFamily: 'DM Sans, sans-serif', margin: '6px 0 0', lineHeight: 1.45 }}>
+                  {doc.parsed_excerpt}
+                </p>
+              ) : null}
+              {doc.processing_status === 'failed' && doc.processing_error ? (
+                <p style={{ fontSize: '12px', color: '#ff5757', fontFamily: 'DM Sans, sans-serif', margin: '6px 0 0', lineHeight: 1.4 }}>
+                  Falha no parsing: {doc.processing_error}
+                </p>
+              ) : null}
             </div>
             <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
               <a

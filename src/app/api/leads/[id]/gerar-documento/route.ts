@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { buildPrompt, TipoDocumento, DadosDocumento } from '@/lib/doc-templates'
 import { canAccessLeadId, getTenantContext } from '@/lib/tenant-context'
+import { queueDocumentProcessingJob } from '@/lib/document-processing'
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
@@ -159,5 +160,17 @@ export async function POST(
     await supabase.storage.from('lead-documentos').remove([storagePath])
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
+
+  await queueDocumentProcessingJob(supabase, {
+    tenantId: context.tenantId,
+    leadId: id,
+    sourceType: 'lead_documento',
+    sourceId: doc.id,
+    storageBucket: 'lead-documentos',
+    storagePath,
+    fileName: `${nomes[tipo]} — ${lead.nome}.txt`,
+    mimeType: 'text/plain;charset=utf-8',
+  })
+
   return NextResponse.json({ documento: doc, conteudo })
 }
