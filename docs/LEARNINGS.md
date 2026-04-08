@@ -77,6 +77,18 @@ Mestra: [[MASTER_PREV_LEGAL]]
 **Correção:** Evoluir a integração para conexão por usuário com fallback do escritório e registrar no agendamento quem foi o `calendar_owner`
 **Regra pratica:** No PrevLegal, `quem criou`, `quem é o responsável` e `em qual calendário o evento foi salvo` são conceitos diferentes e devem ser modelados separadamente
 
+### 45. Inbox com status legado precisa normalizar o dado antes de filtrar
+**Problema:** Na `Caixa de Entrada`, as abas específicas podiam parecer “não clicáveis” quando as conversas existentes vinham com `status` nulo ou fora do conjunto esperado
+**Causa:** O filtro da UI dependia de igualdade exata com `agente`, `humano`, `aguardando_cliente` e `resolvido`, sem normalizar conversa legada
+**Correção:** Normalizar o status na API e na tela, tratando qualquer valor inválido como `agente`, além de sincronizar a aba ativa pela URL
+**Regra pratica:** Quando uma UI depende de estados categóricos antigos, normalize primeiro o dado legado antes de concluir que o problema é só visual
+
+### 46. Role sozinha não sustenta a operação real do escritório
+**Problema:** O modelo rígido `admin / operador / visualizador` não cobre cenários reais como secretária com agenda, coordenador operacional sem acesso financeiro ou operador sênior com automações sem acesso a usuários
+**Causa:** A fase inicial do produto simplificou acesso em três perfis fixos, o que acelera o MVP, mas trava o uso em times reais
+**Correção:** Criar `permissions` por usuário com preset padrão por role e liberar edição granular nos módulos críticos
+**Regra pratica:** Em produto operacional multiusuário, role deve ser preset inicial; a governança madura nasce quando permissões granulares podem refinar esse preset
+
 ### 33. Expansao de produto precisa entrar por arquitetura de portfólio, nao por mistura de narrativas
 **Problema:** Novas oportunidades reais, como `PrevGlobal`, CNIS com IA e modulos tecnicos premium, podem comecar a competir com o core operacional do PrevLegal se entrarem sem separacao clara
 **Causa:** O produto cresceu alem da ideia inicial e abriu adjacencias fortes, mas isso aumenta o risco de descaracterizar a oferta principal

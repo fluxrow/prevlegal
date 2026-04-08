@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
+import { hasPermission, type PermissionMap, type Role } from '@/lib/permissions'
 
-export type Role = 'admin' | 'operador' | 'visualizador'
+export { hasPermission }
 
 export interface UsuarioLogado {
   id: string
@@ -9,6 +10,7 @@ export interface UsuarioLogado {
   nome: string
   email: string
   role: Role
+  permissions?: Partial<PermissionMap> | null
   ativo: boolean
 }
 
@@ -19,7 +21,7 @@ export async function getUsuarioLogado(): Promise<UsuarioLogado | null> {
 
   const { data } = await supabase
     .from('usuarios')
-    .select('id, auth_id, tenant_id, nome, email, role, ativo')
+    .select('id, auth_id, tenant_id, nome, email, role, permissions, ativo')
     .eq('auth_id', user.id)
     .limit(1)
     .single()

@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { MessageSquare, User, Bot, UserCheck, RotateCcw, Send, Users } from 'lucide-react'
 import { useOnboarding } from '@/hooks/useOnboarding'
 import OnboardingTooltip from '@/components/onboarding-tooltip'
@@ -100,7 +100,15 @@ const STATUS_CONVERSA = {
 }
 
 const STATUS_HUMANOS = new Set(['humano', 'aguardando_cliente', 'resolvido'])
+const STATUS_CONHECIDOS = new Set(['agente', 'humano', 'aguardando_cliente', 'resolvido', 'encerrado'])
 type AbaInbox = 'todas' | 'agente' | 'humano' | 'aguardando_cliente' | 'resolvido' | 'portal'
+
+function normalizeInboxStatus(status?: string | null): Conversa['status'] {
+  if (status && STATUS_CONHECIDOS.has(status)) {
+    return status as Conversa['status']
+  }
+  return 'agente'
+}
 
 function formatTime(dt: string) {
   const d = new Date(dt)
@@ -113,6 +121,8 @@ function formatTime(dt: string) {
 }
 
 export default function CaixaDeEntradaPage() {
+  const router = useRouter()
+  const pathname = usePathname()
   const searchParams = useSearchParams()
   const { active: tourActive, step: tourStep, next: tourNext, finish: tourFinish } = useOnboarding('caixa-de-entrada')
   const [conversas, setConversas] = useState<Conversa[]>([])
@@ -139,9 +149,25 @@ export default function CaixaDeEntradaPage() {
     fetchThreadsPortal()
   }, [])
 
+  function selecionarAba(aba: AbaInbox) {
+    setAbaAtiva(aba)
+
+    const params = new URLSearchParams(searchParams.toString())
+    if (aba === 'todas') {
+      params.delete('tab')
+    } else {
+      params.set('tab', aba)
+    }
+
+    router.replace(params.toString() ? `${pathname}?${params.toString()}` : pathname, { scroll: false })
+  }
+
   useEffect(() => {
     const tab = searchParams.get('tab')
-    if (!tab) return
+    if (!tab) {
+      setAbaAtiva('todas')
+      return
+    }
 
     const abasValidas: AbaInbox[] = ['todas', 'agente', 'humano', 'aguardando_cliente', 'resolvido', 'portal']
     if (abasValidas.includes(tab as AbaInbox)) {
@@ -229,7 +255,11 @@ export default function CaixaDeEntradaPage() {
   async function fetchConversas() {
     const res = await fetch('/api/conversas')
     if (res.ok) {
-      const data = await res.json()
+      const rawData = await res.json()
+      const data = (rawData || []).map((conversa: Conversa) => ({
+        ...conversa,
+        status: normalizeInboxStatus(conversa.status),
+      }))
       setConversas(data)
       setConversaSelecionada((prev) => {
         if (!prev) return prev
@@ -399,8 +429,17 @@ export default function CaixaDeEntradaPage() {
   }
 
   const conversasFiltradas = conversas.filter(c =>
-    abaAtiva === 'todas' ? true : abaAtiva === 'portal' ? false : c.status === abaAtiva
+    abaAtiva === 'todas' ? true : abaAtiva === 'portal' ? false : normalizeInboxStatus(c.status) === abaAtiva
   )
+
+  useEffect(() => {
+    if (!conversaSelecionada || abaAtiva === 'portal' || abaAtiva === 'todas') return
+    const statusAtual = normalizeInboxStatus(conversaSelecionada.status)
+    if (statusAtual !== abaAtiva) {
+      setConversaSelecionada(null)
+      setMensagens([])
+    }
+  }, [abaAtiva, conversaSelecionada])
 
   const badgePortal = threadsPortal.reduce((a, t) => a + t.nao_lidas, 0)
   const conversaGeridaPorHumano = conversaSelecionada ? STATUS_HUMANOS.has(conversaSelecionada.status) : false
@@ -447,7 +486,7 @@ export default function CaixaDeEntradaPage() {
             ].map(aba => (
               <button
                 key={aba.id}
-                onClick={() => setAbaAtiva(aba.id as AbaInbox)}
+                onClick={() => selecionarAba(aba.id as AbaInbox)}
                 style={{
                   width: '100%',
                   minHeight: '36px',

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient as createServerClient } from "@/lib/supabase/server";
 import { getTenantContext } from "@/lib/tenant-context";
 import { createAdminSupabase } from "@/lib/internal-collaboration";
+import { contextHasPermission } from "@/lib/tenant-context";
 
 export async function GET() {
   const authSupabase = await createServerClient();
@@ -27,7 +28,7 @@ export async function POST(request: NextRequest) {
   const context = await getTenantContext(authSupabase);
   if (!context)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!context.isAdmin)
+  if (!contextHasPermission(context, "agentes_manage"))
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const supabase = createAdminSupabase();

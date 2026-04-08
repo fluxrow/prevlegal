@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 import { cancelarEventoCalendar, atualizarEventoCalendar } from '@/lib/google-calendar'
-import { canAccessLeadId, getTenantContext } from '@/lib/tenant-context'
+import { canAccessLeadId, contextHasPermission, getTenantContext } from '@/lib/tenant-context'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
 
 export async function PATCH(
@@ -41,7 +41,12 @@ export async function PATCH(
   if (honorario !== undefined) updates.honorario = honorario
   if (data_hora) updates.data_hora = data_hora
   if (duracao_minutos) updates.duracao_minutos = duracao_minutos
-  if (usuario_id && context.isAdmin) updates.usuario_id = usuario_id
+  if (usuario_id) {
+    if (!contextHasPermission(context, 'agendamentos_assign')) {
+      return NextResponse.json({ error: 'Você não tem permissão para reatribuir agendamentos' }, { status: 403 })
+    }
+    updates.usuario_id = usuario_id
+  }
 
   if (!status && data_hora && !['cancelado', 'realizado'].includes(atual.status)) {
     updates.status = 'remarcado'

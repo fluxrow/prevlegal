@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient as createServerClient } from "@/lib/supabase/server";
-import { getTenantContext } from "@/lib/tenant-context";
+import { contextHasPermission, getTenantContext } from "@/lib/tenant-context";
 import { createAdminSupabase } from "@/lib/internal-collaboration";
 
 type AgentSeedTemplate = {
@@ -117,7 +117,7 @@ export async function POST() {
   if (!context) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  if (!context.isAdmin) {
+  if (!contextHasPermission(context, "agentes_manage")) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

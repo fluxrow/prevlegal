@@ -2,7 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { gerarParcelasContrato, normalizarNumero } from '@/lib/financeiro'
 import { hasRecentReauth } from '@/lib/session-security'
 import { NextResponse } from 'next/server'
-import { getTenantContext } from '@/lib/tenant-context'
+import { contextHasPermission, getTenantContext } from '@/lib/tenant-context'
 
 async function getScopedLead(
   supabase: Awaited<ReturnType<typeof createClient>>,
@@ -34,6 +34,7 @@ export async function GET(request: Request) {
   const supabase = await createClient()
   const context = await getTenantContext(supabase)
   if (!context) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!contextHasPermission(context, 'financeiro_manage')) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   if (!await hasRecentReauth('app')) return NextResponse.json({ error: 'Reauthentication required' }, { status: 428 })
 
   const { searchParams } = new URL(request.url)
@@ -66,6 +67,7 @@ export async function POST(request: Request) {
   const supabase = await createClient()
   const context = await getTenantContext(supabase)
   if (!context) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!contextHasPermission(context, 'financeiro_manage')) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   if (!await hasRecentReauth('app')) return NextResponse.json({ error: 'Reauthentication required' }, { status: 428 })
 
   const body = await request.json()

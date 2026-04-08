@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getTenantContext } from '@/lib/tenant-context'
+import { contextHasPermission, getTenantContext } from '@/lib/tenant-context'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminSupabase } from '@/lib/internal-collaboration'
 
@@ -8,6 +8,7 @@ export async function GET() {
   const context = await getTenantContext(supabase)
   if (!context) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   if (!context.tenantId) return NextResponse.json({ error: 'Tenant não configurado' }, { status: 409 })
+  if (!contextHasPermission(context, 'automacoes_manage')) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   const service = createAdminSupabase()
   const { data, error } = await service
@@ -25,6 +26,7 @@ export async function POST(request: NextRequest) {
   const context = await getTenantContext(supabase)
   if (!context) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   if (!context.tenantId) return NextResponse.json({ error: 'Tenant não configurado' }, { status: 409 })
+  if (!contextHasPermission(context, 'automacoes_manage')) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   const body = await request.json() as {
     nome: string

@@ -2,7 +2,7 @@ import { calcularStatusContrato, getDataISO, getDataHojeISO } from '@/lib/financ
 import { hasRecentReauth } from '@/lib/session-security'
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
-import { getTenantContext } from '@/lib/tenant-context'
+import { contextHasPermission, getTenantContext } from '@/lib/tenant-context'
 
 interface VencimentoItem {
   id: string
@@ -47,6 +47,7 @@ export async function GET() {
   const supabase = await createClient()
   const context = await getTenantContext(supabase)
   if (!context) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!contextHasPermission(context, 'financeiro_manage')) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   if (!await hasRecentReauth('app')) return NextResponse.json({ error: 'Reauthentication required' }, { status: 428 })
 
   const hoje = getDataHojeISO()

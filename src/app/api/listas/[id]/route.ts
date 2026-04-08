@@ -3,7 +3,7 @@ export const runtime = 'nodejs'
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
-import { getTenantContext } from '@/lib/tenant-context'
+import { contextHasPermission, getTenantContext } from '@/lib/tenant-context'
 
 const LISTA_MANUAL_NOME = 'Cadastro manual'
 const LISTA_MANUAL_FORNECEDOR = 'sistema'
@@ -22,7 +22,7 @@ export async function DELETE(
   const supabase = await createClient()
   const context = await getTenantContext(supabase)
   if (!context) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  if (!context.isAdmin) return NextResponse.json({ error: 'Apenas administradores podem excluir listas' }, { status: 403 })
+  if (!contextHasPermission(context, 'listas_manage')) return NextResponse.json({ error: 'Você não tem permissão para excluir listas' }, { status: 403 })
   if (!context.tenantId) return NextResponse.json({ error: 'Tenant do usuário não configurado' }, { status: 409 })
 
   const { id } = await params

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient as createServerClient } from "@/lib/supabase/server";
-import { getTenantContext } from "@/lib/tenant-context";
+import { contextHasPermission, getTenantContext } from "@/lib/tenant-context";
 import { createAdminSupabase } from "@/lib/internal-collaboration";
 
 const CAMPOS_EDITAVEIS = [
@@ -36,7 +36,7 @@ export async function PATCH(
   const context = await getTenantContext(authSupabase);
   if (!context)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!context.isAdmin)
+  if (!contextHasPermission(context, "agentes_manage"))
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const { id } = await params;
@@ -84,7 +84,7 @@ export async function DELETE(
   const context = await getTenantContext(authSupabase);
   if (!context)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!context.isAdmin)
+  if (!contextHasPermission(context, "agentes_manage"))
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const { id } = await params;

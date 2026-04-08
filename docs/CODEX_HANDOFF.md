@@ -215,6 +215,81 @@ Objetivo:
     - agendamento criado para responsável com agenda própria
     - agendamento criado para responsável sem agenda própria, usando fallback
 
+## Atualizacao 2026-04-08 - Inbox estabilizada e permissões granulares ganharam foundation
+
+- dor reportada:
+  - na `Caixa de Entrada`, o usuário percebia que só `Todas` e `Portal` respondiam de forma confiável
+  - em `Usuários`, a gestão de acesso ainda estava presa demais a `admin`, `operador` e `visualizador`
+- correção da inbox:
+  - `src/app/api/conversas/route.ts`
+    - normaliza qualquer conversa com status inválido/nulo para `agente`
+  - `src/app/(dashboard)/caixa-de-entrada/page.tsx`
+    - a troca de aba agora passa pela URL
+    - a aba ativa é restaurada corretamente por querystring
+    - a conversa selecionada é limpa se deixar de pertencer ao filtro atual
+- leitura importante:
+  - o bug não era só “visual”; conversas legadas sem status válido faziam as abas parecerem vazias ou incoerentes
+
+- foundation de permissões:
+  - migration nova:
+    - `supabase/migrations/044_user_permissions_foundation.sql`
+  - arquivo central novo:
+    - `src/lib/permissions.ts`
+  - `usuarios.permissions` passa a aceitar mapa granular
+  - a role continua existindo como preset base
+  - o sistema resolve permissão final por:
+    1. preset da role
+    2. overrides do usuário
+
+- permissões modeladas nesta fase:
+  - `usuarios_manage`
+  - `agentes_manage`
+  - `automacoes_manage`
+  - `financeiro_manage`
+  - `listas_manage`
+  - `agendamentos_assign`
+  - `inbox_humana_manage`
+  - `configuracoes_manage`
+
+- UI:
+  - `src/components/gestao-usuarios.tsx`
+    - agora mostra contagem de permissões por usuário
+    - ganhou modal para editar permissões ponto a ponto
+    - permite restaurar o preset original da role
+
+- enforcement já aplicado:
+  - `src/app/api/usuarios/route.ts`
+  - `src/app/api/usuarios/[id]/route.ts`
+  - `src/app/api/usuarios/convidar/route.ts`
+  - `src/app/api/agentes/route.ts`
+  - `src/app/api/agentes/[id]/route.ts`
+  - `src/app/api/agentes/seed/route.ts`
+  - `src/app/api/automacoes/triggers/*`
+  - `src/app/api/followup/rules/*`
+  - `src/app/api/agendamentos/[id]/route.ts`
+  - `src/app/api/listas/[id]/route.ts`
+  - `src/app/api/financeiro/contratos/route.ts`
+  - `src/app/api/financeiro/resumo/route.ts`
+  - `src/app/api/conversas/[id]/route.ts`
+  - `src/app/api/conversas/[id]/responder/route.ts`
+
+- decisão importante:
+  - isso nao é “ACL total” do produto ainda
+  - é a primeira camada séria de permissões customizadas nos módulos críticos
+  - vários pontos antigos ainda usam `isAdmin`; esses ficam como passivo mapeado para rodadas futuras
+
+- validacao:
+  - `npm run build` passou
+
+- próximo passo sugerido:
+  - aplicar `044_user_permissions_foundation.sql`
+  - validar a inbox com conversas reais
+  - criar um usuário não-admin com permissões específicas para testar:
+    - automações
+    - agentes
+    - agenda
+    - financeiro
+
 ## Atualizacao 2026-04-06 - Fase E (Gatilhos e Orquestracao Avançada) - Foundation Entregue
 
 - Construida a fundação completa do motor de gatilhos automáticos do PrevLegal

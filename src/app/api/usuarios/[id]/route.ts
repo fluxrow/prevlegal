@@ -1,27 +1,32 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient as createAdmin } from '@supabase/supabase-js'
-import { requireAdmin } from '@/lib/auth/get-user-role'
+import { getUsuarioLogado, hasPermission } from '@/lib/auth-role'
 
 function createAdminClient() {
   return createAdmin(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
   )
 }
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   const adminClient = createAdminClient()
-  const user = await requireAdmin()
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
+  const usuarioLogado = await getUsuarioLogado()
+
+  if (!usuarioLogado || !hasPermission(usuarioLogado, 'usuarios_manage')) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
 
   const { id } = await params
-  const body = await request.json()
+  if (id === usuarioLogado.id) {
+    return NextResponse.json({ error: 'Não é possível alterar seu próprio perfil aqui' }, { status: 400 })
+  }
 
-  // Campos permitidos para atualização
-  const allowed = ['nome', 'role', 'ativo']
+  const body = await request.json()
+  const allowed = ['nome', 'role', 'ativo', 'permissions']
   const update: Record<string, unknown> = {}
   for (const key of allowed) {
     if (body[key] !== undefined) update[key] = body[key]
@@ -31,6 +36,7 @@ export async function PATCH(
     .from('usuarios')
     .update({ ...update, updated_at: new Date().toISOString() })
     .eq('id', id)
+    .eq('tenant_id', usuarioLogado.tenant_id)
     .select()
     .single()
 

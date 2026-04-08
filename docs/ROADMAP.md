@@ -83,10 +83,64 @@ Mestra: [[MASTER_PREV_LEGAL]]
 - proximo passo recomendado:
   - aplicar a migration `043`
   - validar em runtime:
-    - usuário conectando o próprio Google em `/perfil`
-    - admin conectando o calendário padrão do escritório
-    - agendamento criado para responsável com agenda própria
-    - agendamento criado para responsável sem agenda própria, usando fallback do escritório
+  - usuário conectando o próprio Google em `/perfil`
+  - admin conectando o calendário padrão do escritório
+  - agendamento criado para responsável com agenda própria
+  - agendamento criado para responsável sem agenda própria, usando fallback do escritório
+
+## Atualizacao Inbox / Permissões Granulares — 08/04/2026
+
+- a rodada seguinte atacou duas dores operacionais reais:
+  - filtros da `Caixa de Entrada` inconsistentes com conversas legadas
+  - gestão de acesso limitada demais a `admin`, `operador` e `visualizador`
+- arquivos principais:
+  - `supabase/migrations/044_user_permissions_foundation.sql`
+  - `src/lib/permissions.ts`
+  - `src/lib/auth-role.ts`
+  - `src/lib/tenant-context.ts`
+  - `src/app/(dashboard)/caixa-de-entrada/page.tsx`
+  - `src/app/api/conversas/route.ts`
+  - `src/components/gestao-usuarios.tsx`
+  - `src/app/api/usuarios/route.ts`
+  - `src/app/api/usuarios/[id]/route.ts`
+  - `src/app/api/usuarios/convidar/route.ts`
+  - `src/app/api/agentes/*`
+  - `src/app/api/automacoes/triggers/*`
+  - `src/app/api/followup/rules/*`
+  - `src/app/api/agendamentos/[id]/route.ts`
+  - `src/app/api/listas/[id]/route.ts`
+  - `src/app/api/financeiro/contratos/route.ts`
+  - `src/app/api/financeiro/resumo/route.ts`
+- melhorias entregues:
+  - a inbox agora normaliza conversa sem status válido como `agente`
+  - a troca de aba em `/caixa-de-entrada` passou a ser explícita e previsível via querystring
+  - a seleção atual é limpa quando deixa de pertencer ao filtro escolhido
+  - usuários agora podem receber permissões customizadas além da role base
+  - a gestão de usuários ganhou editor de permissões por pessoa
+  - presets padrão continuam existindo por role, mas podem ser ajustados ponto a ponto
+  - o backend já passou a respeitar permissões granulares em áreas críticas:
+    - usuários
+    - agentes
+    - automações / gatilhos / follow-up rules
+    - reatribuição de agendamentos
+    - exclusão de listas
+    - financeiro
+    - operação humana da inbox
+- impacto operacional:
+  - reduz a sensação de “aba quebrada” na caixa de entrada
+  - abre espaço para secretária, coordenador e operador sênior terem acesso sob medida sem virar admin total
+- limite explicitado:
+  - esta fase aplica permissão granular nos módulos críticos, mas ainda não substitui todo e qualquer `isAdmin` espalhado no produto
+- validacao:
+  - `npm run build` passou
+- proximo passo recomendado:
+  - aplicar a migration `044`
+  - validar os filtros da inbox com conversas reais
+  - testar um usuário não-admin com permissões customizadas em:
+    - automações
+    - agentes
+    - agenda
+    - financeiro
 
 ## Atualizacao Automações / Documentos IA — 08/04/2026
 

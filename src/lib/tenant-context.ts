@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
-import type { Role } from '@/lib/auth-role'
+import type { PermissionKey, PermissionMap, Role } from '@/lib/permissions'
+import { hasPermission as hasResolvedPermission } from '@/lib/permissions'
 
 export interface TenantContext {
   authUserId: string
@@ -7,6 +8,7 @@ export interface TenantContext {
   tenantId: string | null
   email: string
   role: Role
+  permissions?: Partial<PermissionMap> | null
   isAdmin: boolean
 }
 
@@ -18,7 +20,7 @@ export async function getTenantContext(existingSupabase?: Awaited<ReturnType<typ
 
   const { data: usuario, error: usuarioError } = await supabase
     .from('usuarios')
-    .select('id, tenant_id, email, role, ativo')
+    .select('id, tenant_id, email, role, permissions, ativo')
     .eq('auth_id', user.id)
     .maybeSingle()
 
@@ -30,8 +32,16 @@ export async function getTenantContext(existingSupabase?: Awaited<ReturnType<typ
     tenantId: usuario.tenant_id || null,
     email: (user.email || usuario.email || '').toLowerCase(),
     role: usuario.role as Role,
+    permissions: (usuario.permissions || null) as Partial<PermissionMap> | null,
     isAdmin: usuario.role === 'admin',
   } satisfies TenantContext
+}
+
+export function contextHasPermission(
+  context: TenantContext,
+  permission: PermissionKey,
+) {
+  return hasResolvedPermission(context, permission)
 }
 
 export async function getAccessibleLeadIds(

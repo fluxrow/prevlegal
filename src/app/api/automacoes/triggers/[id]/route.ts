@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { getTenantContext } from '@/lib/tenant-context'
+import { contextHasPermission, getTenantContext } from '@/lib/tenant-context'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminSupabase } from '@/lib/internal-collaboration'
 
@@ -12,6 +12,9 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         }
         if (!context.tenantId) {
             return NextResponse.json({ error: 'Tenant não encontrado' }, { status: 400 })
+        }
+        if (!contextHasPermission(context, 'automacoes_manage')) {
+            return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
         }
 
         const supabase = createAdminSupabase()
@@ -72,6 +75,9 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
         }
         if (!context.tenantId) {
             return NextResponse.json({ error: 'Tenant não encontrado' }, { status: 400 })
+        }
+        if (!contextHasPermission(context, 'automacoes_manage')) {
+            return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
         }
 
         const supabase = createAdminSupabase()

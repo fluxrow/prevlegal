@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { getTenantContext } from '@/lib/tenant-context'
+import { contextHasPermission, getTenantContext } from '@/lib/tenant-context'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminSupabase } from '@/lib/internal-collaboration'
 
@@ -29,6 +29,9 @@ export async function POST() {
     const context = await getTenantContext(authSupabase)
     if (!context) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     if (!context.tenantId) return NextResponse.json({ error: 'Tenant não encontrado' }, { status: 400 })
+    if (!contextHasPermission(context, 'automacoes_manage')) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
 
     const supabase = createAdminSupabase()
 

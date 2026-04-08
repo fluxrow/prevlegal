@@ -1,10 +1,10 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
-import { getUsuarioLogado, soAdmin } from '@/lib/auth-role'
+import { getUsuarioLogado, hasPermission } from '@/lib/auth-role'
 
 export async function POST(request: Request) {
   const usuario = await getUsuarioLogado()
-  if (!usuario || !soAdmin(usuario.role)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  if (!usuario || !hasPermission(usuario, 'usuarios_manage')) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   if (!usuario.tenant_id) return NextResponse.json({ error: 'Tenant do usuário não configurado' }, { status: 409 })
 
   const supabase = await createClient()
@@ -38,7 +38,7 @@ export async function POST(request: Request) {
 
 export async function DELETE(request: Request) {
   const usuario = await getUsuarioLogado()
-  if (!usuario || !soAdmin(usuario.role)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  if (!usuario || !hasPermission(usuario, 'usuarios_manage')) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   if (!usuario.tenant_id) return NextResponse.json({ error: 'Tenant do usuário não configurado' }, { status: 409 })
 
   const supabase = await createClient()

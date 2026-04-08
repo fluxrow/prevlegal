@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { getTenantContext } from '@/lib/tenant-context'
+import { contextHasPermission, getTenantContext } from '@/lib/tenant-context'
 import { createAdminSupabase } from '@/lib/internal-collaboration'
 
 const CONVERSA_STATUS = new Set([
@@ -51,6 +51,9 @@ export async function PATCH(
   if (!context) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const { id } = await params
   const body = await request.json()
+  if (body.action && !contextHasPermission(context, 'inbox_humana_manage')) {
+    return NextResponse.json({ error: 'Você não tem permissão para operar a fila humana' }, { status: 403 })
+  }
 
   let conversaQuery = supabase
     .from('conversas')

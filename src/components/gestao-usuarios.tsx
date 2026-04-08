@@ -1,16 +1,29 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { UserPlus, Copy, Check, Shield, Eye, Edit3, Crown, ToggleLeft, ToggleRight, X, Mail } from 'lucide-react'
+import { DEFAULT_PERMISSIONS_BY_ROLE, resolvePermissions, type PermissionKey, type PermissionMap, type Role } from '@/lib/permissions'
 
 interface Usuario {
   id: string; nome: string; email: string; role: string
   ativo: boolean; convidado_em: string; ultimo_acesso: string | null
   google_calendar_email?: string | null
   google_calendar_connected_at?: string | null
+  permissions?: Partial<PermissionMap> | null
 }
 interface Convite {
   id: string; email: string; role: string; created_at: string; expires_at: string
 }
+
+const PERMISSION_INFO: Array<{ key: PermissionKey; label: string; descricao: string }> = [
+  { key: 'usuarios_manage', label: 'Usuários', descricao: 'Convidar pessoas, trocar roles e editar permissões.' },
+  { key: 'agentes_manage', label: 'Agentes IA', descricao: 'Criar, editar e semear agentes do escritório.' },
+  { key: 'automacoes_manage', label: 'Automações', descricao: 'Editar gatilhos, réguas e seeds operacionais.' },
+  { key: 'financeiro_manage', label: 'Financeiro', descricao: 'Acessar contratos, parcelas e visão financeira.' },
+  { key: 'listas_manage', label: 'Listas', descricao: 'Gerenciar exclusão e manutenção de listas importadas.' },
+  { key: 'agendamentos_assign', label: 'Reatribuir agenda', descricao: 'Mover agendamentos entre responsáveis.' },
+  { key: 'inbox_humana_manage', label: 'Inbox humana', descricao: 'Assumir, responder, pausar e resolver conversas humanas.' },
+  { key: 'configuracoes_manage', label: 'Configurações', descricao: 'Administrar áreas sensíveis de configuração do escritório.' },
+]
 
 const ROLE_INFO: Record<string, { label: string; cor: string; icon: React.ReactNode; descricao: string }> = {
   admin:        { label: 'Admin',        cor: '#f5c842', icon: <Crown size={12} />,  descricao: 'Acesso total — configurações, usuários, todas as funções' },
@@ -21,7 +34,7 @@ const ROLE_INFO: Record<string, { label: string; cor: string; icon: React.ReactN
 export default function GestaoUsuarios() {
   const [usuarios, setUsuarios] = useState<Usuario[]>([])
   const [convites, setConvites] = useState<Convite[]>([])
-  const [meuRole, setMeuRole] = useState<string>('operador')
+  const [meuRole, setMeuRole] = useState<Role>('operador')
   const [loading, setLoading] = useState(true)
   const [showConvidar, setShowConvidar] = useState(false)
   const [emailConvite, setEmailConvite] = useState('')
@@ -30,6 +43,8 @@ export default function GestaoUsuarios() {
   const [urlConvite, setUrlConvite] = useState('')
   const [copiado, setCopiado] = useState(false)
   const [erro, setErro] = useState('')
+  const [usuarioPermissoes, setUsuarioPermissoes] = useState<Usuario | null>(null)
+  const [permissionDraft, setPermissionDraft] = useState<PermissionMap>(DEFAULT_PERMISSIONS_BY_ROLE.operador)
 
   useEffect(() => { fetchData() }, [])
 
@@ -39,7 +54,7 @@ export default function GestaoUsuarios() {
     const json = await res.json()
     setUsuarios(json.usuarios || [])
     setConvites(json.convites || [])
-    setMeuRole(json.role || 'operador')
+    setMeuRole((json.role || 'operador') as Role)
     setLoading(false)
   }
 
@@ -50,6 +65,33 @@ export default function GestaoUsuarios() {
       body: JSON.stringify({ id, role, ativo }),
     })
     fetchData()
+  }
+
+  function abrirPermissoes(usuario: Usuario) {
+    setUsuarioPermissoes(usuario)
+    setPermissionDraft(resolvePermissions(usuario.role as Role, usuario.permissions || null))
+  }
+
+  async function salvarPermissoes() {
+    if (!usuarioPermissoes) return
+
+    const res = await fetch('/api/usuarios', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id: usuarioPermissoes.id,
+        role: usuarioPermissoes.role,
+        ativo: usuarioPermissoes.ativo,
+        permissions: permissionDraft,
+      }),
+    })
+
+    if (res.ok) {
+      setUsuarioPermissoes(null)
+      fetchData()
+    } else {
+      setErro('Não foi possível salvar as permissões desse usuário')
+    }
   }
 
   async function convidar() {
@@ -81,7 +123,7 @@ export default function GestaoUsuarios() {
     setTimeout(() => setCopiado(false), 2500)
   }
 
-  const isAdmin = meuRole === 'admin'
+  const isAdmin = resolvePermissions(meuRole, null).usuarios_manage
   const inp: React.CSSProperties = { width: '100%', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: '9px', padding: '9px 12px', color: 'var(--text-primary)', fontSize: '13px', fontFamily: 'DM Sans', outline: 'none', boxSizing: 'border-box' }
   const lbl: React.CSSProperties = { fontSize: '10px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: '5px' }
 
@@ -106,6 +148,8 @@ export default function GestaoUsuarios() {
         {loading && <p style={{ fontSize: '13px', color: 'var(--text-muted)', padding: '20px 0' }}>Carregando...</p>}
         {usuarios.map(u => {
           const ri = ROLE_INFO[u.role] || ROLE_INFO.operador
+          const resolvedPermissions = resolvePermissions(u.role as Role, u.permissions || null)
+          const permissaoCount = Object.values(resolvedPermissions).filter(Boolean).length
           return (
             <div key={u.id} style={{ display: 'flex', alignItems: 'center', gap: '14px', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: '12px', padding: '14px 16px', opacity: u.ativo ? 1 : 0.5 }}>
               <div style={{ width: '38px', height: '38px', borderRadius: '50%', background: `${ri.cor}20`, border: `1px solid ${ri.cor}30`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '15px', fontWeight: '700', color: ri.cor, fontFamily: 'Syne, sans-serif' }}>
@@ -134,8 +178,18 @@ export default function GestaoUsuarios() {
               <span style={{ display: 'flex', alignItems: 'center', gap: '4px', background: `${ri.cor}15`, color: ri.cor, border: `1px solid ${ri.cor}30`, borderRadius: '20px', padding: '3px 10px', fontSize: '11px', fontWeight: '600', flexShrink: 0 }}>
                 {ri.icon} {ri.label}
               </span>
+              <span style={{ fontSize: '10px', color: 'var(--text-muted)', minWidth: '92px', textAlign: 'center' }}>
+                {permissaoCount} permissões
+              </span>
               {isAdmin && (
                 <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
+                  <button
+                    onClick={() => abrirPermissoes(u)}
+                    title="Editar permissões"
+                    style={{ height: '30px', padding: '0 10px', background: 'var(--bg-hover)', border: '1px solid var(--border)', borderRadius: '7px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--text-secondary)', fontSize: '11px', fontWeight: '600', fontFamily: 'DM Sans' }}
+                  >
+                    Permissões
+                  </button>
                   <button onClick={() => alterarRole(u.id, u.role, !u.ativo)} title={u.ativo ? 'Suspender' : 'Reativar'}
                     style={{ width: '30px', height: '30px', background: 'var(--bg-hover)', border: '1px solid var(--border)', borderRadius: '7px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: u.ativo ? 'var(--green)' : 'var(--text-muted)' }}>
                     {u.ativo ? <ToggleRight size={14} /> : <ToggleLeft size={14} />}
@@ -252,6 +306,57 @@ export default function GestaoUsuarios() {
                 <button onClick={() => { setShowConvidar(false); setUrlConvite('') }} style={{ width: '100%', background: 'var(--bg-hover)', border: '1px solid var(--border)', borderRadius: '9px', padding: '10px', color: 'var(--text-secondary)', fontSize: '13px', cursor: 'pointer', fontFamily: 'DM Sans' }}>Fechar</button>
               </div>
             )}
+          </div>
+        </>
+      )}
+
+      {usuarioPermissoes && (
+        <>
+          <div onClick={() => setUsuarioPermissoes(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 999 }} />
+          <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 'min(760px, calc(100vw - 32px))', maxHeight: '80vh', overflowY: 'auto', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '16px', padding: '28px', zIndex: 1000 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px' }}>
+              <div>
+                <h3 style={{ fontSize: '16px', fontWeight: '700', color: 'var(--text-primary)', fontFamily: 'Syne, sans-serif', margin: '0 0 4px' }}>
+                  Permissões de {usuarioPermissoes.nome}
+                </h3>
+                <p style={{ margin: 0, fontSize: '12px', color: 'var(--text-muted)' }}>
+                  Base atual: {ROLE_INFO[usuarioPermissoes.role]?.label || usuarioPermissoes.role}. Você pode ajustar ponto a ponto sem trocar a role.
+                </p>
+              </div>
+              <button onClick={() => setUsuarioPermissoes(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}><X size={16} /></button>
+            </div>
+
+            <div style={{ display: 'grid', gap: '10px', marginBottom: '18px' }}>
+              {PERMISSION_INFO.map((permission) => (
+                <label key={permission.key} style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', padding: '12px 14px', borderRadius: '10px', background: 'var(--bg)', border: '1px solid var(--border)', cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={permissionDraft[permission.key]}
+                    onChange={(e) => setPermissionDraft((prev) => ({ ...prev, [permission.key]: e.target.checked }))}
+                    style={{ marginTop: '2px' }}
+                  />
+                  <div>
+                    <p style={{ margin: '0 0 3px', fontSize: '13px', fontWeight: '700', color: 'var(--text-primary)' }}>{permission.label}</p>
+                    <p style={{ margin: 0, fontSize: '11px', color: 'var(--text-muted)', lineHeight: 1.5 }}>{permission.descricao}</p>
+                  </div>
+                </label>
+              ))}
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+              <button
+                onClick={() => setPermissionDraft(resolvePermissions(usuarioPermissoes.role as Role, null))}
+                style={{ fontSize: '12px', color: 'var(--text-secondary)', background: 'var(--bg-hover)', border: '1px solid var(--border)', borderRadius: '8px', padding: '9px 14px', cursor: 'pointer', fontFamily: 'DM Sans' }}
+              >
+                Restaurar preset da role
+              </button>
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <button onClick={() => setUsuarioPermissoes(null)} style={{ fontSize: '13px', color: 'var(--text-secondary)', background: 'none', border: '1px solid var(--border)', borderRadius: '8px', padding: '9px 16px', cursor: 'pointer', fontFamily: 'DM Sans' }}>Cancelar</button>
+                <button onClick={() => void salvarPermissoes()} style={{ fontSize: '13px', fontWeight: '600', color: '#fff', background: 'var(--accent)', border: 'none', borderRadius: '8px', padding: '9px 18px', cursor: 'pointer', fontFamily: 'DM Sans' }}>
+                  Salvar permissões
+                </button>
+              </div>
+            </div>
           </div>
         </>
       )}

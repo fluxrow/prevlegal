@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
-import { getUsuarioLogado, soAdmin } from '@/lib/auth-role'
+import { getUsuarioLogado, hasPermission } from '@/lib/auth-role'
 
 export async function GET() {
   const supabase = await createClient()
@@ -10,7 +10,7 @@ export async function GET() {
 
   const { data: usuarios } = await supabase
     .from('usuarios')
-    .select('id, nome, email, role, ativo, convidado_em, ultimo_acesso, google_calendar_email, google_calendar_connected_at')
+    .select('id, nome, email, role, permissions, ativo, convidado_em, ultimo_acesso, google_calendar_email, google_calendar_connected_at')
     .eq('tenant_id', usuario.tenant_id)
     .order('convidado_em', { ascending: true })
 
@@ -27,17 +27,17 @@ export async function GET() {
 
 export async function PATCH(request: Request) {
   const usuario = await getUsuarioLogado()
-  if (!usuario || !soAdmin(usuario.role)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  if (!usuario || !hasPermission(usuario, 'usuarios_manage')) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   if (!usuario.tenant_id) return NextResponse.json({ error: 'Tenant do usuário não configurado' }, { status: 409 })
 
   const supabase = await createClient()
-  const { id, role, ativo } = await request.json()
+  const { id, role, ativo, permissions } = await request.json()
 
   if (id === usuario.id) return NextResponse.json({ error: 'Não é possível alterar seu próprio perfil aqui' }, { status: 400 })
 
   const { data, error } = await supabase
     .from('usuarios')
-    .update({ role, ativo })
+    .update({ role, ativo, permissions })
     .eq('id', id)
     .eq('tenant_id', usuario.tenant_id)
     .select()

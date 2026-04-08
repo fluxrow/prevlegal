@@ -303,3 +303,35 @@ Gatilho automático: a mudança de status do lead na API `PATCH` chama o *Orques
   - reduz ruído operacional entre criação do agendamento e propriedade real do compromisso
 - validação:
   - `npm run build` passou
+
+## Atualização 2026-04-08 - Inbox estabilizada e permissões por usuário iniciadas
+
+- a `Caixa de Entrada` recebeu um ajuste importante de robustez:
+  - conversas sem status válido agora são normalizadas como `agente`
+  - a aba ativa passou a ser sincronizada com a URL
+  - a seleção é limpa quando deixa de pertencer ao filtro escolhido
+- isso reduz o caso em que o operador sente que só `Todas` e `Portal` funcionam
+- em paralelo, o sistema ganhou a primeira foundation real de permissões granulares por usuário
+- arquivos principais:
+  - `supabase/migrations/044_user_permissions_foundation.sql`
+  - `src/lib/permissions.ts`
+  - `src/components/gestao-usuarios.tsx`
+  - `src/app/api/usuarios/route.ts`
+  - `src/app/api/usuarios/[id]/route.ts`
+  - `src/app/api/usuarios/convidar/route.ts`
+- modelo novo:
+  - a role continua existindo como preset
+  - cada usuário pode ter permissões ajustadas ponto a ponto
+- permissões já aplicadas em backend para áreas críticas:
+  - usuários
+  - agentes
+  - automações / gatilhos / réguas
+  - reatribuição de agenda
+  - listas
+  - financeiro
+  - operação humana da inbox
+- limite atual:
+  - ainda não é substituição total de todo `isAdmin` do sistema
+  - é uma foundation útil focada nos módulos mais sensíveis
+- validação:
+  - `npm run build` passou

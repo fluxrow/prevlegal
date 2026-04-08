@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { createClient as createServerClient } from '@/lib/supabase/server'
-import { getTenantContext } from '@/lib/tenant-context'
+import { contextHasPermission, getTenantContext } from '@/lib/tenant-context'
 import { sendWhatsAppMessage } from '@/lib/whatsapp-provider'
 
 function createAdminSupabase() {
@@ -18,6 +18,9 @@ export async function POST(
   const authSupabase = await createServerClient()
   const context = await getTenantContext(authSupabase)
   if (!context) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!contextHasPermission(context, 'inbox_humana_manage')) {
+    return NextResponse.json({ error: 'Você não tem permissão para responder manualmente' }, { status: 403 })
+  }
 
   const supabase = createAdminSupabase()
   const { id } = await params
