@@ -3,7 +3,7 @@
 Contexto: [[SESSION_HISTORY_MASTER]]
 Mestra: [[MASTER_PREV_LEGAL]]
 > Documento vivo. Atualizado a cada sessão de desenvolvimento.
-> Última atualização: 01/04/2026
+> Última atualização: 08/04/2026
 
 ---
 
@@ -14,6 +14,7 @@ Mestra: [[MASTER_PREV_LEGAL]]
 - [[LEARNINGS]]
 - [[SESSION_BRIEF]]
 - [[CODEX_HANDOFF]]
+- [[EXECUTION_TRACK]]
 - [[DOMAIN_MIGRATION]]
 - [[MOBILE_CLIENT_APP_PLAN]]
 - [[MOBILE_CLIENT_APP_BACKLOG]]
@@ -30,6 +31,18 @@ Mestra: [[MASTER_PREV_LEGAL]]
 **Produção atual:** https://app.prevlegal.com.br
 **LP atual:** https://www.prevlegal.com.br
 **Domínio próprio adquirido:** `prevlegal.com.br`
+
+## Estado operacional atual
+
+- o core do produto já está funcional
+- o maior risco atual não é falta de feature principal
+- o maior risco atual é de `go-live incompleto`, especialmente por:
+  - migrations pendentes em produção
+  - Google OAuth ainda sem verificação comercial
+  - smoke test final do tenant real ainda não fechado ponta a ponta
+
+Referencia executiva principal:
+- `docs/EXECUTION_TRACK.md`
 
 ### Arquitetura de domínio aprovada
 - `www.prevlegal.com.br` -> site / LP canônico

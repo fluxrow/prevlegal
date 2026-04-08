@@ -15,6 +15,7 @@ Use esta nota como ponto de entrada para qualquer retomada de contexto do PrevLe
 - [[LEARNINGS]] — erros, padrões, decisões e regras permanentes
 - [[SESSION_BRIEF]] — resumo curto da fase atual e do próximo passo
 - [[CODEX_HANDOFF]] — memória tática de continuidade entre sessões
+- [[EXECUTION_TRACK]] — trilho executivo de execução e go-live
 - [[SESSION_PROTOCOL]] — ritual oficial de início e fim de sessão
 - [[DOMAIN_MIGRATION]] — checklist técnico e estratégia de migração para domínio próprio
 
