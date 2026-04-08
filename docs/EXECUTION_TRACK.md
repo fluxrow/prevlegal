@@ -11,6 +11,9 @@ Este documento existe para evitar dispersão.
 
 Quando houver dúvida sobre “o que fazemos agora”, a ordem oficial vem daqui.
 
+Protocolo complementar entre IAs:
+- `docs/CROSS_AI_ALIGNMENT_PROTOCOL.md`
+
 ## O que já está pronto
 
 - login e acesso operacional estabilizados

@@ -10,6 +10,8 @@ Protocolo operacional para nao perder contexto entre sessoes.
 - [[INDEX]]
 - [[SESSION_BRIEF]]
 - [[CODEX_HANDOFF]]
+- [[EXECUTION_TRACK]]
+- [[CROSS_AI_ALIGNMENT_PROTOCOL]]
 - [[MASTER]]
 - [[ROADMAP]]
 - [[LEARNINGS]]
@@ -40,7 +42,9 @@ No Obsidian:
 
 ## Ritual de Inicio
 
-1. Ler `docs/SESSION_BRIEF.md`
+1. Ler `docs/EXECUTION_TRACK.md`
+2. Ler `docs/SESSION_BRIEF.md`
+3. Ler `docs/CROSS_AI_ALIGNMENT_PROTOCOL.md`
 2. Rodar `scripts/resume-context.sh`
 3. Confirmar:
    - branch atual
@@ -68,6 +72,8 @@ Toda sessao deve terminar com:
 - caminhos importantes preservados
 - sincronizacao com o vault
 - links cruzados mantidos entre as notas centrais
+
+Toda IA que entrar no projeto deve obedecer o `EXECUTION_TRACK.md` como prioridade canônica.
 
 ## Comando de Retomada para o Usuario Enviar
 
