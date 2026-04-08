@@ -1210,6 +1210,15 @@ Status atual em 18/03/2026:
 - Projeção de receita, aging de parcelas, previsão de sucumbência e carteira prevista por mês
 - Conectar ROI de campanha com contratos e recebimento real
 
+### Fase 30A — Inteligência documental com Docling
+- Transformar `lead_documentos` e depois `agent_documents` em conteúdo estruturado
+- Criar fila de processamento documental assíncrona
+- Persistir texto, markdown, JSON e chunks para uso em busca, agentes e análise futura
+- Primeiro corte com maior ROI:
+  - parsing de documentos do lead
+  - status de processamento
+  - preview/resumo estruturado
+
 ### Fase 31 — Campanhas inteligentes
 - Comparar templates, horários e listas por performance
 - Exibir falhas de envio, resposta e conversão em uma camada de otimização
@@ -1230,6 +1239,7 @@ Status atual em 18/03/2026:
 - [ ] Fila dedicada de agendamentos criados pelo agente com confirmação operacional
 - [ ] Sinais de risco de churn e adoção no detalhe do tenant
 - [ ] Migração segura para `prevlegal.com.br` + `app.prevlegal.com.br`
+- [ ] Foundation de inteligência documental com `Docling` para `lead_documentos`
 
 ### Baixa prioridade
 - [ ] Repo GitHub privado

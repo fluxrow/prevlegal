@@ -370,3 +370,19 @@ Gatilho automático: a mudança de status do lead na API `PATCH` chama o *Orques
   - `src/app/(dashboard)/agendamentos/page.tsx`
 - validação:
   - `npm run build` passou
+
+## Atualização 2026-04-08 - Inteligência documental com Docling formalizada
+
+- foi criada a spec oficial de integração documental em:
+  - `docs/DOCLING_INTEGRATION_PLAN.md`
+- tese aprovada:
+  - o maior ROI inicial não está em gerar mais petições, e sim em compreender documentos já enviados
+  - `lead_documentos` vira a primeira superfície prioritária
+  - `agent_documents` entra na segunda fase
+- arquitetura recomendada:
+  - upload canônico continua igual
+  - entra uma fila assíncrona de processamento
+  - um worker Python com `Docling` gera texto, markdown, JSON e chunks
+  - o produto passa a consumir isso em busca, agentes e análise futura
+- próximo passo sugerido:
+  - implementar a `Fase A` da foundation documental

@@ -2831,3 +2831,29 @@ Pontos que precisam ser preservados durante a implementacao:
   - preserva a semantica da tela como agenda operacional, nao apenas agenda visual
 - validacao:
   - `npm run build` passou
+
+## Atualizacao 2026-04-08 - Integracao com Docling foi formalizada como trilha oficial
+
+- motivacao:
+  - o PrevLegal ja possui upload de documentos, portal documental, base documental do agente e geracao beta por IA
+  - faltava uma camada canonica para transformar arquivo em conteudo estruturado utilizavel
+- documento novo:
+  - `docs/DOCLING_INTEGRATION_PLAN.md`
+- decisoes principais:
+  - `Docling` entra como motor de parsing estrutural, nao como substituto da camada generativa
+  - o primeiro corte de maior ROI sera em `lead_documentos`
+  - `agent_documents` entra na fase seguinte
+  - a arquitetura recomendada inclui:
+    - `document_processing_jobs`
+    - `document_parsed_contents`
+    - `document_chunks`
+    - worker Python separado para processamento assíncrono
+- racional de produto:
+  - o ganho prioritario nao e “gerar mais documento”
+  - e transformar o acervo ja enviado em:
+    - texto utilizavel
+    - markdown estruturado
+    - json rico
+    - contexto pesquisavel para agentes e operacao
+- proximo passo sugerido:
+  - abrir a implementacao da `Fase A` com schema + worker + status visual de processamento

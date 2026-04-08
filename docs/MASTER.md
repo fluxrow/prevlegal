@@ -20,6 +20,7 @@ Mestra: [[MASTER_PREV_LEGAL]]
 - [[PREVIDENCIARIO_EXPANSION_STRATEGY]]
 - [[PRODUCT_PORTFOLIO_STRATEGY]]
 - [[IMPORTADOR_INTELIGENTE_PLAN]]
+- [[DOCLING_INTEGRATION_PLAN]]
 
 ## Produto
 
@@ -238,6 +239,19 @@ Estratégia: entrar com R$ 1.997 para gerar cases, subir gradualmente.
     - associacao opcional do envio a uma pendencia existente
     - atualizacao automatica da timeline e notificacao interna da equipe
     - pedido de remarcacao pelo proprio cliente/familiar, sem alterar a agenda automaticamente
+
+## Inteligencia Documental — Direcao atual
+
+- o PrevLegal deve evoluir de `arquivo armazenado` para `documento compreendido`
+- a fundacao escolhida para isso e `Docling`, inicialmente como camada de parsing estrutural para:
+  - `lead_documentos`
+  - `agent_documents`
+- o primeiro ROI nao e gerar mais documentos, e sim:
+  - entender documentos ja enviados
+  - tornar o acervo pesquisavel
+  - melhorar contexto de agentes e operacao humana
+- referencia canonica:
+  - `docs/DOCLING_INTEGRATION_PLAN.md`
 
 ## Arquitetura de Portfólio — Regra atual
 

@@ -1254,3 +1254,9 @@ e a API de listagem de usuários ganhou a mesma resiliência
 **Causa:** A composição seguia linear: hero, calendário grande e só depois os cards operacionais; isso tratava a página mais como calendário tradicional do que como painel de execução
 **Correcao aplicada:** Reorganizar a tela em desktop com um trilho lateral fixo para `Precisa confirmação`, `Confirmados` e `Histórico recente`, reduzir a densidade do calendário mensal e limitar a quantidade de eventos visíveis por célula para privilegiar leitura + ação sem scroll
 **Regra pratica:** No PrevLegal, telas operacionais densas devem usar a lateral do desktop para fila acionável; o calendário continua importante, mas não pode esconder o trabalho que a equipe precisa executar agora
+
+### 131. O maior ROI documental vem de compreender o que já foi enviado, não de gerar mais texto primeiro
+**Problema:** O produto já tinha upload de documentos, base documental do agente e geração beta por IA, mas o arquivo continuava sendo tratado quase só como storage + link
+**Causa:** A evolução inicial priorizou captura, compartilhamento e geração, sem ainda introduzir uma camada canônica de parsing estrutural
+**Correcao aplicada:** Formalizar a direção de inteligência documental com `Docling` como motor de parsing para `lead_documentos` e depois `agent_documents`, com fila assíncrona, persistência de texto/markdown/JSON e chunks para consumo por agentes, busca e análise
+**Regra pratica:** No PrevLegal, antes de investir pesado em “gerar novos documentos”, o maior ganho costuma estar em transformar o acervo já enviado em conteúdo entendível, pesquisável e reutilizável pelo sistema
