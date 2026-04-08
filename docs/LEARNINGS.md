@@ -1242,3 +1242,9 @@ e a API de listagem de usuários ganhou a mesma resiliência
 - leitura da conexão por usuário retornando `null` quando as colunas da `043` ainda não existem
 - callback de OAuth por usuário falhando de forma controlada, sem quebrar a navegação
 **Regra pratica:** No PrevLegal, capacidades novas como Google por usuário podem degradar para fallback do escritório, mas nunca devem bloquear a criação do agendamento básico por coluna ausente
+
+### 129. Tela operacional com tema dual não pode depender de hardcodes escuros
+**Problema:** A agenda ficava aceitável no escuro, mas no claro parecia quebrada ou “lavada”, porque título, cards e calendário continuavam presos a cores escuras fixas
+**Causa:** A página de agendamentos cresceu rápido com classes hardcoded (`#11131b`, `text-white`, `bg-[#13131f]`) e deixou de respeitar os tokens do tema global
+**Correcao aplicada:** Reestruturar a superfície de `Agendamentos` para usar `var(--bg)`, `var(--bg-card)`, `var(--bg-surface)`, `var(--border)` e cores semânticas do sistema, além de reforçar a hierarquia visual no topo e nos cards da fila operacional
+**Regra pratica:** No PrevLegal, telas de operação que existem nos dois temas devem nascer com tokens semânticos desde o começo; hardcode de cor escura em página principal quase sempre vira regressão visual no claro

@@ -133,6 +133,26 @@ Mestra: [[MASTER_PREV_LEGAL]]
   - validar no runtime se o modal cria agendamento sem erro
   - depois aplicar `043` para liberar conexão Google realmente individual por usuário
 
+## Atualizacao UI / Agendamentos cross-theme — 08/04/2026
+
+- a tela de `Agendamentos` recebeu uma rodada de polish visual focada em leitura real no claro e no escuro
+- arquivo principal:
+  - `src/app/(dashboard)/agendamentos/page.tsx`
+- melhorias aplicadas:
+  - o topo virou um hero operacional com hierarquia mais clara e indicadores rápidos
+  - o banner de Google ganhou melhor encaixe visual e deixou de parecer remendo solto acima do calendário
+  - o calendário passou a usar superfícies guiadas por tokens do tema em vez de blocos hardcoded escuros
+  - a lista operacional abaixo também foi convertida para cards coerentes com os dois temas
+  - o modal lateral de detalhe do agendamento foi alinhado à mesma linguagem visual
+- impacto operacional:
+  - melhora leitura em tema claro sem sacrificar densidade da agenda
+  - reduz sensação de “layout quebrado” quando a tela alterna entre claro e escuro
+- validacao:
+  - `npm run build` passou
+- proximo passo recomendado:
+  - validar visualmente a página em runtime nos dois temas
+  - depois seguir no próximo refinamento funcional da agenda apenas se sobrar ruído real de uso
+
 ## Atualizacao Importação Inteligente — 08/04/2026
 
 - o importador deixou de depender apenas do layout fixo da planilha clássica

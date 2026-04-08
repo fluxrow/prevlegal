@@ -93,6 +93,23 @@ function toLocalDateTimeValue(iso: string) {
   return format(parseISO(iso), "yyyy-MM-dd'T'HH:mm")
 }
 
+const PAGE_SHELL_STYLE: React.CSSProperties = {
+  background:
+    'radial-gradient(circle at top left, var(--accent-glow), transparent 28%), linear-gradient(180deg, var(--bg) 0%, var(--bg) 100%)',
+}
+
+const HERO_CARD_STYLE: React.CSSProperties = {
+  background: 'linear-gradient(135deg, var(--bg-surface) 0%, var(--bg-card) 100%)',
+  border: '1px solid var(--border)',
+  boxShadow: '0 22px 60px rgba(15, 23, 42, 0.10)',
+}
+
+const SURFACE_CARD_STYLE: React.CSSProperties = {
+  background: 'var(--bg-card)',
+  border: '1px solid var(--border)',
+  boxShadow: '0 18px 48px rgba(15, 23, 42, 0.08)',
+}
+
 export default function AgendamentosPage() {
   const searchParams = useSearchParams()
   const [agendamentos, setAgendamentos] = useState<Agendamento[]>([])
@@ -281,6 +298,17 @@ export default function AgendamentosPage() {
   const showPendentes = !statusFilter || statusFilter === 'pendentes'
   const showConfirmados = !statusFilter || statusFilter === 'confirmados'
   const showFinalizados = !statusFilter || statusFilter === 'finalizados'
+  const statusCards = [
+    { label: 'Pedem ação', value: pendentesConfirmacao.length, tone: 'var(--yellow)', bg: 'var(--yellow-bg)' },
+    { label: 'Confirmados', value: confirmados.length, tone: 'var(--green)', bg: 'var(--green-bg)' },
+    { label: 'Histórico', value: finalizados.length, tone: 'var(--text-secondary)', bg: 'var(--bg-hover)' },
+    {
+      label: 'Google ativo',
+      value: googleStatus?.effective.connected ? (googleStatus.effective.source === 'user' ? 'Meu' : 'Escritório') : 'Não',
+      tone: googleStatus?.effective.connected ? 'var(--accent)' : 'var(--text-secondary)',
+      bg: googleStatus?.effective.connected ? 'var(--accent-glow)' : 'var(--bg-hover)',
+    },
+  ]
 
   const calendarDays = eachDayOfInterval({
     start: startOfWeek(startOfMonth(currentMonth), { weekStartsOn: 0 }),
@@ -304,17 +332,21 @@ export default function AgendamentosPage() {
 
     return (
       <div
-        className={`rounded-xl border bg-[#13131f] ${compact ? 'p-4' : 'p-4'} transition-colors ${urgente ? 'border-amber-500/30' : 'border-[#1e1e30] hover:border-[#2e2e45]'}`}
+        className={`rounded-2xl border p-4 transition-all ${compact ? '' : 'hover:-translate-y-0.5'}`}
+        style={{
+          ...SURFACE_CARD_STYLE,
+          borderColor: urgente ? 'rgba(245, 200, 66, 0.28)' : 'var(--border)',
+        }}
       >
         <div className="flex items-start gap-4">
           <div className="flex-shrink-0 text-center w-14">
-            <div className="text-2xl font-bold text-white leading-none">
+            <div className="text-2xl font-bold leading-none" style={{ color: 'var(--text-primary)' }}>
               {format(date, 'dd')}
             </div>
-            <div className="text-xs text-slate-500 uppercase mt-0.5">
+            <div className="text-xs uppercase mt-0.5" style={{ color: 'var(--text-secondary)' }}>
               {format(date, 'MMM', { locale: ptBR })}
             </div>
-            <div className="text-xs text-slate-600 mt-0.5">
+            <div className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
               {format(date, 'HH:mm')}
             </div>
           </div>
@@ -329,29 +361,29 @@ export default function AgendamentosPage() {
                 {calendarOwnerLabel}
               </span>
               {urgente ? (
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-medium text-amber-300 bg-amber-400/10">
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-medium" style={{ color: 'var(--yellow)', background: 'var(--yellow-bg)' }}>
                   Precisa atenção
                 </span>
               ) : null}
               {ag.honorario ? (
-                <span className="text-xs text-slate-500">
+                <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>
                   R$ {ag.honorario.toLocaleString('pt-BR')}
                 </span>
               ) : null}
             </div>
 
             {ag.leads ? (
-              <div className="flex items-center gap-1 mt-1.5 text-sm font-medium text-slate-200">
-                <User className="w-3.5 h-3.5 text-slate-500" />
+              <div className="flex items-center gap-1 mt-1.5 text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                <User className="w-3.5 h-3.5" style={{ color: 'var(--text-secondary)' }} />
                 {ag.leads.nome}
                 {ag.leads.telefone ? (
-                  <span className="text-slate-500 font-normal text-xs ml-1">· {ag.leads.telefone}</span>
+                  <span className="font-normal text-xs ml-1" style={{ color: 'var(--text-secondary)' }}>· {ag.leads.telefone}</span>
                 ) : null}
               </div>
             ) : null}
 
             <div className="flex items-center gap-3 mt-1.5 flex-wrap">
-              <span className="flex items-center gap-1 text-xs text-slate-500">
+              <span className="flex items-center gap-1 text-xs" style={{ color: 'var(--text-secondary)' }}>
                 <Clock className="w-3 h-3" />
                 {ag.duracao_minutos} min
               </span>
@@ -360,14 +392,15 @@ export default function AgendamentosPage() {
                   href={ag.meet_link}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300 transition-colors"
+                  className="flex items-center gap-1 text-xs transition-colors"
+                  style={{ color: 'var(--accent)' }}
                 >
                   <Video className="w-3 h-3" />
                   Google Meet
                 </a>
               ) : null}
               {ag.usuarios ? (
-                <span className="text-xs text-slate-600">
+                <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
                   {ag.usuarios.nome}
                 </span>
               ) : null}
@@ -383,7 +416,8 @@ export default function AgendamentosPage() {
                   value={ag.usuarios?.id || ''}
                   onChange={(e) => void reatribuirResponsavel(ag.id, e.target.value)}
                   disabled={savingId === ag.id}
-                  className="rounded-md border border-white/10 bg-[#0d0f17] px-2.5 py-1.5 text-[11px] text-slate-200 outline-none"
+                  className="rounded-md px-2.5 py-1.5 text-[11px] outline-none"
+                  style={{ border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text-primary)' }}
                 >
                   <option value="">Selecionar</option>
                   {usuarios.map((usuario) => (
@@ -399,7 +433,8 @@ export default function AgendamentosPage() {
               <div className="flex items-center gap-2 mt-3 flex-wrap">
                 <a
                   href={inboxHref}
-                  className="inline-flex items-center gap-1.5 rounded-md border border-blue-500/20 bg-blue-500/10 px-2.5 py-1 text-[11px] font-medium text-blue-300 transition-colors hover:bg-blue-500/15"
+                  className="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[11px] font-medium transition-colors"
+                  style={{ border: '1px solid rgba(79,122,255,0.2)', background: 'var(--accent-glow)', color: 'var(--accent)' }}
                 >
                   <MessageSquare className="w-3 h-3" />
                   Abrir conversa
@@ -409,7 +444,8 @@ export default function AgendamentosPage() {
                     href={whatsappHref}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 rounded-md border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-1 text-[11px] font-medium text-emerald-300 transition-colors hover:bg-emerald-500/15"
+                    className="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[11px] font-medium transition-colors"
+                    style={{ border: '1px solid rgba(45,212,160,0.18)', background: 'var(--green-bg)', color: 'var(--green)' }}
                   >
                     <Send className="w-3 h-3" />
                     WhatsApp
@@ -419,8 +455,8 @@ export default function AgendamentosPage() {
             ) : null}
 
             {editandoId === ag.id ? (
-              <div className="mt-3 rounded-xl border border-white/10 bg-[#0d0f17] p-3">
-                <div className="mb-2 flex items-center gap-2 text-[11px] font-medium text-slate-400">
+              <div className="mt-3 rounded-xl p-3" style={{ border: '1px solid var(--border)', background: 'var(--bg)' }}>
+                <div className="mb-2 flex items-center gap-2 text-[11px] font-medium" style={{ color: 'var(--text-secondary)' }}>
                   <CalendarClock className="w-3.5 h-3.5" />
                   Remarcar reunião
                 </div>
@@ -429,7 +465,8 @@ export default function AgendamentosPage() {
                     type="datetime-local"
                     value={novaDataHora}
                     onChange={(e) => setNovaDataHora(e.target.value)}
-                    className="rounded-md border border-white/10 bg-[#13131f] px-3 py-2 text-xs text-slate-200 outline-none"
+                    className="rounded-md px-3 py-2 text-xs outline-none"
+                    style={{ border: '1px solid var(--border)', background: 'var(--bg-card)', color: 'var(--text-primary)' }}
                   />
                   <input
                     type="number"
@@ -437,19 +474,22 @@ export default function AgendamentosPage() {
                     step={15}
                     value={novaDuracaoMinutos}
                     onChange={(e) => setNovaDuracaoMinutos(e.target.value)}
-                    className="w-28 rounded-md border border-white/10 bg-[#13131f] px-3 py-2 text-xs text-slate-200 outline-none"
+                    className="w-28 rounded-md px-3 py-2 text-xs outline-none"
+                    style={{ border: '1px solid var(--border)', background: 'var(--bg-card)', color: 'var(--text-primary)' }}
                   />
                   <button
                     onClick={() => void salvarRemarcacao(ag.id)}
                     disabled={savingId === ag.id}
-                    className="inline-flex items-center gap-1 rounded-md bg-blue-600 px-3 py-2 text-xs font-medium text-white transition-colors hover:bg-blue-500 disabled:opacity-60"
+                    className="inline-flex items-center gap-1 rounded-md px-3 py-2 text-xs font-medium text-white transition-colors disabled:opacity-60"
+                    style={{ background: 'var(--accent)' }}
                   >
                     <Save className="w-3.5 h-3.5" />
                     Salvar
                   </button>
                   <button
                     onClick={() => setEditandoId(null)}
-                    className="inline-flex items-center gap-1 rounded-md border border-white/10 bg-white/5 px-3 py-2 text-xs font-medium text-slate-300 transition-colors hover:bg-white/10"
+                    className="inline-flex items-center gap-1 rounded-md px-3 py-2 text-xs font-medium transition-colors"
+                    style={{ border: '1px solid var(--border)', background: 'var(--bg-card)', color: 'var(--text-secondary)' }}
                   >
                     Fechar
                   </button>
@@ -458,7 +498,7 @@ export default function AgendamentosPage() {
             ) : null}
 
             {ag.observacoes ? (
-              <p className="mt-2 text-xs text-slate-500">{ag.observacoes}</p>
+              <p className="mt-2 text-xs" style={{ color: 'var(--text-secondary)' }}>{ag.observacoes}</p>
             ) : null}
           </div>
 
@@ -468,7 +508,8 @@ export default function AgendamentosPage() {
                 <button
                   onClick={() => void updateStatus(ag.id, 'confirmado')}
                   disabled={savingId === ag.id}
-                  className="p-1.5 rounded-md text-slate-500 hover:text-cyan-300 hover:bg-cyan-400/10 transition-colors disabled:opacity-50"
+                  className="p-1.5 rounded-md transition-colors disabled:opacity-50"
+                  style={{ color: 'var(--text-secondary)' }}
                   title="Confirmar"
                 >
                   <CheckCheck className="w-4 h-4" />
@@ -477,7 +518,8 @@ export default function AgendamentosPage() {
               <button
                 onClick={() => iniciarRemarcacao(ag)}
                 disabled={savingId === ag.id}
-                className="p-1.5 rounded-md text-slate-500 hover:text-amber-300 hover:bg-amber-400/10 transition-colors disabled:opacity-50"
+                className="p-1.5 rounded-md transition-colors disabled:opacity-50"
+                style={{ color: 'var(--text-secondary)' }}
                 title="Remarcar"
               >
                 <Pencil className="w-4 h-4" />
@@ -485,7 +527,8 @@ export default function AgendamentosPage() {
               <button
                 onClick={() => void updateStatus(ag.id, 'realizado')}
                 disabled={savingId === ag.id}
-                className="p-1.5 rounded-md text-slate-500 hover:text-emerald-400 hover:bg-emerald-400/10 transition-colors disabled:opacity-50"
+                className="p-1.5 rounded-md transition-colors disabled:opacity-50"
+                style={{ color: 'var(--text-secondary)' }}
                 title="Marcar como realizado"
               >
                 <CheckCircle2 className="w-4 h-4" />
@@ -493,7 +536,8 @@ export default function AgendamentosPage() {
               <button
                 onClick={() => void cancelar(ag.id)}
                 disabled={savingId === ag.id}
-                className="p-1.5 rounded-md text-slate-500 hover:text-red-400 hover:bg-red-400/10 transition-colors disabled:opacity-50"
+                className="p-1.5 rounded-md transition-colors disabled:opacity-50"
+                style={{ color: 'var(--text-secondary)' }}
                 title="Cancelar"
               >
                 <XCircle className="w-4 h-4" />
@@ -509,13 +553,13 @@ export default function AgendamentosPage() {
     if (lista.length === 0) return null
 
     return (
-      <div className="mb-8">
+      <div className="mb-8 rounded-[24px] p-5" style={SURFACE_CARD_STYLE}>
         <div className="mb-3 flex items-end justify-between gap-3">
           <div>
-            <h2 className="text-sm font-semibold text-slate-200">{titulo}</h2>
-            <p className="text-xs text-slate-500 mt-1">{descricao}</p>
+            <h2 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>{titulo}</h2>
+            <p className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>{descricao}</p>
           </div>
-          <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] font-medium text-slate-400">
+          <span className="rounded-full px-2.5 py-1 text-[11px] font-medium" style={{ border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text-secondary)' }}>
             {lista.length}
           </span>
         </div>
@@ -531,43 +575,67 @@ export default function AgendamentosPage() {
   }
 
   return (
-    <div className="p-6 max-w-6xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-xl font-semibold text-white flex items-center gap-2">
-            <Calendar className="w-5 h-5 text-blue-400" />
-            Agendamentos
-          </h1>
-          <p className="text-sm text-slate-500 mt-0.5">
-            Consultas sincronizadas com Google Calendar
-          </p>
+    <div className="max-w-7xl mx-auto p-6 md:p-8" style={PAGE_SHELL_STYLE}>
+      <div className="mb-6 rounded-[28px] p-5 md:p-6" style={HERO_CARD_STYLE}>
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+          <div className="max-w-2xl">
+            <div className="inline-flex items-center gap-2 rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.08em]" style={{ background: 'var(--accent-glow)', color: 'var(--accent)' }}>
+              <Calendar className="w-3.5 h-3.5" />
+              Agenda operacional
+            </div>
+            <h1 className="mt-3 text-3xl font-semibold tracking-[-0.03em]" style={{ color: 'var(--text-primary)' }}>
+              Agendamentos
+            </h1>
+            <p className="mt-2 max-w-xl text-sm leading-6" style={{ color: 'var(--text-secondary)' }}>
+              Centralize marcações, remarcações, responsáveis e validação do Google numa agenda que funciona como painel de operação, não só como calendário.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={() => setShowNovoAgendamento(true)}
+              className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium text-white transition-all hover:-translate-y-0.5"
+              style={{ background: 'var(--accent)', boxShadow: '0 16px 32px var(--accent-glow)' }}
+            >
+              <Plus className="w-4 h-4" />
+              Novo agendamento
+            </button>
+            <button
+              onClick={() => void load()}
+              className="inline-flex items-center gap-2 rounded-xl px-3.5 py-2.5 text-sm font-medium transition-colors"
+              style={{ border: '1px solid var(--border)', background: 'var(--bg-surface)', color: 'var(--text-secondary)' }}
+              title="Atualizar"
+            >
+              <RefreshCw className="w-4 h-4" />
+              Atualizar
+            </button>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setShowNovoAgendamento(true)}
-            className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-500"
-          >
-            <Plus className="w-4 h-4" />
-            Novo agendamento
-          </button>
-          <button
-            onClick={() => void load()}
-            className="p-2 rounded-lg text-slate-500 hover:text-white hover:bg-white/5 transition-colors"
-            title="Atualizar"
-          >
-            <RefreshCw className="w-4 h-4" />
-          </button>
+
+        <div className="mt-5 grid gap-3 md:grid-cols-4">
+          {statusCards.map((card) => (
+            <div key={card.label} className="rounded-2xl px-4 py-3" style={{ background: card.bg, border: '1px solid var(--border-subtle)' }}>
+              <div className="text-[11px] font-semibold uppercase tracking-[0.08em]" style={{ color: 'var(--text-secondary)' }}>
+                {card.label}
+              </div>
+              <div className="mt-1 text-2xl font-semibold tracking-[-0.03em]" style={{ color: card.tone }}>
+                {card.value}
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
       <div data-tour="agendamentos-google" className="mb-6">
         {googleStatus && !googleStatus.effective.connected ? (
-          <div className="flex items-center justify-between p-4 rounded-xl border border-yellow-500/20 bg-yellow-500/5 gap-4 flex-wrap">
+          <div className="flex items-center justify-between p-4 rounded-[22px] gap-4 flex-wrap" style={{ ...SURFACE_CARD_STYLE, borderColor: 'rgba(245, 200, 66, 0.28)', background: 'linear-gradient(135deg, var(--bg-card) 0%, var(--yellow-bg) 100%)' }}>
             <div className="flex items-center gap-3">
-              <AlertCircle className="w-5 h-5 text-yellow-400 flex-shrink-0" />
+              <div className="flex h-11 w-11 items-center justify-center rounded-2xl" style={{ background: 'var(--yellow-bg)' }}>
+                <AlertCircle className="w-5 h-5 flex-shrink-0" style={{ color: 'var(--yellow)' }} />
+              </div>
               <div>
-                <p className="text-sm font-medium text-yellow-300">Nenhum Google Calendar conectado</p>
-                <p className="text-xs text-slate-500 mt-0.5">
+                <p className="text-sm font-medium" style={{ color: 'var(--yellow)' }}>Nenhum Google Calendar conectado</p>
+                <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>
                   O PrevLegal tenta usar o calendário do responsável e, se ele não tiver conexão própria, usa o padrão do escritório.
                 </p>
               </div>
@@ -575,7 +643,8 @@ export default function AgendamentosPage() {
             <div className="flex items-center gap-2 flex-wrap">
               <a
                 href="/api/google/auth?target=user&next=/agendamentos"
-                className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium transition-colors flex items-center gap-2"
+                className="px-4 py-2 rounded-xl text-white text-sm font-medium transition-all flex items-center gap-2 hover:-translate-y-0.5"
+                style={{ background: 'var(--accent)', boxShadow: '0 14px 28px var(--accent-glow)' }}
               >
                 <Video className="w-4 h-4" />
                 Conectar meu Google
@@ -583,7 +652,8 @@ export default function AgendamentosPage() {
               {role === 'admin' ? (
                 <a
                   href="/api/google/auth?target=tenant&next=/agendamentos"
-                  className="px-4 py-2 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 text-slate-200 text-sm font-medium transition-colors flex items-center gap-2"
+                  className="px-4 py-2 rounded-xl text-sm font-medium transition-colors flex items-center gap-2"
+                  style={{ border: '1px solid var(--border)', background: 'var(--bg-surface)', color: 'var(--text-primary)' }}
                 >
                   <Video className="w-4 h-4" />
                   Conectar calendário do escritório
@@ -594,28 +664,29 @@ export default function AgendamentosPage() {
         ) : null}
 
         {googleStatus?.effective.connected ? (
-          <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4">
-            <div className="flex items-center gap-2 text-sm text-emerald-400">
+          <div className="rounded-[22px] p-4" style={{ ...SURFACE_CARD_STYLE, borderColor: 'rgba(45, 212, 160, 0.24)', background: 'linear-gradient(135deg, var(--bg-card) 0%, var(--green-bg) 100%)' }}>
+            <div className="flex items-center gap-2 text-sm" style={{ color: 'var(--green)' }}>
               <CheckCircle2 className="w-4 h-4" />
               {googleStatus.currentUser.connected
                 ? 'Seu Google Calendar está conectado'
                 : 'Calendário padrão do escritório disponível como fallback'}
             </div>
             <div className="mt-2 flex flex-wrap gap-2 text-xs">
-              <span className={`rounded-full px-2.5 py-1 ${googleStatus.currentUser.connected ? 'bg-emerald-500/10 text-emerald-300' : 'bg-white/5 text-slate-400'}`}>
+              <span className="rounded-full px-2.5 py-1" style={{ background: googleStatus.currentUser.connected ? 'var(--green-bg)' : 'var(--bg)', color: googleStatus.currentUser.connected ? 'var(--green)' : 'var(--text-secondary)' }}>
                 Meu calendário: {googleStatus.currentUser.connected ? (googleStatus.currentUser.email || 'conectado') : 'não conectado'}
               </span>
-              <span className={`rounded-full px-2.5 py-1 ${googleStatus.tenantDefault.connected ? 'bg-blue-500/10 text-blue-300' : 'bg-white/5 text-slate-400'}`}>
+              <span className="rounded-full px-2.5 py-1" style={{ background: googleStatus.tenantDefault.connected ? 'var(--accent-glow)' : 'var(--bg)', color: googleStatus.tenantDefault.connected ? 'var(--accent)' : 'var(--text-secondary)' }}>
                 Escritório: {googleStatus.tenantDefault.connected ? (googleStatus.tenantDefault.email || 'conectado') : 'não conectado'}
               </span>
             </div>
-            <p className="mt-2 text-xs text-slate-500">
+            <p className="mt-2 text-xs" style={{ color: 'var(--text-secondary)' }}>
               Ao criar um agendamento, o PrevLegal tenta usar o calendário do responsável. Sem conexão individual, ele cai no padrão do escritório.
             </p>
             <div className="mt-3 flex gap-2 flex-wrap">
               <a
                 href="/api/google/auth?target=user&next=/agendamentos"
-                className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-slate-200 transition-colors hover:bg-white/10"
+                className="inline-flex items-center gap-2 rounded-xl px-3 py-1.5 text-xs font-medium transition-colors"
+                style={{ border: '1px solid var(--border)', background: 'var(--bg-surface)', color: 'var(--text-primary)' }}
               >
                 <Video className="w-3.5 h-3.5" />
                 {googleStatus.currentUser.connected ? 'Reconectar meu Google' : 'Conectar meu Google'}
@@ -623,7 +694,8 @@ export default function AgendamentosPage() {
               {role === 'admin' ? (
                 <a
                   href="/api/google/auth?target=tenant&next=/agendamentos"
-                  className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-slate-200 transition-colors hover:bg-white/10"
+                  className="inline-flex items-center gap-2 rounded-xl px-3 py-1.5 text-xs font-medium transition-colors"
+                  style={{ border: '1px solid var(--border)', background: 'var(--bg-surface)', color: 'var(--text-primary)' }}
                 >
                   <Video className="w-3.5 h-3.5" />
                   {googleStatus.tenantDefault.connected ? 'Reconectar calendário do escritório' : 'Conectar calendário do escritório'}
@@ -634,7 +706,7 @@ export default function AgendamentosPage() {
         ) : null}
 
         {googleStatus === null ? (
-          <div className="text-sm text-slate-500">
+          <div className="rounded-[22px] px-4 py-3 text-sm" style={{ ...SURFACE_CARD_STYLE, color: 'var(--text-secondary)' }}>
             Verificando integração com Google Calendar...
           </div>
         ) : null}
@@ -645,6 +717,7 @@ export default function AgendamentosPage() {
           <span
             key={label}
             className={`px-3 py-1 rounded-full text-xs font-medium ${color}`}
+            style={{ boxShadow: 'inset 0 0 0 1px var(--border-subtle)' }}
           >
             {label}
           </span>
@@ -668,28 +741,30 @@ export default function AgendamentosPage() {
         </div>
       ) : null}
 
-      <div className="mb-8 overflow-hidden rounded-2xl border border-white/10 bg-[#11131b]">
-        <div className="flex items-center justify-between border-b border-white/10 px-4 py-4">
+      <div className="mb-8 overflow-hidden rounded-[28px]" style={SURFACE_CARD_STYLE}>
+        <div className="flex items-center justify-between px-5 py-5" style={{ borderBottom: '1px solid var(--border)' }}>
           <div>
-            <h2 className="text-sm font-semibold text-white">Calendário operacional</h2>
-            <p className="mt-1 text-xs text-slate-500">
+            <h2 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Calendário operacional</h2>
+            <p className="mt-1 text-xs" style={{ color: 'var(--text-secondary)' }}>
               Visualize os agendamentos por cor e clique para operar como numa agenda de trabalho.
             </p>
           </div>
           <div className="flex items-center gap-2">
             <button
               onClick={() => setCurrentMonth((current) => subMonths(current, 1))}
-              className="rounded-lg border border-white/10 bg-white/5 p-2 text-slate-400 transition-colors hover:bg-white/10 hover:text-white"
+              className="rounded-xl p-2 transition-colors"
+              style={{ border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text-secondary)' }}
               title="Mês anterior"
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
-            <div className="min-w-40 text-center text-sm font-semibold capitalize text-slate-200">
+            <div className="min-w-40 text-center text-sm font-semibold capitalize" style={{ color: 'var(--text-primary)' }}>
               {format(currentMonth, "MMMM 'de' yyyy", { locale: ptBR })}
             </div>
             <button
               onClick={() => setCurrentMonth((current) => addMonths(current, 1))}
-              className="rounded-lg border border-white/10 bg-white/5 p-2 text-slate-400 transition-colors hover:bg-white/10 hover:text-white"
+              className="rounded-xl p-2 transition-colors"
+              style={{ border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text-secondary)' }}
               title="Próximo mês"
             >
               <ChevronRight className="w-4 h-4" />
@@ -697,9 +772,9 @@ export default function AgendamentosPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-7 border-b border-white/10 bg-white/[0.02]">
+        <div className="grid grid-cols-7" style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg)' }}>
           {WEEKDAY_LABELS.map((day) => (
-            <div key={day} className="px-3 py-2 text-center text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">
+            <div key={day} className="px-3 py-2 text-center text-[11px] font-semibold uppercase tracking-[0.08em]" style={{ color: 'var(--text-secondary)' }}>
               {day}
             </div>
           ))}
@@ -714,22 +789,28 @@ export default function AgendamentosPage() {
             return (
               <div
                 key={day.toISOString()}
-                className={`min-h-36 border-b border-r border-white/10 p-2 align-top ${outside ? 'bg-[#0b0d12]' : 'bg-[#11131b]'}`}
+                className="min-h-36 border-b border-r p-2 align-top"
+                style={{
+                  borderColor: 'var(--border)',
+                  background: outside ? 'rgba(124, 135, 152, 0.04)' : 'var(--bg-card)',
+                }}
               >
                 <div className="mb-2 flex items-center justify-between">
                   <span
-                    className={`inline-flex h-7 w-7 items-center justify-center rounded-full text-xs font-semibold ${
-                      isCurrentDay
-                        ? 'bg-blue-500 text-white'
+                    className="inline-flex h-7 w-7 items-center justify-center rounded-full text-xs font-semibold"
+                    style={{
+                      background: isCurrentDay ? 'var(--accent)' : 'transparent',
+                      color: isCurrentDay
+                        ? '#fff'
                         : outside
-                          ? 'text-slate-600'
-                          : 'text-slate-300'
-                    }`}
+                          ? 'var(--text-muted)'
+                          : 'var(--text-primary)',
+                    }}
                   >
                     {format(day, 'd')}
                   </span>
                   {items.length > 0 ? (
-                    <span className="text-[10px] font-medium text-slate-500">
+                    <span className="text-[10px] font-medium" style={{ color: 'var(--text-secondary)' }}>
                       {items.length} ag.
                     </span>
                   ) : null}
@@ -744,7 +825,8 @@ export default function AgendamentosPage() {
                       <button
                         key={ag.id}
                         onClick={() => setSelectedAgendamento(ag)}
-                        className={`flex w-full items-start gap-2 rounded-lg border px-2 py-1.5 text-left transition-colors hover:bg-white/10 ${statusStyle.badge} ${statusStyle.border}`}
+                        className={`flex w-full items-start gap-2 rounded-xl border px-2.5 py-2 text-left transition-colors hover:-translate-y-0.5 ${statusStyle.badge} ${statusStyle.border}`}
+                        style={{ backdropFilter: 'blur(10px)' }}
                       >
                         <span className={`mt-1 h-2 w-2 flex-shrink-0 rounded-full ${statusStyle.dot}`} />
                         <span className="min-w-0 flex-1">
@@ -761,7 +843,8 @@ export default function AgendamentosPage() {
                   {items.length > 3 ? (
                     <button
                       onClick={() => setSelectedAgendamento(items[0])}
-                      className="w-full rounded-lg border border-dashed border-white/10 px-2 py-1 text-left text-[10px] font-medium text-slate-400 transition-colors hover:bg-white/5"
+                      className="w-full rounded-xl border border-dashed px-2 py-1.5 text-left text-[10px] font-medium transition-colors"
+                      style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)', background: 'var(--bg)' }}
                     >
                       +{items.length - 3} mais agendamentos
                     </button>
@@ -777,14 +860,14 @@ export default function AgendamentosPage() {
         {loading ? (
           <div className="space-y-3">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="h-24 rounded-xl bg-[#13131f] animate-pulse" />
+              <div key={i} className="h-24 rounded-2xl animate-pulse" style={SURFACE_CARD_STYLE} />
             ))}
           </div>
         ) : agendamentos.length === 0 ? (
-          <div className="text-center py-16 text-slate-500">
-            <Calendar className="w-10 h-10 mx-auto mb-3 opacity-30" />
-            <p className="font-medium text-slate-400">Nenhum agendamento encontrado</p>
-            <p className="text-sm mt-1">Os agendamentos criados pelo agente ou manualmente aparecerão aqui</p>
+          <div className="rounded-[28px] text-center py-16 px-6" style={SURFACE_CARD_STYLE}>
+            <Calendar className="w-10 h-10 mx-auto mb-3 opacity-30" style={{ color: 'var(--text-secondary)' }} />
+            <p className="font-medium" style={{ color: 'var(--text-primary)' }}>Nenhum agendamento encontrado</p>
+            <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>Os agendamentos criados pelo agente ou manualmente aparecerão aqui</p>
           </div>
         ) : (
           <div className="space-y-8">
@@ -815,23 +898,24 @@ export default function AgendamentosPage() {
             onClick={() => setSelectedAgendamento(null)}
           />
           <div className="fixed inset-x-4 top-1/2 z-[311] mx-auto w-full max-w-3xl -translate-y-1/2">
-            <div className="overflow-hidden rounded-2xl border border-white/10 bg-[#0f1118] shadow-[0_28px_90px_rgba(0,0,0,0.55)]">
-              <div className="flex items-start justify-between border-b border-white/10 px-5 py-4">
+            <div className="overflow-hidden rounded-[28px] shadow-[0_28px_90px_rgba(0,0,0,0.35)]" style={SURFACE_CARD_STYLE}>
+              <div className="flex items-start justify-between px-5 py-4" style={{ borderBottom: '1px solid var(--border)' }}>
                 <div>
-                  <div className="inline-flex items-center gap-2 rounded-full border border-blue-500/20 bg-blue-500/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-blue-300">
+                  <div className="inline-flex items-center gap-2 rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.08em]" style={{ border: '1px solid rgba(79,122,255,0.18)', background: 'var(--accent-glow)', color: 'var(--accent)' }}>
                     <CalendarClock className="w-3.5 h-3.5" />
                     Visão de calendário
                   </div>
-                  <h3 className="mt-3 text-lg font-semibold text-white">
+                  <h3 className="mt-3 text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>
                     {selectedAgendamento.leads?.nome || 'Agendamento'}
                   </h3>
-                  <p className="mt-1 text-sm text-slate-500">
+                  <p className="mt-1 text-sm" style={{ color: 'var(--text-secondary)' }}>
                     Edite o compromisso sem sair da leitura mensal.
                   </p>
                 </div>
                 <button
                   onClick={() => setSelectedAgendamento(null)}
-                  className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-slate-300 transition-colors hover:bg-white/10"
+                  className="rounded-xl px-3 py-1.5 text-xs font-medium transition-colors"
+                  style={{ border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text-secondary)' }}
                 >
                   Fechar
                 </button>
