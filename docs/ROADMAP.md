@@ -94,6 +94,23 @@ Mestra: [[MASTER_PREV_LEGAL]]
   - conferir se entra evento no histórico da run
   - depois encerrar esta frente e seguir para a próxima prioridade do roadmap
 
+## Atualizacao Follow-up / Motivo da Falha na UI — 08/04/2026
+
+- o histórico do follow-up passou a mostrar o motivo técnico da falha direto no detalhe do lead
+- arquivos principais:
+  - `src/app/api/leads/[id]/followup/route.ts`
+  - `src/components/followup-lead.tsx`
+- comportamento:
+  - o endpoint agora devolve `metadata` dos `followup_events`
+  - a UI mostra o motivo logo abaixo do evento `Envio falhou`
+  - exemplo validado:
+    - `Lead sem telefone para disparo via WhatsApp`
+- efeito operacional:
+  - reduz ambiguidade na validação e no suporte
+  - evita a sensação de “falhou por algum motivo escondido”
+- validacao:
+  - `npm run build` passou
+
 ## Atualização Crítica — 19/03/2026
 
 - O pacote `supabase/reset/combined_apply_031_and_reset.sql` foi executado diretamente no banco operacional `lrqvvxmgimjlghpwavdb`

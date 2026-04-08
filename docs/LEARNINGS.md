@@ -53,6 +53,12 @@ Mestra: [[MASTER_PREV_LEGAL]]
 **Correção:** Adicionar ação manual `executar_agora` na run do lead, reaproveitando a mesma engine de envio e registrando `step_disparado` ou `step_falhou` em `followup_events`
 **Regra pratica:** Em fluxos automatizados críticos, além do cron, vale ter um caminho manual autenticado para validação e suporte operacional, desde que ele use a mesma lógica do runtime real
 
+### 41. Evento de falha precisa mostrar o motivo, não só o tipo
+**Problema:** A UI do follow-up mostrava apenas `Envio falhou`, o que ainda obrigava investigação técnica para descobrir se o problema era telefone ausente, canal desconectado ou erro externo
+**Causa:** O backend já gravava `metadata.erro` em `followup_events`, mas o endpoint do lead não retornava esse campo e o componente não o renderizava
+**Correção:** Expor `metadata` no `GET /api/leads/[id]/followup` e mostrar o motivo logo abaixo do evento no histórico
+**Regra pratica:** Quando o sistema já conhece a causa da falha, a UI operacional deve exibi-la no próprio contexto da execução
+
 ### 33. Expansao de produto precisa entrar por arquitetura de portfólio, nao por mistura de narrativas
 **Problema:** Novas oportunidades reais, como `PrevGlobal`, CNIS com IA e modulos tecnicos premium, podem comecar a competir com o core operacional do PrevLegal se entrarem sem separacao clara
 **Causa:** O produto cresceu alem da ideia inicial e abriu adjacencias fortes, mas isso aumenta o risco de descaracterizar a oferta principal

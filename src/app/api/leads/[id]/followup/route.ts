@@ -22,7 +22,7 @@ export async function GET(
     .select(`
       id, status, proximo_step_ordem, proximo_envio_at, motivo_parada, created_at, updated_at,
       followup_rules(id, nome, descricao),
-      followup_events(id, tipo, step_ordem, mensagem_enviada, canal, created_at)
+      followup_events(id, tipo, step_ordem, mensagem_enviada, canal, metadata, created_at)
     `)
     .eq('lead_id', id)
     .eq('tenant_id', context.tenantId)

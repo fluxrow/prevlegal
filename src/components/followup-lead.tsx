@@ -16,6 +16,12 @@ interface FollowupEvent {
   step_ordem: number | null
   mensagem_enviada: string | null
   canal: string | null
+  metadata?: {
+    erro?: string
+    disparo_manual?: boolean
+    usuario_id?: string
+    proximo_step?: number | null
+  } | null
   created_at: string
 }
 
@@ -55,6 +61,18 @@ const EVENTO_LABEL: Record<string, string> = {
 
 function formatTime(dt: string) {
   return new Date(dt).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
+}
+
+function getEventDetail(event: FollowupEvent) {
+  if (event.tipo === 'step_falhou' && event.metadata?.erro) {
+    return `Motivo: ${event.metadata.erro}`
+  }
+
+  if (event.tipo === 'step_disparado' && event.metadata?.disparo_manual) {
+    return 'Disparo manual para validação'
+  }
+
+  return null
 }
 
 export default function FollowupLead({ leadId }: { leadId: string }) {
@@ -321,11 +339,18 @@ export default function FollowupLead({ leadId }: { leadId: string }) {
                     ) : run.followup_events.slice().sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).map(ev => (
                       <div key={ev.id} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
                         <span style={{ fontSize: '11px', color: 'var(--text-muted)', flexShrink: 0, marginTop: '1px' }}>{formatTime(ev.created_at)}</span>
-                        <span style={{ fontSize: '12px', color: 'var(--text-secondary)', fontFamily: 'DM Sans, sans-serif' }}>
-                          {EVENTO_LABEL[ev.tipo] ?? ev.tipo}
-                          {ev.step_ordem ? ` — passo ${ev.step_ordem}` : ''}
-                          {ev.mensagem_enviada ? `: "${ev.mensagem_enviada.slice(0, 60)}..."` : ''}
-                        </span>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                          <span style={{ fontSize: '12px', color: 'var(--text-secondary)', fontFamily: 'DM Sans, sans-serif' }}>
+                            {EVENTO_LABEL[ev.tipo] ?? ev.tipo}
+                            {ev.step_ordem ? ` — passo ${ev.step_ordem}` : ''}
+                            {ev.mensagem_enviada ? `: "${ev.mensagem_enviada.slice(0, 60)}..."` : ''}
+                          </span>
+                          {getEventDetail(ev) && (
+                            <span style={{ fontSize: '11px', color: ev.tipo === 'step_falhou' ? '#ff6b6b' : 'var(--text-muted)', fontFamily: 'DM Sans, sans-serif', lineHeight: 1.45 }}>
+                              {getEventDetail(ev)}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     ))}
                     {run.motivo_parada && (

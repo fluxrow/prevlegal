@@ -223,3 +223,20 @@ Gatilho automático: a mudança de status do lead na API `PATCH` chama o *Orques
   - a operação ganha um mecanismo seguro de validação e destravamento
 - validação:
   - `npm run build` passou
+
+## Atualização 2026-04-08 - Motivo da falha agora aparece no histórico do follow-up
+
+- o refinamento final de UX da Fase E foi concluído
+- arquivos principais:
+  - `src/app/api/leads/[id]/followup/route.ts`
+  - `src/components/followup-lead.tsx`
+- mudança:
+  - a UI agora mostra o motivo real de `step_falhou` usando `followup_events.metadata.erro`
+- caso validado:
+  - no lead `VALTERLINO AQUINO S RIBEIRO`, a run falhou por:
+    - `Lead sem telefone para disparo via WhatsApp`
+- efeito:
+  - a validação do escritório fica autoexplicativa
+  - a frente de follow-up pode ser considerada fechada do ponto de vista de engine + visibilidade básica
+- validação:
+  - `npm run build` passou

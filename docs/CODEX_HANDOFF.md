@@ -124,6 +124,17 @@ Objetivo:
   - usar `Executar agora` no lead de teste
   - verificar o evento da run e, se houver canal WhatsApp conectado, observar o disparo real
 
+## Atualizacao 2026-04-08 - Motivo da falha passou a aparecer no histórico do lead
+
+- após a validação com `Executar agora`, o motivo exato da falha foi confirmado no banco:
+  - `Lead sem telefone para disparo via WhatsApp`
+- refinamento aplicado:
+  - `GET /api/leads/[id]/followup` agora retorna `metadata` dos eventos
+  - `src/components/followup-lead.tsx` passou a renderizar esse detalhe abaixo de `Envio falhou`
+- efeito prático:
+  - a operação vê na própria tela se faltou telefone, canal, conexão ou outro requisito
+  - reduz necessidade de olhar banco/log para falhas comuns
+
 ## Atualizacao 2026-04-06 - Fase E (Gatilhos e Orquestracao Avançada) - Foundation Entregue
 
 - Construida a fundação completa do motor de gatilhos automáticos do PrevLegal
