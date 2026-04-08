@@ -18,6 +18,34 @@ Mestra: [[MASTER_PREV_LEGAL]]
 - [[Sessoes/2026-03-18-prevlegal-admin-roi-obsidian]]
 - [[Sessoes/2026-03-18-fase-24-inbox-operacional-unificada-roadmap-final]]
 
+## Atualizacao Importação Inteligente — 08/04/2026
+
+- o importador deixou de depender apenas do layout fixo da planilha clássica
+- arquivos principais:
+  - `src/lib/import-schema.ts`
+  - `src/app/api/import/route.ts`
+  - `src/app/(dashboard)/leads/import/page.tsx`
+- melhorias entregues:
+  - detecção automática de layout por cabeçalhos reconhecíveis
+  - suporte a planilhas com colunas em ordem diferente
+  - fallback preservado para o layout legado por posição fixa
+  - enriquecimento do lead importado com campos quando disponíveis:
+    - `telefone`
+    - `email`
+    - `categoria_profissional`
+  - a UI agora mostra:
+    - se a leitura foi por cabeçalho ou por layout legado
+    - quais campos foram detectados
+- documento canônico novo:
+  - `docs/IMPORTADOR_INTELIGENTE_PLAN.md`
+- limite estrutural explicitado:
+  - o import atual continua orientado ao modelo previdenciário com `NB`
+  - fontes sem `NB`, como Google Maps / Places e listas comerciais externas, entram na próxima fase do importador
+- validacao:
+  - `npm run build` passou
+- proximo passo recomendado:
+  - abrir a Fase 2 do importador com preview, confirmação de mapeamento e templates por fonte
+
 ## Atualizacao Automações / Documentos IA — 08/04/2026
 
 - a aba `Automações` saiu do modo “templates fechados” e passou a permitir leitura e ajuste real dos gatilhos sem apagar e recriar

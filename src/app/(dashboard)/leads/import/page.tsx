@@ -5,6 +5,9 @@ import { Upload, FileSpreadsheet, CheckCircle2, AlertCircle, Loader2, ArrowLeft 
 
 type ImportStats = {
   total_registros: number
+  modo_detectado?: 'header_mapping' | 'legacy_fixed'
+  cabecalho_detectado_linha?: number | null
+  campos_detectados?: string[]
   total_ativos: number
   total_cessados: number
   duplicatas_planilha: number
@@ -53,7 +56,10 @@ export default function ImportPage() {
           <ArrowLeft size={14} /> Voltar para Leads
         </a>
         <h1 style={{ fontFamily: 'Syne, sans-serif', fontSize: '22px', fontWeight: '700', color: 'var(--text-primary)', letterSpacing: '-0.5px', marginBottom: '4px' }}>Importar Lista</h1>
-        <p style={{ color: 'var(--text-muted)', fontSize: '13px' }}>Apenas beneficiários Ativos serão importados. Duplicatas por NB são ignoradas.</p>
+        <p style={{ color: 'var(--text-muted)', fontSize: '13px', lineHeight: 1.5 }}>
+          O importador agora aceita planilhas em ordem variável quando houver cabeçalhos reconhecíveis.
+          {' '}Layouts legados por posição fixa continuam suportados. Duplicatas por NB são ignoradas.
+        </p>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
@@ -97,6 +103,28 @@ export default function ImportPage() {
             <CheckCircle2 size={20} color="var(--green)" />
             <h3 style={{ fontFamily: 'Syne, sans-serif', fontSize: '15px', fontWeight: '600', color: 'var(--green)' }}>Importação concluída!</h3>
           </div>
+          <div style={{ marginBottom: '16px', padding: '12px 14px', borderRadius: '10px', background: 'rgba(79,122,255,0.06)', border: '1px solid rgba(79,122,255,0.16)' }}>
+            <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>
+              Leitura detectada
+            </div>
+            <div style={{ fontSize: '13px', color: 'var(--text-primary)', fontWeight: '600' }}>
+              {result.modo_detectado === 'header_mapping'
+                ? `Cabeçalhos mapeados automaticamente${typeof result.cabecalho_detectado_linha === 'number' ? ` (linha ${result.cabecalho_detectado_linha + 1})` : ''}`
+                : 'Layout legado por posição fixa'}
+            </div>
+            {result.campos_detectados && result.campos_detectados.length > 0 && (
+              <div style={{ marginTop: '8px', display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                {result.campos_detectados.map((field) => (
+                  <span
+                    key={field}
+                    style={{ fontSize: '11px', padding: '4px 8px', borderRadius: '999px', background: 'rgba(79,122,255,0.12)', color: 'var(--accent)', fontWeight: '700' }}
+                  >
+                    {field}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
             {[
               { label: 'Total na planilha', value: result.total_registros, color: 'var(--text-primary)' },
@@ -116,7 +144,7 @@ export default function ImportPage() {
           {warnings.length > 0 && (
             <div style={{ marginTop: '14px', padding: '12px 14px', borderRadius: '10px', background: 'rgba(245,166,35,0.08)', border: '1px solid rgba(245,166,35,0.2)' }}>
               <div style={{ fontSize: '12px', fontWeight: '700', color: '#f5a623', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                Linhas rejeitadas na importacao
+                Avisos da importação
               </div>
               <div style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
                 {warnings.map((warning) => (

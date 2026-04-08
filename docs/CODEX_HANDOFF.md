@@ -135,6 +135,33 @@ Objetivo:
   - a operação vê na própria tela se faltou telefone, canal, conexão ou outro requisito
   - reduz necessidade de olhar banco/log para falhas comuns
 
+## Atualizacao 2026-04-08 - Foundation do importador inteligente iniciada
+
+- a próxima frente foi aberta sem quebrar o import legado já existente
+- arquivos alterados:
+  - `src/lib/import-schema.ts`
+  - `src/app/api/import/route.ts`
+  - `src/app/(dashboard)/leads/import/page.tsx`
+- mudanças principais:
+  - foi criada uma camada de detecção de cabeçalhos com aliases para campos canônicos
+  - o import agora suporta:
+    - ordem variável das colunas
+    - planilhas com cabeçalhos reconhecíveis
+    - fallback para o layout legado fixo
+  - o import também passou a aproveitar, quando presentes:
+    - `telefone`
+    - `email`
+    - `categoria_profissional`
+  - a UI passou a mostrar ao operador:
+    - se a leitura foi por `header_mapping` ou `legacy_fixed`
+    - quais campos foram reconhecidos
+- documento novo:
+  - `docs/IMPORTADOR_INTELIGENTE_PLAN.md`
+- decisao importante:
+  - esta fase resolve variedade de layout dentro do modelo previdenciário atual
+  - fontes sem `NB` nao foram “forçadas” no import existente
+  - Google Maps / Places e listas comerciais externas entram na próxima fase, com staging, templates e confirmação de mapeamento
+
 ## Atualizacao 2026-04-06 - Fase E (Gatilhos e Orquestracao Avançada) - Foundation Entregue
 
 - Construida a fundação completa do motor de gatilhos automáticos do PrevLegal

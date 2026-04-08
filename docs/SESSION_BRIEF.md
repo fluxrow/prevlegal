@@ -240,3 +240,30 @@ Gatilho automático: a mudança de status do lead na API `PATCH` chama o *Orques
   - a frente de follow-up pode ser considerada fechada do ponto de vista de engine + visibilidade básica
 - validação:
   - `npm run build` passou
+
+## Atualização 2026-04-08 - Importador ficou flexível para planilhas com cabeçalhos
+
+- a frente seguinte começou pelo ponto mais pragmático: tornar o import atual menos frágil para fontes variadas
+- arquivos principais:
+  - `src/lib/import-schema.ts`
+  - `src/app/api/import/route.ts`
+  - `src/app/(dashboard)/leads/import/page.tsx`
+- mudanças:
+  - o backend agora detecta planilhas por cabeçalhos reconhecíveis
+  - colunas em ordem diferente passaram a funcionar quando os nomes forem inteligíveis
+  - o layout legado por posição fixa continua suportado
+  - o import já aproveita mais campos quando existirem:
+    - `telefone`
+    - `email`
+    - `categoria_profissional`
+  - a UI mostra se a leitura foi:
+    - `header_mapping`
+    - ou `legacy_fixed`
+  - a UI também mostra os campos detectados
+- limite explicitado:
+  - o import atual ainda pertence ao core previdenciário e continua orientado a `NB`
+  - fontes sem `NB`, como Google Maps / Places e listas comerciais externas, entram numa próxima fase
+- documento criado:
+  - `docs/IMPORTADOR_INTELIGENTE_PLAN.md`
+- validação:
+  - `npm run build` passou

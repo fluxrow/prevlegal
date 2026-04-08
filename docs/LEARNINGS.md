@@ -59,6 +59,18 @@ Mestra: [[MASTER_PREV_LEGAL]]
 **Correção:** Expor `metadata` no `GET /api/leads/[id]/followup` e mostrar o motivo logo abaixo do evento no histórico
 **Regra pratica:** Quando o sistema já conhece a causa da falha, a UI operacional deve exibi-la no próprio contexto da execução
 
+### 42. Importador não pode ficar preso à ordem fixa das colunas quando a fonte já traz cabeçalhos
+**Problema:** O import atual só funcionava bem para a planilha clássica lida por índice fixo, o que quebraria com fornecedores diferentes, CSVs em outra ordem e planilhas geradas por outras ferramentas
+**Causa:** `src/app/api/import/route.ts` estava acoplado ao layout `NOMES_RJ_BNG.xlsx`, assumindo posição fixa para cada campo
+**Correção:** Criar uma camada `src/lib/import-schema.ts` para detectar cabeçalhos reconhecíveis e mapear campos canônicos automaticamente, mantendo fallback para o layout legado
+**Regra pratica:** Em importação operacional, a ordem externa das colunas deve ser flexível sempre que os cabeçalhos forem bons; o sistema deve padronizar o modelo interno, não exigir a mesma planilha externa
+
+### 43. Fontes sem `NB` são uma nova fase de produto, não um detalhe do import atual
+**Problema:** Fontes como Google Maps / Places e listas comerciais B2B podem não trazer `NB`, mesmo contendo bons dados de prospecção
+**Causa:** O core atual de `leads` e da importação ainda é orientado ao modelo previdenciário clássico, com `NB` como âncora importante de deduplicação/identidade
+**Correção:** Formalizar em `docs/IMPORTADOR_INTELIGENTE_PLAN.md` que o importador atual resolve variedade de layout, mas a entrada de fontes sem `NB` exige uma Fase 2 com staging, templates de importação e confirmação de mapeamento
+**Regra pratica:** Quando a nova fonte muda o modelo de identidade do lead, isso deve virar evolução explícita de arquitetura, não gambiarra no parser existente
+
 ### 33. Expansao de produto precisa entrar por arquitetura de portfólio, nao por mistura de narrativas
 **Problema:** Novas oportunidades reais, como `PrevGlobal`, CNIS com IA e modulos tecnicos premium, podem comecar a competir com o core operacional do PrevLegal se entrarem sem separacao clara
 **Causa:** O produto cresceu alem da ideia inicial e abriu adjacencias fortes, mas isso aumenta o risco de descaracterizar a oferta principal

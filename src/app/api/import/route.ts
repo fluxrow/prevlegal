@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
 import * as XLSX from 'xlsx'
 import { getTenantContext } from '@/lib/tenant-context'
+import { detectImportSchema, getMappedCell } from '@/lib/import-schema'
 
 // Mapeamento das colunas da planilha NOMES_RJ_BNG.xlsx
 // Baseado na análise real da planilha (índice base 0)
@@ -31,6 +32,18 @@ function parseGanho(val: unknown): number | null {
 function parseCPF(val: unknown): string {
     if (!val) return ''
     return String(val).replace(/\D/g, '').padStart(11, '0')
+}
+
+function parsePhone(val: unknown): string | null {
+    if (!val) return null
+    const normalized = String(val).trim()
+    return normalized ? normalized.slice(0, 30) : null
+}
+
+function parseEmail(val: unknown): string | null {
+    if (!val) return null
+    const normalized = String(val).trim().toLowerCase()
+    return normalized || null
 }
 
 function parseDate(val: unknown): string | null {
@@ -138,6 +151,17 @@ export async function POST(request: NextRequest) {
     const workbook = XLSX.read(buffer, { type: 'array' })
     const sheet = workbook.Sheets[workbook.SheetNames[0]]
     const rows: unknown[][] = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: null })
+    const detectedSchema = detectImportSchema(rows)
+    const rowsToProcess = detectedSchema.mode === 'header_mapping' && detectedSchema.headerRowIndex !== null
+        ? rows.slice(detectedSchema.headerRowIndex + 1)
+        : rows
+
+    const schemaWarnings: string[] = []
+    if (detectedSchema.mode === 'header_mapping') {
+        schemaWarnings.push(`Layout detectado por cabeçalhos (${detectedSchema.detectedFields.length} campo(s) mapeado(s)).`)
+    } else {
+        schemaWarnings.push('Layout legado por posição fixa detectado. Para novos fornecedores, prefira planilhas com cabeçalhos.')
+    }
 
     // Criar lista no banco
     const { data: lista, error: listaError } = await adminSupabase
@@ -147,7 +171,7 @@ export async function POST(request: NextRequest) {
             nome: listaNome,
             fornecedor,
             arquivo_original: file.name,
-            total_registros: rows.length,
+            total_registros: rowsToProcess.length,
             importado_por: context.usuarioId
         })
         .select()
@@ -165,10 +189,14 @@ export async function POST(request: NextRequest) {
     let ganhoTotal = 0
     const nbsVistas = new Set<string>()
 
-    for (const row of rows) {
-        const nb = row[COL.NB] ? String(row[COL.NB]).trim() : null
-        const nome = row[COL.NOME] ? String(row[COL.NOME]).trim() : null
-        const status = row[COL.STATUS] ? String(row[COL.STATUS]).trim().toLowerCase() : ''
+    for (const row of rowsToProcess) {
+        const nbRaw = detectedSchema.mode === 'header_mapping' ? getMappedCell(row, detectedSchema, 'nb') : row[COL.NB]
+        const nomeRaw = detectedSchema.mode === 'header_mapping' ? getMappedCell(row, detectedSchema, 'nome') : row[COL.NOME]
+        const statusRaw = detectedSchema.mode === 'header_mapping' ? getMappedCell(row, detectedSchema, 'status') : row[COL.STATUS]
+
+        const nb = nbRaw ? String(nbRaw).trim() : null
+        const nome = nomeRaw ? String(nomeRaw).trim() : null
+        const status = statusRaw ? String(statusRaw).trim().toLowerCase() : ''
 
         if (!nb || !nome) continue
 
@@ -176,13 +204,17 @@ export async function POST(request: NextRequest) {
         if (nbsVistas.has(nb)) { totalDuplicados++; continue }
         nbsVistas.add(nb)
 
-        // Filtrar apenas ativos
-        if (!status.includes('ativo')) { totalCessados++; continue }
+        // Filtrar apenas ativos quando a origem informa status
+        if (status && !status.includes('ativo')) { totalCessados++; continue }
         totalAtivos++
 
-        const ganho = parseGanho(row[COL.GANHO])
-        const tipo = row[COL.TIPO] ? String(row[COL.TIPO]).trim() : ''
-        const cpf = parseCPF(row[COL.CPF])
+        const ganho = parseGanho(detectedSchema.mode === 'header_mapping' ? getMappedCell(row, detectedSchema, 'ganho_potencial') : row[COL.GANHO])
+        const tipoRaw = detectedSchema.mode === 'header_mapping' ? getMappedCell(row, detectedSchema, 'tipo_beneficio') : row[COL.TIPO]
+        const tipo = tipoRaw ? String(tipoRaw).trim() : ''
+        const cpf = parseCPF(detectedSchema.mode === 'header_mapping' ? getMappedCell(row, detectedSchema, 'cpf') : row[COL.CPF])
+        const telefone = parsePhone(detectedSchema.mode === 'header_mapping' ? getMappedCell(row, detectedSchema, 'telefone') : null)
+        const email = parseEmail(detectedSchema.mode === 'header_mapping' ? getMappedCell(row, detectedSchema, 'email') : null)
+        const categoriaProfissional = truncate(detectedSchema.mode === 'header_mapping' ? String(getMappedCell(row, detectedSchema, 'categoria_profissional') || '') : null, 255)
 
         if (ganho) ganhoTotal += ganho
 
@@ -193,11 +225,14 @@ export async function POST(request: NextRequest) {
             nb: truncate(nb, 20),
             nome: truncate(nome, 255),
             cpf: cpf.slice(0, 14),
-            aps: truncate(row[COL.APS] ? String(row[COL.APS]) : null, 255),
-            banco: truncate(row[COL.BANCO] ? String(row[COL.BANCO]) : null, 100),
-            dib: parseDate(row[COL.DIB]),
+            telefone,
+            email,
+            aps: truncate(detectedSchema.mode === 'header_mapping' ? String(getMappedCell(row, detectedSchema, 'aps') || '') : (row[COL.APS] ? String(row[COL.APS]) : null), 255),
+            banco: truncate(detectedSchema.mode === 'header_mapping' ? String(getMappedCell(row, detectedSchema, 'banco') || '') : (row[COL.BANCO] ? String(row[COL.BANCO]) : null), 100),
+            dib: parseDate(detectedSchema.mode === 'header_mapping' ? getMappedCell(row, detectedSchema, 'dib') : row[COL.DIB]),
             tipo_beneficio: truncate(tipo, 255),
-            valor_rma: parseGanho(row[COL.VALOR_RMA]),
+            valor_rma: parseGanho(detectedSchema.mode === 'header_mapping' ? getMappedCell(row, detectedSchema, 'valor_rma') : row[COL.VALOR_RMA]),
+            categoria_profissional: categoriaProfissional,
             ganho_potencial: ganho,
             score: calcScore(ganho, tipo),
             status: 'new' as const,
@@ -283,7 +318,10 @@ export async function POST(request: NextRequest) {
         success: true,
         lista_id: lista.id,
         stats: {
-            total_registros: rows.length,
+            total_registros: rowsToProcess.length,
+            modo_detectado: detectedSchema.mode,
+            cabecalho_detectado_linha: detectedSchema.headerRowIndex,
+            campos_detectados: detectedSchema.detectedFields,
             total_ativos: totalAtivos,
             total_cessados: totalCessados,
             duplicatas_planilha: totalDuplicados,
@@ -292,6 +330,6 @@ export async function POST(request: NextRequest) {
             falhas_insercao: Math.max(totalAtivos - inseridos - duplicatasNoBanco, 0),
             ganho_potencial_total: ganhoTotal
         },
-        warnings: errosInsercao
+        warnings: [...schemaWarnings, ...errosInsercao]
     })
 }
