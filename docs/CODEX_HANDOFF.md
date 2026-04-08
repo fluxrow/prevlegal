@@ -2929,3 +2929,22 @@ Pontos que precisam ser preservados durante a implementacao:
   - `npm run build` passou
 - pendencia real que continua:
   - aplicar a migration `043` no banco para persistir ownership do calendario e completar a fase de agenda por usuario
+
+## Atualizacao 2026-04-08 - Agenda desktop passou a mostrar rail operacional ja em `lg`
+
+- contexto:
+  - depois do hardening tecnico, a proxima queixa de UX era clara:
+    - o calendario ainda ocupava area demais
+    - a fila operacional ficava escondida abaixo em muitas larguras reais de trabalho
+- correcao aplicada:
+  - `src/app/(dashboard)/agendamentos/page.tsx`
+    - grid principal mudou para `lg:grid`
+    - rail lateral ficou disponivel a partir de `lg`
+    - novo card `Em foco` mostra o compromisso selecionado ou o mais prioritario
+    - a altura minima das celulas do calendario foi reduzida
+    - a lista empilhada passou a existir apenas abaixo de `lg`
+- efeito de produto:
+  - notebooks ja mostram calendario + fila no mesmo viewport
+  - a agenda fica mais proxima de painel operacional e menos de calendario isolado
+- validacao:
+  - `npm run build` passou

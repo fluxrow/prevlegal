@@ -110,6 +110,12 @@ const SURFACE_CARD_STYLE: React.CSSProperties = {
   boxShadow: '0 18px 48px rgba(15, 23, 42, 0.08)',
 }
 
+const EMPHASIS_CARD_STYLE: React.CSSProperties = {
+  background: 'linear-gradient(180deg, var(--bg-surface) 0%, var(--bg-card) 100%)',
+  border: '1px solid var(--border)',
+  boxShadow: '0 20px 56px rgba(15, 23, 42, 0.10)',
+}
+
 type RailSection = {
   key: string
   title: string
@@ -709,6 +715,12 @@ export default function AgendamentosPage() {
     },
   ]
 
+  const railFocus = selectedAgendamento
+    || pendentesConfirmacao[0]
+    || confirmados[0]
+    || finalizados[0]
+    || null
+
   return (
     <div className="mx-auto max-w-[1680px] p-6 md:p-8" style={PAGE_SHELL_STYLE}>
       <div className="mb-6 rounded-[28px] p-5 md:p-6" style={HERO_CARD_STYLE}>
@@ -876,8 +888,8 @@ export default function AgendamentosPage() {
         </div>
       ) : null}
 
-      <div className="xl:grid xl:grid-cols-[minmax(0,1.55fr)_380px] xl:items-start xl:gap-6">
-        <div className="mb-8 overflow-hidden rounded-[28px] xl:mb-0" style={SURFACE_CARD_STYLE}>
+      <div className="lg:grid lg:grid-cols-[minmax(0,1.42fr)_360px] lg:items-start lg:gap-5 xl:grid-cols-[minmax(0,1.48fr)_380px] xl:gap-6">
+        <div className="mb-8 overflow-hidden rounded-[28px] lg:mb-0" style={SURFACE_CARD_STYLE}>
           <div className="flex items-center justify-between px-5 py-5" style={{ borderBottom: '1px solid var(--border)' }}>
             <div>
               <h2 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Calendário operacional</h2>
@@ -925,7 +937,7 @@ export default function AgendamentosPage() {
               return (
                 <div
                   key={day.toISOString()}
-                  className="min-h-[112px] border-b border-r p-2 align-top md:min-h-[128px] xl:min-h-[116px]"
+                  className="min-h-[96px] border-b border-r p-2 align-top md:min-h-[112px] lg:min-h-[98px] xl:min-h-[108px]"
                   style={{
                     borderColor: 'var(--border)',
                     background: outside ? 'rgba(124, 135, 152, 0.04)' : 'var(--bg-card)',
@@ -992,14 +1004,50 @@ export default function AgendamentosPage() {
           </div>
         </div>
 
-        <aside className="hidden xl:block">
+        <aside className="hidden lg:block">
           <div className="sticky top-6 space-y-4">
+            <section className="rounded-[24px] p-4" style={EMPHASIS_CARD_STYLE}>
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <div className="text-[11px] font-semibold uppercase tracking-[0.08em]" style={{ color: 'var(--accent)' }}>
+                    Em foco
+                  </div>
+                  <p className="mt-1 text-xs leading-5" style={{ color: 'var(--text-secondary)' }}>
+                    O próximo compromisso ou item selecionado para operar sem sair da agenda.
+                  </p>
+                </div>
+                {railFocus ? (
+                  <button
+                    onClick={() => setSelectedAgendamento(railFocus)}
+                    className="rounded-lg px-2.5 py-1 text-[11px] font-medium transition-colors"
+                    style={{ border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text-secondary)' }}
+                  >
+                    Abrir
+                  </button>
+                ) : null}
+              </div>
+
+              <div className="mt-4">
+                {railFocus ? (
+                  <div onClick={() => setSelectedAgendamento(railFocus)} className="cursor-pointer">
+                    {renderAgendamentoDetail(railFocus, true)}
+                  </div>
+                ) : (
+                  <div
+                    className="rounded-2xl border border-dashed px-4 py-8 text-center text-xs"
+                    style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)', background: 'var(--bg)' }}
+                  >
+                    Nenhum compromisso em foco agora.
+                  </div>
+                )}
+              </div>
+            </section>
             {railSections.map((section) => renderRailSection(section))}
           </div>
         </aside>
       </div>
 
-      <div data-tour="agendamentos-lista" className="xl:hidden">
+      <div data-tour="agendamentos-lista" className="lg:hidden">
         {loading ? (
           <div className="space-y-3">
             {[1, 2, 3].map((i) => (

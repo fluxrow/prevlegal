@@ -430,3 +430,17 @@ Gatilho automático: a mudança de status do lead na API `PATCH` chama o *Orques
   - a agenda continua operacional até o banco receber a migration `043`
 - validação:
   - `npm run build` passou
+
+## Atualização 2026-04-08 - Agenda desktop ficou mais operacional em larguras comuns
+
+- a página de agendamentos deixou de depender de `xl` para mostrar a lateral operacional
+- arquivo principal:
+  - `src/app/(dashboard)/agendamentos/page.tsx`
+- comportamento novo:
+  - a composição com calendário + rail agora aparece em `lg`
+  - o rail ganhou um card `Em foco` com o item selecionado ou mais prioritário
+  - as células do calendário foram comprimidas para reduzir scroll e abrir espaço para contexto
+- impacto prático:
+  - notebooks e janelas menores já mostram o trabalho a fazer sem jogar a fila para baixo
+- validação:
+  - `npm run build` passou

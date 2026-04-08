@@ -1279,3 +1279,13 @@ e a API de listagem de usuários ganhou a mesma resiliência
 - leitura do agendamento atual em `PATCH` e `DELETE` tenta primeiro o select completo e depois volta para o schema mínimo
 - atualização/cancelamento do evento Google passam a usar `ownerScope` e `ownerUsuarioId` só quando essas colunas realmente existem
 **Regra pratica:** No PrevLegal, toda fase que adiciona ownership explícito ao runtime precisa cobrir três camadas de fallback: `usuarios`, `configuracoes` e a tabela operacional que persiste o efeito final da feature
+
+### 134. Agenda operacional desktop precisa mostrar fila acionável já no breakpoint de trabalho comum
+**Problema:** Mesmo com a lateral implementada, a tela de `Agendamentos` ainda ficava parecendo “calendário primeiro, operação depois” em larguras intermediárias; o operador continuava rolando a página para ver a fila e o contexto importante
+**Causa:** A composição lateral só aparecia em `xl`, tarde demais para muitos notebooks e janelas reduzidas, e o calendário seguia com altura visual maior do que precisava
+**Correcao aplicada:** A página passou a abrir o rail já em `lg`, com:
+- coluna lateral fixa para filas operacionais
+- card de `Em foco` mostrando o item mais urgente ou selecionado
+- células do calendário mais compactas
+- empilhamento mobile mantido só abaixo de `lg`
+**Regra pratica:** No PrevLegal, telas operacionais de uso diário devem revelar fila e contexto no primeiro breakpoint desktop real; se a ação principal some em notebook, o layout ainda está priorizando a superfície errada

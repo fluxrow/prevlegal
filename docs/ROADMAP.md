@@ -1676,3 +1676,20 @@ Status atual em 18/03/2026:
   - `npm run build` passou
 - próximo passo recomendado:
   - aplicar a migration `043` no banco e validar novamente a criação de agendamento com owner columns persistidas
+
+## Atualização 2026-04-08 — Agenda desktop ganhou rail operacional antecipado
+
+- a tela `/agendamentos` passou a expor o trilho lateral já em `lg`, sem esperar `xl`
+- arquivos principais:
+  - `src/app/(dashboard)/agendamentos/page.tsx`
+- comportamento novo:
+  - a fila de `Precisa confirmação`, `Confirmados` e `Histórico recente` aparece ao lado do calendário em notebooks e desktops comuns
+  - um card `Em foco` resume o compromisso mais relevante ou o item selecionado
+  - a grade mensal ficou mais compacta para abrir espaço ao contexto operacional
+- decisão importante de UX:
+  - o desktop do PrevLegal passa a privilegiar “o que fazer agora” antes de “ver todos os dias grandes”
+  - a lista empilhada continua existindo apenas abaixo de `lg`
+- validação:
+  - `npm run build` passou
+- próximo passo recomendado:
+  - refinar os chips e eventos do calendário agora que a composição base ficou madura
