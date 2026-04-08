@@ -1206,3 +1206,12 @@ e mover o login principal para uma rota server-side (`POST /api/session/login`) 
 **Causa:** O código passou a selecionar `usuarios.permissions`, mas a produção ainda pode estar sem a migration `044_user_permissions_foundation.sql`; nesse caso, `getTenantContext()` falha e o app interpreta como ausência de contexto operacional
 **Correcao aplicada:** Adicionar fallback nos pontos críticos (`getTenantContext`, `getUsuarioLogado`, APIs de usuários) para reexecutar a consulta sem a coluna `permissions` e operar só com os presets por `role`
 **Regra pratica:** No PrevLegal, quando uma migration de segurança/governança ainda não está garantida em todos os ambientes, o runtime deve degradar com segurança em vez de bloquear autenticação e contexto base do tenant
+
+### 125. Vínculo por `auth_id` pode driftar; o runtime precisa saber se autocurar por e-mail
+**Problema:** Um tenant pode continuar com `usuarios` existente e ativo, mas o login da plataforma cair em `acesso-pendente` porque o `usuarios.auth_id` não bate mais com o usuário autenticado no Supabase
+**Causa:** Reprovisionamento, reset de acesso, convites e recriação de usuário auth podem deixar o registro operacional existente com `auth_id` antigo, mesmo mantendo o mesmo e-mail responsável
+**Correcao aplicada:** Criar um resolvedor único do usuário atual que:
+- tenta achar por `auth_id`
+- faz fallback por e-mail autenticado
+- autocorrige `usuarios.auth_id` quando encontra o registro certo
+**Regra pratica:** No PrevLegal, identidade operacional do usuário deve preferir `auth_id`, mas precisa ter caminho seguro de auto-heal por e-mail para evitar bloqueio após reprovisionamento legítimo

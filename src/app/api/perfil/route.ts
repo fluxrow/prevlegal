@@ -1,18 +1,14 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 import { getConfiguracaoAtual } from '@/lib/configuracoes'
+import { resolveUsuarioAtual } from '@/lib/current-usuario'
 
 export async function GET() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { data: usuario } = await supabase
-    .from('usuarios')
-    .select('id, nome, email, role, tenant_id, google_calendar_email, google_calendar_connected_at')
-    .eq('auth_id', user.id)
-    .limit(1)
-    .single()
+  const usuario = await resolveUsuarioAtual(user)
   if (!usuario) return NextResponse.json({ error: 'Usuário não encontrado' }, { status: 404 })
 
   const { data: perfil } = await supabase
@@ -51,12 +47,7 @@ export async function PUT(request: Request) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { data: usuario } = await supabase
-    .from('usuarios')
-    .select('id')
-    .eq('auth_id', user.id)
-    .limit(1)
-    .single()
+  const usuario = await resolveUsuarioAtual(user)
   if (!usuario) return NextResponse.json({ error: 'Usuário não encontrado' }, { status: 404 })
 
   const body = await request.json()
