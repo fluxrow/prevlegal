@@ -93,3 +93,32 @@ Gatilho automático: a mudança de status do lead na API `PATCH` chama o *Orques
   - `npm run build` passou
 - próximo passo recomendado:
   - criar pelo menos 1 agente de triagem, 1 de confirmação, 1 de reativação e ativar 1 régua para que o `Templates PrevLegal` consiga popular a base
+
+## Atualização 2026-04-08 - Superfície de Agentes virou multiagente canônica
+
+- a tela `/agente` deixou de ser o editor singleton legado e passou a expor a operação real de múltiplos agentes do escritório
+- arquivos principais:
+  - `src/app/(dashboard)/agente/page.tsx`
+  - `src/components/agentes-config.tsx`
+  - `src/app/api/agentes/route.ts`
+  - `src/app/api/agentes/[id]/route.ts`
+  - `src/app/api/agentes/seed/route.ts`
+- mudanças principais:
+  - `POST /api/agentes` agora persiste `tipo`
+  - `PATCH /api/agentes/[id]` também passou a permitir atualização de `tipo`
+  - foi criado o seed idempotente `POST /api/agentes/seed`
+  - o seed sobe a base recomendada:
+    - triagem
+    - confirmação de agenda
+    - reativação
+    - documentos
+    - fechamento via `followup_comercial`
+  - a UI de agentes agora tem botão `Templates PrevLegal`
+  - o papel de fechamento entra nesta rodada sem abrir novo enum/coluna: usamos o tipo já existente `followup_comercial`
+- leitura estratégica:
+  - isso corrige o descompasso entre a Fase C/D implementada e a tela antiga que ainda parecia “agente único”
+  - também deixa o produto mais pronto para operações além do caso previdenciário clássico, onde fechamento/proposta têm papel próprio
+- validação:
+  - `npm run build` passou
+- próximo passo recomendado:
+  - validar o seed dos agentes em runtime no tenant atual e depois voltar ao seed dos gatilhos

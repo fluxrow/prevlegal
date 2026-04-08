@@ -1240,3 +1240,30 @@ Status atual em 18/03/2026:
   - `npm run build` passou
 - próximo passo recomendado:
   - criar a base mínima de agentes/régua no tenant atual e então reexecutar `Templates PrevLegal`
+
+## Atualização 2026-04-08 — Agentes ganharam seed operacional e `/agente` deixou de ser singleton
+
+- a superfície `/agente` passou a ser a página canônica de multiagentes do produto
+- arquivos principais:
+  - `src/app/(dashboard)/agente/page.tsx`
+  - `src/components/agentes-config.tsx`
+  - `src/app/api/agentes/route.ts`
+  - `src/app/api/agentes/[id]/route.ts`
+  - `src/app/api/agentes/seed/route.ts`
+- comportamento novo:
+  - criação e edição de agentes agora respeitam `tipo` de forma consistente
+  - a UI ganhou `Templates PrevLegal` para semear agentes-base por tenant
+  - o seed é idempotente e cria a base operacional inicial:
+    - triagem
+    - confirmação
+    - reativação
+    - documentos
+    - fechamento no tipo `followup_comercial`
+- decisão importante de produto:
+  - o papel de fechamento entra agora sem migration extra de enum; por enquanto ele é modelado como `followup_comercial`
+  - isso mantém compatibilidade com o roteamento atual e abre espaço para uma futura fase de proposta/fechamento mais explícita
+- validação:
+  - `npm run build` passou
+- próximo passo recomendado:
+  - usar o seed de agentes no tenant atual
+  - depois reexecutar o `Templates PrevLegal` de gatilhos

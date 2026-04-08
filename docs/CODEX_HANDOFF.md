@@ -2450,3 +2450,37 @@ Pontos que precisam ser preservados durante a implementacao:
     - 1 agente de reativacao
     - 1 regua ativa
   - depois reexecutar o seed dos templates
+
+## Atualizacao 2026-04-08 - `/agente` virou a superficie canônica de multiagentes
+
+- havia um descompasso de produto importante:
+  - a Fase C/D ja tinha CRUD multiagente em `/configuracoes?tab=agentes`
+  - mas a sidebar ainda levava para `/agente`, que permanecia como editor singleton legado de `configuracoes`
+- correcao aplicada:
+  - `src/app/(dashboard)/agente/page.tsx` foi refeito como hub canônico de multiagentes, usando `AgentesConfig`
+  - a pagina antiga de agente unico saiu de cena
+- endurecimento tecnico junto:
+  - `src/app/api/agentes/route.ts`
+    - `GET` agora ordena default primeiro
+    - `POST` passou a persistir `tipo`
+  - `src/app/api/agentes/[id]/route.ts`
+    - `PATCH` passou a aceitar `tipo`
+- seed novo:
+  - `src/app/api/agentes/seed/route.ts`
+  - `src/components/agentes-config.tsx`
+  - `Templates PrevLegal` agora consegue subir uma base inicial idempotente de agentes por tenant
+  - agentes criados:
+    - triagem
+    - confirmacao_agenda
+    - reativacao
+    - documental
+    - fechamento via `followup_comercial`
+- decisao importante:
+  - o papel de fechamento nao abriu um novo `tipo` no banco nesta rodada
+  - para evitar drift de schema/enum, ele foi modelado temporariamente como `followup_comercial`
+  - isso e suficiente para campanha, operacao manual e evolucao futura de proposta/fechamento
+- validacao:
+  - `npm run build` passou
+- proximo passo sugerido:
+  - validar em runtime o seed de agentes no tenant atual
+  - depois clicar novamente no seed dos gatilhos

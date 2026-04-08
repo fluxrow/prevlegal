@@ -14,6 +14,7 @@ export async function GET() {
     .from("agentes")
     .select("*")
     .eq("tenant_id", context.tenantId)
+    .order("is_default", { ascending: false })
     .order("created_at", { ascending: true });
 
   if (error)
@@ -35,6 +36,7 @@ export async function POST(request: NextRequest) {
   const {
     nome_interno,
     nome_publico,
+    tipo,
     descricao,
     objetivo,
     persona,
@@ -69,6 +71,7 @@ export async function POST(request: NextRequest) {
       tenant_id: context.tenantId,
       nome_interno,
       nome_publico,
+      tipo: tipo || "geral",
       descricao: descricao || null,
       objetivo: objetivo || null,
       persona: persona || null,

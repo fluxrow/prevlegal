@@ -6,6 +6,7 @@ import { createAdminSupabase } from "@/lib/internal-collaboration";
 const CAMPOS_EDITAVEIS = [
   "nome_interno",
   "nome_publico",
+  "tipo",
   "descricao",
   "objetivo",
   "persona",

@@ -10,6 +10,7 @@ import {
   ChevronUp,
   Star,
   BarChart2,
+  Sparkles,
 } from "lucide-react";
 
 interface Agente {
@@ -45,7 +46,7 @@ const TIPO_OPTIONS = [
   { value: "reativacao", label: "Reativação" },
   { value: "documental", label: "Documental" },
   { value: "confirmacao_agenda", label: "Confirmação de Agenda" },
-  { value: "followup_comercial", label: "Follow-up Comercial" },
+  { value: "followup_comercial", label: "Follow-up Comercial / Fechamento" },
 ];
 
 const AGENTE_VAZIO: Omit<Agente, "id" | "created_at"> = {
@@ -566,7 +567,12 @@ export default function AgentesConfig() {
   const [criando, setCriando] = useState(false);
   const [editandoId, setEditandoId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [isSeeding, setIsSeeding] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
+  const [seedFeedback, setSeedFeedback] = useState<{
+    tone: "success" | "warning" | "error";
+    text: string;
+  } | null>(null);
 
   const fetchAgentes = useCallback(async () => {
     setLoading(true);
@@ -631,6 +637,52 @@ export default function AgentesConfig() {
     if (res.ok) await fetchAgentes();
   }
 
+  async function handleSeedTemplates() {
+    setIsSeeding(true);
+    setSeedFeedback(null);
+    setErro(null);
+    try {
+      const res = await fetch("/api/agentes/seed", { method: "POST" });
+      const data = await res.json().catch(() => null);
+
+      if (!res.ok) {
+        setSeedFeedback({
+          tone: "error",
+          text: data?.error || "Erro ao aplicar templates de agentes",
+        });
+        return;
+      }
+
+      await fetchAgentes();
+
+      const details = [
+        data?.inserted_count ? `${data.inserted_count} inserido(s)` : null,
+        data?.skipped_count ? `${data.skipped_count} já existentes` : null,
+      ]
+        .filter(Boolean)
+        .join(" · ");
+
+      const skippedDetails =
+        Array.isArray(data?.skipped) && data.skipped.length > 0
+          ? ` ${data.skipped
+              .map((item: { nome_interno: string; reason: string }) => `${item.nome_interno}: ${item.reason}`)
+              .join(" | ")}`
+          : "";
+
+      setSeedFeedback({
+        tone:
+          (data?.inserted_count ?? 0) > 0
+            ? "success"
+            : (data?.skipped_count ?? 0) > 0
+              ? "warning"
+              : "success",
+        text: `${data?.message || "Templates processados."}${details ? ` ${details}` : ""}${skippedDetails}`,
+      });
+    } finally {
+      setIsSeeding(false);
+    }
+  }
+
   if (loading)
     return (
       <div style={{ color: "var(--text-muted)", fontSize: "13px" }}>
@@ -660,29 +712,50 @@ export default function AgentesConfig() {
             seu escritório
           </p>
         </div>
-        {!criando && (
+        <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
           <button
-            onClick={() => {
-              setCriando(true);
-              setEditandoId(null);
-            }}
+            onClick={handleSeedTemplates}
+            disabled={isSeeding}
             style={{
               display: "flex",
               alignItems: "center",
               gap: "6px",
-              padding: "8px 16px",
+              padding: "8px 14px",
               fontSize: "13px",
-              background: "var(--accent)",
-              border: "none",
+              background: "var(--bg-hover)",
+              border: "1px solid var(--border)",
               borderRadius: "8px",
-              cursor: "pointer",
-              color: "#fff",
+              cursor: isSeeding ? "wait" : "pointer",
+              color: "var(--text-primary)",
               fontWeight: "600",
             }}
           >
-            <Plus size={14} /> Novo agente
+            <Sparkles size={14} /> {isSeeding ? "Aplicando templates..." : "Templates PrevLegal"}
           </button>
-        )}
+          {!criando && (
+            <button
+              onClick={() => {
+                setCriando(true);
+                setEditandoId(null);
+              }}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+                padding: "8px 16px",
+                fontSize: "13px",
+                background: "var(--accent)",
+                border: "none",
+                borderRadius: "8px",
+                cursor: "pointer",
+                color: "#fff",
+                fontWeight: "600",
+              }}
+            >
+              <Plus size={14} /> Novo agente
+            </button>
+          )}
+        </div>
       </div>
 
       {erro && (
@@ -699,6 +772,58 @@ export default function AgentesConfig() {
           {erro}
         </div>
       )}
+
+      {seedFeedback && (
+        <div
+          style={{
+            padding: "10px 14px",
+            background:
+              seedFeedback.tone === "success"
+                ? "rgba(34,197,94,0.1)"
+                : seedFeedback.tone === "warning"
+                  ? "rgba(245,200,66,0.12)"
+                  : "rgba(239,68,68,0.1)",
+            border:
+              seedFeedback.tone === "success"
+                ? "1px solid rgba(34,197,94,0.24)"
+                : seedFeedback.tone === "warning"
+                  ? "1px solid rgba(245,200,66,0.24)"
+                  : "1px solid rgba(239,68,68,0.24)",
+            borderRadius: "8px",
+            fontSize: "13px",
+            lineHeight: 1.5,
+            color:
+              seedFeedback.tone === "success"
+                ? "#16a34a"
+                : seedFeedback.tone === "warning"
+                  ? "var(--yellow)"
+                  : "#dc2626",
+          }}
+        >
+          {seedFeedback.text}
+        </div>
+      )}
+
+      <div
+        style={{
+          padding: "14px 16px",
+          borderRadius: "12px",
+          border: "1px solid var(--border)",
+          background: "var(--bg-hover)",
+          display: "grid",
+          gap: "6px",
+        }}
+      >
+        <div style={{ fontSize: "13px", fontWeight: "700", color: "var(--text-primary)" }}>
+          Templates recomendados do escritório
+        </div>
+        <div style={{ fontSize: "12px", color: "var(--text-muted)", lineHeight: 1.55 }}>
+          O seed cria a base operacional mais útil para começar rápido:
+          triagem, confirmação de agenda, reativação, documentos e um agente de{" "}
+          <strong style={{ color: "var(--text-primary)" }}>fechamento</strong> no tipo{" "}
+          <strong style={{ color: "var(--text-primary)" }}>follow-up comercial</strong>.
+        </div>
+      </div>
 
       {/* Form de criação */}
       {criando && (

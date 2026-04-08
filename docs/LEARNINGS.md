@@ -1104,3 +1104,15 @@ Isso gera mais confianca e reduz sensacao de “portal vazio”
 **Causa:** O tenant real ainda nao tinha agentes ativos nem regua ativa, mas a tela devolvia um feedback visual que soava como sucesso generico ou falha ambigua
 **Correcao aplicada:** O feedback do seed passou a diferenciar `warning` de `success`, o modal bloqueia selecoes sem recurso disponivel e a UI explica exatamente o que falta no tenant para criar gatilhos
 **Regra pratica:** No PrevLegal, quando uma automacao depende de configuracao previa do escritorio, a interface deve expor o prerequisito faltante e orientar o proximo passo; nao deixar o operador adivinhar se houve bug ou apenas setup incompleto
+
+### 120. Quando uma capability nova vira real, a superficie principal precisa migrar junto
+**Problema:** O produto ja tinha multiagentes implementados, mas a navegação principal ainda levava para uma tela antiga de agente único, criando a impressão de que só existia um agente configurável
+**Causa:** A Fase C/D cresceu em `/configuracoes?tab=agentes`, mas a antiga rota `/agente` continuou viva e virou uma camada de UX incoerente
+**Correcao aplicada:** A página `/agente` foi transformada na superfície canônica de multiagentes e o seed de agentes passou a ficar visível na própria operação
+**Regra pratica:** No PrevLegal, quando uma nova camada do produto substitui a lógica anterior, a navegação principal precisa apontar para a nova superfície; deixar a UI antiga como caminho principal distorce a leitura do que o sistema realmente suporta
+
+### 121. Fechamento pode entrar antes de existir um estágio dedicado, desde que use um papel já compatível
+**Problema:** A operação começou a exigir um agente de fechamento/proposta, mas abrir um novo `tipo` no banco sem validar enum/schema real aumenta risco de drift
+**Causa:** O produto já tinha um papel suficientemente próximo (`followup_comercial`), então forçar uma categoria nova agora geraria complexidade antes da hora
+**Correcao aplicada:** O agente de fechamento entrou nesta rodada modelado como `followup_comercial`, com naming e objetivo explícitos de proposta/fechamento
+**Regra pratica:** No PrevLegal, quando uma nova função operacional cabe semanticamente em um papel já existente, prefira encaixar no tipo compatível e só abrir novo enum/estágio quando houver necessidade real de roteamento ou métrica separados

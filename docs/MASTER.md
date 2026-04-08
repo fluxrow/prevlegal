@@ -218,6 +218,18 @@ Estratégia: entrar com R$ 1.997 para gerar cases, subir gradualmente.
     - `pendencias_documento`
     - `timeline`
     - `resumo.documentos_pendentes`
+
+## Agentes IA — Direcao atual
+
+- a superficie canonica de operacao dos agentes passou a ser `/agente`
+- ela agora representa o modelo multiagente do produto, nao mais o singleton legado
+- o escritorio pode operar multiplos agentes com papeis distintos, incluindo:
+  - triagem
+  - confirmacao de agenda
+  - reativacao
+  - documental
+  - follow-up comercial / fechamento
+- o runtime continua com fallback seguro para a configuracao global antiga quando o tenant ainda nao tiver agentes configurados
   - o portal agora tambem permite confirmar presenca na proxima consulta, gerando timeline e notificacao interna para a equipe
   - a home do portal agora combina:
   - o portal agora tambem permite:
