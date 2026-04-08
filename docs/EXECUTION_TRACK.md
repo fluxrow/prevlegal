@@ -33,12 +33,7 @@ Protocolo complementar entre IAs:
 
 ### P0 — antes de rodar com escritório pagante
 
-1. Aplicar migrations pendentes em produção
-- `043_user_calendar_ownership.sql`
-- `044_user_permissions_foundation.sql`
-- `045_document_processing_foundation.sql`
-
-2. Validar agenda Google sem fallback
+1. Validar agenda Google sem fallback
 - conectar Google do usuário
 - conectar calendário do escritório
 - criar agendamento
@@ -75,6 +70,10 @@ Protocolo complementar entre IAs:
 2. aplicar `044`
 3. aplicar `045`
 4. validar runtime sem fallback estrutural
+
+Status em 08/04/2026:
+- `043`, `044` e `045` já foram aplicadas no operacional via patch manual
+- o próximo risco residual imediato está na agenda Google pós-migration
 
 Runbook canônico:
 - `docs/PRODUCTION_DB_ROLLOUT_043_044_045.md`
@@ -113,4 +112,7 @@ Runbook canônico:
 
 ## Próximo passo oficial
 
-Aplicar `043`, `044` e `045` em produção e validar agenda Google sem fallback de schema.
+Validar a agenda Google no banco já migrado, garantindo:
+- criação de agendamento sem erro de embed ambíguo
+- listagem/restauração dos agendamentos já existentes
+- remarcar e cancelar sem regressão

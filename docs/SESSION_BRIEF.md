@@ -466,3 +466,22 @@ Gatilho automático: a mudança de status do lead na API `PATCH` chama o *Orques
   - notebooks e janelas menores já mostram o trabalho a fazer sem jogar a fila para baixo
 - validação:
   - `npm run build` passou
+
+## Atualização 2026-04-08 - API de agendamentos foi alinhada ao novo schema já migrado
+
+- após a aplicação da `043`, surgiu um bug novo de runtime:
+  - o evento era criado no Google e podia chegar por e-mail
+  - mas a resposta da API quebrava com embed ambíguo entre `agendamentos` e `usuarios`
+- causa:
+  - `agendamentos` passou a ter duas FKs para `usuarios`
+  - os selects ainda usavam `usuarios(...)` sem explicitar qual relação era a do responsável
+- correção aplicada:
+  - `src/app/api/agendamentos/route.ts`
+  - `src/app/api/agendamentos/[id]/route.ts`
+  - os embeds agora usam:
+    - `usuarios:usuarios!agendamentos_usuario_id_fkey(...)`
+- impacto prático:
+  - a listagem de agendamentos deixa de “sumir” depois da migration
+  - a criação/edição volta a responder corretamente no modo já migrado
+- validação:
+  - `npm run build` passou

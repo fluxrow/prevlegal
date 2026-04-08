@@ -2948,3 +2948,35 @@ Pontos que precisam ser preservados durante a implementacao:
   - a agenda fica mais proxima de painel operacional e menos de calendario isolado
 - validacao:
   - `npm run build` passou
+
+## Atualizacao 2026-04-08 - Pos-migration `043`, a agenda precisou explicitar o FK correto do responsavel
+
+- problema observado em runtime depois de aplicar `043`, `044` e `045` no operacional:
+  - ao criar um novo agendamento, o evento podia ser criado no Google e o e-mail podia chegar normalmente
+  - ainda assim, o modal respondia com erro:
+    - `Could not embed because more than one relationship was found for 'agendamentos' and 'usuarios'`
+  - em paralelo, os agendamentos listados podiam sumir da UI
+- causa real:
+  - a `043` adicionou `calendar_owner_usuario_id` em `agendamentos`
+  - a tabela passou a ter duas FKs para `usuarios`:
+    - `agendamentos_usuario_id_fkey`
+    - `agendamentos_calendar_owner_usuario_id_fkey`
+  - os selects da API ainda usavam embed genérico `usuarios(...)`
+  - o PostgREST ficou ambíguo para montar a resposta, mesmo quando a escrita já tinha funcionado
+- correcao aplicada:
+  - `src/app/api/agendamentos/route.ts`
+    - `GET` agora usa:
+      - `usuarios:usuarios!agendamentos_usuario_id_fkey(...)`
+    - o retorno do `insert` também foi alinhado ao mesmo FK explícito
+  - `src/app/api/agendamentos/[id]/route.ts`
+    - o retorno do `PATCH` foi alinhado ao mesmo embed explícito
+- efeito de produto:
+  - o responsavel operacional do agendamento volta a ser resolvido sem colisao com o owner tecnico do calendario
+  - criacao/listagem/edicao deixam de quebrar por ambiguidade de relacao
+- validacao:
+  - `npm run build` passou
+- proximo passo real:
+  - validar em runtime que:
+    - os agendamentos antigos reapareceram
+    - o novo agendamento aparece na UI
+    - remarcar e cancelar continuam funcionando no banco ja migrado

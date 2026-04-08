@@ -9,6 +9,11 @@ const AGENDAMENTO_SELECT_FULL =
   'id, tenant_id, google_event_id, lead_id, status, usuario_id, calendar_owner_scope, calendar_owner_usuario_id'
 const AGENDAMENTO_SELECT_LEGACY =
   'id, tenant_id, google_event_id, lead_id, status, usuario_id'
+const AGENDAMENTO_RETURN_SELECT = `
+  *,
+  leads(id, nome, telefone),
+  usuarios:usuarios!agendamentos_usuario_id_fkey(id, nome, email)
+`
 
 async function getAgendamentoAtualWithSchemaFallback(
   supabase: any,
@@ -130,7 +135,7 @@ export async function PATCH(
     .update(updates)
     .eq('id', id)
     .eq('tenant_id', context.tenantId)
-    .select(`*, leads(id, nome, telefone), usuarios(id, nome)`)
+    .select(AGENDAMENTO_RETURN_SELECT)
     .single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })

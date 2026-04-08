@@ -1712,3 +1712,24 @@ Status atual em 18/03/2026:
   - `npm run build` passou
 - próximo passo recomendado:
   - refinar os chips e eventos do calendário agora que a composição base ficou madura
+
+## Atualização 2026-04-08 — Agenda pós-043 passou a explicitar o vínculo correto com `usuarios`
+
+- depois da aplicação da `043`, a tabela `agendamentos` passou a ter duas relações para `usuarios`:
+  - `usuario_id`
+  - `calendar_owner_usuario_id`
+- arquivos principais:
+  - `src/app/api/agendamentos/route.ts`
+  - `src/app/api/agendamentos/[id]/route.ts`
+- comportamento novo:
+  - os `selects` da API agora usam embed explícito pelo FK do responsável operacional:
+    - `usuarios:usuarios!agendamentos_usuario_id_fkey(...)`
+  - a resposta de criação/edição deixa de quebrar com erro de relacionamento ambíguo no PostgREST
+  - a listagem de agendamentos volta a enxergar corretamente o responsável sem colidir com o owner técnico do calendário
+- impacto prático:
+  - o evento podia ser criado no Google e enviado por e-mail, mas a UI falhava ao montar a resposta/lista; isso deixa de acontecer
+  - a agenda volta a operar normalmente no cenário já migrado, sem depender de fallback antigo
+- validação:
+  - `npm run build` passou
+- próximo passo recomendado:
+  - validar em runtime criação, listagem, remarcação e cancelamento de agendamentos após a `043`

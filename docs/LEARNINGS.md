@@ -1298,3 +1298,14 @@ e a API de listagem de usuários ganhou a mesma resiliência
 - runbook curto para aplicação e validação
 - trilho executivo apontando para esse fluxo como etapa oficial de go-live
 **Regra pratica:** No PrevLegal, quando o histórico do Supabase divergir e o CLI não puder empurrar schema com segurança, aplique apenas o delta necessário via SQL idempotente e registre isso como runbook, em vez de tentar “consertar tudo” no histórico remoto no impulso
+
+### 136. Quando uma migration cria uma segunda FK para a mesma tabela, todo embed Supabase precisa virar explícito
+**Problema:** Depois de aplicar a `043`, o `Novo agendamento` podia até criar o evento no Google e enviar o e-mail, mas a UI quebrava com `Could not embed because more than one relationship was found for 'agendamentos' and 'usuarios'`
+**Causa:** A tabela `agendamentos` passou a ter duas relações com `usuarios`:
+- `usuario_id`
+- `calendar_owner_usuario_id`
+Os selects ainda pediam apenas `usuarios(...)`, então o PostgREST não sabia qual FK usar no embed
+**Correcao aplicada:** As rotas de agenda passaram a nomear explicitamente o relacionamento do responsável operacional:
+- `usuarios:usuarios!agendamentos_usuario_id_fkey(...)`
+- o mesmo ajuste foi aplicado na listagem, no retorno do `POST` e no retorno do `PATCH`
+**Regra pratica:** No PrevLegal, sempre que uma tabela ganhar múltiplas FKs para o mesmo destino, nenhum embed pode continuar genérico; o FK canônico precisa ser nomeado explicitamente na query para evitar bugs “meio invisíveis”, onde a escrita funciona mas a resposta da API quebra

@@ -8,6 +8,18 @@ import {
   isMissingUserCalendarColumnError,
 } from '@/lib/permissions'
 
+const AGENDAMENTOS_RELATION_SELECT = `
+  *,
+  leads (id, nome, telefone, banco, ganho_potencial),
+  usuarios:usuarios!agendamentos_usuario_id_fkey (id, nome, email)
+`
+
+const AGENDAMENTOS_INSERT_RETURN_SELECT = `
+  *,
+  leads(id, nome, telefone),
+  usuarios:usuarios!agendamentos_usuario_id_fkey(id, nome, email)
+`
+
 async function getScopedLead(
   supabase: any,
   context: NonNullable<Awaited<ReturnType<typeof getTenantContext>>>,
@@ -73,7 +85,7 @@ async function insertAgendamentoWithSchemaFallback(
   let result = await supabase
     .from('agendamentos')
     .insert(payload)
-    .select(`*, leads(id, nome, telefone), usuarios(id, nome)`)
+    .select(AGENDAMENTOS_INSERT_RETURN_SELECT)
     .single()
 
   if (!isMissingAgendamentoOwnerColumnError(result.error)) {
@@ -88,7 +100,7 @@ async function insertAgendamentoWithSchemaFallback(
   return supabase
     .from('agendamentos')
     .insert(legacyPayload)
-    .select(`*, leads(id, nome, telefone), usuarios(id, nome)`)
+    .select(AGENDAMENTOS_INSERT_RETURN_SELECT)
     .single()
 }
 
@@ -99,11 +111,7 @@ export async function GET() {
 
   let query = supabase
     .from('agendamentos')
-    .select(`
-      *,
-      leads (id, nome, telefone, banco, ganho_potencial),
-      usuarios (id, nome, email)
-    `)
+    .select(AGENDAMENTOS_RELATION_SELECT)
     .eq('tenant_id', context.tenantId)
     .order('data_hora', { ascending: true })
 
