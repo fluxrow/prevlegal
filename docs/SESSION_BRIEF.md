@@ -62,3 +62,15 @@ Gatilho automático: a mudança de status do lead na API `PATCH` chama o *Orques
   - `npm run build` passou
 - próximo passo:
   - validar em runtime o clique do seed e depois voltar ao modal avançado de criação/edição de gatilhos
+
+## Atualização 2026-04-08 - UX da tela de Gatilhos refinada
+
+- a interface de `Automações` ficou mais legível e menos opaca para o operador
+- arquivo principal:
+  - `src/components/automacoes/trigger-config.tsx`
+- ajustes:
+  - o botão `Novo Gatilho` passou a usar contraste explícito e deixou de cair em preto sem texto visível
+  - a tela agora mostra o erro real retornado por `/api/automacoes/triggers` quando houver falha
+  - a UI também passou a avisar quando faltam pré-requisitos do tenant para o `Templates PrevLegal`
+- validação:
+  - `npm run build` passou

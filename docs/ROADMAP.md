@@ -1207,3 +1207,19 @@ Status atual em 18/03/2026:
   - `npm run build` passou
 - próximo passo recomendado:
   - validar o seed em runtime e depois voltar ao modal avançado de criação/edição de gatilhos
+
+## Atualização 2026-04-08 — Refino visual e diagnóstico da aba de Gatilhos
+
+- a tela de `Automações` recebeu um ajuste de UX na mesma trilha da Fase E
+- arquivo principal:
+  - `src/components/automacoes/trigger-config.tsx`
+- comportamento:
+  - `Novo Gatilho` agora usa contraste explícito e não depende de variável inválida de tema
+  - a faixa de erro passa a mostrar a mensagem real do backend quando o carregamento dos gatilhos falhar
+  - a UI passou a expor o que ainda falta no tenant para o seed funcionar por completo:
+    - régua ativa
+    - agente de triagem
+    - agente de confirmação
+    - agente de reativação
+- validação:
+  - `npm run build` passou

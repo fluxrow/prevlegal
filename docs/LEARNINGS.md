@@ -1092,3 +1092,9 @@ Isso gera mais confianca e reduz sensacao de “portal vazio”
 - inserir só o que está faltando
 - devolver resumo explícito de `inseridos`, `já existentes` e `indisponíveis`
 **Regra pratica:** No PrevLegal, qualquer seed operacional por tenant deve ser repetível sem efeito colateral e nunca assumir que todos os recursos de apoio já estão configurados
+
+### 118. Variável de tema inválida em botão crítico vira bug funcional, não só detalhe visual
+**Problema:** O botão `Novo Gatilho` apareceu como um bloco preto sem texto visível na tela de automações
+**Causa:** O componente usava `var(--bg-default)`, mas essa variável não existe no tema atual; o navegador caía para cores inválidas e o CTA perdia contraste
+**Correcao aplicada:** Trocar a dependência por cores explícitas e variáveis reais do design system (`var(--accent)` + `#fff`) e revisar outros pontos da mesma tela que ainda usavam `--bg-default`
+**Regra pratica:** No PrevLegal, CTA operacional importante não deve depender de variável de tema inexistente ou ambígua; em ações primárias, prefira contraste explícito e previsível

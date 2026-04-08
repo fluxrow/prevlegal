@@ -57,7 +57,10 @@ export default function TriggerConfig() {
         fetch('/api/agentes')
       ])
 
-      if (!trigRes.ok) throw new Error('Falha ao carregar gatilhos')
+      if (!trigRes.ok) {
+        const detalhe = await trigRes.json().catch(() => null)
+        throw new Error(detalhe?.error || 'Falha ao carregar gatilhos')
+      }
       
       const [tData, rData, aData] = await Promise.all([
         trigRes.json(),
@@ -78,6 +81,17 @@ export default function TriggerConfig() {
       setLoading(false)
     }
   }
+
+  const regrasAtivas = followupRules.length
+  const agentesTriagem = agentes.filter((agente: any) => agente.tipo === 'triagem').length
+  const agentesConfirmacao = agentes.filter((agente: any) => agente.tipo === 'confirmacao_agenda').length
+  const agentesReativacao = agentes.filter((agente: any) => agente.tipo === 'reativacao').length
+  const faltasSeed: string[] = []
+
+  if (regrasAtivas === 0) faltasSeed.push('nenhuma régua ativa de follow-up')
+  if (agentesTriagem === 0) faltasSeed.push('nenhum agente de triagem')
+  if (agentesConfirmacao === 0) faltasSeed.push('nenhum agente de confirmação')
+  if (agentesReativacao === 0) faltasSeed.push('nenhum agente de reativação')
 
   function getAcaoNome(trigger: EventTrigger) {
     if (trigger.acao_tipo === 'iniciar_followup') {
@@ -183,7 +197,7 @@ export default function TriggerConfig() {
         <div style={{ display: 'flex', gap: '8px' }}>
           <button
             onClick={() => setIsModalOpen(true)}
-            style={{ padding: '8px 16px', background: 'var(--text-primary)', color: 'var(--bg-default)', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+            style={{ padding: '8px 16px', background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 8px 20px rgba(79,122,255,0.22)' }}
           >
             <Plus size={14} /> Novo Gatilho
           </button>
@@ -210,9 +224,16 @@ export default function TriggerConfig() {
         </div>
       )}
 
+      {faltasSeed.length > 0 && (
+        <div style={{ padding: '12px', background: 'rgba(245,200,66,0.1)', color: 'var(--yellow)', border: '1px solid rgba(245,200,66,0.25)', borderRadius: '8px', marginBottom: '16px', fontSize: '12px', lineHeight: 1.5 }}>
+          Templates ainda não vão preencher tudo neste tenant.
+          {' '}Faltam: {faltasSeed.join(', ')}.
+        </div>
+      )}
+
       {/* LISTA DE GATILHOS */}
       {!loading && triggers.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '40px 20px', background: 'var(--bg-default)', borderRadius: '12px', border: '1px dashed var(--border)' }}>
+        <div style={{ textAlign: 'center', padding: '40px 20px', background: 'var(--bg)', borderRadius: '12px', border: '1px dashed var(--border)' }}>
           <GitMerge size={24} color="var(--text-muted)" style={{ margin: '0 auto 12px', opacity: 0.5 }} />
           <h3 style={{ margin: '0 0 4px', fontSize: '14px', color: 'var(--text-primary)' }}>Nenhum gatilho configurado</h3>
           <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-muted)' }}>Mapeie eventos para engatilhar réguas automáticas.</p>
@@ -220,7 +241,7 @@ export default function TriggerConfig() {
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
           {triggers.map(t => (
-            <div key={t.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', background: 'var(--bg-default)', border: '1px solid var(--border)', borderRadius: '10px' }}>
+            <div key={t.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: '10px' }}>
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
                   <span style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text-primary)' }}>
@@ -268,7 +289,7 @@ export default function TriggerConfig() {
                 <select 
                     value={formData.trigger_condicao}
                     onChange={(e) => setFormData({...formData, trigger_condicao: e.target.value})}
-                    style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg-default)', color: 'var(--text-primary)', fontSize: '14px', outline: 'none' }}
+                    style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text-primary)', fontSize: '14px', outline: 'none' }}
                 >
                     <option value="new">Lead Entrar / Novo</option>
                     <option value="contacted">Lead em Contato</option>
@@ -298,7 +319,7 @@ export default function TriggerConfig() {
                      <select 
                         value={formData.acao_ref_id}
                         onChange={(e) => setFormData({...formData, acao_ref_id: e.target.value})}
-                        style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg-default)', color: 'var(--text-primary)', fontSize: '14px', outline: 'none' }}
+                        style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text-primary)', fontSize: '14px', outline: 'none' }}
                      >
                         <option value="" disabled>Selecione a Régua...</option>
                         {followupRules.map(r => <option key={r.id} value={r.id}>{r.nome}</option>)}
@@ -307,7 +328,7 @@ export default function TriggerConfig() {
                      <select 
                         value={formData.acao_ref_id}
                         onChange={(e) => setFormData({...formData, acao_ref_id: e.target.value})}
-                        style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg-default)', color: 'var(--text-primary)', fontSize: '14px', outline: 'none' }}
+                        style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text-primary)', fontSize: '14px', outline: 'none' }}
                      >
                         <option value="" disabled>Selecione o Agente de IA...</option>
                         {agentes.map(a => <option key={a.id} value={a.id}>{a.nome_interno}</option>)}
