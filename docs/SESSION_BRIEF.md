@@ -51,7 +51,7 @@ Gatilho automático: a mudança de status do lead na API `PATCH` chama o *Orques
   - `src/app/acesso-pendente/page.tsx`
 - correção:
   - dashboard agora manda para `/acesso-pendente` quando há sessão mas não há contexto do escritório
-  - login passou a estabilizar o pós-auth com `POST /api/session/touch` e `router.replace('/dashboard')`
+  - login passou a usar `POST /api/session/login`, com autenticação server-side e cookie já estabilizado antes do redirect
   - middleware passou a tratar `/acesso-pendente` como rota pública
 - leitura prática:
   - daqui para frente, se o usuário cair em `acesso-pendente`, o problema não é senha

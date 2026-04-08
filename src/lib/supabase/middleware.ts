@@ -53,6 +53,7 @@ export async function updateSession(request: NextRequest) {
   const publicApiPrefixes = [
     '/api/admin/auth',
     '/api/admin/reauth',
+    '/api/session/login',
     '/api/usuarios/aceitar-convite',
     '/api/usuarios/convite',
     '/api/webhooks/',

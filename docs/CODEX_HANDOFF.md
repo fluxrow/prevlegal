@@ -38,10 +38,9 @@ Objetivo:
   - o layout do dashboard agora:
     - manda para `/login` quando não há sessão
     - manda para `/acesso-pendente` quando há sessão, mas não há contexto operacional válido
-  - o login passou a:
-    - tocar `POST /api/session/touch`
-    - usar `router.replace('/dashboard')`
-    - fazer `router.refresh()` logo após autenticar
+  - o login passou a usar `POST /api/session/login`
+  - a autenticação do app agora nasce no servidor antes da navegação para `/dashboard`
+  - isso reduz a corrida entre `signInWithPassword` no browser e o primeiro render SSR protegido
   - o `proxy` passou a liberar `/acesso-pendente`
 - efeito prático:
   - reduz diagnóstico falso de “login quebrado”

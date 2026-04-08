@@ -34,7 +34,8 @@ Mestra: [[MASTER_PREV_LEGAL]]
   - o layout do dashboard agora separa:
     - `sem sessão` -> `/login`
     - `sessão válida sem contexto operacional` -> `/acesso-pendente`
-  - o login passou a tocar `/api/session/touch` antes de redirecionar e usa `router.replace('/dashboard')`
+  - o login final saiu do fluxo puramente client-side e passou a usar `POST /api/session/login`
+  - a sessão agora nasce no servidor antes do redirect para `/dashboard`, reduzindo corrida entre cookie do Supabase e SSR inicial
   - a rota pública `/acesso-pendente` foi liberada no `proxy`
 - impacto operacional:
   - elimina o falso diagnóstico de “senha/login quebrado”

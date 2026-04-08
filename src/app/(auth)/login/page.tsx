@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 
 export default function LoginPage() {
@@ -14,19 +13,19 @@ export default function LoginPage() {
     async function handleLogin() {
         setLoading(true)
         setError('')
-        const supabase = createClient()
-        const { error } = await supabase.auth.signInWithPassword({ email, password })
-        if (error) {
+        const res = await fetch('/api/session/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            cache: 'no-store',
+            body: JSON.stringify({ email, password }),
+        })
+
+        if (!res.ok) {
             setError('E-mail ou senha incorretos.')
             setLoading(false)
         } else {
-            await fetch('/api/session/touch', {
-                method: 'POST',
-                credentials: 'include',
-                cache: 'no-store',
-            }).catch(() => null)
-            router.replace('/dashboard')
-            router.refresh()
+            window.location.assign('/dashboard')
         }
     }
 

@@ -1198,5 +1198,5 @@ Isso gera mais confianca e reduz sensacao de “portal vazio”
 **Correcao aplicada:** Separar os estados no app:
 - sem sessao -> `/login`
 - sessao valida sem contexto operacional -> `/acesso-pendente`
-e reforcar o pos-login com `POST /api/session/touch` antes de navegar para o dashboard
+e mover o login principal para uma rota server-side (`POST /api/session/login`) para a sessao nascer no servidor antes do redirect para o dashboard
 **Regra pratica:** No PrevLegal, nunca colapsar `auth` e `provisionamento` no mesmo redirect de login; quando o problema for acesso do escritorio, a UI deve dizer isso explicitamente
