@@ -3,6 +3,36 @@ import { NextResponse } from 'next/server'
 import { cancelarEventoCalendar, atualizarEventoCalendar } from '@/lib/google-calendar'
 import { canAccessLeadId, contextHasPermission, getTenantContext } from '@/lib/tenant-context'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
+import { isMissingAgendamentoOwnerColumnError } from '@/lib/permissions'
+
+const AGENDAMENTO_SELECT_FULL =
+  'id, tenant_id, google_event_id, lead_id, status, usuario_id, calendar_owner_scope, calendar_owner_usuario_id'
+const AGENDAMENTO_SELECT_LEGACY =
+  'id, tenant_id, google_event_id, lead_id, status, usuario_id'
+
+async function getAgendamentoAtualWithSchemaFallback(
+  supabase: any,
+  tenantId: string | null,
+  id: string,
+) {
+  let result = await supabase
+    .from('agendamentos')
+    .select(AGENDAMENTO_SELECT_FULL)
+    .eq('id', id)
+    .eq('tenant_id', tenantId)
+    .single()
+
+  if (!isMissingAgendamentoOwnerColumnError(result.error)) {
+    return result
+  }
+
+  return supabase
+    .from('agendamentos')
+    .select(AGENDAMENTO_SELECT_LEGACY)
+    .eq('id', id)
+    .eq('tenant_id', tenantId)
+    .single()
+}
 
 export async function PATCH(
   request: Request,
@@ -21,13 +51,11 @@ export async function PATCH(
   const { status, data_hora, duracao_minutos, observacoes, honorario, usuario_id } = body
 
   // Busca agendamento atual
-  let atualQuery = adminSupabase
-    .from('agendamentos')
-    .select('id, tenant_id, google_event_id, lead_id, status, usuario_id, calendar_owner_scope, calendar_owner_usuario_id')
-    .eq('id', id)
-    .eq('tenant_id', context.tenantId)
-
-  const { data: atual } = await atualQuery.single()
+  const { data: atual } = await getAgendamentoAtualWithSchemaFallback(
+    adminSupabase,
+    context.tenantId,
+    id,
+  )
   if (!atual) return NextResponse.json({ error: 'Agendamento não encontrado' }, { status: 404 })
 
   if (!context.isAdmin) {
@@ -61,8 +89,8 @@ export async function PATCH(
         googleEventId: atual.google_event_id,
         dataHora: data_hora,
         duracaoMinutos: duracao_minutos ?? 30,
-        ownerScope: atual.calendar_owner_scope,
-        ownerUsuarioId: atual.calendar_owner_usuario_id,
+        ownerScope: 'calendar_owner_scope' in atual ? atual.calendar_owner_scope : undefined,
+        ownerUsuarioId: 'calendar_owner_usuario_id' in atual ? atual.calendar_owner_usuario_id : undefined,
       })
     } catch (err) {
       console.warn('Erro ao atualizar evento Google Calendar:', err)
@@ -76,8 +104,8 @@ export async function PATCH(
         supabase: adminSupabase,
         tenantId: context.tenantId,
         googleEventId: atual.google_event_id,
-        ownerScope: atual.calendar_owner_scope,
-        ownerUsuarioId: atual.calendar_owner_usuario_id,
+        ownerScope: 'calendar_owner_scope' in atual ? atual.calendar_owner_scope : undefined,
+        ownerUsuarioId: 'calendar_owner_usuario_id' in atual ? atual.calendar_owner_usuario_id : undefined,
       })
     } catch (err) {
       console.warn('Erro ao cancelar evento Google Calendar:', err)
@@ -122,12 +150,11 @@ export async function DELETE(
   const context = await getTenantContext(supabase)
   if (!context) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { data: atual } = await adminSupabase
-    .from('agendamentos')
-    .select('google_event_id, lead_id, calendar_owner_scope, calendar_owner_usuario_id')
-    .eq('id', id)
-    .eq('tenant_id', context.tenantId)
-    .single()
+  const { data: atual } = await getAgendamentoAtualWithSchemaFallback(
+    adminSupabase,
+    context.tenantId,
+    id,
+  )
 
   if (!atual) return NextResponse.json({ error: 'Agendamento não encontrado' }, { status: 404 })
 
@@ -142,8 +169,8 @@ export async function DELETE(
         supabase: adminSupabase,
         tenantId: context.tenantId,
         googleEventId: atual.google_event_id,
-        ownerScope: atual.calendar_owner_scope,
-        ownerUsuarioId: atual.calendar_owner_usuario_id,
+        ownerScope: 'calendar_owner_scope' in atual ? atual.calendar_owner_scope : undefined,
+        ownerUsuarioId: 'calendar_owner_usuario_id' in atual ? atual.calendar_owner_usuario_id : undefined,
       })
     } catch (err) {
       console.warn('Erro ao cancelar evento Google Calendar:', err)

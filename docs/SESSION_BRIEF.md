@@ -413,3 +413,20 @@ Gatilho automático: a mudança de status do lead na API `PATCH` chama o *Orques
   - sem isso, o sistema só processa inline arquivos textuais e mantém os demais como fila pendente/foundation
 - validação:
   - `npm run build` passou
+
+## Atualização 2026-04-08 - Agendamentos ficaram compatíveis com schema legado da produção
+
+- a criação de agendamento deixou de quebrar quando a produção ainda não tem `calendar_owner_scope`, `calendar_owner_usuario_id` e `calendar_owner_email` em `agendamentos`
+- arquivos ajustados:
+  - `src/app/api/agendamentos/route.ts`
+  - `src/app/api/agendamentos/[id]/route.ts`
+  - `src/lib/permissions.ts`
+- comportamento novo:
+  - a API tenta persistir ownership do calendário, mas rebaixa para o payload legado se a `043` ainda não estiver aplicada
+  - `PATCH` e `DELETE` leem o agendamento atual com fallback de select para conviver com schema incompleta
+  - update/cancel do evento Google usam owner columns apenas quando elas existem de fato
+- impacto prático:
+  - o modal `Novo agendamento` deixa de falhar com erro de `schema cache`
+  - a agenda continua operacional até o banco receber a migration `043`
+- validação:
+  - `npm run build` passou

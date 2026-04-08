@@ -1657,3 +1657,22 @@ Status atual em 18/03/2026:
   - `npm run build` passou
 - próximo passo recomendado:
   - com agentes já seeded, ativar uma régua e testar o seed dos gatilhos de novo
+
+## Atualização 2026-04-08 — Criação e manutenção de agendamentos ficaram resilientes à ausência da `043`
+
+- a agenda por usuário continuou no código, mas a API agora sobrevive quando a produção ainda não tem `calendar_owner_scope`, `calendar_owner_usuario_id` e `calendar_owner_email` em `agendamentos`
+- arquivos principais:
+  - `src/app/api/agendamentos/route.ts`
+  - `src/app/api/agendamentos/[id]/route.ts`
+  - `src/lib/permissions.ts`
+- comportamento novo:
+  - `POST /api/agendamentos` tenta persistir ownership do calendário e rebaixa para schema legado se a `043` ainda não estiver aplicada
+  - `PATCH` e `DELETE` deixam de depender rigidamente das colunas novas para atualizar ou cancelar o evento Google
+  - o modal `Novo agendamento` deixa de quebrar por erro de schema cache ao escolher lead, responsável e e-mail da reunião
+- decisão importante de rollout:
+  - enquanto a `043` não estiver aplicada em produção, a agenda continua funcionando no modo legado com fallback do escritório
+  - o ownership explícito do calendário fica disponível automaticamente assim que a migration entrar
+- validação:
+  - `npm run build` passou
+- próximo passo recomendado:
+  - aplicar a migration `043` no banco e validar novamente a criação de agendamento com owner columns persistidas

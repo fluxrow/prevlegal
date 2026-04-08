@@ -91,3 +91,11 @@ export function isMissingUserCalendarColumnError(error: unknown) {
     'google_calendar_connected_at',
   ])
 }
+
+export function isMissingAgendamentoOwnerColumnError(error: unknown) {
+  return isMissingColumnError(error, [
+    'calendar_owner_scope',
+    'calendar_owner_usuario_id',
+    'calendar_owner_email',
+  ])
+}

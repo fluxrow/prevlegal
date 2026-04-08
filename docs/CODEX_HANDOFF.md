@@ -2896,3 +2896,36 @@ Pontos que precisam ser preservados durante a implementacao:
   - decidir a agenda de execução automática do worker
 - validação:
   - `npm run build` passou
+
+## Atualizacao 2026-04-08 - Agendamentos ganharam fallback de schema tambem na tabela `agendamentos`
+
+- problema observado em runtime:
+  - ao abrir `Novo agendamento` e preencher lead/responsavel/email, a API podia responder:
+    - `Could not find the 'calendar_owner_email' column of 'agendamentos' in the schema cache`
+- causa real:
+  - a producao ainda nao tem a migration `043_user_calendar_ownership.sql`
+  - o endurecimento anterior cobria colunas novas em `usuarios`, mas o `POST /api/agendamentos` ainda tentava gravar:
+    - `calendar_owner_scope`
+    - `calendar_owner_usuario_id`
+    - `calendar_owner_email`
+  - `PATCH` e `DELETE` tambem liam essas colunas sem fallback
+- correcao aplicada:
+  - `src/lib/permissions.ts`
+    - novo helper `isMissingAgendamentoOwnerColumnError`
+  - `src/app/api/agendamentos/route.ts`
+    - helper `insertAgendamentoWithSchemaFallback`
+    - primeira tentativa persiste owner columns
+    - se a schema nao tiver essas colunas, a API remove `calendar_owner_*` e reinsere no formato legado
+  - `src/app/api/agendamentos/[id]/route.ts`
+    - helper `getAgendamentoAtualWithSchemaFallback`
+    - select completo com `calendar_owner_*` primeiro
+    - fallback para select minimo se a `043` ainda nao existir
+    - update/cancel do Google passam a enviar `ownerScope` e `ownerUsuarioId` so quando presentes
+- efeito de produto:
+  - o modal deixa de quebrar em producao enquanto a `043` nao for aplicada
+  - a agenda continua funcional no modo legado
+  - assim que a migration entrar, a ownership explicita volta a ser persistida automaticamente
+- validacao:
+  - `npm run build` passou
+- pendencia real que continua:
+  - aplicar a migration `043` no banco para persistir ownership do calendario e completar a fase de agenda por usuario

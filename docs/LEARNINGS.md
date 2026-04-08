@@ -1270,3 +1270,12 @@ e a API de listagem de usuários ganhou a mesma resiliência
 - o worker devolve estado neutro quando a foundation ainda não está disponível
 - documentos `text/plain` podem ser parseados inline; binários dependem do serviço Docling externo
 **Regra pratica:** No PrevLegal, foundations que dependem de schema novo e serviço externo devem sempre degradar para “sem processamento”, nunca bloquear upload, leitura ou operação do lead
+
+### 133. Agenda por usuário precisa degradar também na tabela `agendamentos`, não só em `usuarios`
+**Problema:** Mesmo depois de endurecer a leitura das colunas novas em `usuarios`, o modal `Novo agendamento` ainda podia falhar com `Could not find the 'calendar_owner_email' column of 'agendamentos' in the schema cache`
+**Causa:** A produção ainda está sem a migration `043`, e o `POST /api/agendamentos` passou a gravar `calendar_owner_scope`, `calendar_owner_usuario_id` e `calendar_owner_email` sem fallback para schema legado
+**Correcao aplicada:** A API de agendamentos ganhou fallback de schema também na própria tabela `agendamentos`:
+- criação tenta inserir com `calendar_owner_*` e rebaixa automaticamente para payload legado se a coluna não existir
+- leitura do agendamento atual em `PATCH` e `DELETE` tenta primeiro o select completo e depois volta para o schema mínimo
+- atualização/cancelamento do evento Google passam a usar `ownerScope` e `ownerUsuarioId` só quando essas colunas realmente existem
+**Regra pratica:** No PrevLegal, toda fase que adiciona ownership explícito ao runtime precisa cobrir três camadas de fallback: `usuarios`, `configuracoes` e a tabela operacional que persiste o efeito final da feature

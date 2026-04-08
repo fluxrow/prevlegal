@@ -3,7 +3,10 @@ import { NextResponse } from 'next/server'
 import { criarEventoCalendar } from '@/lib/google-calendar'
 import { getTenantContext } from '@/lib/tenant-context'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
-import { isMissingUserCalendarColumnError } from '@/lib/permissions'
+import {
+  isMissingAgendamentoOwnerColumnError,
+  isMissingUserCalendarColumnError,
+} from '@/lib/permissions'
 
 async function getScopedLead(
   supabase: any,
@@ -61,6 +64,32 @@ async function getScopedUsuario(
   }
 
   return data
+}
+
+async function insertAgendamentoWithSchemaFallback(
+  supabase: any,
+  payload: Record<string, unknown>,
+) {
+  let result = await supabase
+    .from('agendamentos')
+    .insert(payload)
+    .select(`*, leads(id, nome, telefone), usuarios(id, nome)`)
+    .single()
+
+  if (!isMissingAgendamentoOwnerColumnError(result.error)) {
+    return result
+  }
+
+  const legacyPayload = { ...payload }
+  delete legacyPayload.calendar_owner_scope
+  delete legacyPayload.calendar_owner_usuario_id
+  delete legacyPayload.calendar_owner_email
+
+  return supabase
+    .from('agendamentos')
+    .insert(legacyPayload)
+    .select(`*, leads(id, nome, telefone), usuarios(id, nome)`)
+    .single()
 }
 
 export async function GET() {
@@ -152,25 +181,21 @@ export async function POST(request: Request) {
       console.warn('Google Calendar não conectado, agendando sem evento:', err)
     }
 
-    const { data, error } = await adminSupabase
-      .from('agendamentos')
-      .insert({
-        tenant_id: context.tenantId,
-        lead_id,
-        usuario_id: usuarioResponsavel.id,
-        data_hora,
-        duracao_minutos,
-        observacoes,
-        honorario,
-        google_event_id: googleEventId,
-        meet_link: meetLink,
-        calendar_owner_scope: calendarOwnerScope,
-        calendar_owner_usuario_id: calendarOwnerUsuarioId,
-        calendar_owner_email: calendarOwnerEmail,
-        status: 'agendado',
-      })
-      .select(`*, leads(id, nome, telefone), usuarios(id, nome)`)
-      .single()
+    const { data, error } = await insertAgendamentoWithSchemaFallback(adminSupabase, {
+      tenant_id: context.tenantId,
+      lead_id,
+      usuario_id: usuarioResponsavel.id,
+      data_hora,
+      duracao_minutos,
+      observacoes,
+      honorario,
+      google_event_id: googleEventId,
+      meet_link: meetLink,
+      calendar_owner_scope: calendarOwnerScope,
+      calendar_owner_usuario_id: calendarOwnerUsuarioId,
+      calendar_owner_email: calendarOwnerEmail,
+      status: 'agendado',
+    })
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 })
