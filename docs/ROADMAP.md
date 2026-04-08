@@ -1197,6 +1197,10 @@ Status atual em 18/03/2026:
   - fluxo manual pelo detalhe do lead validado com convite chegando por e-mail
   - calendario operacional mensal validado
   - ponto residual mais recente ficou na busca digitada do modal global de `/agendamentos`, atacado pela remocao da dependencia de `leads.email` na busca curta
+- Estado atual em 08/04/2026:
+  - tela de `Agendamentos` já opera bem nos dois temas com tokens semânticos
+  - desktop ganhou composição mais operacional, com calendário mensal reduzido e trilho lateral para filas de `Precisa confirmação`, `Confirmados` e `Histórico recente`
+  - a leitura agora favorece ação sem depender de scroll longo
 
 ### Fase 29 — Saúde e risco do tenant
 - Expandir o admin com tendências de uso, último acesso, risco de churn e crescimento por período

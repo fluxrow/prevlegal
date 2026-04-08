@@ -110,6 +110,15 @@ const SURFACE_CARD_STYLE: React.CSSProperties = {
   boxShadow: '0 18px 48px rgba(15, 23, 42, 0.08)',
 }
 
+type RailSection = {
+  key: string
+  title: string
+  description: string
+  items: Agendamento[]
+  tone: string
+  bg: string
+}
+
 export default function AgendamentosPage() {
   const searchParams = useSearchParams()
   const [agendamentos, setAgendamentos] = useState<Agendamento[]>([])
@@ -574,8 +583,134 @@ export default function AgendamentosPage() {
     )
   }
 
+  function renderSidebarCard(ag: Agendamento) {
+    const date = parseISO(ag.data_hora)
+    const statusInfo = STATUS_LABELS[ag.status] ?? { label: ag.status, color: 'text-slate-400 bg-slate-400/10' }
+    const calendarOwnerLabel = ag.calendar_owner_scope === 'user' ? 'Calendário do responsável' : 'Calendário do escritório'
+    const urgente = ag.status !== 'realizado' && ag.status !== 'cancelado' && (isToday(date) || isPast(date))
+
+    return (
+      <button
+        key={ag.id}
+        onClick={() => setSelectedAgendamento(ag)}
+        className="w-full rounded-2xl p-3 text-left transition-all hover:-translate-y-0.5"
+        style={SURFACE_CARD_STYLE}
+      >
+        <div className="flex items-start gap-3">
+          <div className="w-12 flex-shrink-0 text-center">
+            <div className="text-2xl font-semibold leading-none" style={{ color: 'var(--text-primary)' }}>
+              {format(date, 'dd')}
+            </div>
+            <div className="mt-0.5 text-[11px] uppercase" style={{ color: 'var(--text-secondary)' }}>
+              {format(date, 'MMM', { locale: ptBR })}
+            </div>
+            <div className="mt-1 text-xs font-medium" style={{ color: 'var(--accent)' }}>
+              {format(date, 'HH:mm')}
+            </div>
+          </div>
+
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${statusInfo.color}`}>
+                {statusInfo.label}
+              </span>
+              {urgente ? (
+                <span className="rounded-full px-2 py-0.5 text-[10px] font-medium" style={{ color: 'var(--yellow)', background: 'var(--yellow-bg)' }}>
+                  Hoje
+                </span>
+              ) : null}
+            </div>
+
+            <div className="mt-2 truncate text-base font-semibold" style={{ color: 'var(--text-primary)' }}>
+              {ag.leads?.nome || 'Agendamento'}
+            </div>
+
+            <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px]" style={{ color: 'var(--text-secondary)' }}>
+              <span className="inline-flex items-center gap-1">
+                <Clock className="h-3 w-3" />
+                {ag.duracao_minutos} min
+              </span>
+              <span className="rounded-full px-2 py-0.5" style={{ background: 'var(--bg)', color: 'var(--text-secondary)' }}>
+                {calendarOwnerLabel}
+              </span>
+            </div>
+
+            {ag.observacoes ? (
+              <p className="mt-2 line-clamp-2 text-xs" style={{ color: 'var(--text-secondary)' }}>
+                {ag.observacoes}
+              </p>
+            ) : null}
+          </div>
+        </div>
+      </button>
+    )
+  }
+
+  function renderRailSection(section: RailSection) {
+    return (
+      <section key={section.key} className="rounded-[24px] p-4" style={SURFACE_CARD_STYLE}>
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <div className="text-[11px] font-semibold uppercase tracking-[0.08em]" style={{ color: section.tone }}>
+              {section.title}
+            </div>
+            <p className="mt-1 text-xs leading-5" style={{ color: 'var(--text-secondary)' }}>
+              {section.description}
+            </p>
+          </div>
+          <span
+            className="inline-flex min-w-8 items-center justify-center rounded-full px-2.5 py-1 text-xs font-semibold"
+            style={{ background: section.bg, color: section.tone }}
+          >
+            {section.items.length}
+          </span>
+        </div>
+
+        <div className="mt-4 space-y-3">
+          {section.items.length > 0 ? (
+            section.items.map((ag) => renderSidebarCard(ag))
+          ) : (
+            <div
+              className="rounded-2xl border border-dashed px-4 py-6 text-center text-xs"
+              style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)', background: 'var(--bg)' }}
+            >
+              Nada nesta fila agora.
+            </div>
+          )}
+        </div>
+      </section>
+    )
+  }
+
+  const railSections: RailSection[] = [
+    {
+      key: 'pendentes',
+      title: 'Precisa confirmação',
+      description: 'Novos ou remarcados que ainda pedem ação humana.',
+      items: pendentesConfirmacao,
+      tone: 'var(--yellow)',
+      bg: 'var(--yellow-bg)',
+    },
+    {
+      key: 'confirmados',
+      title: 'Confirmados',
+      description: 'Compromissos já validados e prontos para acontecer.',
+      items: confirmados,
+      tone: 'var(--green)',
+      bg: 'var(--green-bg)',
+    },
+    {
+      key: 'historico',
+      title: 'Histórico recente',
+      description: 'Realizados ou cancelados para leitura rápida.',
+      items: finalizados.slice(0, 4),
+      tone: 'var(--text-secondary)',
+      bg: 'var(--bg-hover)',
+    },
+  ]
+
   return (
-    <div className="max-w-7xl mx-auto p-6 md:p-8" style={PAGE_SHELL_STYLE}>
+    <div className="mx-auto max-w-[1680px] p-6 md:p-8" style={PAGE_SHELL_STYLE}>
       <div className="mb-6 rounded-[28px] p-5 md:p-6" style={HERO_CARD_STYLE}>
         <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
           <div className="max-w-2xl">
@@ -741,122 +876,130 @@ export default function AgendamentosPage() {
         </div>
       ) : null}
 
-      <div className="mb-8 overflow-hidden rounded-[28px]" style={SURFACE_CARD_STYLE}>
-        <div className="flex items-center justify-between px-5 py-5" style={{ borderBottom: '1px solid var(--border)' }}>
-          <div>
-            <h2 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Calendário operacional</h2>
-            <p className="mt-1 text-xs" style={{ color: 'var(--text-secondary)' }}>
-              Visualize os agendamentos por cor e clique para operar como numa agenda de trabalho.
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setCurrentMonth((current) => subMonths(current, 1))}
-              className="rounded-xl p-2 transition-colors"
-              style={{ border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text-secondary)' }}
-              title="Mês anterior"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-            <div className="min-w-40 text-center text-sm font-semibold capitalize" style={{ color: 'var(--text-primary)' }}>
-              {format(currentMonth, "MMMM 'de' yyyy", { locale: ptBR })}
+      <div className="xl:grid xl:grid-cols-[minmax(0,1.55fr)_380px] xl:items-start xl:gap-6">
+        <div className="mb-8 overflow-hidden rounded-[28px] xl:mb-0" style={SURFACE_CARD_STYLE}>
+          <div className="flex items-center justify-between px-5 py-5" style={{ borderBottom: '1px solid var(--border)' }}>
+            <div>
+              <h2 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Calendário operacional</h2>
+              <p className="mt-1 text-xs" style={{ color: 'var(--text-secondary)' }}>
+                Visualize os agendamentos por cor e clique para operar como numa agenda de trabalho.
+              </p>
             </div>
-            <button
-              onClick={() => setCurrentMonth((current) => addMonths(current, 1))}
-              className="rounded-xl p-2 transition-colors"
-              style={{ border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text-secondary)' }}
-              title="Próximo mês"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-7" style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg)' }}>
-          {WEEKDAY_LABELS.map((day) => (
-            <div key={day} className="px-3 py-2 text-center text-[11px] font-semibold uppercase tracking-[0.08em]" style={{ color: 'var(--text-secondary)' }}>
-              {day}
-            </div>
-          ))}
-        </div>
-
-        <div className="grid grid-cols-7">
-          {calendarDays.map((day) => {
-            const items = agendamentosDoDia(day)
-            const outside = !isSameMonth(day, currentMonth)
-            const isCurrentDay = isToday(day)
-
-            return (
-              <div
-                key={day.toISOString()}
-                className="min-h-36 border-b border-r p-2 align-top"
-                style={{
-                  borderColor: 'var(--border)',
-                  background: outside ? 'rgba(124, 135, 152, 0.04)' : 'var(--bg-card)',
-                }}
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setCurrentMonth((current) => subMonths(current, 1))}
+                className="rounded-xl p-2 transition-colors"
+                style={{ border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text-secondary)' }}
+                title="Mês anterior"
               >
-                <div className="mb-2 flex items-center justify-between">
-                  <span
-                    className="inline-flex h-7 w-7 items-center justify-center rounded-full text-xs font-semibold"
-                    style={{
-                      background: isCurrentDay ? 'var(--accent)' : 'transparent',
-                      color: isCurrentDay
-                        ? '#fff'
-                        : outside
-                          ? 'var(--text-muted)'
-                          : 'var(--text-primary)',
-                    }}
-                  >
-                    {format(day, 'd')}
-                  </span>
-                  {items.length > 0 ? (
-                    <span className="text-[10px] font-medium" style={{ color: 'var(--text-secondary)' }}>
-                      {items.length} ag.
-                    </span>
-                  ) : null}
-                </div>
-
-                <div className="space-y-1.5">
-                  {items.slice(0, 3).map((ag) => {
-                    const date = parseISO(ag.data_hora)
-                    const statusStyle = STATUS_CALENDAR_STYLES[ag.status] ?? STATUS_CALENDAR_STYLES.agendado
-
-                    return (
-                      <button
-                        key={ag.id}
-                        onClick={() => setSelectedAgendamento(ag)}
-                        className={`flex w-full items-start gap-2 rounded-xl border px-2.5 py-2 text-left transition-colors hover:-translate-y-0.5 ${statusStyle.badge} ${statusStyle.border}`}
-                        style={{ backdropFilter: 'blur(10px)' }}
-                      >
-                        <span className={`mt-1 h-2 w-2 flex-shrink-0 rounded-full ${statusStyle.dot}`} />
-                        <span className="min-w-0 flex-1">
-                          <span className="block truncate text-[11px] font-semibold">
-                            {format(date, 'HH:mm')} · {ag.leads?.nome || 'Lead'}
-                          </span>
-                          <span className="block truncate text-[10px] opacity-80">
-                            {STATUS_LABELS[ag.status]?.label || ag.status}
-                          </span>
-                        </span>
-                      </button>
-                    )
-                  })}
-                  {items.length > 3 ? (
-                    <button
-                      onClick={() => setSelectedAgendamento(items[0])}
-                      className="w-full rounded-xl border border-dashed px-2 py-1.5 text-left text-[10px] font-medium transition-colors"
-                      style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)', background: 'var(--bg)' }}
-                    >
-                      +{items.length - 3} mais agendamentos
-                    </button>
-                  ) : null}
-                </div>
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <div className="min-w-40 text-center text-sm font-semibold capitalize" style={{ color: 'var(--text-primary)' }}>
+                {format(currentMonth, "MMMM 'de' yyyy", { locale: ptBR })}
               </div>
-            )
-          })}
+              <button
+                onClick={() => setCurrentMonth((current) => addMonths(current, 1))}
+                className="rounded-xl p-2 transition-colors"
+                style={{ border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text-secondary)' }}
+                title="Próximo mês"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-7" style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg)' }}>
+            {WEEKDAY_LABELS.map((day) => (
+              <div key={day} className="px-3 py-2 text-center text-[11px] font-semibold uppercase tracking-[0.08em]" style={{ color: 'var(--text-secondary)' }}>
+                {day}
+              </div>
+            ))}
+          </div>
+
+          <div className="grid grid-cols-7">
+            {calendarDays.map((day) => {
+              const items = agendamentosDoDia(day)
+              const outside = !isSameMonth(day, currentMonth)
+              const isCurrentDay = isToday(day)
+
+              return (
+                <div
+                  key={day.toISOString()}
+                  className="min-h-[112px] border-b border-r p-2 align-top md:min-h-[128px] xl:min-h-[116px]"
+                  style={{
+                    borderColor: 'var(--border)',
+                    background: outside ? 'rgba(124, 135, 152, 0.04)' : 'var(--bg-card)',
+                  }}
+                >
+                  <div className="mb-2 flex items-center justify-between">
+                    <span
+                      className="inline-flex h-7 w-7 items-center justify-center rounded-full text-xs font-semibold"
+                      style={{
+                        background: isCurrentDay ? 'var(--accent)' : 'transparent',
+                        color: isCurrentDay
+                          ? '#fff'
+                          : outside
+                            ? 'var(--text-muted)'
+                            : 'var(--text-primary)',
+                      }}
+                    >
+                      {format(day, 'd')}
+                    </span>
+                    {items.length > 0 ? (
+                      <span className="text-[10px] font-medium" style={{ color: 'var(--text-secondary)' }}>
+                        {items.length} ag.
+                      </span>
+                    ) : null}
+                  </div>
+
+                  <div className="space-y-1.5">
+                    {items.slice(0, 2).map((ag) => {
+                      const date = parseISO(ag.data_hora)
+                      const statusStyle = STATUS_CALENDAR_STYLES[ag.status] ?? STATUS_CALENDAR_STYLES.agendado
+
+                      return (
+                        <button
+                          key={ag.id}
+                          onClick={() => setSelectedAgendamento(ag)}
+                          className={`flex w-full items-start gap-2 rounded-xl border px-2 py-1.5 text-left transition-colors hover:-translate-y-0.5 ${statusStyle.badge} ${statusStyle.border}`}
+                          style={{ backdropFilter: 'blur(10px)' }}
+                        >
+                          <span className={`mt-1 h-2 w-2 flex-shrink-0 rounded-full ${statusStyle.dot}`} />
+                          <span className="min-w-0 flex-1">
+                            <span className="block truncate text-[11px] font-semibold">
+                              {format(date, 'HH:mm')} · {ag.leads?.nome || 'Lead'}
+                            </span>
+                            <span className="block truncate text-[10px] opacity-80">
+                              {STATUS_LABELS[ag.status]?.label || ag.status}
+                            </span>
+                          </span>
+                        </button>
+                      )
+                    })}
+                    {items.length > 2 ? (
+                      <button
+                        onClick={() => setSelectedAgendamento(items[0])}
+                        className="w-full rounded-xl border border-dashed px-2 py-1.5 text-left text-[10px] font-medium transition-colors"
+                        style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)', background: 'var(--bg)' }}
+                      >
+                        +{items.length - 2} mais agendamentos
+                      </button>
+                    ) : null}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
         </div>
+
+        <aside className="hidden xl:block">
+          <div className="sticky top-6 space-y-4">
+            {railSections.map((section) => renderRailSection(section))}
+          </div>
+        </aside>
       </div>
 
-      <div data-tour="agendamentos-lista">
+      <div data-tour="agendamentos-lista" className="xl:hidden">
         {loading ? (
           <div className="space-y-3">
             {[1, 2, 3].map((i) => (

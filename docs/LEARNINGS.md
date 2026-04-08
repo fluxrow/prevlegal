@@ -1248,3 +1248,9 @@ e a API de listagem de usuários ganhou a mesma resiliência
 **Causa:** A página de agendamentos cresceu rápido com classes hardcoded (`#11131b`, `text-white`, `bg-[#13131f]`) e deixou de respeitar os tokens do tema global
 **Correcao aplicada:** Reestruturar a superfície de `Agendamentos` para usar `var(--bg)`, `var(--bg-card)`, `var(--bg-surface)`, `var(--border)` e cores semânticas do sistema, além de reforçar a hierarquia visual no topo e nos cards da fila operacional
 **Regra pratica:** No PrevLegal, telas de operação que existem nos dois temas devem nascer com tokens semânticos desde o começo; hardcode de cor escura em página principal quase sempre vira regressão visual no claro
+
+### 130. Agenda operacional desktop precisa expor o que exige ação sem empurrar tudo para baixo
+**Problema:** Mesmo mais bonita, a tela de `Agendamentos` ainda obrigava o operador a descer para ver a fila de confirmação, histórico e confirmados, enquanto o calendário ocupava largura e altura demais no desktop
+**Causa:** A composição seguia linear: hero, calendário grande e só depois os cards operacionais; isso tratava a página mais como calendário tradicional do que como painel de execução
+**Correcao aplicada:** Reorganizar a tela em desktop com um trilho lateral fixo para `Precisa confirmação`, `Confirmados` e `Histórico recente`, reduzir a densidade do calendário mensal e limitar a quantidade de eventos visíveis por célula para privilegiar leitura + ação sem scroll
+**Regra pratica:** No PrevLegal, telas operacionais densas devem usar a lateral do desktop para fila acionável; o calendário continua importante, mas não pode esconder o trabalho que a equipe precisa executar agora

@@ -2801,3 +2801,33 @@ Pontos que precisam ser preservados durante a implementacao:
   - isso reduz falso negativo de QA, onde a automacao parecia “funcionar em um lugar e em outro nao”
 - validacao:
   - `npm run build` passou
+
+## Atualizacao 2026-04-08 - Agenda desktop agora trabalha com trilho lateral
+
+- motivacao:
+  - depois do polish visual por tema, a tela ainda pedia scroll demais para enxergar a fila operacional
+  - o calendario mensal seguia dominante demais para um fluxo que exige ver pendencias e confirmacoes ao mesmo tempo
+- correcao aplicada:
+  - `src/app/(dashboard)/agendamentos/page.tsx`
+  - introduzido `railSections` no desktop para:
+    - `Precisa confirmação`
+    - `Confirmados`
+    - `Histórico recente`
+  - cada seção lateral ganhou card resumido com:
+    - dia
+    - hora
+    - status
+    - dono do calendario
+    - observacao curta
+  - o calendario mensal ficou mais compacto:
+    - largura total do shell ampliada
+    - grade desktop em `minmax(0,1.55fr) + 380px`
+    - menos eventos por célula (`2` em vez de `3`)
+    - altura mínima das células reduzida
+  - em telas menores, a lista completa continua abaixo do calendario via `xl:hidden`
+- impacto:
+  - reduz scroll no desktop
+  - melhora leitura simultanea entre tempo e fila de acao
+  - preserva a semantica da tela como agenda operacional, nao apenas agenda visual
+- validacao:
+  - `npm run build` passou

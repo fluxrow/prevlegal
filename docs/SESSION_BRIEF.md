@@ -357,3 +357,16 @@ Gatilho automático: a mudança de status do lead na API `PATCH` chama o *Orques
   - é uma foundation útil focada nos módulos mais sensíveis
 - validação:
   - `npm run build` passou
+
+## Atualização 2026-04-08 - Agenda desktop virou painel lateral de operação
+
+- a tela de `Agendamentos` deu mais um salto de UX no desktop:
+  - o calendário mensal ficou mais compacto
+  - a fila operacional saiu da parte inferior e foi para uma coluna lateral fixa
+  - o operador agora enxerga `Precisa confirmação`, `Confirmados` e `Histórico recente` sem rolar a página
+- a decisão de produto foi tratar a agenda menos como “calendário cheio” e mais como painel de execução
+- no mobile e em telas menores, a composição empilhada continua existindo para preservar legibilidade
+- arquivo principal:
+  - `src/app/(dashboard)/agendamentos/page.tsx`
+- validação:
+  - `npm run build` passou
