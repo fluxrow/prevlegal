@@ -73,6 +73,37 @@ Mestra: [[MASTER_PREV_LEGAL]]
 - proximo passo recomendado:
   - validar em runtime se o tenant `Fluxrow` passa a refletir acesso real no painel admin após novo login/uso do app
 
+## Atualizacao Login / Tenant Context resiliente a migrations pendentes — 08/04/2026
+
+- foi identificada a causa exata do `acesso-pendente` persistente no tenant `Fluxrow`
+- arquivos principais:
+  - `src/lib/permissions.ts`
+  - `src/lib/current-usuario.ts`
+  - `src/app/api/usuarios/route.ts`
+- causa identificada:
+  - a produção ainda está sem as migrations:
+    - `043_user_calendar_ownership`
+    - `044_user_permissions_foundation`
+  - com isso, o runtime não tinha só a coluna `usuarios.permissions` faltando
+  - também faltavam:
+    - `usuarios.google_calendar_email`
+    - `usuarios.google_calendar_connected_at`
+  - como o resolvedor do usuário atual tentava ler esse payload “completo”, o `getTenantContext()` continuava retornando `null` mesmo com `auth_id`, `tenant_id` e `ativo` corretos
+- correção aplicada:
+  - o lookup de `usuarios` agora faz fallback em camadas:
+    - schema completo
+    - schema sem agenda própria
+    - schema mínimo sem permissões nem agenda própria
+  - a listagem de usuários também foi endurecida para o mesmo cenário
+- impacto operacional:
+  - o app deixa de bloquear acesso por drift de schema entre código e banco
+  - `043` e `044` continuam importantes, mas deixam de ser pré-requisito para o login básico do tenant
+- validacao:
+  - `npm run build` passou
+- proximo passo recomendado:
+  - validar login real do `Fluxrow`
+  - depois aplicar `043` e `044` em produção para liberar a experiência completa sem fallback
+
 ## Atualizacao Importação Inteligente — 08/04/2026
 
 - o importador deixou de depender apenas do layout fixo da planilha clássica

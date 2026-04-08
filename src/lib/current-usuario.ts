@@ -1,6 +1,6 @@
 import { createClient as createAdmin } from '@supabase/supabase-js'
 import type { User } from '@supabase/supabase-js'
-import { isMissingPermissionsColumnError } from '@/lib/permissions'
+import { isMissingUsuarioOptionalColumnError } from '@/lib/permissions'
 
 function createAdminClient() {
   return createAdmin(
@@ -9,40 +9,46 @@ function createAdminClient() {
   )
 }
 
-async function findUsuarioByAuthId(adminClient: ReturnType<typeof createAdminClient>, authUserId: string) {
-  let query = await adminClient
-    .from('usuarios')
-    .select('id, auth_id, tenant_id, nome, email, role, permissions, ativo, google_calendar_email, google_calendar_connected_at')
-    .eq('auth_id', authUserId)
-    .maybeSingle()
+const USUARIO_SELECT_VARIANTS = [
+  'id, auth_id, tenant_id, nome, email, role, permissions, ativo, google_calendar_email, google_calendar_connected_at',
+  'id, auth_id, tenant_id, nome, email, role, permissions, ativo',
+  'id, auth_id, tenant_id, nome, email, role, ativo',
+] as const
 
-  if (isMissingPermissionsColumnError(query.error)) {
-    query = await adminClient
-      .from('usuarios')
-      .select('id, auth_id, tenant_id, nome, email, role, ativo, google_calendar_email, google_calendar_connected_at')
-      .eq('auth_id', authUserId)
-      .maybeSingle()
+async function runUsuarioLookup(executor: (selectClause: string) => Promise<{ data: any; error: unknown }>) {
+  let lastResult: { data: any; error: unknown } | null = null
+
+  for (const selectClause of USUARIO_SELECT_VARIANTS) {
+    const result = await executor(selectClause)
+    if (!result.error) return result
+    lastResult = result
+
+    if (!isMissingUsuarioOptionalColumnError(result.error)) {
+      return result
+    }
   }
 
-  return query
+  return lastResult!
+}
+
+async function findUsuarioByAuthId(adminClient: ReturnType<typeof createAdminClient>, authUserId: string) {
+  return runUsuarioLookup(async (selectClause) =>
+    await adminClient
+      .from('usuarios')
+      .select(selectClause)
+      .eq('auth_id', authUserId)
+      .maybeSingle(),
+  )
 }
 
 async function findUsuarioByEmail(adminClient: ReturnType<typeof createAdminClient>, email: string) {
-  let query = await adminClient
-    .from('usuarios')
-    .select('id, auth_id, tenant_id, nome, email, role, permissions, ativo, google_calendar_email, google_calendar_connected_at')
-    .eq('email', email)
-    .maybeSingle()
-
-  if (isMissingPermissionsColumnError(query.error)) {
-    query = await adminClient
+  return runUsuarioLookup(async (selectClause) =>
+    await adminClient
       .from('usuarios')
-      .select('id, auth_id, tenant_id, nome, email, role, ativo, google_calendar_email, google_calendar_connected_at')
+      .select(selectClause)
       .eq('email', email)
-      .maybeSingle()
-  }
-
-  return query
+      .maybeSingle(),
+  )
 }
 
 async function ensureResponsibleTenantAccess(
@@ -64,25 +70,16 @@ async function ensureResponsibleTenantAccess(
   let usuario = usuarioPorEmail.data
 
   if (!usuario) {
-    let usuarioAdminTenant = await adminClient
-      .from('usuarios')
-      .select('id, auth_id, tenant_id, nome, email, role, permissions, ativo, google_calendar_email, google_calendar_connected_at')
-      .eq('tenant_id', tenant.id)
-      .eq('role', 'admin')
-      .order('convidado_em', { ascending: true })
-      .limit(1)
-      .maybeSingle()
-
-    if (isMissingPermissionsColumnError(usuarioAdminTenant.error)) {
-      usuarioAdminTenant = await adminClient
+    const usuarioAdminTenant = await runUsuarioLookup(async (selectClause) =>
+      await adminClient
         .from('usuarios')
-        .select('id, auth_id, tenant_id, nome, email, role, ativo, google_calendar_email, google_calendar_connected_at')
+        .select(selectClause)
         .eq('tenant_id', tenant.id)
         .eq('role', 'admin')
         .order('convidado_em', { ascending: true })
         .limit(1)
-        .maybeSingle()
-    }
+        .maybeSingle(),
+    )
 
     usuario = usuarioAdminTenant.data
   }

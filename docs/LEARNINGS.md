@@ -1222,3 +1222,13 @@ e mover o login principal para uma rota server-side (`POST /api/session/login`) 
 **Causa:** O app renovava a sessão com `POST /api/session/touch`, mas não atualizava `usuarios.ultimo_acesso`; a métrica do tenant lia esse campo e acabava parecendo prova de falta de uso quando era só telemetria faltando
 **Correcao aplicada:** Criar um caminho canônico para registrar `ultimo_acesso` do usuário operacional e chamá-lo tanto no login server-side quanto no heartbeat de sessão do app
 **Regra pratica:** No PrevLegal, qualquer métrica de saúde operacional usada no admin precisa nascer de um write real no runtime correspondente; não inferir adoção a partir de campo que a própria sessão nunca atualiza
+
+### 127. Fallback de schema em `usuarios` precisa cobrir todas as colunas opcionais da fase nova, não só `permissions`
+**Problema:** Mesmo depois do fallback da coluna `permissions`, o login do tenant ainda podia cair em `acesso-pendente` em produção
+**Causa:** A produção não estava sem apenas a migration `044`; também faltava a `043`, então o resolvedor do usuário quebrava ao selecionar `google_calendar_email` e `google_calendar_connected_at`
+**Correcao aplicada:** O lookup de `usuarios` passou a tentar o schema em três camadas:
+- completo
+- sem colunas de agenda própria
+- mínimo sem agenda própria nem permissões
+e a API de listagem de usuários ganhou a mesma resiliência
+**Regra pratica:** No PrevLegal, quando o runtime precisa sobreviver a migrations pendentes, o fallback deve cobrir todo o grupo de colunas opcionais daquela fase e não apenas a primeira coluna nova que causou erro

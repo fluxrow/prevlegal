@@ -62,12 +62,24 @@ export function hasPermission(
   return resolvePermissions(source.role, source.permissions)[permission]
 }
 
-export function isMissingPermissionsColumnError(error: unknown) {
+export function isMissingColumnError(error: unknown, columns: string[]) {
   if (!error || typeof error !== 'object') return false
 
   const message = 'message' in error && typeof error.message === 'string' ? error.message.toLowerCase() : ''
   const details = 'details' in error && typeof error.details === 'string' ? error.details.toLowerCase() : ''
 
-  return (message.includes('permissions') || details.includes('permissions'))
+  return columns.some((column) => message.includes(column.toLowerCase()) || details.includes(column.toLowerCase()))
     && (message.includes('column') || details.includes('column'))
+}
+
+export function isMissingPermissionsColumnError(error: unknown) {
+  return isMissingColumnError(error, ['permissions'])
+}
+
+export function isMissingUsuarioOptionalColumnError(error: unknown) {
+  return isMissingColumnError(error, [
+    'permissions',
+    'google_calendar_email',
+    'google_calendar_connected_at',
+  ])
 }
