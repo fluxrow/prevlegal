@@ -20,6 +20,33 @@ Objetivo:
 - facilitar o repasse posterior para o Claude
 - registrar decisoes, arquivos afetados, validacoes e proximos passos
 
+## Atualizacao 2026-04-09 - Z-API inbound endurecido para formatos de body nao-JSON
+
+- contexto:
+  - a rota `/api/webhooks/zapi` ja existia, o webhook estava salvo e o outbound via Z-API ja funcionava
+  - mesmo assim o inbound ainda nao aparecia na caixa em alguns testes reais
+- leitura tecnica:
+  - o payload da Z-API na variante `web / multi-device` pode nao chegar como `application/json`
+  - assumir `await request.json()` fazia o body virar vazio e o parser seguinte nao tinha material suficiente para extrair telefone e mensagem
+- arquivo alterado:
+  - `src/app/api/webhooks/zapi/route.ts`
+- mudancas principais:
+  - foi criada uma camada `parseWebhookPayload(request)` com:
+    - leitura via `request.text()`
+    - suporte a `application/x-www-form-urlencoded`
+    - parse de JSON puro quando existir
+    - parse recursivo de strings JSON serializadas
+    - fallback para query params
+    - fallback final para `raw body`
+  - tanto `handleReceiveEvent` quanto o `POST` generico da rota passaram a usar essa camada comum
+- validacao:
+  - `npm run build` passou
+- proximo passo operacional:
+  - retestar inbound real com o webhook ja salvo
+  - se ainda falhar, a trilha restante fica bem menor:
+    - ou o provider nao esta entregando o webhook
+    - ou a entrega esta chegando com shape ainda nao coberto e agora isso fica mais facil de inspecionar
+
 ## Atualizacao 2026-04-09 - Google OAuth preparado para go-live comercial
 
 - contexto:

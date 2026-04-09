@@ -20,6 +20,15 @@ Mestra: [[MASTER_PREV_LEGAL]]
 - [[Sessoes/2026-03-18-prevlegal-admin-roi-obsidian]]
 - [[Sessoes/2026-03-18-sessoes-17-18-marco-prevlegal-completo]]
 
+### 147. Webhook de provider nao pode assumir JSON puro
+**Problema:** O inbound da Z-API seguia falhando mesmo com rota publicada, parser ampliado e webhook salvo corretamente
+**Causa:** A variante `web / multi-device` pode enviar o corpo do webhook como `application/x-www-form-urlencoded`, texto cru ou JSON serializado dentro de campos string; assumir `request.json()` fazia o body virar `{}` e o payload era descartado
+**Correção:** Trocar a leitura do body para `request.text()`, detectar `content-type`, suportar `form-urlencoded`, JSON cru, query params e parse recursivo de strings serializadas em JSON
+**Regra pratica:** Em integrações com providers de mensageria, o backend deve tolerar pelo menos:
+- `application/json`
+- `application/x-www-form-urlencoded`
+- texto cru ou campos serializados
+
 ### 146. Busca global não pode depender de acento ou formatação perfeita
 **Problema:** Na busca global (`Ctrl+K`), digitar `Caua` não encontrava `Cauã`, e números formatados de forma diferente também podiam escapar
 **Causa:** A rota `/api/busca` usava `ilike` direto no banco, enquanto a busca de leads já fazia normalização de acentos e dígitos em memória

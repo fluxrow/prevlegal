@@ -4,6 +4,25 @@ Contexto: [[SESSION_HISTORY_MASTER]]
 Mestra: [[MASTER_PREV_LEGAL]]
 > Última atualização: 09/04/2026
 
+## Atualizacao Z-API / webhook inbound endurecido para body nao-JSON — 09/04/2026
+
+- o inbound da Z-API continuou falhando mesmo depois dos ajustes de parser por payload e match de telefone
+- a leitura final apontou que a variacao `web / multi-device` pode entregar webhook fora de `application/json`, inclusive como `form-urlencoded` ou texto cru
+- arquivo principal:
+  - `src/app/api/webhooks/zapi/route.ts`
+- melhorias aplicadas:
+  - leitura do body passou a usar `request.text()`
+  - fallback para `application/x-www-form-urlencoded`
+  - tentativa de parse de JSON serializado dentro de campos string
+  - fallback final para query params e `raw body`
+  - a mesma normalizacao agora vale tanto para `event=on-receive` quanto para os demais acks da rota
+- impacto operacional:
+  - reduz dependencia do formato exato enviado pela Z-API
+  - evita que o inbound morra silenciosamente quando o provedor nao envia JSON puro
+  - encurta bastante a superficie de erro da integracao web antes da migracao para `mobile`
+- validacao:
+  - `npm run build` passou
+
 ## Atualizacao Google OAuth / endurecimento comercial — 09/04/2026
 
 - a frente técnica da agenda Google saiu do modo “só funciona em ambiente interno” e foi preparada para submissão comercial do app no Google

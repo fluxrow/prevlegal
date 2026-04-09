@@ -14,6 +14,91 @@ function createAdminSupabase() {
   )
 }
 
+function parseJsonIfPossible(value: unknown) {
+  if (typeof value !== 'string') return value
+
+  const trimmed = value.trim()
+  if (!trimmed) return value
+
+  if (
+    (trimmed.startsWith('{') && trimmed.endsWith('}')) ||
+    (trimmed.startsWith('[') && trimmed.endsWith(']'))
+  ) {
+    try {
+      return JSON.parse(trimmed)
+    } catch {
+      return value
+    }
+  }
+
+  return value
+}
+
+function normalizeParsedPayload(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map((item) => normalizeParsedPayload(item))
+  }
+
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value as Record<string, unknown>).map(([key, entry]) => [
+        key,
+        normalizeParsedPayload(parseJsonIfPossible(entry)),
+      ]),
+    )
+  }
+
+  return value
+}
+
+function searchParamsToObject(searchParams: URLSearchParams) {
+  const entries = Array.from(searchParams.entries())
+  const grouped = new Map<string, string[]>()
+
+  for (const [key, value] of entries) {
+    grouped.set(key, [...(grouped.get(key) || []), value])
+  }
+
+  return Object.fromEntries(
+    Array.from(grouped.entries()).map(([key, values]) => [
+      key,
+      values.length === 1 ? values[0] : values,
+    ]),
+  )
+}
+
+async function parseWebhookPayload(request: NextRequest) {
+  const rawBody = await request.text().catch(() => '')
+  const contentType = (request.headers.get('content-type') || '').toLowerCase()
+
+  if (!rawBody.trim()) {
+    return searchParamsToObject(request.nextUrl.searchParams)
+  }
+
+  if (contentType.includes('application/x-www-form-urlencoded')) {
+    return normalizeParsedPayload(searchParamsToObject(new URLSearchParams(rawBody)))
+  }
+
+  if (contentType.includes('application/json')) {
+    try {
+      return normalizeParsedPayload(JSON.parse(rawBody))
+    } catch {
+      return { raw: rawBody }
+    }
+  }
+
+  try {
+    return normalizeParsedPayload(JSON.parse(rawBody))
+  } catch {
+    const asParams = new URLSearchParams(rawBody)
+    if (Array.from(asParams.keys()).length > 0) {
+      return normalizeParsedPayload(searchParamsToObject(asParams))
+    }
+  }
+
+  return { raw: rawBody }
+}
+
 function applyTenantFilter(query: any, tenantId: string | null) {
   return tenantId ? query.eq('tenant_id', tenantId) : query.is('tenant_id', null)
 }
@@ -294,7 +379,7 @@ function extractInboundPayload(payload: unknown) {
 
 async function handleReceiveEvent(request: NextRequest, event: string) {
   const supabase = createAdminSupabase()
-  const payload = await request.json().catch(() => ({}))
+  const payload = await parseWebhookPayload(request)
 
   const instanceId =
     request.nextUrl.searchParams.get('instance_id') ||
@@ -547,7 +632,7 @@ export async function POST(request: NextRequest) {
     return handleReceiveEvent(request, event)
   }
 
-  const payload = await request.json().catch(() => ({}))
+  const payload = await parseWebhookPayload(request)
   return NextResponse.json({
     ok: true,
     ignored: true,

@@ -160,6 +160,29 @@ Gatilho automático: a mudança de status do lead na API `PATCH` chama o *Orques
   - telefone digitado com ou sem máscara encontra o mesmo lead
   - a experiência de busca fica mais próxima do comportamento humano esperado
 
+## Atualização 2026-04-09 - Webhook Z-API agora tolera body form-urlencoded e texto cru
+
+- o inbound da Z-API ainda falhava em alguns testes mesmo com:
+  - rota publicada
+  - parser ampliado para payload de instância web
+  - match por telefone formatado
+- leitura final:
+  - a Z-API pode entregar o webhook fora de `application/json`
+  - em cenários `web / multi-device`, o body pode vir como:
+    - `application/x-www-form-urlencoded`
+    - texto cru
+    - campos string contendo JSON serializado
+- correção aplicada em `src/app/api/webhooks/zapi/route.ts`:
+  - leitura unificada via `request.text()`
+  - suporte a body urlencoded
+  - parse recursivo de strings JSON
+  - fallback para query params e `raw body`
+- resultado esperado:
+  - o inbound deixa de depender do formato exato do provider
+  - mensagens recebidas pela instância passam a ter chance real de cair na caixa mesmo quando o provider não envia JSON puro
+- validação:
+  - `npm run build` passou
+
 ## Arquivos-chave para contexto rápido
 - `docs/ROADMAP.md` — histórico completo
 - `docs/SESSION_BRIEF.md` — estado atual e transição de IAs
