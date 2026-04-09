@@ -3149,3 +3149,29 @@ Pontos que precisam ser preservados durante a implementacao:
     - normalizar os candidatos em memória e aceitar o match quando houver uma correspondência única
 - resultado esperado:
   - respostas vindas do WhatsApp passam a priorizar o lead manual existente antes de criar placeholder técnico
+
+## Atualizacao 2026-04-09 - Busca global e busca de leads passaram a seguir a mesma normalização de UX
+
+- cenário:
+  - o produto já tolerava parte das variações humanas na busca de leads
+  - mas a busca global (`Ctrl+K`) ainda dependia de `ilike` cru no banco
+  - na prática:
+    - `Caua` não encontrava `Cauã`
+    - telefone digitado sem máscara podia falhar contra registros mascarados
+- correção aplicada:
+  - `src/lib/search-normalization.ts`
+    - nova base compartilhada para:
+      - normalizar texto
+      - remover diacríticos
+      - extrair dígitos
+      - comparar campos com tolerância a acento e máscara
+  - `src/app/api/busca/route.ts`
+    - a busca global passou a combinar candidatos brutos + recentes
+    - o filtro final agora roda em memória com a normalização compartilhada
+  - `src/app/api/leads/route.ts`
+    - a busca de leads passou a reaproveitar a mesma fundação, reduzindo divergência entre superfícies
+  - `docs/MASTER.md`
+    - o princípio foi formalizado como pilar de experiência da Fluxrow
+- leitura de produto:
+  - o sistema não deve exigir digitação “perfeita”
+  - pequenas variações naturais de nome e telefone devem ser absorvidas pelo backend como comportamento esperado

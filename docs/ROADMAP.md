@@ -62,6 +62,26 @@ Mestra: [[MASTER_PREV_LEGAL]]
   - configurar os webhooks da instância para o domínio `app.prevlegal.com.br`
   - testar inbound real com outro número, sem usar o próprio número conectado da instância
 
+## Atualizacao UX / normalização de busca como pilar do produto — 09/04/2026
+
+- foi formalizada uma regra de experiência da Fluxrow dentro do core do PrevLegal:
+  - o sistema não deve exigir acento, máscara ou digitação “perfeita” para o usuário encontrar o que precisa
+- arquivos principais:
+  - `src/lib/search-normalization.ts`
+  - `src/app/api/busca/route.ts`
+  - `src/app/api/leads/route.ts`
+  - `docs/MASTER.md`
+- melhorias aplicadas:
+  - criação de uma fundação compartilhada de normalização para texto e dígitos
+  - a busca global (`Ctrl+K`) passou a combinar candidatos brutos + recentes e filtrar em memória com comparação sem acento
+  - a busca de leads deixou de manter uma lógica própria separada e agora reaproveita a mesma base
+- impacto operacional:
+  - `Caua` encontra `Cauã`
+  - telefone com ou sem máscara encontra o mesmo lead
+  - reduz atrito invisível em onboarding, suporte e operação diária
+- validacao:
+  - `npm run build` passou
+
 ## Navegação
 
 - [[INDEX]]

@@ -2,24 +2,19 @@ import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { getTenantContext } from '@/lib/tenant-context'
+import {
+  anyFieldMatchesSearch,
+  buildSearchTokens,
+  normalizeDigits,
+  normalizeText,
+} from '@/lib/search-normalization'
 
 const LISTA_MANUAL_NOME = 'Cadastro manual'
 const LISTA_MANUAL_FORNECEDOR = 'sistema'
 
-function normalizarTexto(value: unknown) {
-  return typeof value === 'string' ? value.trim() : ''
-}
-
-function normalizarBusca(value: unknown) {
-  return normalizarTexto(value)
-    .normalize('NFD')
-    .replace(/\p{Diacritic}/gu, '')
-    .toLowerCase()
-}
-
 function criarNbManual(body: Record<string, unknown>) {
-  const telefone = normalizarTexto(body.telefone).replace(/\D/g, '')
-  const cpf = normalizarTexto(body.cpf).replace(/\D/g, '')
+  const telefone = normalizeDigits(body.telefone)
+  const cpf = normalizeDigits(body.cpf)
   const base = telefone || cpf || Date.now().toString()
   return `MANUAL-${base}`
 }
@@ -36,12 +31,12 @@ export async function GET(request: Request) {
   )
 
   const { searchParams } = new URL(request.url)
-  const q = normalizarTexto(searchParams.get('q'))
-  const qNormalizada = normalizarBusca(q)
-  const qDigits = q.replace(/\D/g, '')
+  const tokens = buildSearchTokens(searchParams.get('q'))
+  const q = tokens.text
+  const qDigits = tokens.digits
   const limit = Math.min(Number(searchParams.get('limit') || 20) || 20, 50)
   const fetchLimit = q ? Math.max(limit * 4, 200) : limit
-  const scope = normalizarTexto(searchParams.get('scope'))
+  const scope = normalizeText(searchParams.get('scope'))
   const allowTenantWideSearch = scope === 'operational' || scope === 'scheduling'
 
   let query = adminSupabase
@@ -76,20 +71,12 @@ export async function GET(request: Request) {
   const leadsFiltrados = (data || [])
     .filter((lead) => lead.lgpd_optout !== true)
     .filter((lead) => {
-      if (!qNormalizada) return true
+      if (!tokens.normalized && !tokens.digits) return true
 
-      const telefoneDigits = normalizarTexto(lead.telefone).replace(/\D/g, '')
-      const queryDigits = q.replace(/\D/g, '')
-      const haystack = [
-        normalizarBusca(lead.nome),
-        normalizarBusca(lead.banco),
-        normalizarBusca(lead.telefone),
-      ]
-
-      const matchTexto = haystack.some((field) => field.includes(qNormalizada))
-      const matchTelefone = queryDigits ? telefoneDigits.includes(queryDigits) : false
-
-      return matchTexto || matchTelefone
+      return anyFieldMatchesSearch(
+        [lead.nome, lead.banco, lead.telefone],
+        tokens,
+      )
     })
     .slice(0, limit)
 
@@ -155,7 +142,7 @@ export async function POST(request: Request) {
   }
 
   const ganhoPotencial = body.ganho_potencial ? parseFloat(body.ganho_potencial) : null
-  const nbManual = normalizarTexto(body.nb) || criarNbManual(body)
+  const nbManual = normalizeText(body.nb) || criarNbManual(body)
 
   const { data, error } = await supabase
     .from('leads')

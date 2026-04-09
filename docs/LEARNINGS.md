@@ -20,6 +20,12 @@ Mestra: [[MASTER_PREV_LEGAL]]
 - [[Sessoes/2026-03-18-prevlegal-admin-roi-obsidian]]
 - [[Sessoes/2026-03-18-sessoes-17-18-marco-prevlegal-completo]]
 
+### 146. Busca global não pode depender de acento ou formatação perfeita
+**Problema:** Na busca global (`Ctrl+K`), digitar `Caua` não encontrava `Cauã`, e números formatados de forma diferente também podiam escapar
+**Causa:** A rota `/api/busca` usava `ilike` direto no banco, enquanto a busca de leads já fazia normalização de acentos e dígitos em memória
+**Correção:** Criar uma fundação compartilhada de normalização (`src/lib/search-normalization.ts`) e aplicar a mesma lógica na busca global, unificando comparação por texto sem acento e por dígitos
+**Regra pratica:** Em fluxos de busca do PrevLegal, o sistema deve tratar variações humanas como comportamento esperado. Nome com acento, telefone mascarado e pequenas diferenças de entrada não podem ser barreiras de uso
+
 ### 36. Documento IA não pode contornar o contrato do módulo de documentos
 **Problema:** Ao gerar `Petição Inicial`, `Procuração` ou `Requerimento INSS`, o backend falhava com `null value in column "arquivo_url" of relation "lead_documentos" violates not-null constraint`
 **Causa:** A geração por IA salvava apenas `conteudo_texto` em `lead_documentos`, mas a tabela foi desenhada para sempre ter arquivo persistido e `arquivo_url`

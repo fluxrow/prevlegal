@@ -185,6 +185,18 @@ Estratégia: entrar com R$ 1.997 para gerar cases, subir gradualmente.
 - Sempre informar o commit hash após deploy
 - Separar sempre `SITE_URL` de `APP_URL` ao mexer em SEO, LP, convites, portal ou links absolutos
 
+### Pilar de experiência da Fluxrow
+- o sistema deve ser tolerante ao comportamento humano normal, não exigir digitação “perfeita”
+- buscas e vínculos operacionais devem aceitar:
+  - acentos e sem acentos
+  - telefone com ou sem máscara
+  - pequenas variações naturais de entrada
+- quando houver conflito entre rigidez técnica e fluidez de uso, a preferência padrão do produto é resolver a rigidez no backend
+- onboarding, atendimento, diagnóstico e resolução de problemas devem seguir a mesma lógica:
+  - menos atrito
+  - menos passos desnecessários
+  - mais clareza para o usuário final
+
 ### Política de sessão recomendada
 - Plataforma principal: expiração por inatividade após `45 minutos`
 - Admin: expiração por inatividade após `15 minutos`

@@ -137,6 +137,29 @@ Gatilho automático: a mudança de status do lead na API `PATCH` chama o *Orques
 - validação:
   - `npm run build` passou
 
+## Atualização 2026-04-09 - Busca global agora tolera acentos e formatações naturais
+
+- o princípio de UX da Fluxrow foi formalizado também no core do PrevLegal:
+  - o sistema não deve exigir digitação “perfeita” para encontrar pessoas ou documentos
+- arquivos principais:
+  - `src/lib/search-normalization.ts`
+  - `src/app/api/busca/route.ts`
+  - `src/app/api/leads/route.ts`
+- mudanças aplicadas:
+  - foi criada uma camada compartilhada de normalização para:
+    - texto com acento / sem acento
+    - números com ou sem máscara
+  - a `Ctrl+K` deixou de depender apenas de `ilike` puro do banco
+  - a busca global agora combina:
+    - candidatos por query bruta
+    - candidatos recentes
+    - filtro final em memória com normalização
+  - a busca de leads também passou a reutilizar a mesma fundação, eliminando divergência entre superfícies
+- resultado esperado:
+  - `Caua` encontra `Cauã`
+  - telefone digitado com ou sem máscara encontra o mesmo lead
+  - a experiência de busca fica mais próxima do comportamento humano esperado
+
 ## Arquivos-chave para contexto rápido
 - `docs/ROADMAP.md` — histórico completo
 - `docs/SESSION_BRIEF.md` — estado atual e transição de IAs
