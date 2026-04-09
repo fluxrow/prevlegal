@@ -1371,3 +1371,13 @@ Os selects ainda pediam apenas `usuarios(...)`, então o PostgREST não sabia qu
 - o envio outbound funciona
 - a instância aponta para webhook do produto atual
 - e o inbound real já alimenta `conversas` e `mensagens_inbound`
+
+### 142. Instância web/multi-device da Z-API pode entregar inbound em `messages[]` com `chatId/body/id`
+**Problema:** Mesmo com o webhook canônico da Z-API apontando para o PrevLegal, a mensagem inbound ainda podia não aparecer na caixa de entrada
+**Causa:** A rota inicial do produto lia melhor payloads achatados (`phone`, `messageId`, `text.message`), mas instâncias `web / multi-device` podem enviar eventos em formato de lista (`messages[]`) com campos como `chatId`, `author`, `body`, `id` e `fromMe`
+**Correcao aplicada:** O parser de `src/app/api/webhooks/zapi/route.ts` passou a aceitar múltiplas fontes candidatas (`payload`, `data`, `message`, `messages[0]`, `data.messages[0]`) e a extrair:
+- origem por `phone`, `from`, `author` ou `chatId`
+- conteúdo por `text.message`, `body`, `caption` ou `content`
+- id externo por `messageId`, `id` ou `key.id`
+- autoria por `fromMe` ou `key.fromMe`
+**Regra pratica:** Em integrações Z-API, sempre validar explicitamente o formato de webhook da variante `web / multi-device`, porque ela pode divergir do payload achatado usado em exemplos mais simples

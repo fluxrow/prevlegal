@@ -46,6 +46,37 @@ function pickFirstBoolean(source: unknown, paths: string[][]) {
   return false
 }
 
+function getCandidateSources(payload: unknown) {
+  const candidates: unknown[] = [payload]
+  const data = getNestedValue(payload, ['data'])
+  const message = getNestedValue(payload, ['message'])
+  const messages = getNestedValue(payload, ['messages'])
+  const dataMessages = getNestedValue(payload, ['data', 'messages'])
+
+  if (data) candidates.push(data)
+  if (message) candidates.push(message)
+  if (Array.isArray(messages) && messages[0]) candidates.push(messages[0])
+  if (Array.isArray(dataMessages) && dataMessages[0]) candidates.push(dataMessages[0])
+
+  return candidates
+}
+
+function pickFirstStringFromSources(sources: unknown[], paths: string[][]) {
+  for (const source of sources) {
+    const value = pickFirstString(source, paths)
+    if (value) return value
+  }
+  return ''
+}
+
+function pickFirstBooleanFromSources(sources: unknown[], paths: string[][]) {
+  for (const source of sources) {
+    const value = pickFirstBoolean(source, paths)
+    if (value) return true
+  }
+  return false
+}
+
 function normalizeStoredPhone(value?: string | null) {
   const normalized = normalizeWhatsAppRecipient(value)
   return normalized || ''
@@ -56,58 +87,51 @@ function getPhoneDigits(value?: string | null) {
 }
 
 function extractInboundPayload(payload: unknown) {
-  const externalId = pickFirstString(payload, [
+  const sources = getCandidateSources(payload)
+
+  const externalId = pickFirstStringFromSources(sources, [
     ['messageId'],
-    ['message', 'messageId'],
-    ['data', 'messageId'],
     ['id'],
-    ['message', 'id'],
     ['zaapId'],
+    ['key', 'id'],
   ])
 
-  const from = pickFirstString(payload, [
+  const from = pickFirstStringFromSources(sources, [
     ['phone'],
     ['from'],
     ['senderPhone'],
-    ['data', 'phone'],
-    ['data', 'from'],
-    ['message', 'phone'],
-    ['message', 'from'],
-    ['message', 'fromPhone'],
-    ['message', 'sender', 'phone'],
+    ['fromPhone'],
+    ['author'],
+    ['chatId'],
+    ['sender', 'phone'],
+    ['sender', 'id'],
+    ['participantPhone'],
   ])
 
-  const to = pickFirstString(payload, [
+  const to = pickFirstStringFromSources(sources, [
     ['connectedPhone'],
     ['to'],
     ['toPhone'],
     ['instancePhone'],
-    ['data', 'connectedPhone'],
-    ['data', 'to'],
-    ['message', 'to'],
-    ['message', 'connectedPhone'],
+    ['ownerPhone'],
+    ['connectedNumber'],
   ])
 
-  const message = pickFirstString(payload, [
+  const message = pickFirstStringFromSources(sources, [
     ['text', 'message'],
     ['text', 'body'],
     ['message'],
     ['body'],
-    ['data', 'text', 'message'],
-    ['data', 'message'],
-    ['message', 'text', 'message'],
-    ['message', 'text', 'body'],
-    ['message', 'body'],
     ['caption'],
-    ['data', 'caption'],
+    ['content'],
+    ['extendedTextMessage', 'text'],
   ])
 
-  const fromMe = pickFirstBoolean(payload, [
+  const fromMe = pickFirstBooleanFromSources(sources, [
     ['fromMe'],
     ['isSentByMe'],
     ['fromApi'],
-    ['data', 'fromMe'],
-    ['message', 'fromMe'],
+    ['key', 'fromMe'],
   ])
 
   return {
@@ -145,6 +169,13 @@ async function handleReceiveEvent(request: NextRequest, event: string) {
   }
 
   if (!from || !body) {
+    console.warn('Webhook inbound Z-API ignorado por payload incompleto', {
+      instanceId,
+      extracted: inbound,
+      topLevelKeys:
+        payload && typeof payload === 'object' ? Object.keys(payload as Record<string, unknown>) : [],
+    })
+
     return NextResponse.json(
       { ok: false, ignored: true, reason: 'Payload inbound sem telefone ou mensagem textual' },
       { status: 202 },

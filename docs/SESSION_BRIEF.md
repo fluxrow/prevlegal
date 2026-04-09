@@ -70,6 +70,22 @@ Gatilho automático: a mudança de status do lead na API `PATCH` chama o *Orques
 - validação:
   - `npm run build` passou
 
+## Atualização 2026-04-09 - Parser do webhook Z-API foi ampliado para instância web/multi-device
+
+- no teste real, o outbound já funcionava, mas o inbound ainda não aparecia na caixa de entrada
+- a hipótese mais forte passou a ser formato de payload da variante `web / multi-device`
+- a rota `src/app/api/webhooks/zapi/route.ts` foi endurecida para aceitar também:
+  - `messages[0].chatId`
+  - `messages[0].author`
+  - `messages[0].body`
+  - `messages[0].id`
+  - `messages[0].fromMe`
+- também entrou log defensivo quando o webhook chega sem telefone ou texto suficiente para processamento
+- resultado esperado:
+  - mensagens recebidas pela instância web/multi-device passam a alimentar `mensagens_inbound`, `conversas` e notificações operacionais
+- validação:
+  - `npm run build` passou
+
 ## Arquivos-chave para contexto rápido
 - `docs/ROADMAP.md` — histórico completo
 - `docs/SESSION_BRIEF.md` — estado atual e transição de IAs

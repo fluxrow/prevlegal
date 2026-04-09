@@ -3096,3 +3096,22 @@ Pontos que precisam ser preservados durante a implementacao:
   - `Ao desconectar`: `https://app.prevlegal.com.br/api/webhooks/zapi?event=on-disconnect&instance_id=<INSTANCE_ID>`
   - `Receber status da mensagem`: `https://app.prevlegal.com.br/api/webhooks/zapi?event=message-status&instance_id=<INSTANCE_ID>`
   - `Presença do chat`: `https://app.prevlegal.com.br/api/webhooks/zapi?event=chat-presence&instance_id=<INSTANCE_ID>`
+
+## Atualizacao 2026-04-09 - Webhook Z-API foi endurecido para payload de instância web / multi-device
+
+- cenário:
+  - o outbound da Z-API passou a funcionar após ajuste de credenciais
+  - o inbound ainda não aparecia na caixa de entrada, mesmo com o canal conectado
+- hipótese mais forte:
+  - a variante `instância web / multi device` da Z-API envia payload em `messages[]` com campos como `chatId`, `author`, `body`, `id` e `fromMe`
+  - a primeira versão do parser estava mais aderente a payload achatado (`phone`, `messageId`, `text.message`)
+- correção aplicada:
+  - `src/app/api/webhooks/zapi/route.ts`
+    - adicionadas múltiplas fontes candidatas: `payload`, `data`, `message`, `messages[0]`, `data.messages[0]`
+    - origem pode sair de `phone`, `from`, `author`, `chatId`, `sender.phone`
+    - mensagem pode sair de `text.message`, `body`, `caption`, `content`
+    - id externo pode sair de `messageId`, `id`, `key.id`
+    - autoria pode sair de `fromMe` ou `key.fromMe`
+    - entrou `console.warn` quando o webhook chega sem telefone ou texto suficiente, para facilitar depuração em produção
+- resultado esperado:
+  - instâncias `web / multi-device` deixam de cair em payload incompleto e passam a alimentar `mensagens_inbound`, `conversas`, notificações e stop automático de follow-up
