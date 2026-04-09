@@ -239,6 +239,20 @@ function formatProvider(provider: 'twilio' | 'zapi') {
   return provider === 'twilio' ? 'Twilio' : 'Z-API'
 }
 
+function formatZApiBaseUrl(value?: string | null) {
+  const fallback = 'https://api.z-api.io'
+  const raw = String(value || fallback).trim()
+
+  if (!raw) return fallback
+
+  try {
+    const parsed = new URL(raw)
+    return parsed.origin.replace(/\/+$/, '') || fallback
+  } catch {
+    return fallback
+  }
+}
+
 function formatPurpose(purpose: string | null) {
   if (purpose === 'inbox') return 'Inbox'
   if (purpose === 'campanha') return 'Campanha'
@@ -648,7 +662,7 @@ export default function TenantDetailPage() {
                             </div>
                             <div>
                               <p style={{ fontSize: '10px', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', margin: '0 0 4px' }}>Base URL</p>
-                              <p style={{ fontSize: '13px', color: '#d1d5db', margin: 0 }}>{channel.zapi_base_url || 'https://api.z-api.io'}</p>
+                              <p style={{ fontSize: '13px', color: '#d1d5db', margin: 0 }}>{formatZApiBaseUrl(channel.zapi_base_url)}</p>
                             </div>
                           </>
                         )}

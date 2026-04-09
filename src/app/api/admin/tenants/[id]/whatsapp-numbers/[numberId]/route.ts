@@ -15,6 +15,20 @@ function normalizeString(value: unknown) {
   return String(value || '').trim() || null
 }
 
+function normalizeZApiBaseUrl(value: unknown) {
+  const fallback = 'https://api.z-api.io'
+  const raw = String(value || fallback).trim()
+
+  if (!raw) return fallback
+
+  try {
+    const parsed = new URL(raw)
+    return parsed.origin.replace(/\/+$/, '') || fallback
+  } catch {
+    return fallback
+  }
+}
+
 function normalizeBoolean(value: unknown, fallback = false) {
   if (typeof value === 'boolean') return value
   if (typeof value === 'string') {
@@ -145,7 +159,9 @@ async function normalizeChannelPayload(
     payload.zapi_instance_id = instanceId
     payload.zapi_instance_token = instanceToken
     payload.zapi_client_token = body.zapi_client_token === undefined ? current!.zapi_client_token : normalizeString(body.zapi_client_token)
-    payload.zapi_base_url = (body.zapi_base_url === undefined ? current!.zapi_base_url : normalizeString(body.zapi_base_url)) || 'https://api.z-api.io'
+    payload.zapi_base_url = body.zapi_base_url === undefined
+      ? normalizeZApiBaseUrl(current!.zapi_base_url)
+      : normalizeZApiBaseUrl(body.zapi_base_url)
     payload.zapi_connected_phone = body.zapi_connected_phone === undefined ? current!.zapi_connected_phone : normalizeString(body.zapi_connected_phone)
     payload.twilio_account_sid = null
     payload.twilio_auth_token = null

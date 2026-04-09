@@ -1347,3 +1347,12 @@ Os selects ainda pediam apenas `usuarios(...)`, então o PostgREST não sabia qu
 - outbound via Z-API no PrevLegal pode ser testado pelas credenciais do canal no admin
 - inbound/webhook só pode ser tratado como válido depois que os endpoints da instância apontarem para a integração correta do produto atual
 **Regra pratica:** No PrevLegal, nunca assuma que “webhook preenchido” significa integração pronta; sempre validar domínio, produto-alvo e rota exata antes de considerar um provider conectado de verdade
+
+### 140. Provider externo nunca deve persistir URL operacional com token em campo de configuração exibível
+**Problema:** Ao cadastrar um canal Z-API, a `Base URL` podia acabar salvando a URL completa de envio (`/instances/.../token/.../send-text`) e a tela do admin exibia isso cru
+**Causa:** O input aceitava qualquer string e a normalização tratava apenas barras finais, sem reduzir a URL para a origem segura do provider
+**Correcao aplicada:** O fluxo passou a normalizar `zapi_base_url` para apenas `origin` em:
+- persistência do admin
+- runtime de envio
+- exibição na UI do admin
+**Regra pratica:** No PrevLegal, campos de configuração de provider devem guardar apenas host/base estável; caminhos operacionais com token ou credenciais nunca podem ser persistidos nem renderizados em tela administrativa

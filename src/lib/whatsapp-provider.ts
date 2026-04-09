@@ -69,7 +69,17 @@ function createAdminSupabase() {
 }
 
 function normalizeZApiBaseUrl(value?: string | null) {
-  return String(value || 'https://api.z-api.io').trim().replace(/\/+$/, '')
+  const fallback = 'https://api.z-api.io'
+  const raw = String(value || fallback).trim()
+
+  if (!raw) return fallback
+
+  try {
+    const parsed = new URL(raw)
+    return parsed.origin.replace(/\/+$/, '') || fallback
+  } catch {
+    return fallback
+  }
 }
 
 function normalizeDigitsOnly(value?: string | null) {
