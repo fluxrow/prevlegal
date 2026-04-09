@@ -20,6 +20,45 @@ Objetivo:
 - facilitar o repasse posterior para o Claude
 - registrar decisoes, arquivos afetados, validacoes e proximos passos
 
+## Atualizacao 2026-04-09 - Google OAuth preparado para go-live comercial
+
+- contexto:
+  - a agenda Google ja estava funcionando em runtime apos `043`, `044` e `045`
+  - o gargalo restante saiu do codigo core e ficou concentrado na confianca comercial do consentimento do Google
+- arquivos alterados:
+  - `src/app/api/google/auth/route.ts`
+  - `public/privacidade/index.html`
+  - `public/termos/index.html`
+  - `site/privacidade/index.html`
+  - `site/termos/index.html`
+  - `docs/GOOGLE_OAUTH_GO_LIVE_CHECKLIST.md`
+  - `docs/GOOGLE_OAUTH_SUBMISSION_COPY.md`
+- mudancas principais:
+  - escopos do OAuth reduzidos para o minimo operacional:
+    - `https://www.googleapis.com/auth/calendar.events`
+    - `https://www.googleapis.com/auth/userinfo.email`
+  - remocao de `calendar.readonly`, que nao era necessario para o fluxo atual
+  - paginas publicas de privacidade e termos passaram a descrever explicitamente:
+    - uso do Google Calendar
+    - criacao / remarcacao / cancelamento de compromissos
+    - uso do e-mail Google apenas para identificar a conta conectada
+  - foi criado um documento de submissao pronto para o Google Auth Platform com:
+    - descricao curta
+    - justificativa dos escopos
+    - checklist de submissao
+    - roteiro de video, se o Google pedir
+- validacao:
+  - `npm run build` passou
+- o que ainda depende de execucao manual fora do repo:
+  - configurar consent screen no Google
+  - confirmar dominios autorizados
+  - revisar redirect URIs
+  - adicionar test users, se necessario
+  - enviar a verificacao do app
+- leitura pratica:
+  - a frente de Google OAuth nao esta mais bloqueada por codigo
+  - o proximo passo correto e usar `docs/GOOGLE_OAUTH_GO_LIVE_CHECKLIST.md` + `docs/GOOGLE_OAUTH_SUBMISSION_COPY.md` para fechar o console do Google
+
 ## Atualizacao 2026-04-08 - Loop de login corrigido com separacao entre auth e acesso operacional
 
 - problema reportado:

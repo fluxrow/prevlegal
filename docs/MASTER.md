@@ -3,7 +3,7 @@
 Contexto: [[SESSION_HISTORY_MASTER]]
 Mestra: [[MASTER_PREV_LEGAL]]
 > Documento vivo. Atualizado a cada sessão de desenvolvimento.
-> Última atualização: 08/04/2026
+> Última atualização: 09/04/2026
 
 ---
 
@@ -15,6 +15,8 @@ Mestra: [[MASTER_PREV_LEGAL]]
 - [[SESSION_BRIEF]]
 - [[CODEX_HANDOFF]]
 - [[EXECUTION_TRACK]]
+- [[GOOGLE_OAUTH_GO_LIVE_CHECKLIST]]
+- [[GOOGLE_OAUTH_SUBMISSION_COPY]]
 - [[DOMAIN_MIGRATION]]
 - [[MOBILE_CLIENT_APP_PLAN]]
 - [[MOBILE_CLIENT_APP_BACKLOG]]
@@ -37,9 +39,20 @@ Mestra: [[MASTER_PREV_LEGAL]]
 - o core do produto já está funcional
 - o maior risco atual não é falta de feature principal
 - o maior risco atual é de `go-live incompleto`, especialmente por:
-  - migrations pendentes em produção
   - Google OAuth ainda sem verificação comercial
   - smoke test final do tenant real ainda não fechado ponta a ponta
+  - necessidade de fechar o checklist manual do Google Auth Platform antes de onboarding pago
+
+Estado confirmado em 09/04/2026:
+- patch manual `043`, `044` e `045` aplicado no banco operacional
+- agenda Google validada em runtime:
+  - criar
+  - listar
+  - remarcar
+  - cancelar
+- textos públicos de privacidade e termos endurecidos para agenda Google
+- escopos do OAuth reduzidos ao mínimo operacional
+- material de submissão do Google pronto em `docs/GOOGLE_OAUTH_SUBMISSION_COPY.md`
 
 Referencia executiva principal:
 - `docs/EXECUTION_TRACK.md`

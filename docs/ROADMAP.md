@@ -2,7 +2,42 @@
 
 Contexto: [[SESSION_HISTORY_MASTER]]
 Mestra: [[MASTER_PREV_LEGAL]]
-> Última atualização: 01/04/2026
+> Última atualização: 09/04/2026
+
+## Atualizacao Google OAuth / endurecimento comercial — 09/04/2026
+
+- a frente técnica da agenda Google saiu do modo “só funciona em ambiente interno” e foi preparada para submissão comercial do app no Google
+- arquivos principais:
+  - `src/app/api/google/auth/route.ts`
+  - `public/privacidade/index.html`
+  - `public/termos/index.html`
+  - `site/privacidade/index.html`
+  - `site/termos/index.html`
+  - `docs/GOOGLE_OAUTH_GO_LIVE_CHECKLIST.md`
+  - `docs/GOOGLE_OAUTH_SUBMISSION_COPY.md`
+- melhorias aplicadas:
+  - remoção do escopo desnecessário `calendar.readonly`
+  - manutenção apenas dos escopos mínimos:
+    - `calendar.events`
+    - `userinfo.email`
+  - páginas públicas de privacidade e termos passaram a explicar explicitamente:
+    - por que o produto pede acesso ao Google Calendar
+    - que o uso é apenas para criar, atualizar, remarcar e cancelar compromissos
+    - que o e-mail Google conectado é usado somente para identificar qual calendário está ativo
+  - foi criado um material pronto para preenchimento no Google Auth Platform:
+    - descrição curta
+    - justificativa dos escopos
+    - checklist de submissão
+    - roteiro de vídeo, se o Google pedir
+- impacto operacional:
+  - reduz atrito de verificação
+  - melhora coerência entre produto, consent screen e páginas públicas
+  - deixa o restante da frente concentrado em trabalho manual do Google Console, não mais em ajuste do app
+- validacao:
+  - `npm run build` passou
+- proximo passo recomendado:
+  - executar o checklist manual no Google Auth Platform
+  - depois rodar o smoke test final do tenant real
 
 ## Navegação
 

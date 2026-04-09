@@ -13,10 +13,16 @@ Remover a sensação de “app de teste” no fluxo de Google Calendar antes de 
 
 - fluxo técnico de conexão Google funcionando em runtime
 - conexão por usuário e fallback do escritório funcionando
+- escopos reduzidos ao mínimo operacional:
+  - `https://www.googleapis.com/auth/calendar.events`
+  - `https://www.googleapis.com/auth/userinfo.email`
 - páginas públicas no domínio do site:
   - `https://www.prevlegal.com.br/`
   - `https://www.prevlegal.com.br/privacidade`
   - `https://www.prevlegal.com.br/termos`
+- páginas públicas atualizadas com disclosure explícito de uso do Google Calendar
+- copy pronta para submissão:
+  - `docs/GOOGLE_OAUTH_SUBMISSION_COPY.md`
 
 ## Bloqueio atual
 
@@ -72,8 +78,8 @@ Se existir URI antiga indevida, limpar.
 
 Manter apenas o mínimo necessário para agenda:
 
-- identidade básica do usuário Google
-- escopos de Calendar realmente usados pelo produto
+- `https://www.googleapis.com/auth/calendar.events`
+- `https://www.googleapis.com/auth/userinfo.email`
 
 Objetivo:
 

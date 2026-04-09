@@ -16,6 +16,8 @@ Use esta nota como ponto de entrada para qualquer retomada de contexto do PrevLe
 - [[SESSION_BRIEF]] — resumo curto da fase atual e do próximo passo
 - [[CODEX_HANDOFF]] — memória tática de continuidade entre sessões
 - [[EXECUTION_TRACK]] — trilho executivo de execução e go-live
+- [[GOOGLE_OAUTH_GO_LIVE_CHECKLIST]] — checklist manual da frente comercial do Google
+- [[GOOGLE_OAUTH_SUBMISSION_COPY]] — texto-base para preencher o Google Auth Platform
 - [[CROSS_AI_ALIGNMENT_PROTOCOL]] — protocolo para manter qualquer IA no mesmo plano
 - [[SESSION_PROTOCOL]] — ritual oficial de início e fim de sessão
 - [[DOMAIN_MIGRATION]] — checklist técnico e estratégia de migração para domínio próprio

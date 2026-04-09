@@ -70,7 +70,6 @@ export async function GET(request: NextRequest) {
     state,
     scope: [
       'https://www.googleapis.com/auth/calendar.events',
-      'https://www.googleapis.com/auth/calendar.readonly',
       'https://www.googleapis.com/auth/userinfo.email',
     ],
   })

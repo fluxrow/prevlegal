@@ -3,7 +3,7 @@
 Contexto: [[SESSION_HISTORY_MASTER]]
 Mestra: [[MASTER_PREV_LEGAL]]
 > Trilho canônico de execução do produto.
-> Última atualização: 08/04/2026
+> Última atualização: 09/04/2026
 
 ## Objetivo
 
@@ -87,6 +87,14 @@ Status em 09/04/2026:
 
 ### Etapa 3 — confiança comercial
 
+Status em 09/04/2026:
+- app já foi endurecido para a submissão:
+  - escopos mínimos de Google Calendar
+  - política de privacidade explícita para agenda Google
+  - termos explícitos para agenda Google
+  - texto-base de submissão pronto
+- o restante desta etapa é manual no Google Auth Platform
+
 1. ajustar OAuth consent screen
 2. revisar escopos
 3. garantir links públicos
@@ -94,6 +102,7 @@ Status em 09/04/2026:
 
 Checklist canônico:
 - `docs/GOOGLE_OAUTH_GO_LIVE_CHECKLIST.md`
+- `docs/GOOGLE_OAUTH_SUBMISSION_COPY.md`
 
 ### Etapa 4 — smoke test final
 
@@ -116,4 +125,4 @@ Checklist canônico:
 
 ## Próximo passo oficial
 
-Fechar a trilha comercial do Google OAuth e depois rodar o smoke test final do tenant real.
+Executar o checklist manual do Google OAuth no Google Auth Platform e depois rodar o smoke test final do tenant real.

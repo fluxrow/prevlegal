@@ -1,9 +1,9 @@
-# SESSION_BRIEF — PrevLegal (atualizado 08/04/2026)
+# SESSION_BRIEF — PrevLegal (atualizado 09/04/2026)
 
 ## Stack e repositório
 - Next.js 16 App Router + React 19 + Supabase + Twilio WhatsApp + Claude API + Vercel
 - Repo: https://github.com/fluxrow/prevlegal
-- Branch operacional: `main` (commit atual: d9404fee)
+- Branch operacional: `main`
 
 ## Banco operacional
 - Supabase project: `lrqvvxmgimjlghpwavdb`
@@ -19,20 +19,12 @@
 | E | Gatilhos de Ativação Automática (BD, APIs e Orquestrador backend) | a528367..atual |
 
 ## Pendências operacionais (próxima rodada)
-- Aplicar as migrations de produção:
-  - `043_user_calendar_ownership.sql`
-  - `044_user_permissions_foundation.sql`
-  - `045_document_processing_foundation.sql`
-- Validar agenda Google sem fallback:
-  - conexão do usuário
-  - conexão do escritório
-  - criar
-  - remarcar
-  - cancelar
 - Fechar a trilha comercial do OAuth do Google:
   - consent screen
   - verificação do app
+  - domínio verificado
   - links públicos válidos
+  - submissão com material pronto
 - Rodar smoke test do tenant real com:
   - login
   - convite
@@ -47,10 +39,36 @@ Prioridade no responder mantém Fase D.
 Gatilho automático: a mudança de status do lead na API `PATCH` chama o *Orquestrador*, varrendo `event_triggers` e rodando followups (podendo cancelar os velhos).
 
 ## Próximo bloco oficial
-1. Estabilização de produção e go-live.
-2. Google Calendar/OAuth comercial.
-3. Smoke test final do tenant real.
-4. Só depois: Docling operacional, agenda premium extra e importador fase 2.
+1. Fechar o checklist manual do Google OAuth comercial.
+2. Rodar smoke test final do tenant real.
+3. Só depois: Docling operacional, agenda premium extra e importador fase 2.
+
+## Atualização 2026-04-09 - Go-live do Google OAuth endurecido no app e nos materiais públicos
+
+- a frente do Google saiu do modo “falta ajustar código” e entrou no modo “falta fechar Console/submissão”
+- arquivos principais:
+  - `src/app/api/google/auth/route.ts`
+  - `public/privacidade/index.html`
+  - `public/termos/index.html`
+  - `site/privacidade/index.html`
+  - `site/termos/index.html`
+  - `docs/GOOGLE_OAUTH_GO_LIVE_CHECKLIST.md`
+  - `docs/GOOGLE_OAUTH_SUBMISSION_COPY.md`
+- mudanças aplicadas:
+  - remoção do escopo desnecessário `calendar.readonly`
+  - manutenção apenas dos escopos:
+    - `calendar.events`
+    - `userinfo.email`
+  - textos públicos passaram a explicar explicitamente o uso do Google Calendar
+  - foi preparado um material pronto para preencher o Google Auth Platform com menos improviso
+- leitura prática:
+  - o que ainda falta nessa frente agora é majoritariamente manual:
+    - consent screen
+    - domínio/branding
+    - submissão de verificação
+  - o app já está mais alinhado ao que o Google e o cliente esperam ver
+- validação:
+  - `npm run build` passou
 
 ## Arquivos-chave para contexto rápido
 - `docs/ROADMAP.md` — histórico completo

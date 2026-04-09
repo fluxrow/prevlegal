@@ -89,6 +89,18 @@ Mestra: [[MASTER_PREV_LEGAL]]
 **Correção:** Criar `permissions` por usuário com preset padrão por role e liberar edição granular nos módulos críticos
 **Regra pratica:** Em produto operacional multiusuário, role deve ser preset inicial; a governança madura nasce quando permissões granulares podem refinar esse preset
 
+### 47. Google OAuth comercial depende tanto de escopo mínimo quanto de disclosure público consistente
+**Problema:** Mesmo com a conexão Google funcionando em runtime, o consentimento ainda passava imagem de “app inseguro” para escritório pagante
+**Causa:** A confiança comercial do OAuth não depende só do fluxo técnico; ela também depende de:
+- escopos estritamente mínimos
+- política de privacidade e termos descrevendo o uso real dos dados
+- material coerente para submissão no Google Auth Platform
+**Correção:** Reduzir os escopos do app para `calendar.events` e `userinfo.email`, endurecer as páginas públicas de privacidade/termos com linguagem explícita sobre agenda Google e preparar um documento de submissão pronto para o Google
+**Regra pratica:** Sempre que uma integração OAuth for parte do onboarding comercial, o produto deve alinhar ao mesmo tempo:
+- código
+- disclosure jurídico público
+- narrativa de submissão/verification
+
 ### 33. Expansao de produto precisa entrar por arquitetura de portfólio, nao por mistura de narrativas
 **Problema:** Novas oportunidades reais, como `PrevGlobal`, CNIS com IA e modulos tecnicos premium, podem comecar a competir com o core operacional do PrevLegal se entrarem sem separacao clara
 **Causa:** O produto cresceu alem da ideia inicial e abriu adjacencias fortes, mas isso aumenta o risco de descaracterizar a oferta principal
