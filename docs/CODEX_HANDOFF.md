@@ -3060,3 +3060,39 @@ Pontos que precisam ser preservados durante a implementacao:
 - proximo passo real:
   - publicar a correcao do admin
   - usar o canal Z-API apenas para testes controlados de envio, ate que o webhook inbound do produto atual seja definido
+
+## Atualizacao 2026-04-09 - Webhook inbound da Z-API entrou no produto atual
+
+- problema observado:
+  - o canal `Z-API` já podia ser salvo e usado para envio outbound no admin
+  - mas o teste mostrava que os webhooks da instância ainda apontavam para `orbit-zapi-webhook`
+  - o PrevLegal não tinha rota inbound própria para fechar a integração ponta a ponta
+- correcao aplicada:
+  - `src/lib/whatsapp-provider.ts`
+    - adiciona `getZApiRoutingContextByInstanceId(instanceId)`
+  - `src/app/api/webhooks/zapi/route.ts`
+    - nova rota webhook do produto
+    - `GET` para healthcheck
+    - `POST` com `event=on-receive` para:
+      - resolver o canal por `zapi_instance_id`
+      - ignorar mensagens `fromMe`
+      - deduplicar por `twilio_message_sid` reutilizado como external id
+      - localizar lead por telefone
+      - criar/reativar `conversas`
+      - inserir em `mensagens_inbound`
+      - criar `notificacoes`
+      - parar `followup_runs` ativos quando o lead responder
+    - demais eventos retornam `200`/ack seguro por enquanto
+- leitura de produto:
+  - `Z-API` deixa de ser “só outbound”
+  - o fluxo inbound do canal agora passa a existir no PrevLegal atual
+  - ainda vale testar com um numero diferente do proprio numero conectado da instancia para validar entrega/recebimento de forma realista
+- validacao:
+  - `npm run build` passou
+- webhooks canônicos esperados na instância Z-API:
+  - `Ao receber`: `https://app.prevlegal.com.br/api/webhooks/zapi?event=on-receive&instance_id=<INSTANCE_ID>`
+  - `Ao enviar`: `https://app.prevlegal.com.br/api/webhooks/zapi?event=on-send&instance_id=<INSTANCE_ID>`
+  - `Ao conectar`: `https://app.prevlegal.com.br/api/webhooks/zapi?event=on-connect&instance_id=<INSTANCE_ID>`
+  - `Ao desconectar`: `https://app.prevlegal.com.br/api/webhooks/zapi?event=on-disconnect&instance_id=<INSTANCE_ID>`
+  - `Receber status da mensagem`: `https://app.prevlegal.com.br/api/webhooks/zapi?event=message-status&instance_id=<INSTANCE_ID>`
+  - `Presença do chat`: `https://app.prevlegal.com.br/api/webhooks/zapi?event=chat-presence&instance_id=<INSTANCE_ID>`

@@ -39,6 +39,29 @@ Mestra: [[MASTER_PREV_LEGAL]]
   - executar o checklist manual no Google Auth Platform
   - depois rodar o smoke test final do tenant real
 
+## Atualizacao Z-API / webhook inbound canônico — 09/04/2026
+
+- a integracao `Z-API` deixou de ser apenas outbound e ganhou uma rota inbound nativa do produto atual
+- arquivos principais:
+  - `src/lib/whatsapp-provider.ts`
+  - `src/app/api/webhooks/zapi/route.ts`
+- melhorias aplicadas:
+  - resolução do canal pelo `zapi_instance_id`
+  - tratamento inicial de `event=on-receive`
+  - criação/reativação de conversa por telefone
+  - persistência de inbound em `mensagens_inbound`
+  - criação de notificação operacional
+  - stop automático de follow-up quando o lead responde via Z-API
+  - ack seguro para os demais eventos da instância
+- impacto operacional:
+  - a instância do tenant deixa de depender do webhook antigo do Orbit
+  - o produto passa a ter URL canônica própria para configuração dos webhooks da Z-API
+- validacao:
+  - `npm run build` passou
+- proximo passo recomendado:
+  - configurar os webhooks da instância para o domínio `app.prevlegal.com.br`
+  - testar inbound real com outro número, sem usar o próprio número conectado da instância
+
 ## Navegação
 
 - [[INDEX]]

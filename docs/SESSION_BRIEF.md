@@ -536,3 +536,22 @@ Gatilho automático: a mudança de status do lead na API `PATCH` chama o *Orques
   - isso não deve ser tratado como inbound ativo do PrevLegal
 - validação:
   - `npm run build` passou
+
+## Atualização 2026-04-09 - PrevLegal ganhou webhook inbound nativo para Z-API
+
+- o produto já enviava via Z-API pelo canal configurado no admin, mas ainda não tinha uma rota inbound própria
+- arquivos principais:
+  - `src/lib/whatsapp-provider.ts`
+  - `src/app/api/webhooks/zapi/route.ts`
+- melhorias entregues:
+  - resolução de tenant/canal pelo `zapi_instance_id`
+  - suporte inicial a `event=on-receive`
+  - parsing defensivo de payload para telefone, mensagem textual, `fromMe` e ID externo
+  - upsert de conversa + mensagem inbound + notificação
+  - stop automático de follow-up quando o lead responde via canal Z-API
+- impacto prático:
+  - o time deixa de depender do webhook antigo do Orbit
+  - a instância Z-API do tenant agora pode apontar para o PrevLegal de forma canônica
+  - inbound e outbound passam a existir na mesma trilha do produto atual
+- validação:
+  - `npm run build` passou

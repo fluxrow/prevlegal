@@ -1,0 +1,382 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@supabase/supabase-js'
+import { getConfiguracaoAtual } from '@/lib/configuracoes'
+import { getZApiRoutingContextByInstanceId } from '@/lib/whatsapp-provider'
+import { normalizeWhatsAppRecipient } from '@/lib/twilio'
+
+function createAdminSupabase() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  )
+}
+
+function applyTenantFilter(query: any, tenantId: string | null) {
+  return tenantId ? query.eq('tenant_id', tenantId) : query.is('tenant_id', null)
+}
+
+function getNestedValue(source: unknown, path: string[]) {
+  let current = source as any
+  for (const segment of path) {
+    if (current == null || typeof current !== 'object' || !(segment in current)) {
+      return undefined
+    }
+    current = current[segment]
+  }
+  return current
+}
+
+function pickFirstString(source: unknown, paths: string[][]) {
+  for (const path of paths) {
+    const value = getNestedValue(source, path)
+    if (typeof value === 'string' && value.trim()) return value.trim()
+  }
+  return ''
+}
+
+function pickFirstBoolean(source: unknown, paths: string[][]) {
+  for (const path of paths) {
+    const value = getNestedValue(source, path)
+    if (typeof value === 'boolean') return value
+    if (typeof value === 'string') {
+      if (value.toLowerCase() === 'true') return true
+      if (value.toLowerCase() === 'false') return false
+    }
+  }
+  return false
+}
+
+function normalizeStoredPhone(value?: string | null) {
+  const normalized = normalizeWhatsAppRecipient(value)
+  return normalized || ''
+}
+
+function getPhoneDigits(value?: string | null) {
+  return normalizeStoredPhone(value).replace(/\D/g, '')
+}
+
+function extractInboundPayload(payload: unknown) {
+  const externalId = pickFirstString(payload, [
+    ['messageId'],
+    ['message', 'messageId'],
+    ['data', 'messageId'],
+    ['id'],
+    ['message', 'id'],
+    ['zaapId'],
+  ])
+
+  const from = pickFirstString(payload, [
+    ['phone'],
+    ['from'],
+    ['senderPhone'],
+    ['data', 'phone'],
+    ['data', 'from'],
+    ['message', 'phone'],
+    ['message', 'from'],
+    ['message', 'fromPhone'],
+    ['message', 'sender', 'phone'],
+  ])
+
+  const to = pickFirstString(payload, [
+    ['connectedPhone'],
+    ['to'],
+    ['toPhone'],
+    ['instancePhone'],
+    ['data', 'connectedPhone'],
+    ['data', 'to'],
+    ['message', 'to'],
+    ['message', 'connectedPhone'],
+  ])
+
+  const message = pickFirstString(payload, [
+    ['text', 'message'],
+    ['text', 'body'],
+    ['message'],
+    ['body'],
+    ['data', 'text', 'message'],
+    ['data', 'message'],
+    ['message', 'text', 'message'],
+    ['message', 'text', 'body'],
+    ['message', 'body'],
+    ['caption'],
+    ['data', 'caption'],
+  ])
+
+  const fromMe = pickFirstBoolean(payload, [
+    ['fromMe'],
+    ['isSentByMe'],
+    ['fromApi'],
+    ['data', 'fromMe'],
+    ['message', 'fromMe'],
+  ])
+
+  return {
+    externalId,
+    from,
+    to,
+    message,
+    fromMe,
+  }
+}
+
+async function handleReceiveEvent(request: NextRequest, event: string) {
+  const supabase = createAdminSupabase()
+  const payload = await request.json().catch(() => ({}))
+
+  const instanceId =
+    request.nextUrl.searchParams.get('instance_id') ||
+    pickFirstString(payload, [['instanceId'], ['instance', 'id'], ['data', 'instanceId']])
+
+  const routing = await getZApiRoutingContextByInstanceId(instanceId)
+  if (!routing.tenantId || !routing.channelId) {
+    return NextResponse.json(
+      { ok: false, ignored: true, reason: 'Canal Z-API não encontrado para a instância' },
+      { status: 202 },
+    )
+  }
+
+  const inbound = extractInboundPayload(payload)
+  const from = normalizeStoredPhone(inbound.from)
+  const to = normalizeStoredPhone(inbound.to || routing.from)
+  const body = inbound.message.trim()
+
+  if (inbound.fromMe) {
+    return NextResponse.json({ ok: true, ignored: true, reason: 'Mensagem originada pelo próprio canal' })
+  }
+
+  if (!from || !body) {
+    return NextResponse.json(
+      { ok: false, ignored: true, reason: 'Payload inbound sem telefone ou mensagem textual' },
+      { status: 202 },
+    )
+  }
+
+  const externalId = inbound.externalId
+  if (externalId) {
+    let duplicateQuery = supabase
+      .from('mensagens_inbound')
+      .select('id')
+      .eq('twilio_message_sid', externalId)
+      .eq('whatsapp_number_id', routing.channelId)
+
+    duplicateQuery = applyTenantFilter(duplicateQuery, routing.tenantId)
+
+    const { data: duplicate } = await duplicateQuery.maybeSingle()
+    if (duplicate) {
+      return NextResponse.json({ ok: true, duplicate: true })
+    }
+  }
+
+  const phoneDigits = getPhoneDigits(from)
+  const phone10or11 = phoneDigits.startsWith('55') ? phoneDigits.slice(2) : phoneDigits
+
+  let leadQuery = supabase
+    .from('leads')
+    .select('id, nome, status, campanha_id, tenant_id')
+    .or(
+      `telefone.eq.${phone10or11},telefone_enriquecido.eq.${phone10or11},telefone.eq.${from},telefone_enriquecido.eq.${from},telefone.eq.${phoneDigits},telefone_enriquecido.eq.${phoneDigits}`,
+    )
+    .limit(2)
+
+  leadQuery = applyTenantFilter(leadQuery, routing.tenantId)
+
+  const { data: leadMatches } = await leadQuery
+  const lead = (leadMatches || []).length === 1 ? leadMatches?.[0] : null
+  const tenantId = lead?.tenant_id || routing.tenantId
+
+  const { data: mensagemInserida, error: insertError } = await supabase
+    .from('mensagens_inbound')
+    .insert({
+      tenant_id: tenantId,
+      lead_id: lead?.id || null,
+      campanha_id: lead?.campanha_id || null,
+      conversa_id: null,
+      whatsapp_number_id: routing.channelId,
+      telefone_remetente: from,
+      telefone_destinatario: to || routing.from,
+      mensagem: body,
+      twilio_message_sid: externalId || null,
+      twilio_sid: event,
+    })
+    .select('id')
+    .single()
+
+  if (insertError) {
+    console.error('Erro ao salvar mensagem inbound Z-API:', insertError)
+    return NextResponse.json({ error: insertError.message }, { status: 500 })
+  }
+
+  let conversaQuery = supabase
+    .from('conversas')
+    .select('id, nao_lidas, status')
+    .eq('telefone', from)
+    .eq('whatsapp_number_id', routing.channelId)
+
+  conversaQuery = applyTenantFilter(conversaQuery, tenantId)
+  const { data: conversaExistente } = await conversaQuery.maybeSingle()
+
+  let conversaId: string | null = null
+  let shouldResumeHuman = false
+
+  if (conversaExistente) {
+    conversaId = conversaExistente.id
+    shouldResumeHuman =
+      conversaExistente.status === 'aguardando_cliente' ||
+      conversaExistente.status === 'resolvido'
+
+    await supabase
+      .from('conversas')
+      .update({
+        status: shouldResumeHuman ? 'humano' : (conversaExistente.status || 'agente'),
+        ultima_mensagem: body,
+        ultima_mensagem_at: new Date().toISOString(),
+        nao_lidas: (conversaExistente.nao_lidas || 0) + 1,
+      })
+      .eq('id', conversaExistente.id)
+  } else {
+    const { data: novaConversa, error: conversaError } = await supabase
+      .from('conversas')
+      .insert({
+        tenant_id: tenantId,
+        lead_id: lead?.id || null,
+        telefone: from,
+        status: 'agente',
+        ultima_mensagem: body,
+        ultima_mensagem_at: new Date().toISOString(),
+        nao_lidas: 1,
+        whatsapp_number_id: routing.channelId,
+      })
+      .select('id')
+      .single()
+
+    if (conversaError) {
+      console.error('Erro ao criar conversa inbound Z-API:', conversaError)
+    }
+
+    conversaId = novaConversa?.id || null
+  }
+
+  if (conversaId) {
+    await supabase
+      .from('mensagens_inbound')
+      .update({ conversa_id: conversaId })
+      .eq('id', mensagemInserida.id)
+
+    const nomeRemetente = lead?.nome || from
+    await supabase.from('notificacoes').insert({
+      tenant_id: tenantId,
+      tipo: 'mensagem',
+      titulo: `Nova mensagem de ${nomeRemetente}`,
+      descricao: body.slice(0, 100),
+      link: '/caixa-de-entrada',
+      whatsapp_number_id: routing.channelId,
+      metadata: {
+        provider: 'zapi',
+        conversa_id: conversaId,
+        telefone: from,
+        instance_id: instanceId,
+      },
+    })
+
+    const { data: config } = await getConfiguracaoAtual(
+      supabase,
+      tenantId,
+      'agente_gatilhos_escalada',
+    )
+
+    if (config?.agente_gatilhos_escalada) {
+      const gatilhos = config.agente_gatilhos_escalada
+        .split('\n')
+        .map((g: string) => g.trim().toLowerCase())
+        .filter(Boolean)
+
+      const msgLower = body.toLowerCase()
+      const gatilhoAtivado = gatilhos.find((g: string) => msgLower.includes(g))
+
+      if (gatilhoAtivado) {
+        await supabase.from('notificacoes').insert({
+          tenant_id: tenantId,
+          tipo: 'escalada',
+          titulo: `⚠️ Escalada detectada — ${nomeRemetente}`,
+          descricao: `Gatilho: "${gatilhoAtivado}" — Mensagem: ${body.slice(0, 80)}`,
+          link: '/caixa-de-entrada',
+          whatsapp_number_id: routing.channelId,
+          metadata: {
+            provider: 'zapi',
+            conversa_id: conversaId,
+            telefone: from,
+            gatilho: gatilhoAtivado,
+          },
+        })
+      }
+    }
+  }
+
+  if (lead?.id) {
+    if (lead.status === 'contacted') {
+      await supabase
+        .from('leads')
+        .update({ status: 'awaiting' })
+        .eq('id', lead.id)
+    }
+
+    const { data: runAtiva } = await supabase
+      .from('followup_runs')
+      .select('id, tenant_id')
+      .eq('lead_id', lead.id)
+      .eq('status', 'ativo')
+      .maybeSingle()
+
+    if (runAtiva) {
+      await supabase
+        .from('followup_runs')
+        .update({ status: 'stop_automatico', motivo_parada: 'Lead respondeu via WhatsApp' })
+        .eq('id', runAtiva.id)
+
+      await supabase.from('followup_events').insert({
+        tenant_id: runAtiva.tenant_id,
+        run_id: runAtiva.id,
+        lead_id: lead.id,
+        tipo: 'stop_lead_respondeu',
+        canal: 'whatsapp',
+        metadata: {
+          provider: 'zapi',
+          mensagem: body.slice(0, 200),
+          instance_id: instanceId,
+        },
+      })
+    }
+  }
+
+  return NextResponse.json({
+    ok: true,
+    event,
+    tenantId,
+    conversaId,
+    leadId: lead?.id || null,
+  })
+}
+
+export async function GET(request: NextRequest) {
+  return NextResponse.json({
+    ok: true,
+    provider: 'zapi',
+    event: request.nextUrl.searchParams.get('event') || 'health',
+  })
+}
+
+export async function POST(request: NextRequest) {
+  const event = (request.nextUrl.searchParams.get('event') || '').trim().toLowerCase()
+
+  if (event === 'on-receive') {
+    return handleReceiveEvent(request, event)
+  }
+
+  const payload = await request.json().catch(() => ({}))
+  return NextResponse.json({
+    ok: true,
+    ignored: true,
+    event: event || 'unknown',
+    received: Boolean(payload),
+  })
+}

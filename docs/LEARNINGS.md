@@ -1356,3 +1356,18 @@ Os selects ainda pediam apenas `usuarios(...)`, então o PostgREST não sabia qu
 - runtime de envio
 - exibição na UI do admin
 **Regra pratica:** No PrevLegal, campos de configuração de provider devem guardar apenas host/base estável; caminhos operacionais com token ou credenciais nunca podem ser persistidos nem renderizados em tela administrativa
+
+### 141. Z-API outbound e inbound são trilhas diferentes e precisam ficar explícitas
+**Problema:** O canal Z-API podia aparecer como conectado no admin, mas a operação ainda ficava sem recebimento real no produto porque os webhooks da instância apontavam para um fluxo antigo do Orbit
+**Causa:** O PrevLegal já tinha camada outbound via `src/lib/whatsapp-provider.ts`, mas não tinha uma rota inbound nativa como a de `Twilio`, o que deixava a integração parecer pronta sem estar fechada ponta a ponta
+**Correcao aplicada:** Criar `src/app/api/webhooks/zapi/route.ts` com:
+- resolução do canal por `zapi_instance_id`
+- tratamento defensivo de payload inbound por `event=on-receive`
+- criação/reativação de conversa
+- persistência em `mensagens_inbound`
+- notificação operacional
+- stop automático de `followup_runs` quando o lead responde
+**Regra pratica:** No PrevLegal, provider só pode ser tratado como realmente integrado quando:
+- o envio outbound funciona
+- a instância aponta para webhook do produto atual
+- e o inbound real já alimenta `conversas` e `mensagens_inbound`

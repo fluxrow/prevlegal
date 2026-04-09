@@ -45,6 +45,12 @@ export interface ResolvedWhatsAppChannel {
   }
 }
 
+export interface ZApiRoutingContext {
+  tenantId: string | null
+  channelId: string | null
+  from: string | null
+}
+
 export interface SendWhatsAppMessageInput {
   tenantId: string | null
   to: string
@@ -186,6 +192,38 @@ async function getWhatsAppNumberRow(
     return data as WhatsAppNumberRow
   } catch {
     return null
+  }
+}
+
+export async function getZApiRoutingContextByInstanceId(
+  instanceId?: string | null,
+): Promise<ZApiRoutingContext> {
+  if (!instanceId) {
+    return { tenantId: null, channelId: null, from: null }
+  }
+
+  try {
+    const supabase = createAdminSupabase()
+    const { data, error } = await supabase
+      .from('whatsapp_numbers')
+      .select('id, tenant_id, phone, zapi_connected_phone')
+      .eq('provider', 'zapi')
+      .eq('ativo', true)
+      .eq('zapi_instance_id', instanceId)
+      .limit(1)
+      .maybeSingle()
+
+    if (error || !data) {
+      return { tenantId: null, channelId: null, from: null }
+    }
+
+    return {
+      tenantId: data.tenant_id || null,
+      channelId: data.id || null,
+      from: data.zapi_connected_phone || data.phone || null,
+    }
+  } catch {
+    return { tenantId: null, channelId: null, from: null }
   }
 }
 
