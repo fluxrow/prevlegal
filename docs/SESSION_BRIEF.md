@@ -86,6 +86,23 @@ Gatilho automático: a mudança de status do lead na API `PATCH` chama o *Orques
 - validação:
   - `npm run build` passou
 
+## Atualização 2026-04-09 - Inbound Z-API agora cria lead técnico quando o número ainda não existe
+
+- no teste real, o webhook passou a bater no PrevLegal, mas a conversa ainda não aparecia
+- o log de produção mostrou o erro:
+  - `null value in column "lead_id" of relation "conversas" violates not-null constraint`
+- causa:
+  - o número que respondeu ainda não existia como lead no tenant
+  - o schema atual de `conversas` exige `lead_id`
+- correção aplicada em `src/app/api/webhooks/zapi/route.ts`:
+  - garantir busca do lead por telefone antes da criação da conversa
+  - se o telefone não existir, criar automaticamente um lead técnico mínimo em `Cadastro manual`
+  - seguir com persistência da mensagem inbound, abertura da conversa e notificação operacional
+- resultado esperado:
+  - respostas de números novos deixam de morrer no inbound e passam a cair na caixa de entrada
+- validação:
+  - `npm run build` passou
+
 ## Arquivos-chave para contexto rápido
 - `docs/ROADMAP.md` — histórico completo
 - `docs/SESSION_BRIEF.md` — estado atual e transição de IAs

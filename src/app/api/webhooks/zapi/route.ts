@@ -4,6 +4,9 @@ import { getConfiguracaoAtual } from '@/lib/configuracoes'
 import { getZApiRoutingContextByInstanceId } from '@/lib/whatsapp-provider'
 import { normalizeWhatsAppRecipient } from '@/lib/twilio'
 
+const LISTA_MANUAL_NOME = 'Cadastro manual'
+const LISTA_MANUAL_FORNECEDOR = 'sistema'
+
 function createAdminSupabase() {
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -84,6 +87,112 @@ function normalizeStoredPhone(value?: string | null) {
 
 function getPhoneDigits(value?: string | null) {
   return normalizeStoredPhone(value).replace(/\D/g, '')
+}
+
+function buildInboundLeadNb(phoneDigits: string) {
+  return `WHATSAPP-${phoneDigits || Date.now().toString()}`
+}
+
+async function ensureManualListId(
+  supabase: ReturnType<typeof createAdminSupabase>,
+  tenantId: string,
+  responsavelId?: string | null,
+) {
+  const { data: existing } = await supabase
+    .from('listas')
+    .select('id')
+    .eq('tenant_id', tenantId)
+    .eq('nome', LISTA_MANUAL_NOME)
+    .eq('fornecedor', LISTA_MANUAL_FORNECEDOR)
+    .limit(1)
+    .maybeSingle()
+
+  if (existing?.id) return existing.id as string
+
+  const { data: created, error } = await supabase
+    .from('listas')
+    .insert({
+      tenant_id: tenantId,
+      nome: LISTA_MANUAL_NOME,
+      fornecedor: LISTA_MANUAL_FORNECEDOR,
+      arquivo_original: null,
+      total_registros: 0,
+      total_ativos: 0,
+      total_cessados: 0,
+      total_duplicados: 0,
+      ganho_potencial_total: 0,
+      ganho_potencial_medio: 0,
+      percentual_com_telefone: 0,
+      importado_por: responsavelId || null,
+    })
+    .select('id')
+    .single()
+
+  if (error || !created?.id) {
+    throw new Error(error?.message || 'Erro ao criar lista manual para inbound Z-API')
+  }
+
+  return created.id as string
+}
+
+async function ensureLeadForInbound(
+  supabase: ReturnType<typeof createAdminSupabase>,
+  tenantId: string,
+  from: string,
+  body: string,
+) {
+  const phoneDigits = getPhoneDigits(from)
+  const phone10or11 = phoneDigits.startsWith('55') ? phoneDigits.slice(2) : phoneDigits
+
+  let leadQuery = supabase
+    .from('leads')
+    .select('id, nome, status, campanha_id, tenant_id')
+    .or(
+      `telefone.eq.${phone10or11},telefone_enriquecido.eq.${phone10or11},telefone.eq.${from},telefone_enriquecido.eq.${from},telefone.eq.${phoneDigits},telefone_enriquecido.eq.${phoneDigits}`,
+    )
+    .eq('tenant_id', tenantId)
+    .limit(2)
+
+  const { data: leadMatches } = await leadQuery
+  const lead = (leadMatches || []).length === 1 ? leadMatches?.[0] : null
+  if (lead) return lead
+
+  const { data: fallbackUsuario } = await supabase
+    .from('usuarios')
+    .select('id')
+    .eq('tenant_id', tenantId)
+    .eq('ativo', true)
+    .order('created_at', { ascending: true })
+    .limit(1)
+    .maybeSingle()
+
+  const listaId = await ensureManualListId(supabase, tenantId, fallbackUsuario?.id || null)
+  const inboundNb = buildInboundLeadNb(phoneDigits)
+
+  const { data: novoLead, error: leadError } = await supabase
+    .from('leads')
+    .insert({
+      tenant_id: tenantId,
+      lista_id: listaId,
+      nome: `Lead WhatsApp ${phone10or11 || phoneDigits || from}`,
+      telefone: phone10or11 || phoneDigits || from,
+      nb: inboundNb,
+      status: 'awaiting',
+      tem_whatsapp: true,
+      origem: 'manual',
+      responsavel_id: fallbackUsuario?.id || null,
+      enriquecido: false,
+      lgpd_optout: false,
+      observacoes: `Lead criado automaticamente via inbound Z-API em ${new Date().toISOString()}. Mensagem inicial: ${body.slice(0, 200)}`,
+    })
+    .select('id, nome, status, campanha_id, tenant_id')
+    .single()
+
+  if (leadError || !novoLead) {
+    throw new Error(leadError?.message || 'Erro ao criar lead automático para inbound Z-API')
+  }
+
+  return novoLead
 }
 
 function extractInboundPayload(payload: unknown) {
@@ -198,22 +307,17 @@ async function handleReceiveEvent(request: NextRequest, event: string) {
     }
   }
 
-  const phoneDigits = getPhoneDigits(from)
-  const phone10or11 = phoneDigits.startsWith('55') ? phoneDigits.slice(2) : phoneDigits
+  let lead = null as Awaited<ReturnType<typeof ensureLeadForInbound>> | null
+  let tenantId = routing.tenantId
 
-  let leadQuery = supabase
-    .from('leads')
-    .select('id, nome, status, campanha_id, tenant_id')
-    .or(
-      `telefone.eq.${phone10or11},telefone_enriquecido.eq.${phone10or11},telefone.eq.${from},telefone_enriquecido.eq.${from},telefone.eq.${phoneDigits},telefone_enriquecido.eq.${phoneDigits}`,
-    )
-    .limit(2)
-
-  leadQuery = applyTenantFilter(leadQuery, routing.tenantId)
-
-  const { data: leadMatches } = await leadQuery
-  const lead = (leadMatches || []).length === 1 ? leadMatches?.[0] : null
-  const tenantId = lead?.tenant_id || routing.tenantId
+  try {
+    if (routing.tenantId) {
+      lead = await ensureLeadForInbound(supabase, routing.tenantId, from, body)
+      tenantId = lead?.tenant_id || routing.tenantId
+    }
+  } catch (error) {
+    console.error('Erro ao garantir lead para inbound Z-API:', error)
+  }
 
   const { data: mensagemInserida, error: insertError } = await supabase
     .from('mensagens_inbound')

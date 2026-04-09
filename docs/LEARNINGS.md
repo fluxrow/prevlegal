@@ -1381,3 +1381,12 @@ Os selects ainda pediam apenas `usuarios(...)`, então o PostgREST não sabia qu
 - id externo por `messageId`, `id` ou `key.id`
 - autoria por `fromMe` ou `key.fromMe`
 **Regra pratica:** Em integrações Z-API, sempre validar explicitamente o formato de webhook da variante `web / multi-device`, porque ela pode divergir do payload achatado usado em exemplos mais simples
+
+### 143. Inbound WhatsApp não pode depender de lead já pré-existente quando a conversa exige `lead_id`
+**Problema:** O webhook da Z-API passou a chegar na produção, mas a mensagem ainda não aparecia porque a criação da conversa falhava com `null value in column "lead_id" of relation "conversas"`
+**Causa:** O número que respondeu ainda não existia como lead, e o fluxo inbound tentava abrir `conversas` com `lead_id = null` em um schema que exige vínculo obrigatório com `leads`
+**Correcao aplicada:** O webhook `src/app/api/webhooks/zapi/route.ts` passou a:
+- garantir o lead por telefone no tenant antes de abrir a conversa
+- criar automaticamente um lead técnico mínimo em `Cadastro manual` quando o número ainda não existe
+- seguir com `mensagens_inbound`, `conversas`, notificação e stop de follow-up no mesmo fluxo
+**Regra pratica:** No PrevLegal, inbound de WhatsApp precisa ser resiliente a números novos; se o schema exigir `lead_id`, o produto deve criar o lead placeholder em vez de perder a mensagem
