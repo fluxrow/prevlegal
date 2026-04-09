@@ -183,7 +183,6 @@ async function ensureLeadForInbound(
       responsavel_id: fallbackUsuario?.id || null,
       enriquecido: false,
       lgpd_optout: false,
-      observacoes: `Lead criado automaticamente via inbound Z-API em ${new Date().toISOString()}. Mensagem inicial: ${body.slice(0, 200)}`,
     })
     .select('id, nome, status, campanha_id, tenant_id')
     .single()

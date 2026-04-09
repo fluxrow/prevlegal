@@ -3115,3 +3115,20 @@ Pontos que precisam ser preservados durante a implementacao:
     - entrou `console.warn` quando o webhook chega sem telefone ou texto suficiente, para facilitar depuração em produção
 - resultado esperado:
   - instâncias `web / multi-device` deixam de cair em payload incompleto e passam a alimentar `mensagens_inbound`, `conversas`, notificações e stop automático de follow-up
+
+## Atualizacao 2026-04-09 - Fallback do lead tecnico Z-API foi alinhado ao schema real da produção
+
+- cenário:
+  - após endurecer o parser e criar fallback para lead técnico, o webhook da Z-API continuou chegando em produção, mas a conversa ainda não aparecia
+  - o log de produção mostrou:
+    - `Could not find the 'observacoes' column of 'leads' in the schema cache`
+    - seguido por `null value in column "lead_id" of relation "conversas" violates not-null constraint`
+- causa:
+  - o insert do lead automático tentava gravar `leads.observacoes`
+  - essa coluna não existe no schema operacional atual, então o lead técnico falhava antes de abrir a conversa
+- correção aplicada:
+  - `src/app/api/webhooks/zapi/route.ts`
+    - removido `observacoes` do insert do lead técnico
+    - mantido o fallback apenas com colunas confirmadas na produção
+- resultado esperado:
+  - inbound de números ainda não reconhecidos deixa de quebrar por divergência de schema e passa a conseguir abrir conversa normalmente

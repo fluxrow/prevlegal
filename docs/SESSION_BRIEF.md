@@ -103,6 +103,23 @@ Gatilho automático: a mudança de status do lead na API `PATCH` chama o *Orques
 - validação:
   - `npm run build` passou
 
+## Atualização 2026-04-09 - Placeholder lead do inbound Z-API foi ajustado ao schema real da produção
+
+- no teste seguinte, o webhook continuou chegando corretamente na produção, mas o inbound ainda morria antes de abrir a conversa
+- o log de produção mostrou o erro:
+  - `Could not find the 'observacoes' column of 'leads' in the schema cache`
+- causa:
+  - o lead técnico criado pelo webhook tentava gravar `leads.observacoes`
+  - essa coluna não existe no schema operacional atual, então a criação do lead falhava e `conversas.lead_id` continuava nulo
+- correção aplicada em `src/app/api/webhooks/zapi/route.ts`:
+  - remover `observacoes` do insert do lead técnico
+  - manter o fallback de criação automática, mas preso apenas a colunas confirmadas da produção
+- resultado esperado:
+  - inbound Z-API de números ainda não reconhecidos deixa de falhar por incompatibilidade de schema
+  - a mensagem passa a conseguir abrir conversa e cair na caixa de entrada
+- validação:
+  - `npm run build` passou
+
 ## Arquivos-chave para contexto rápido
 - `docs/ROADMAP.md` — histórico completo
 - `docs/SESSION_BRIEF.md` — estado atual e transição de IAs

@@ -1390,3 +1390,9 @@ Os selects ainda pediam apenas `usuarios(...)`, então o PostgREST não sabia qu
 - criar automaticamente um lead técnico mínimo em `Cadastro manual` quando o número ainda não existe
 - seguir com `mensagens_inbound`, `conversas`, notificação e stop de follow-up no mesmo fluxo
 **Regra pratica:** No PrevLegal, inbound de WhatsApp precisa ser resiliente a números novos; se o schema exigir `lead_id`, o produto deve criar o lead placeholder em vez de perder a mensagem
+
+### 144. Fallback de lead técnico precisa usar só colunas confirmadas no schema de produção
+**Problema:** Mesmo depois de criar o fallback para lead técnico no inbound da Z-API, a mensagem continuava fora da caixa de entrada
+**Causa:** O insert do lead automático tentava gravar `leads.observacoes`, mas essa coluna não existe no schema operacional atual; por isso a criação do lead falhava e a conversa ainda morria com `lead_id = null`
+**Correcao aplicada:** Remover `observacoes` do insert em `src/app/api/webhooks/zapi/route.ts` e manter o placeholder preso apenas a campos confirmados na produção
+**Regra pratica:** Em hotfixes de go-live, qualquer fallback que crie registros automaticamente deve evitar colunas opcionais ou históricas do ambiente local; se o schema remoto não estiver 100% convergente, use o menor insert possível
