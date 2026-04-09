@@ -618,10 +618,16 @@ async function handleReceiveEvent(request: NextRequest, event: string) {
 }
 
 export async function GET(request: NextRequest) {
+  const event = (request.nextUrl.searchParams.get('event') || '').trim().toLowerCase()
+
+  if (event === 'on-receive') {
+    return handleReceiveEvent(request, event)
+  }
+
   return NextResponse.json({
     ok: true,
     provider: 'zapi',
-    event: request.nextUrl.searchParams.get('event') || 'health',
+    event: event || 'health',
   })
 }
 

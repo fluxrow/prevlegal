@@ -183,6 +183,17 @@ Gatilho automático: a mudança de status do lead na API `PATCH` chama o *Orques
 - validação:
   - `npm run build` passou
 
+## Atualização 2026-04-09 - Inbound Z-API passou a aceitar `GET` em `event=on-receive`
+
+- depois do endurecimento do body, ainda restava uma hipótese plausível na integração web:
+  - o painel/proxy da Z-API podia estar chamando o webhook de inbound por `GET`, não só por `POST`
+- correção aplicada em `src/app/api/webhooks/zapi/route.ts`:
+  - `GET` com `event=on-receive` agora reaproveita o mesmo fluxo de processamento usado no `POST`
+- resultado esperado:
+  - o inbound deixa de depender do método HTTP exato usado pelo provider
+- validação:
+  - `npm run build` passou
+
 ## Arquivos-chave para contexto rápido
 - `docs/ROADMAP.md` — histórico completo
 - `docs/SESSION_BRIEF.md` — estado atual e transição de IAs

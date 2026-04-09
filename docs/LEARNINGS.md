@@ -29,6 +29,12 @@ Mestra: [[MASTER_PREV_LEGAL]]
 - `application/x-www-form-urlencoded`
 - texto cru ou campos serializados
 
+### 148. Webhook de provider nao pode assumir `POST` como metodo unico
+**Problema:** Mesmo com parser mais tolerante, o inbound da Z-API ainda podia falhar silenciosamente na variante `web`
+**Causa:** Alguns providers ou painéis de webhook podem disparar eventos por `GET`, mantendo os dados em query string ou shape simplificado
+**Correção:** Permitir que `GET /api/webhooks/zapi?event=on-receive` reutilize o mesmo fluxo de processamento do `POST`
+**Regra pratica:** Em integrações externas sujeitas a variação de painel/proxy, o handler de webhook deve ser tolerante a `GET` e `POST` sempre que isso não abrir risco de segurança desnecessário
+
 ### 146. Busca global não pode depender de acento ou formatação perfeita
 **Problema:** Na busca global (`Ctrl+K`), digitar `Caua` não encontrava `Cauã`, e números formatados de forma diferente também podiam escapar
 **Causa:** A rota `/api/busca` usava `ilike` direto no banco, enquanto a busca de leads já fazia normalização de acentos e dígitos em memória

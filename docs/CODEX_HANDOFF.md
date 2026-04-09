@@ -47,6 +47,22 @@ Objetivo:
     - ou o provider nao esta entregando o webhook
     - ou a entrega esta chegando com shape ainda nao coberto e agora isso fica mais facil de inspecionar
 
+## Atualizacao 2026-04-09 - Z-API inbound web agora aceita GET para `on-receive`
+
+- contexto:
+  - mesmo depois do parser de body mais tolerante, o inbound ainda podia continuar invisivel na variante `web`
+- leitura tecnica:
+  - em alguns cenarios de painel/proxy, o provider pode chamar o webhook de recebimento por `GET`
+  - o PrevLegal tratava `GET` apenas como healthcheck
+- arquivo alterado:
+  - `src/app/api/webhooks/zapi/route.ts`
+- mudanca principal:
+  - `GET` com `event=on-receive` passou a encaminhar para `handleReceiveEvent`
+- validacao:
+  - `npm run build` passou
+- proximo passo operacional:
+  - retestar inbound apos o deploy
+
 ## Atualizacao 2026-04-09 - Google OAuth preparado para go-live comercial
 
 - contexto:
