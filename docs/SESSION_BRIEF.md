@@ -120,6 +120,23 @@ Gatilho automático: a mudança de status do lead na API `PATCH` chama o *Orques
 - validação:
   - `npm run build` passou
 
+## Atualização 2026-04-09 - Matcher do inbound Z-API agora reconhece lead manual com telefone formatado
+
+- no banco operacional, o telefone do lead manual do teste apareceu salvo como:
+  - `(41) 99236-1868`
+- causa do desvio:
+  - a primeira busca do webhook priorizava igualdade exata por variantes já normalizadas
+  - com telefone salvo formatado, o match podia falhar e o fluxo cair no placeholder
+- correção aplicada em `src/app/api/webhooks/zapi/route.ts`:
+  - manter a busca exata normalizada como primeira etapa
+  - adicionar fallback por candidatos usando `like` com sufixo do telefone
+  - normalizar os candidatos em memória e priorizar o lead manual quando houver correspondência única
+- resultado esperado:
+  - respostas vindas do WhatsApp passam a casar com leads manuais mesmo quando o telefone estiver salvo com máscara
+  - o sistema evita criar lead técnico desnecessário para números já cadastrados
+- validação:
+  - `npm run build` passou
+
 ## Arquivos-chave para contexto rápido
 - `docs/ROADMAP.md` — histórico completo
 - `docs/SESSION_BRIEF.md` — estado atual e transição de IAs

@@ -93,6 +93,20 @@ function buildInboundLeadNb(phoneDigits: string) {
   return `WHATSAPP-${phoneDigits || Date.now().toString()}`
 }
 
+function getNormalizedPhoneVariants(value: string) {
+  const normalized = normalizeStoredPhone(value)
+  const digits = normalized.replace(/\D/g, '')
+  const local = digits.startsWith('55') ? digits.slice(2) : digits
+
+  return Array.from(
+    new Set(
+      [normalized, digits, local]
+        .map((item) => item.trim())
+        .filter(Boolean),
+    ),
+  )
+}
+
 async function ensureManualListId(
   supabase: ReturnType<typeof createAdminSupabase>,
   tenantId: string,
@@ -143,19 +157,46 @@ async function ensureLeadForInbound(
 ) {
   const phoneDigits = getPhoneDigits(from)
   const phone10or11 = phoneDigits.startsWith('55') ? phoneDigits.slice(2) : phoneDigits
+  const phoneVariants = getNormalizedPhoneVariants(from)
+
+  const exactConditions = phoneVariants.flatMap((value) => [
+    `telefone.eq.${value}`,
+    `telefone_enriquecido.eq.${value}`,
+  ])
 
   let leadQuery = supabase
     .from('leads')
-    .select('id, nome, status, campanha_id, tenant_id')
-    .or(
-      `telefone.eq.${phone10or11},telefone_enriquecido.eq.${phone10or11},telefone.eq.${from},telefone_enriquecido.eq.${from},telefone.eq.${phoneDigits},telefone_enriquecido.eq.${phoneDigits}`,
-    )
+    .select('id, nome, status, campanha_id, tenant_id, telefone, telefone_enriquecido')
+    .or(exactConditions.join(','))
     .eq('tenant_id', tenantId)
     .limit(2)
 
   const { data: leadMatches } = await leadQuery
-  const lead = (leadMatches || []).length === 1 ? leadMatches?.[0] : null
-  if (lead) return lead
+  const exactLead = (leadMatches || []).length === 1 ? leadMatches?.[0] : null
+  if (exactLead) return exactLead
+
+  const suffix = phone10or11.slice(-8) || phoneDigits.slice(-8)
+  if (suffix) {
+    const { data: candidateMatches } = await supabase
+      .from('leads')
+      .select('id, nome, status, campanha_id, tenant_id, telefone, telefone_enriquecido')
+      .or(`telefone.like.*${suffix}*,telefone_enriquecido.like.*${suffix}*`)
+      .eq('tenant_id', tenantId)
+      .limit(25)
+
+    const normalizedCandidates = (candidateMatches || []).filter((candidate) => {
+      const candidateVariants = [
+        ...getNormalizedPhoneVariants(candidate.telefone || ''),
+        ...getNormalizedPhoneVariants(candidate.telefone_enriquecido || ''),
+      ]
+
+      return candidateVariants.some((variant) => phoneVariants.includes(variant))
+    })
+
+    if (normalizedCandidates.length === 1) {
+      return normalizedCandidates[0]
+    }
+  }
 
   const { data: fallbackUsuario } = await supabase
     .from('usuarios')

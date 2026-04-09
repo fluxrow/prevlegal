@@ -3132,3 +3132,20 @@ Pontos que precisam ser preservados durante a implementacao:
     - mantido o fallback apenas com colunas confirmadas na produção
 - resultado esperado:
   - inbound de números ainda não reconhecidos deixa de quebrar por divergência de schema e passa a conseguir abrir conversa normalmente
+
+## Atualizacao 2026-04-09 - Matcher do inbound Z-API passou a reconhecer telefone manual mascarado
+
+- cenário:
+  - no banco operacional, o lead manual do número de teste existia
+  - mas o telefone estava salvo como `(41) 99236-1868`
+  - o webhook chegava com variante normalizada (`+5541992361868`)
+- causa:
+  - a busca inicial do lead dependia de igualdade exata entre variantes normalizadas e valores crus do banco
+  - isso podia falhar quando o telefone manual estivesse com máscara humana
+- correção aplicada:
+  - `src/app/api/webhooks/zapi/route.ts`
+    - manter a busca exata como primeira etapa
+    - adicionar fallback por candidatos via `like` usando sufixo do telefone
+    - normalizar os candidatos em memória e aceitar o match quando houver uma correspondência única
+- resultado esperado:
+  - respostas vindas do WhatsApp passam a priorizar o lead manual existente antes de criar placeholder técnico

@@ -1396,3 +1396,9 @@ Os selects ainda pediam apenas `usuarios(...)`, então o PostgREST não sabia qu
 **Causa:** O insert do lead automático tentava gravar `leads.observacoes`, mas essa coluna não existe no schema operacional atual; por isso a criação do lead falhava e a conversa ainda morria com `lead_id = null`
 **Correcao aplicada:** Remover `observacoes` do insert em `src/app/api/webhooks/zapi/route.ts` e manter o placeholder preso apenas a campos confirmados na produção
 **Regra pratica:** Em hotfixes de go-live, qualquer fallback que crie registros automaticamente deve evitar colunas opcionais ou históricas do ambiente local; se o schema remoto não estiver 100% convergente, use o menor insert possível
+
+### 145. Match de lead por telefone no inbound precisa tolerar máscara e formatação humana
+**Problema:** Um lead manual já existente continuava sem ser reconhecido no inbound da Z-API, mesmo com o número correto
+**Causa:** O telefone estava salvo como `(41) 99236-1868`, enquanto o webhook chegava normalizado (`+5541992361868`); a busca exata inicial não considerava essa máscara como correspondência já resolvida
+**Correcao aplicada:** Em `src/app/api/webhooks/zapi/route.ts`, manter a busca exata por variantes normalizadas e, se ela falhar, buscar candidatos por sufixo com `like`, normalizar os telefones encontrados em memória e aceitar o match quando houver uma correspondência única
+**Regra pratica:** Em integrações WhatsApp, telefone salvo manualmente nunca deve depender de igualdade literal de string; o matcher precisa normalizar e comparar formatos humanos antes de cair em placeholder
