@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import SessionActivityTracker from '@/components/session-activity-tracker'
 import { ADMIN_IDLE_MINUTES } from '@/lib/session-config'
@@ -347,6 +347,7 @@ export default function TenantDetailPage() {
   const [channelMsg, setChannelMsg] = useState('')
   const [savingChannel, setSavingChannel] = useState(false)
   const [actingChannelId, setActingChannelId] = useState<string | null>(null)
+  const channelFormRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
     loadPage()
@@ -386,6 +387,9 @@ export default function TenantDetailPage() {
     setChannelMsg('')
     setChannelForm(emptyChannelForm(data?.tenant, provider))
     setShowChannelForm(true)
+    requestAnimationFrame(() => {
+      channelFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    })
   }
 
   function openEditChannel(channel: WhatsAppNumber) {
@@ -393,6 +397,9 @@ export default function TenantDetailPage() {
     setChannelMsg('')
     setChannelForm(toChannelForm(channel))
     setShowChannelForm(true)
+    requestAnimationFrame(() => {
+      channelFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    })
   }
 
   function closeChannelForm() {
@@ -425,6 +432,7 @@ export default function TenantDetailPage() {
       return
     }
     if (res.status === 428) {
+      setChannelMsg('Reautenticação admin expirada. Redirecionando para confirmar sua sessão...')
       router.push(`/admin/reauth?next=${encodeURIComponent(`/admin/${id}`)}`)
       return
     }
@@ -456,6 +464,7 @@ export default function TenantDetailPage() {
       return
     }
     if (res.status === 428) {
+      setChannelMsg('Reautenticação admin expirada. Redirecionando para confirmar sua sessão...')
       router.push(`/admin/reauth?next=${encodeURIComponent(`/admin/${id}`)}`)
       return
     }
@@ -485,6 +494,7 @@ export default function TenantDetailPage() {
       return
     }
     if (res.status === 428) {
+      setChannelMsg('Reautenticação admin expirada. Redirecionando para confirmar sua sessão...')
       router.push(`/admin/reauth?next=${encodeURIComponent(`/admin/${id}`)}`)
       return
     }
@@ -678,7 +688,7 @@ export default function TenantDetailPage() {
           )}
 
           {showChannelForm ? (
-            <div style={{ marginTop: '18px', borderTop: '1px solid #1f2937', paddingTop: '20px' }}>
+            <div ref={channelFormRef} style={{ marginTop: '18px', borderTop: '1px solid #1f2937', paddingTop: '20px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
                 <div>
                   <h4 style={{ fontSize: '14px', fontWeight: '700', color: '#fff', margin: '0 0 4px' }}>

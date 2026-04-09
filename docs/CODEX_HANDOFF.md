@@ -3037,3 +3037,26 @@ Pontos que precisam ser preservados durante a implementacao:
   - `docs/TENANT_SMOKE_TEST_CHECKLIST.md`
 - leitura estrategica:
   - para segunda-feira, o risco maior deixa de ser funcional e passa a ser percepcao de confianca / onboarding controlado
+
+## Atualizacao 2026-04-09 - UX do admin de canais ficou menos enganosa e a Z-API do teste mostrou webhook de outro produto
+
+- problema observado:
+  - no admin do tenant, os botoes `Editar` e `Novo Z-API/Twilio` podiam parecer mortos
+  - o usuario tambem mostrou a tela da Z-API e os webhooks estavam configurados para:
+    - `.../functions/v1/orbit-zapi-webhook?...`
+- causa:
+  - o formulario de canal abre inline abaixo da lista; sem scroll automatico, a acao acontece fora da viewport visivel
+  - quando a reautenticacao admin expira, o redirecionamento tambem podia parecer “nada aconteceu”
+  - os webhooks da Z-API pertencem a um fluxo antigo do Orbit, nao a uma integracao inbound atual do PrevLegal
+- correcao aplicada:
+  - `src/app/admin/[id]/page.tsx`
+    - adiciona `scrollIntoView` ao abrir criacao/edicao de canal
+    - exibe mensagem explicita antes de redirecionar por `428 Reauthentication required`
+- leitura de produto:
+  - outbound via Z-API continua compativel com o admin do PrevLegal
+  - inbound nao pode ser considerado ativo enquanto os webhooks da instancia continuarem apontando para o Orbit
+- validacao:
+  - `npm run build` passou
+- proximo passo real:
+  - publicar a correcao do admin
+  - usar o canal Z-API apenas para testes controlados de envio, ate que o webhook inbound do produto atual seja definido

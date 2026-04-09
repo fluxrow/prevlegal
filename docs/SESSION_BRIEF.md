@@ -519,3 +519,20 @@ Gatilho automático: a mudança de status do lead na API `PATCH` chama o *Orques
 - documentos novos de execução:
   - `docs/GOOGLE_OAUTH_GO_LIVE_CHECKLIST.md`
   - `docs/TENANT_SMOKE_TEST_CHECKLIST.md`
+
+## Atualização 2026-04-09 - Admin de canais WhatsApp ficou menos ambíguo e a Z-API do teste revelou webhook legado
+
+- a tela de admin do tenant ajustou a UX dos canais WhatsApp em:
+  - `src/app/admin/[id]/page.tsx`
+- comportamento novo:
+  - ao clicar em `Editar` ou `Novo canal`, a viewport desce automaticamente até o formulário inline
+  - quando a reautenticação admin expira, a UI mostra aviso antes do redirecionamento
+- impacto prático:
+  - o operador deixa de interpretar `Editar` e `Novo Z-API/Twilio` como botões sem ação
+  - `Definir padrão` e demais mutações passam a ficar mais inteligíveis quando a sessão recente venceu
+- leitura operacional da Z-API de teste:
+  - o print enviado mostrava webhooks preenchidos
+  - mas os endpoints ainda apontavam para `orbit-zapi-webhook` em um projeto antigo do Orbit
+  - isso não deve ser tratado como inbound ativo do PrevLegal
+- validação:
+  - `npm run build` passou

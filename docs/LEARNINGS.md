@@ -1331,3 +1331,19 @@ Os selects ainda pediam apenas `usuarios(...)`, então o PostgREST não sabia qu
 - escopos
 - verificação/submissão
 **Regra pratica:** No PrevLegal, integração externa só pode ser considerada “pronta para cliente pagante” quando o fluxo técnico e a confiança comercial estiverem fechados; alerta de OAuth não é bug de código, mas é bloqueio real de onboarding
+
+### 138. Em superfícies admin com formulário inline, ação que não reposiciona viewport parece botão quebrado
+**Problema:** Na gestão de canais WhatsApp do admin, os botões `Editar` e `Novo Z-API/Twilio` podiam parecer sem efeito mesmo quando a tela estava funcionando
+**Causa:** O formulário de edição/criação abre inline abaixo da lista. Sem reposicionar a viewport, o operador clica no botão, nada muda no trecho visível da tela e a ação parece “morta”
+**Correcao aplicada:** A tela passou a:
+- fazer scroll automático até o formulário inline quando `Editar` ou `Novo canal` são acionados
+- mostrar mensagem explícita antes de redirecionar para reautenticação admin quando a sessão recente expira
+**Regra pratica:** No PrevLegal, telas administrativas com edição inline precisam sempre revelar visualmente onde a ação abriu; se o operador precisar “descobrir” que o formulário apareceu fora da viewport, a UX está induzindo falso bug
+
+### 139. Webhook de provider externo pode parecer configurado e ainda estar apontando para outro produto
+**Problema:** A instância Z-API do teste mostrava webhooks aparentemente preenchidos, mas eles não estavam ligados ao PrevLegal
+**Causa:** Os endpoints configurados na Z-API apontavam para um Supabase Function antigo do Orbit (`orbit-zapi-webhook`), não para uma trilha atual do PrevLegal
+**Correcao aplicada:** Registrar explicitamente que:
+- outbound via Z-API no PrevLegal pode ser testado pelas credenciais do canal no admin
+- inbound/webhook só pode ser tratado como válido depois que os endpoints da instância apontarem para a integração correta do produto atual
+**Regra pratica:** No PrevLegal, nunca assuma que “webhook preenchido” significa integração pronta; sempre validar domínio, produto-alvo e rota exata antes de considerar um provider conectado de verdade
