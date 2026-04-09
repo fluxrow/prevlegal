@@ -24,7 +24,7 @@ Protocolo complementar entre IAs:
 - multiagentes por tenant com seed operacional
 - templates de automação editáveis
 - portal mobile em estado maduro
-- agenda operacional com fallback técnico e UI já utilizável
+- agenda operacional validada em runtime após `043`, `044` e `045`
 - geração beta de documentos IA salva corretamente
 - foundation Docling iniciada
 - importador inteligente fase 1
@@ -33,21 +33,14 @@ Protocolo complementar entre IAs:
 
 ### P0 — antes de rodar com escritório pagante
 
-1. Validar agenda Google sem fallback
-- conectar Google do usuário
-- conectar calendário do escritório
-- criar agendamento
-- remarcar
-- cancelar
-
-3. Fechar a frente comercial do OAuth do Google
+1. Fechar a frente comercial do OAuth do Google
 - consent screen
 - domínio verificado
 - política de privacidade
 - termos
 - submissão de verificação do app
 
-4. Rodar smoke test do tenant real
+2. Rodar smoke test do tenant real
 - login do responsável
 - convite de usuário
 - permissões customizadas
@@ -80,6 +73,11 @@ Runbook canônico:
 
 ### Etapa 2 — Google Calendar real
 
+Status em 09/04/2026:
+- conexão Google e agenda foram validadas em runtime
+- criar, listar, remarcar e cancelar estão `ok`
+- o risco residual saiu da feature e ficou concentrado na confiança comercial do consent screen
+
 1. testar meu Google
 2. testar calendário do escritório
 3. testar responsável com agenda própria
@@ -94,6 +92,9 @@ Runbook canônico:
 3. garantir links públicos
 4. preparar verificação do app no Google
 
+Checklist canônico:
+- `docs/GOOGLE_OAUTH_GO_LIVE_CHECKLIST.md`
+
 ### Etapa 4 — smoke test final
 
 1. login
@@ -104,6 +105,9 @@ Runbook canônico:
 6. portal
 7. agenda
 
+Checklist canônico:
+- `docs/TENANT_SMOKE_TEST_CHECKLIST.md`
+
 ## O que não deve roubar foco agora
 
 - redesign grande de telas já utilizáveis
@@ -112,7 +116,4 @@ Runbook canônico:
 
 ## Próximo passo oficial
 
-Validar a agenda Google no banco já migrado, garantindo:
-- criação de agendamento sem erro de embed ambíguo
-- listagem/restauração dos agendamentos já existentes
-- remarcar e cancelar sem regressão
+Fechar a trilha comercial do Google OAuth e depois rodar o smoke test final do tenant real.

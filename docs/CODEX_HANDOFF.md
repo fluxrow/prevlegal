@@ -2980,3 +2980,21 @@ Pontos que precisam ser preservados durante a implementacao:
     - os agendamentos antigos reapareceram
     - o novo agendamento aparece na UI
     - remarcar e cancelar continuam funcionando no banco ja migrado
+
+## Atualizacao 2026-04-09 - Agenda validada em runtime e trilho de go-live reorganizado
+
+- validacao executada pelo usuario no tenant real:
+  - `listagem antiga: ok`
+  - `novo agendamento: ok`
+  - `remarcar: ok`
+  - `cancelar: ok`
+- conclusao:
+  - a agenda Google nao e mais o principal risco tecnico do go-live
+  - o proximo bloco certo agora e:
+    - fechar a frente comercial do Google OAuth
+    - rodar o smoke test final do tenant
+- docs novos criados:
+  - `docs/GOOGLE_OAUTH_GO_LIVE_CHECKLIST.md`
+  - `docs/TENANT_SMOKE_TEST_CHECKLIST.md`
+- leitura estrategica:
+  - para segunda-feira, o risco maior deixa de ser funcional e passa a ser percepcao de confianca / onboarding controlado

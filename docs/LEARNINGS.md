@@ -1309,3 +1309,13 @@ Os selects ainda pediam apenas `usuarios(...)`, então o PostgREST não sabia qu
 - `usuarios:usuarios!agendamentos_usuario_id_fkey(...)`
 - o mesmo ajuste foi aplicado na listagem, no retorno do `POST` e no retorno do `PATCH`
 **Regra pratica:** No PrevLegal, sempre que uma tabela ganhar múltiplas FKs para o mesmo destino, nenhum embed pode continuar genérico; o FK canônico precisa ser nomeado explicitamente na query para evitar bugs “meio invisíveis”, onde a escrita funciona mas a resposta da API quebra
+
+### 137. Quando o fluxo técnico já está verde, o próximo bloqueio de go-live pode ser pura percepção de confiança
+**Problema:** Mesmo com conexão Google e agenda funcionando, o cliente ainda pode ver o alerta de app não verificado no consentimento e interpretar isso como insegurança do produto
+**Causa:** A feature técnica e a prontidão comercial do OAuth são coisas diferentes; o runtime pode estar certo enquanto a consent screen ainda está em fase de teste/verificação
+**Correcao aplicada:** Formalizar a frente do Google como checklist de go-live separado, com foco em:
+- consent screen
+- domínio e links públicos
+- escopos
+- verificação/submissão
+**Regra pratica:** No PrevLegal, integração externa só pode ser considerada “pronta para cliente pagante” quando o fluxo técnico e a confiança comercial estiverem fechados; alerta de OAuth não é bug de código, mas é bloqueio real de onboarding

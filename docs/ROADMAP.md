@@ -1733,3 +1733,22 @@ Status atual em 18/03/2026:
   - `npm run build` passou
 - próximo passo recomendado:
   - validar em runtime criação, listagem, remarcação e cancelamento de agendamentos após a `043`
+
+## Atualização 2026-04-09 — Agenda Google fechou a validação runtime e o foco passou para go-live comercial
+
+- a rodada de validação real da agenda ficou verde no tenant:
+  - listagem antiga reapareceu
+  - novo agendamento apareceu
+  - remarcar funcionou
+  - cancelar funcionou
+- conclusão operacional:
+  - a camada de agenda não é mais o principal bloqueio de go-live
+  - o gargalo seguinte está em:
+    - confiança comercial do Google OAuth
+    - smoke test final do tenant
+- documentos novos criados:
+  - `docs/GOOGLE_OAUTH_GO_LIVE_CHECKLIST.md`
+  - `docs/TENANT_SMOKE_TEST_CHECKLIST.md`
+- próximo passo recomendado:
+  - fechar consent screen / verificação do Google
+  - depois executar o smoke test final ponta a ponta

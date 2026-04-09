@@ -485,3 +485,19 @@ Gatilho automático: a mudança de status do lead na API `PATCH` chama o *Orques
   - a criação/edição volta a responder corretamente no modo já migrado
 - validação:
   - `npm run build` passou
+
+## Atualização 2026-04-09 - Agenda runtime validada, foco agora é go-live
+
+- os testes reais da agenda ficaram verdes:
+  - `listagem antiga: ok`
+  - `novo agendamento: ok`
+  - `remarcar: ok`
+  - `cancelar: ok`
+- leitura executiva:
+  - a frente de agenda Google saiu da zona vermelha técnica
+  - o próximo gargalo real para segunda-feira é:
+    - confiança comercial do OAuth do Google
+    - smoke test final do tenant
+- documentos novos de execução:
+  - `docs/GOOGLE_OAUTH_GO_LIVE_CHECKLIST.md`
+  - `docs/TENANT_SMOKE_TEST_CHECKLIST.md`
