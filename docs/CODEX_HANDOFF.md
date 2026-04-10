@@ -3239,3 +3239,9 @@ Pontos que precisam ser preservados durante a implementacao:
 - leitura de produto:
   - o sistema não deve exigir digitação “perfeita”
   - pequenas variações naturais de nome e telefone devem ser absorvidas pelo backend como comportamento esperado
+- `2026-04-10` - convite de usuário endurecido para o go-live
+  - `src/app/api/usuarios/convidar/route.ts` passou a validar também `auth.users` antes de gerar convite
+  - regra operacional assumida para o go-live atual: `1 email = 1 escritório`
+  - `src/app/api/usuarios/aceitar-convite/route.ts` agora devolve `409` amigável quando o email já existe no Auth, em vez do erro cru do Supabase
+  - `src/app/auth/aceitar-convite/page.tsx` ganhou mensagem orientando uso de outro email/migração posterior
+  - `src/components/gestao-usuarios.tsx` agora deixa explícito que o convite atual é `link manual`, sem envio automático por email

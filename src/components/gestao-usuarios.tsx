@@ -294,7 +294,7 @@ export default function GestaoUsuarios() {
               <div>
                 <div style={{ background: 'rgba(45,212,160,0.06)', border: '1px solid rgba(45,212,160,0.2)', borderRadius: '10px', padding: '14px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <Check size={15} color="var(--green)" />
-                  <p style={{ fontSize: '13px', color: 'var(--text-primary)', margin: 0 }}>Convite gerado! Envie o link abaixo para <strong>{emailConvite}</strong></p>
+                  <p style={{ fontSize: '13px', color: 'var(--text-primary)', margin: 0 }}>Link gerado! O envio ainda é manual. Copie o link abaixo e envie para <strong>{emailConvite}</strong> por WhatsApp ou email.</p>
                 </div>
                 <div style={{ background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: '9px', padding: '10px 12px', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <p style={{ fontSize: '11px', color: 'var(--text-secondary)', margin: 0, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{urlConvite}</p>
@@ -302,7 +302,7 @@ export default function GestaoUsuarios() {
                     {copiado ? <><Check size={11} /> Copiado</> : <><Copy size={11} /> Copiar</>}
                   </button>
                 </div>
-                <p style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '16px' }}>O convite expira em 7 dias. O usuário cria a própria senha ao acessar o link.</p>
+                <p style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '16px' }}>O convite expira em 7 dias. O usuário cria a própria senha ao acessar o link. Nesta fase de go-live, emails já cadastrados em outra conta do PrevLegal precisam usar outro endereço para entrar neste escritório.</p>
                 <button onClick={() => { setShowConvidar(false); setUrlConvite('') }} style={{ width: '100%', background: 'var(--bg-hover)', border: '1px solid var(--border)', borderRadius: '9px', padding: '10px', color: 'var(--text-secondary)', fontSize: '13px', cursor: 'pointer', fontFamily: 'DM Sans' }}>Fechar</button>
               </div>
             )}

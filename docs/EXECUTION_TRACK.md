@@ -132,9 +132,13 @@ Status em 10/04/2026:
 - Z-API inbound: `ok`
 - busca normalizada: `ok`
 - pendências residuais do smoke test:
-  - convite/aceite de usuário novo e permissões customizadas ponta a ponta
+  - passe final de convite/aceite com email inédito e permissões customizadas ponta a ponta
   - passe final de portal com tenant real
   - resposta humana/inbox em fluxo completo com mensagem inbound real
+
+Observação operacional do go-live:
+- o convite interno ainda é `link manual`; o sistema gera a URL, mas não envia email automático
+- no modelo atual do go-live, cada email fica vinculado a um único escritório
 
 Checklist canônico:
 - `docs/TENANT_SMOKE_TEST_CHECKLIST.md`

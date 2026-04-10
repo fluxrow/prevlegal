@@ -1879,4 +1879,7 @@ Status atual em 18/03/2026:
   - `docs/TENANT_SMOKE_TEST_CHECKLIST.md`
 - próximo passo recomendado:
   - fechar consent screen / verificação do Google
-  - depois executar o smoke test final ponta a ponta
+- depois executar o smoke test final ponta a ponta
+- no smoke test final, tratar convite com email já existente como limitação conhecida do go-live atual:
+  - convite segue por link manual
+  - cada email fica vinculado a um único escritório até a futura frente de multi-membership

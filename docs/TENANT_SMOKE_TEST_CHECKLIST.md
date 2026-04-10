@@ -48,7 +48,7 @@ Fechar um smoke test enxuto, mas suficiente, para evitar go-live “meio verde�
 
 ### Ainda precisa de passe final antes do go-live
 
-- convidar um usuário novo e aceitar convite
+- convidar um usuário novo com email inédito e aceitar convite
 - validar permissões customizadas em usuário não-admin
 - validar inbox humana completa com fluxo inbound -> abrir conversa -> responder
 - validar portal no tenant real com:
@@ -70,7 +70,9 @@ Fechar um smoke test enxuto, mas suficiente, para evitar go-live “meio verde�
 ### 2. Usuários e permissões
 
 - convidar um usuário novo
+- observar que o sistema gera link manual; o envio por email ainda é manual
 - aceitar convite
+- se o email já existir em outra conta do PrevLegal, usar outro email para este escritório neste go-live
 - validar role base
 - validar permissões customizadas
 - validar restrição de telas/ações

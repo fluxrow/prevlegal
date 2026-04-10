@@ -41,6 +41,15 @@ Gatilho automático: a mudança de status do lead na API `PATCH` chama o *Orques
 2. Fechar as pendências residuais do smoke test final do tenant real.
 3. Só depois: Docling operacional, agenda premium extra e importador fase 2.
 
+## Atualização 2026-04-10 - Convite de usuário endurecido para o go-live
+
+- o fluxo de convite continua sendo `link manual`; a UI agora deixa explícito que o sistema não envia email automaticamente
+- o aceite do convite passou a tratar com mensagem amigável o caso de email já existente no Supabase Auth
+- para o go-live atual, ficou assumido e documentado que cada email pertence a um único escritório
+- consequência prática:
+  - para convidar alguém novo no tenant, usar email inédito
+  - se o email já existir em outra conta do PrevLegal, tratar migração depois do go-live, não durante o onboarding do cliente
+
 ## Atualização 2026-04-10 - Z-API inbound e outbound validados no tenant operacional
 
 - o canal Z-API do tenant foi validado em produção com:

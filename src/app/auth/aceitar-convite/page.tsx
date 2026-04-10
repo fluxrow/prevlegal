@@ -118,6 +118,11 @@ function AceitarConviteForm() {
             </div>
 
             {erro && <p style={{ color: '#ff5757', fontSize: '12px', textAlign: 'center', marginBottom: '16px' }}>{erro}</p>}
+            {erro && erro.toLowerCase().includes('ja possui uma conta cadastrada') && (
+              <p style={{ color: '#9ca3af', fontSize: '12px', textAlign: 'center', margin: '-6px 0 16px' }}>
+                Para este go-live, use outro email para este escritório ou trate a migração desse acesso antes de seguir.
+              </p>
+            )}
 
             <button onClick={aceitar} disabled={status === 'registrando'}
               style={{ width: '100%', background: 'linear-gradient(135deg, #4f7aff, #7c3aed)', border: 'none', borderRadius: '10px', padding: '12px', color: '#fff', fontSize: '14px', fontWeight: '700', cursor: status === 'registrando' ? 'not-allowed' : 'pointer', fontFamily: 'DM Sans', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>

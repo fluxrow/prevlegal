@@ -1278,6 +1278,12 @@ e mover o login principal para uma rota server-side (`POST /api/session/login`) 
 **Problema:** Mesmo depois do fallback da coluna `permissions`, o login do tenant ainda podia cair em `acesso-pendente` em produção
 **Causa:** A produção não estava sem apenas a migration `044`; também faltava a `043`, então o resolvedor do usuário quebrava ao selecionar `google_calendar_email` e `google_calendar_connected_at`
 **Correcao aplicada:** O lookup de `usuarios` passou a tentar o schema em três camadas:
+
+### 128. Convite de usuário no go-live não pode prometer envio automático nem deixar email já cadastrado cair em erro cru
+**Problema:** No smoke test, o fluxo de convite deixava parecer que um email seria enviado automaticamente, e o aceite de um email já cadastrado em outra conta do PrevLegal caía no erro cru `A user with this email address has already been registered`
+**Causa:** `src/app/api/usuarios/convidar/route.ts` só gerava URL manual e não validava a existência do email no Supabase Auth; `src/app/api/usuarios/aceitar-convite/route.ts` ainda tentava criar `auth user` novo mesmo quando o email já existia
+**Correcao aplicada:** O convite passou a bloquear emails já presentes em `public.usuarios` ou `auth.users` com mensagem clara de go-live, o aceite passou a devolver `409` amigável em português, e a UI passou a explicitar que o envio do link ainda é manual
+**Regra pratica:** No PrevLegal, onboarding de usuário em fase de go-live precisa ser explícito sobre o que é link manual e o que é provisionamento automático; se o modelo atual ainda for `um email -> um escritório`, isso deve aparecer como regra de operação e não como erro inesperado do provedor
 - completo
 - sem colunas de agenda própria
 - mínimo sem agenda própria nem permissões

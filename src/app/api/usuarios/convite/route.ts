@@ -1,6 +1,9 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 
+const EMAIL_EM_USO_MESSAGE =
+  'Este email ja possui uma conta cadastrada no PrevLegal. No modelo atual do go-live, cada email fica vinculado a um unico escritorio.'
+
 export async function GET(request: Request) {
   const supabase = await createClient()
   const { searchParams } = new URL(request.url)
@@ -25,7 +28,7 @@ export async function GET(request: Request) {
 
   if (usuarioExistente?.auth_id) {
     return NextResponse.json({
-      error: 'Este acesso ja foi provisionado. Use o email mais recente para definir a senha ou faca login.',
+      error: EMAIL_EM_USO_MESSAGE,
       stale: true,
       email: data.email,
     }, { status: 409 })
