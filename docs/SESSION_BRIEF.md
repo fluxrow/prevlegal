@@ -58,6 +58,21 @@ Gatilho automático: a mudança de status do lead na API `PATCH` chama o *Orques
   - `supabase functions deploy zapi-webhook --project-ref lrqvvxmgimjlghpwavdb --no-verify-jwt` concluído com sucesso
   - `npm run build` passou após isolar a tipagem da função Deno com `// @ts-nocheck`
 
+## Atualização 2026-04-10 - Z-API inbound passou a reconhecer telefone mascarado ao vincular lead e conversa
+
+- na produção, o webhook inbound já estava chegando e gravando linhas em `mensagens_inbound`
+- o problema restante era de vínculo:
+  - `lead_id` e `conversa_id` seguiam nulos
+  - o lead manual existia, mas o telefone estava salvo como `(41) 99236-1868`
+  - o matcher buscava blocos contínuos como `5541992361868`, que não aparecem assim no campo mascarado
+- correção aplicada em `src/app/api/webhooks/zapi/route.ts`:
+  - geração de padrões que sobrevivem à máscara, como `99236` e `1868`
+  - busca tolerante em `leads` e `conversas` seguida de normalização em memória
+  - quando a conversa antiga é reutilizada, o sistema agora também preenche `lead_id` e `whatsapp_number_id`
+- leitura prática:
+  - o inbound deixa de depender de telefone “limpo” no banco
+  - o comportamento esperado passa a ser reaproveitar o lead manual e a conversa humana já existente
+
 ## Atualização 2026-04-09 - Go-live do Google OAuth endurecido no app e nos materiais públicos
 
 - a frente do Google saiu do modo “falta ajustar código” e entrou no modo “falta fechar Console/submissão”

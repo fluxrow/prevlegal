@@ -41,6 +41,12 @@ Mestra: [[MASTER_PREV_LEGAL]]
 **Correção:** Criar e deployar `supabase/functions/zapi-webhook/index.ts` no PrevLegal como relay público no mesmo padrão arquitetural do Orbit
 **Regra pratica:** Quando um provider é sensível ao alvo do webhook, vale reproduzir primeiro a arquitetura já validada em produção antes de continuar refinando apenas o parser
 
+### 150. Match de telefone para inbound não pode depender de dígitos contínuos quando o dado salvo está mascarado
+**Problema:** O webhook inbound da Z-API já estava chegando e gravando em `mensagens_inbound`, mas `lead_id` e `conversa_id` seguiam nulos
+**Causa:** O matcher buscava padrões como `5541992361868` ou `41992361868`, mas o telefone salvo estava mascarado como `(41) 99236-1868`; esses blocos não aparecem de forma contínua no texto, então a busca não retornava o lead nem a conversa
+**Correção:** Passar a gerar padrões que sobrevivem à máscara (`99236`, `1868`, etc.), buscar por esses fragmentos e normalizar em memória antes de decidir o vínculo
+**Regra pratica:** Em números de telefone, a busca operacional deve assumir máscara, prefixo de país e variações humanas como padrão do sistema, não como exceção
+
 ### 146. Busca global não pode depender de acento ou formatação perfeita
 **Problema:** Na busca global (`Ctrl+K`), digitar `Caua` não encontrava `Cauã`, e números formatados de forma diferente também podiam escapar
 **Causa:** A rota `/api/busca` usava `ilike` direto no banco, enquanto a busca de leads já fazia normalização de acentos e dígitos em memória

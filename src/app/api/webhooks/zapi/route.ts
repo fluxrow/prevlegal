@@ -192,6 +192,120 @@ function getNormalizedPhoneVariants(value: string) {
   )
 }
 
+function getPhoneSearchPatterns(value: string) {
+  const digits = getPhoneDigits(value)
+  const local = digits.startsWith('55') ? digits.slice(2) : digits
+  const subscriber = local.length > 2 ? local.slice(2) : local
+
+  return Array.from(
+    new Set(
+      [
+        digits,
+        local,
+        local.slice(-8),
+        subscriber,
+        subscriber.slice(0, 5),
+        subscriber.slice(-4),
+      ]
+        .map((item) => item.trim())
+        .filter((item) => item.length >= 4),
+    ),
+  )
+}
+
+type LeadPhoneCandidate = {
+  id: string
+  nome: string | null
+  status: string | null
+  campanha_id: string | null
+  tenant_id: string | null
+  telefone?: string | null
+  telefone_enriquecido?: string | null
+}
+
+type ConversationPhoneCandidate = {
+  id: string
+  nao_lidas: number | null
+  status: string | null
+  telefone?: string | null
+  whatsapp_number_id?: string | null
+}
+
+async function findLeadByNormalizedPhone(
+  supabase: ReturnType<typeof createAdminSupabase>,
+  tenantId: string,
+  from: string,
+) {
+  const searchPatterns = getPhoneSearchPatterns(from)
+  const phoneVariants = getNormalizedPhoneVariants(from)
+  const matches = new Map<string, LeadPhoneCandidate>()
+
+  for (const column of ['telefone', 'telefone_enriquecido'] as const) {
+    for (const pattern of searchPatterns) {
+      const { data } = await supabase
+        .from('leads')
+        .select('id, nome, status, campanha_id, tenant_id, telefone, telefone_enriquecido')
+        .eq('tenant_id', tenantId)
+        .like(column, `%${pattern}%`)
+        .limit(25)
+
+      for (const candidate of (data || []) as LeadPhoneCandidate[]) {
+        matches.set(candidate.id, candidate)
+      }
+    }
+  }
+
+  const normalizedCandidates = Array.from(matches.values()).filter((candidate) => {
+    const candidateVariants = [
+      ...getNormalizedPhoneVariants(candidate.telefone || ''),
+      ...getNormalizedPhoneVariants(candidate.telefone_enriquecido || ''),
+    ]
+
+    return candidateVariants.some((variant) => phoneVariants.includes(variant))
+  })
+
+  return normalizedCandidates.length === 1 ? normalizedCandidates[0] : null
+}
+
+async function findConversationByNormalizedPhone(
+  supabase: ReturnType<typeof createAdminSupabase>,
+  tenantId: string | null,
+  channelId: string,
+  from: string,
+) {
+  const searchPatterns = getPhoneSearchPatterns(from)
+  const phoneVariants = getNormalizedPhoneVariants(from)
+  const matches = new Map<string, ConversationPhoneCandidate>()
+
+  for (const pattern of searchPatterns) {
+    let query = supabase
+      .from('conversas')
+      .select('id, nao_lidas, status, telefone, whatsapp_number_id')
+      .like('telefone', `%${pattern}%`)
+      .limit(25)
+
+    query = applyTenantFilter(query, tenantId)
+
+    const { data } = await query
+    for (const candidate of (data || []) as ConversationPhoneCandidate[]) {
+      matches.set(candidate.id, candidate)
+    }
+  }
+
+  const normalizedCandidates = Array.from(matches.values()).filter((candidate) => {
+    const candidateVariants = getNormalizedPhoneVariants(candidate.telefone || '')
+    return candidateVariants.some((variant) => phoneVariants.includes(variant))
+  })
+
+  if (!normalizedCandidates.length) return null
+
+  return (
+    normalizedCandidates.find((candidate) => candidate.whatsapp_number_id === channelId) ||
+    normalizedCandidates.find((candidate) => !candidate.whatsapp_number_id) ||
+    normalizedCandidates[0]
+  )
+}
+
 async function ensureManualListId(
   supabase: ReturnType<typeof createAdminSupabase>,
   tenantId: string,
@@ -242,46 +356,8 @@ async function ensureLeadForInbound(
 ) {
   const phoneDigits = getPhoneDigits(from)
   const phone10or11 = phoneDigits.startsWith('55') ? phoneDigits.slice(2) : phoneDigits
-  const phoneVariants = getNormalizedPhoneVariants(from)
-
-  const exactConditions = phoneVariants.flatMap((value) => [
-    `telefone.eq.${value}`,
-    `telefone_enriquecido.eq.${value}`,
-  ])
-
-  let leadQuery = supabase
-    .from('leads')
-    .select('id, nome, status, campanha_id, tenant_id, telefone, telefone_enriquecido')
-    .or(exactConditions.join(','))
-    .eq('tenant_id', tenantId)
-    .limit(2)
-
-  const { data: leadMatches } = await leadQuery
-  const exactLead = (leadMatches || []).length === 1 ? leadMatches?.[0] : null
-  if (exactLead) return exactLead
-
-  const suffix = phone10or11.slice(-8) || phoneDigits.slice(-8)
-  if (suffix) {
-    const { data: candidateMatches } = await supabase
-      .from('leads')
-      .select('id, nome, status, campanha_id, tenant_id, telefone, telefone_enriquecido')
-      .or(`telefone.like.*${suffix}*,telefone_enriquecido.like.*${suffix}*`)
-      .eq('tenant_id', tenantId)
-      .limit(25)
-
-    const normalizedCandidates = (candidateMatches || []).filter((candidate) => {
-      const candidateVariants = [
-        ...getNormalizedPhoneVariants(candidate.telefone || ''),
-        ...getNormalizedPhoneVariants(candidate.telefone_enriquecido || ''),
-      ]
-
-      return candidateVariants.some((variant) => phoneVariants.includes(variant))
-    })
-
-    if (normalizedCandidates.length === 1) {
-      return normalizedCandidates[0]
-    }
-  }
+  const matchedLead = await findLeadByNormalizedPhone(supabase, tenantId, from)
+  if (matchedLead) return matchedLead
 
   const { data: fallbackUsuario } = await supabase
     .from('usuarios')
@@ -466,14 +542,12 @@ async function handleReceiveEvent(request: NextRequest, event: string) {
     return NextResponse.json({ error: insertError.message }, { status: 500 })
   }
 
-  let conversaQuery = supabase
-    .from('conversas')
-    .select('id, nao_lidas, status')
-    .eq('telefone', from)
-    .eq('whatsapp_number_id', routing.channelId)
-
-  conversaQuery = applyTenantFilter(conversaQuery, tenantId)
-  const { data: conversaExistente } = await conversaQuery.maybeSingle()
+  const conversaExistente = await findConversationByNormalizedPhone(
+    supabase,
+    tenantId,
+    routing.channelId,
+    from,
+  )
 
   let conversaId: string | null = null
   let shouldResumeHuman = false
@@ -487,6 +561,8 @@ async function handleReceiveEvent(request: NextRequest, event: string) {
     await supabase
       .from('conversas')
       .update({
+        lead_id: lead?.id || null,
+        whatsapp_number_id: conversaExistente.whatsapp_number_id || routing.channelId,
         status: shouldResumeHuman ? 'humano' : (conversaExistente.status || 'agente'),
         ultima_mensagem: body,
         ultima_mensagem_at: new Date().toISOString(),
