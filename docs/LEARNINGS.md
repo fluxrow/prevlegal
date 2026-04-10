@@ -20,6 +20,12 @@ Mestra: [[MASTER_PREV_LEGAL]]
 - [[Sessoes/2026-03-18-prevlegal-admin-roi-obsidian]]
 - [[Sessoes/2026-03-18-sessoes-17-18-marco-prevlegal-completo]]
 
+### 151. Em webhook de mensageria, o critico nao e so receber o payload, e conseguir reutilizar a conversa operacional ja existente
+**Problema:** O inbound da Z-API ja chegava ao sistema, mas a mensagem ainda nao aparecia na plataforma
+**Causa:** Mesmo com o webhook entregue, o fluxo podia falhar ao nao casar corretamente o telefone mascarado com o lead/conversa humanos ja existentes, deixando `lead_id` e `conversa_id` nulos no meio da trilha
+**Correção:** Endurecer o matcher para telefone mascarado e, ao encontrar conversa preexistente, preencher tambem `lead_id` e `whatsapp_number_id`
+**Regra pratica:** Em inbox operacional, o sucesso do inbound nao e apenas “salvar o evento recebido”; o objetivo real e reencaixar a mensagem na conversa certa, com o lead certo, sem criar ruptura visivel na operacao
+
 ### 147. Webhook de provider nao pode assumir JSON puro
 **Problema:** O inbound da Z-API seguia falhando mesmo com rota publicada, parser ampliado e webhook salvo corretamente
 **Causa:** A variante `web / multi-device` pode enviar o corpo do webhook como `application/x-www-form-urlencoded`, texto cru ou JSON serializado dentro de campos string; assumir `request.json()` fazia o body virar `{}` e o payload era descartado

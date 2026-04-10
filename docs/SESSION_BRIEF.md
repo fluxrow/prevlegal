@@ -1,4 +1,4 @@
-# SESSION_BRIEF — PrevLegal (atualizado 09/04/2026)
+# SESSION_BRIEF — PrevLegal (atualizado 10/04/2026)
 
 ## Stack e repositório
 - Next.js 16 App Router + React 19 + Supabase + Twilio WhatsApp + Claude API + Vercel
@@ -25,23 +25,35 @@
   - domínio verificado
   - links públicos válidos
   - submissão com material pronto
+  - vídeo de demonstração
 - Rodar smoke test do tenant real com:
-  - login
   - convite
   - permissões
-  - inbox
-  - follow-up
-  - portal
-  - agenda
+  - inbox humana ponta a ponta
+  - portal em tenant real
 
 ## Arquitetura de Roteamento (Fase D & E)
 Prioridade no responder mantém Fase D.
 Gatilho automático: a mudança de status do lead na API `PATCH` chama o *Orquestrador*, varrendo `event_triggers` e rodando followups (podendo cancelar os velhos).
 
 ## Próximo bloco oficial
-1. Fechar o checklist manual do Google OAuth comercial.
-2. Rodar smoke test final do tenant real.
+1. Gravar e subir o vídeo do Google OAuth comercial.
+2. Fechar as pendências residuais do smoke test final do tenant real.
 3. Só depois: Docling operacional, agenda premium extra e importador fase 2.
+
+## Atualização 2026-04-10 - Z-API inbound e outbound validados no tenant operacional
+
+- o canal Z-API do tenant foi validado em produção com:
+  - envio do sistema para número externo: `ok`
+  - recebimento de número externo para o sistema: `ok`
+- a correção final veio de três camadas combinadas:
+  - relay público por Supabase Edge Function no padrão do Orbit
+  - parser tolerante a múltiplos formatos e métodos
+  - match operacional por telefone mascarado, reutilizando lead manual e conversa existente
+- leitura prática:
+  - o WhatsApp do tenant deixou de depender apenas de outbound
+  - inbox humana agora consegue receber mensagens reais do número conectado
+  - a frente de WhatsApp saiu da lista de bloqueios P0 de go-live
 
 ## Atualização 2026-04-10 - Z-API inbound ganhou Edge Function pública no padrão do Orbit
 

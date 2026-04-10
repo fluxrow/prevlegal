@@ -3,7 +3,7 @@
 Contexto: [[SESSION_HISTORY_MASTER]]
 Mestra: [[MASTER_PREV_LEGAL]]
 > Checklist canônico para validar um tenant real antes de colocar o produto para rodar com cliente.
-> Última atualização: 09/04/2026
+> Última atualização: 10/04/2026
 
 ## Objetivo
 
@@ -12,6 +12,51 @@ Fechar um smoke test enxuto, mas suficiente, para evitar go-live “meio verde�
 ## Tenant de referência atual
 
 - `Fluxrow`
+
+## Status consolidado em 10/04/2026
+
+### Já validado
+
+- login do responsável funciona
+- não cai mais em `acesso-pendente`
+- admin continua acessível
+- `ultimo_acesso` passou a refletir uso real
+- follow-up:
+  - gatilhos seedados ativos
+  - régua ativa
+  - mudança de status cria run
+  - `Executar agora` registra evento
+  - motivo de falha aparece
+- agenda:
+  - `Conectar meu Google` funciona
+  - `Conectar calendário do escritório` funciona
+  - criar agendamento funciona
+  - novo agendamento aparece na UI
+  - agendamentos antigos aparecem
+  - remarcar funciona
+  - cancelar funciona
+- documentos:
+  - `Petição Inicial`
+  - `Procuração`
+  - `Requerimento INSS`
+- WhatsApp:
+  - Z-API outbound funciona
+  - Z-API inbound funciona
+- busca:
+  - nomes com/sem acento
+  - telefone com/sem máscara
+
+### Ainda precisa de passe final antes do go-live
+
+- convidar um usuário novo e aceitar convite
+- validar permissões customizadas em usuário não-admin
+- validar inbox humana completa com fluxo inbound -> abrir conversa -> responder
+- validar portal no tenant real com:
+  - acesso
+  - timeline
+  - documentos
+  - mensagens
+  - confirmação/remarcação
 
 ## Etapas
 

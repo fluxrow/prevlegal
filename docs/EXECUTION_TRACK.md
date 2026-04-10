@@ -3,7 +3,7 @@
 Contexto: [[SESSION_HISTORY_MASTER]]
 Mestra: [[MASTER_PREV_LEGAL]]
 > Trilho canônico de execução do produto.
-> Última atualização: 09/04/2026
+> Última atualização: 10/04/2026
 
 ## Objetivo
 
@@ -39,6 +39,7 @@ Protocolo complementar entre IAs:
 - política de privacidade
 - termos
 - submissão de verificação do app
+- vídeo de demonstração para o Google
 
 2. Rodar smoke test do tenant real
 - login do responsável
@@ -95,6 +96,14 @@ Status em 09/04/2026:
   - texto-base de submissão pronto
 - o restante desta etapa é manual no Google Auth Platform
 
+Status em 10/04/2026:
+- branding: `ok`
+- público-alvo: `ok`
+- domínios autorizados: `ok`
+- redirect URIs: `ok`
+- escopos: `ok`
+- central de verificação: bloqueio residual concentrado apenas no vídeo de demonstração
+
 1. ajustar OAuth consent screen
 2. revisar escopos
 3. garantir links públicos
@@ -114,6 +123,19 @@ Checklist canônico:
 6. portal
 7. agenda
 
+Status em 10/04/2026:
+- login e acesso: `ok`
+- agenda Google: `ok`
+- follow-up e automações: `ok`
+- documentos IA básicos: `ok`
+- Z-API outbound: `ok`
+- Z-API inbound: `ok`
+- busca normalizada: `ok`
+- pendências residuais do smoke test:
+  - convite/aceite de usuário novo e permissões customizadas ponta a ponta
+  - passe final de portal com tenant real
+  - resposta humana/inbox em fluxo completo com mensagem inbound real
+
 Checklist canônico:
 - `docs/TENANT_SMOKE_TEST_CHECKLIST.md`
 
@@ -125,4 +147,4 @@ Checklist canônico:
 
 ## Próximo passo oficial
 
-Executar o checklist manual do Google OAuth no Google Auth Platform e depois rodar o smoke test final do tenant real.
+Gravar e subir o vídeo do Google OAuth e, em paralelo, fechar as três pendências residuais do smoke test final do tenant real.

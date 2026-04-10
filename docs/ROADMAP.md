@@ -2,7 +2,21 @@
 
 Contexto: [[SESSION_HISTORY_MASTER]]
 Mestra: [[MASTER_PREV_LEGAL]]
-> Última atualização: 09/04/2026
+> Última atualização: 10/04/2026
+
+## Atualizacao Z-API / inbound e outbound validados em runtime — 10/04/2026
+
+- a integracao Z-API do tenant operacional foi validada ponta a ponta:
+  - outbound do sistema para numero externo: `ok`
+  - inbound de numero externo para a plataforma: `ok`
+- a estabilizacao final exigiu:
+  - relay publico por Supabase Edge Function no padrao do Orbit
+  - parser tolerante a `GET`, `POST`, `json`, `form-urlencoded` e texto cru
+  - match operacional por telefone mascarado
+  - reaproveitamento de conversa existente com preenchimento de `lead_id` e `whatsapp_number_id`
+- impacto operacional:
+  - a frente de WhatsApp saiu da lista de bloqueios P0 do go-live
+  - a migracao para `mobile` continua recomendada depois, mas o tenant ja pode operar testes reais com a instancia `web`
 
 ## Atualizacao Z-API / webhook inbound endurecido para body nao-JSON — 09/04/2026
 
