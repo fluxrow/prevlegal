@@ -47,6 +47,27 @@ Objetivo:
     - ou o provider nao esta entregando o webhook
     - ou a entrega esta chegando com shape ainda nao coberto e agora isso fica mais facil de inspecionar
 
+## Atualizacao 2026-04-10 - Comparacao com Orbit apontou necessidade de Edge Function publica para Z-API
+
+- contexto:
+  - o repo correto comparado foi `fluxrow/orbiitcrm`
+  - la a Z-API inbound nao batia em app route do frontend
+  - ela batia em `supabase/functions/v1/orbit-webhook`
+- leitura tecnica:
+  - o PrevLegal ja tinha parser endurecido, mas ainda faltava espelhar a topologia que ja funcionava no Orbit
+- acao aplicada:
+  - criada a funcao `supabase/functions/zapi-webhook/index.ts`
+  - funcao atua como relay publico para `https://app.prevlegal.com.br/api/webhooks/zapi`
+  - deploy realizado com:
+    - `supabase functions deploy zapi-webhook --project-ref lrqvvxmgimjlghpwavdb --no-verify-jwt`
+- validacao:
+  - endpoint de health respondeu:
+    - `https://lrqvvxmgimjlghpwavdb.supabase.co/functions/v1/zapi-webhook?event=health`
+  - `npm run build` passou
+- proximo passo operacional:
+  - trocar o webhook `Ao receber` da Z-API para a Edge Function nova
+  - retestar inbound
+
 ## Atualizacao 2026-04-09 - Z-API inbound web agora aceita GET para `on-receive`
 
 - contexto:

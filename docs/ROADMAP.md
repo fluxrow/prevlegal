@@ -23,6 +23,23 @@ Mestra: [[MASTER_PREV_LEGAL]]
 - validacao:
   - `npm run build` passou
 
+## Atualizacao Z-API / Edge Function publica no padrao do Orbit — 10/04/2026
+
+- durante a depuracao do inbound, foi comparado o PrevLegal com `fluxrow/orbiitcrm`
+- a integracao historicamente funcional do Orbit usava uma Supabase Edge Function publica (`orbit-webhook`) como alvo da Z-API
+- o PrevLegal agora tambem possui essa camada:
+  - `supabase/functions/zapi-webhook/index.ts`
+- deploy realizado no projeto operacional:
+  - `lrqvvxmgimjlghpwavdb`
+- endpoint de health:
+  - `https://lrqvvxmgimjlghpwavdb.supabase.co/functions/v1/zapi-webhook?event=health`
+- impacto operacional:
+  - cria um alvo de webhook no mesmo padrao arquitetural que ja funcionou no Orbit
+  - reduz a incerteza sobre a compatibilidade da Z-API com app route hospedada no frontend
+- proximo passo recomendado:
+  - apontar `Ao receber` da Z-API para a Edge Function nova
+  - validar inbound
+
 ## Atualizacao Google OAuth / endurecimento comercial — 09/04/2026
 
 - a frente técnica da agenda Google saiu do modo “só funciona em ambiente interno” e foi preparada para submissão comercial do app no Google

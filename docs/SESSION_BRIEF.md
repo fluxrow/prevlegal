@@ -43,6 +43,21 @@ Gatilho automático: a mudança de status do lead na API `PATCH` chama o *Orques
 2. Rodar smoke test final do tenant real.
 3. Só depois: Docling operacional, agenda premium extra e importador fase 2.
 
+## Atualização 2026-04-10 - Z-API inbound ganhou Edge Function pública no padrão do Orbit
+
+- durante a investigação do inbound da Z-API, foi comparado o PrevLegal com o repo `fluxrow/orbiitcrm`
+- a diferença arquitetural relevante apareceu: no Orbit, a Z-API apontava para uma Supabase Edge Function pública (`/functions/v1/orbit-webhook`), não para uma app route do frontend
+- com base nisso, o PrevLegal ganhou a função `supabase/functions/zapi-webhook/index.ts`
+- a função foi deployada no projeto operacional `lrqvvxmgimjlghpwavdb` com `--no-verify-jwt`
+- healthcheck validado:
+  - `https://lrqvvxmgimjlghpwavdb.supabase.co/functions/v1/zapi-webhook?event=health`
+- leitura prática:
+  - isso cria um alvo de webhook no mesmo padrão que já funcionava no Orbit
+  - o próximo teste operacional da Z-API deve usar a Edge Function do Supabase como `Ao receber`
+- validação:
+  - `supabase functions deploy zapi-webhook --project-ref lrqvvxmgimjlghpwavdb --no-verify-jwt` concluído com sucesso
+  - `npm run build` passou após isolar a tipagem da função Deno com `// @ts-nocheck`
+
 ## Atualização 2026-04-09 - Go-live do Google OAuth endurecido no app e nos materiais públicos
 
 - a frente do Google saiu do modo “falta ajustar código” e entrou no modo “falta fechar Console/submissão”

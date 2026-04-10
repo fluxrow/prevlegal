@@ -35,6 +35,12 @@ Mestra: [[MASTER_PREV_LEGAL]]
 **Correção:** Permitir que `GET /api/webhooks/zapi?event=on-receive` reutilize o mesmo fluxo de processamento do `POST`
 **Regra pratica:** Em integrações externas sujeitas a variação de painel/proxy, o handler de webhook deve ser tolerante a `GET` e `POST` sempre que isso não abrir risco de segurança desnecessário
 
+### 149. Quando uma integração já funcionava em outro produto, copiar a topologia pode ser mais eficaz do que insistir no mesmo alvo
+**Problema:** O inbound da Z-API continuou instável no PrevLegal mesmo após várias correções de parser e compatibilidade de payload
+**Causa:** O Orbit, que já funcionava com a Z-API, não recebia os callbacks em uma app route do frontend; ele usava uma Supabase Edge Function pública dedicada
+**Correção:** Criar e deployar `supabase/functions/zapi-webhook/index.ts` no PrevLegal como relay público no mesmo padrão arquitetural do Orbit
+**Regra pratica:** Quando um provider é sensível ao alvo do webhook, vale reproduzir primeiro a arquitetura já validada em produção antes de continuar refinando apenas o parser
+
 ### 146. Busca global não pode depender de acento ou formatação perfeita
 **Problema:** Na busca global (`Ctrl+K`), digitar `Caua` não encontrava `Cauã`, e números formatados de forma diferente também podiam escapar
 **Causa:** A rota `/api/busca` usava `ilike` direto no banco, enquanto a busca de leads já fazia normalização de acentos e dígitos em memória
