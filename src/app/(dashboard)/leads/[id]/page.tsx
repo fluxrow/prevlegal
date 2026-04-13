@@ -17,27 +17,27 @@ import FollowupLead from '@/components/followup-lead'
 interface Lead {
   id: string
   nome: string
-  cpf: string
-  telefone: string
-  email: string
+  cpf: string | null
+  telefone: string | null
+  email: string | null
   status: string
   score: number
   ganho_potencial: number
   valor_rma: number
-  nb: string
-  nit: string
-  tipo_beneficio: string
-  dib: string
-  der: string
-  aps: string
-  data_nascimento: string
+  nb: string | null
+  nit: string | null
+  tipo_beneficio: string | null
+  dib: string | null
+  der: string | null
+  aps: string | null
+  data_nascimento: string | null
   idade: number
-  sexo: string
-  categoria: string
+  sexo: string | null
+  categoria: string | null
   categoria_profissional?: string | null
-  banco: string
-  forma_pagamento: string
-  isencao_ir: string
+  banco: string | null
+  forma_pagamento: string | null
+  isencao_ir: string | null
   pensionista?: string | null
   bloqueado?: boolean | null
   created_at: string

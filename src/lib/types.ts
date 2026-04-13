@@ -54,7 +54,7 @@ export interface Lead {
     campanha_id?: string
     nb: string
     nome: string
-    cpf: string
+    cpf?: string | null
     telefone?: string
     aps?: string
     banco?: string

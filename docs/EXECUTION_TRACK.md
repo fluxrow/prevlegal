@@ -132,6 +132,7 @@ Status em 10/04/2026:
 - Z-API inbound: `ok`
 - busca normalizada: `ok`
 - inbox pessoal por ownership/assignee: `ok`
+- cadastro manual sem CPF: `codigo pronto / depende patch 046 no banco`
 - pendências residuais do smoke test:
   - passe final de convite/aceite com email inédito e permissões customizadas ponta a ponta
   - passe final de portal com tenant real

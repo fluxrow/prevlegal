@@ -61,7 +61,7 @@ interface Contrato {
   status: string
   data_assinatura: string | null
   created_at: string
-  leads?: { nome: string; cpf: string; telefone: string; status: string }
+  leads?: { nome: string; cpf: string | null; telefone: string | null; status: string }
   parcelas: Parcela[]
 }
 

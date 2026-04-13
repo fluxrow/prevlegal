@@ -80,6 +80,15 @@ Fechar um smoke test enxuto, mas suficiente, para evitar go-live “meio verde�
 - validar permissões customizadas
 - validar restrição de telas/ações
 
+### 2.1 Cadastro manual de lead
+
+- criar lead manual com:
+  - nome
+  - telefone
+  - sem CPF
+- validar que o cadastro funciona sem erro
+- validar que o lead pode seguir para campanha / inbox / operação normal
+
 ### 3. Caixa de entrada
 
 - abas filtram corretamente:

@@ -4,6 +4,23 @@ Contexto: [[SESSION_HISTORY_MASTER]]
 Mestra: [[MASTER_PREV_LEGAL]]
 > Última atualização: 10/04/2026
 
+## Atualizacao Cadastro manual / CPF deixou de ser obrigatório no primeiro contato — 13/04/2026
+
+- durante o ajuste de go-live, o modal `Novo lead` mostrou um atrito importante:
+  - o produto dizia implicitamente que CPF podia ser deixado em branco
+  - mas o banco ainda exigia `leads.cpf not null`
+- problema de produto:
+  - no contato inicial com lead avulso ou lead de campanha, CPF nem sempre existe
+  - em muitos casos esse dado só deve ser pedido depois que o escritório já criou contexto e confiança
+- correção aplicada:
+  - migration `046_leads_cpf_optional.sql`
+  - patch manual `supabase/manual/2026-04-13_make_leads_cpf_nullable.sql`
+  - tipagem e UI alinhadas para tratar CPF como opcional
+- impacto operacional:
+  - cadastro manual fica coerente com a operação real de captação
+  - reduz atrito no uso de campanhas e testes internos
+  - evita que o sistema force dado sensível cedo demais
+
 ## Atualizacao Inbox / visibilidade pessoal como padrão de go-live — 13/04/2026
 
 - durante o smoke test multiusuário do tenant real, ficou evidente que o modelo atual da inbox era permissivo demais para perfis `admin`

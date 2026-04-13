@@ -3259,3 +3259,17 @@ Pontos que precisam ser preservados durante a implementacao:
   - implicação:
     - visão total da equipe deixa de ser bypass implícito de admin
     - futura supervisão deve entrar como modo explícito, não como padrão da inbox
+- `2026-04-13` - cadastro manual passou a aceitar lead sem CPF no primeiro contato
+  - gatilho: o modal `Novo lead` sugeria CPF opcional, mas o banco ainda falhava com `leads.cpf not null`
+  - decisão de produto:
+    - CPF não deve ser exigido no primeiro contato com lead avulso/campanha
+    - o dado pode entrar depois, quando houver confiança e contexto
+  - implementação:
+    - `supabase/migrations/046_leads_cpf_optional.sql`
+    - `supabase/manual/2026-04-13_make_leads_cpf_nullable.sql`
+    - `src/components/novo-lead-modal.tsx`
+    - `src/lib/types.ts`
+    - `src/app/(dashboard)/leads/[id]/page.tsx`
+    - `src/app/(dashboard)/financeiro/page.tsx`
+  - pendência operacional:
+    - aplicar o patch `2026-04-13_make_leads_cpf_nullable.sql` no banco antes de repetir o teste no runtime

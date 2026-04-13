@@ -35,6 +35,12 @@ Mestra: [[MASTER_PREV_LEGAL]]
 - admin deixa de ser bypass implícito na inbox
 **Regra pratica:** Em operação multiusuário, inbox deve ser pessoal por padrão. Visão total de equipe é ferramenta de supervisão e precisa aparecer como modo explícito, não como atalho invisível do perfil admin
 
+### 153. Cadastro manual não deve exigir CPF no primeiro contato
+**Problema:** Ao criar um lead manual para campanha ou teste operacional, o modal permitia deixar o CPF em branco, mas o banco ainda falhava com `null value in column "cpf" of relation "leads" violates not-null constraint`
+**Causa:** O produto já se comportava como se CPF fosse opcional, mas o schema legado mantinha `leads.cpf` como obrigatório
+**Correção:** Tornar `leads.cpf` anulável via migration `046_leads_cpf_optional.sql`, alinhar tipagem e explicitar no modal que CPF é opcional
+**Regra pratica:** No PrevLegal, dados sensíveis como CPF não devem ser exigidos antes da hora. No primeiro contato, basta o mínimo operacional para iniciar a relação; documentos mais sensíveis entram depois, quando houver contexto e confiança
+
 ### 147. Webhook de provider nao pode assumir JSON puro
 **Problema:** O inbound da Z-API seguia falhando mesmo com rota publicada, parser ampliado e webhook salvo corretamente
 **Causa:** A variante `web / multi-device` pode enviar o corpo do webhook como `application/x-www-form-urlencoded`, texto cru ou JSON serializado dentro de campos string; assumir `request.json()` fazia o body virar `{}` e o payload era descartado

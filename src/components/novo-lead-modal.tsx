@@ -118,7 +118,7 @@ export default function NovoLeadModal({ onClose, onCriado }: Props) {
             <input value={form.telefone} onChange={e => set('telefone', formatTel(e.target.value))} placeholder="(41) 99999-9999" style={inp} />
           </div>
           <div>
-            <label style={lbl}>CPF</label>
+            <label style={lbl}>CPF (opcional)</label>
             <input value={form.cpf} onChange={e => set('cpf', formatCpf(e.target.value))} placeholder="000.000.000-00" style={inp} />
           </div>
           {/* Toggle WhatsApp */}

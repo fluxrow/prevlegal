@@ -70,6 +70,18 @@ Gatilho automático: a mudança de status do lead na API `PATCH` chama o *Orques
   - preserva noção de dono do atendimento
   - prepara melhor futura transferência de atendimento entre usuários
 
+## Atualização 2026-04-13 - Cadastro manual passou a aceitar lead sem CPF
+
+- o modal `Novo lead` já sugeria que CPF era opcional, mas o banco ainda rejeitava `null`
+- leitura de produto consolidada:
+  - no primeiro contato com lead avulso ou lead de campanha, CPF não deve ser obrigatório
+  - esse dado pode entrar depois, quando o escritório já construiu confiança para pedir informação sensível
+- correção aplicada:
+  - migration `046_leads_cpf_optional.sql`
+  - patch manual de produção em `supabase/manual/2026-04-13_make_leads_cpf_nullable.sql`
+  - tipagem de lead atualizada para aceitar `cpf` nulo
+  - label do modal ajustada para `CPF (opcional)`
+
 ## Atualização 2026-04-10 - Z-API inbound e outbound validados no tenant operacional
 
 - o canal Z-API do tenant foi validado em produção com:
