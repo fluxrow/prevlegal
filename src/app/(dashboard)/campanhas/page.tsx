@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { Megaphone, Plus, Zap, CheckCircle2, XCircle, X } from "lucide-react";
 import CampanhasOnboardingTour from "@/components/campanhas-onboarding-tour";
+import { buildCampaignMessageTemplate } from "@/lib/campaign-message-templates";
 
 type Toast = { id: number; type: "success" | "error"; message: string };
 
@@ -122,6 +123,16 @@ interface Agente {
   ativo: boolean;
 }
 
+interface WhatsAppNumber {
+  id: string;
+  label: string;
+  provider: string;
+  display_phone: string | null;
+  ativo: boolean;
+  is_default: boolean;
+  purpose?: string | null;
+}
+
 const STATUS_LABEL: Record<
   string,
   { label: string; color: string; bg: string }
@@ -143,14 +154,17 @@ export default function CampanhasPage() {
   const [campanhas, setCampanhas] = useState<Campanha[]>([]);
   const [listas, setListas] = useState<Lista[]>([]);
   const [agentes, setAgentes] = useState<Agente[]>([]);
+  const [whatsAppNumbers, setWhatsAppNumbers] = useState<WhatsAppNumber[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [disparando, setDisparando] = useState<string | null>(null);
+  const [templateFoiEditado, setTemplateFoiEditado] = useState(false);
   const [form, setForm] = useState({
     nome: "",
     lista_id: "",
+    whatsapp_number_id: "",
     agente_id: "",
-    mensagem_template: "",
+    mensagem_template: buildCampaignMessageTemplate(null),
     delay_min_ms: 1500,
     delay_max_ms: 3500,
     tamanho_lote: 50,
@@ -194,14 +208,18 @@ export default function CampanhasPage() {
 
   async function fetchAll() {
     setLoading(true);
-    const [c, l, a] = await Promise.all([
+    const [c, l, a, w] = await Promise.all([
       fetch("/api/campanhas").then((r) => r.json()),
-      fetch("/api/listas").then((r) => r.json()),
+      fetch("/api/listas?include_system=1").then((r) => r.json()),
       fetch("/api/agentes").then((r) => r.json()),
+      fetch("/api/whatsapp-numbers").then((r) => r.json()),
     ]);
     setCampanhas(c.campanhas || []);
     setListas(l.listas || []);
-    setAgentes((a.agentes || []).filter((ag: Agente) => ag.ativo));
+    setAgentes(
+      (Array.isArray(a) ? a : a.agentes || []).filter((ag: Agente) => ag.ativo),
+    );
+    setWhatsAppNumbers((w.numbers || []).filter((number: WhatsAppNumber) => number.ativo));
     setLoading(false);
   }
 
@@ -217,8 +235,9 @@ export default function CampanhasPage() {
       setForm({
         nome: "",
         lista_id: "",
+        whatsapp_number_id: "",
         agente_id: "",
-        mensagem_template: "",
+        mensagem_template: buildCampaignMessageTemplate(null),
         delay_min_ms: 1500,
         delay_max_ms: 3500,
         tamanho_lote: 50,
@@ -226,10 +245,27 @@ export default function CampanhasPage() {
         limite_diario: 500,
         apenas_verificados: true,
       });
+      setTemplateFoiEditado(false);
       await fetchAll();
     }
     setSaving(false);
   }
+
+  useEffect(() => {
+    if (!showForm) return;
+
+    const agenteSelecionado =
+      agentes.find((ag) => ag.id === form.agente_id) || null;
+
+    if (!templateFoiEditado) {
+      setForm((prev) => ({
+        ...prev,
+        mensagem_template: buildCampaignMessageTemplate(agenteSelecionado?.tipo),
+      }));
+    }
+  }, [form.agente_id, agentes, showForm, templateFoiEditado]);
+
+  const channelPadrao = whatsAppNumbers.find((number) => number.is_default);
 
   async function disparar(id: string) {
     setConfirmDisparo(null);
@@ -642,14 +678,15 @@ export default function CampanhasPage() {
                 >
                   Agente IA para esta campanha{" "}
                   <span style={{ color: "var(--text-muted)", fontWeight: 400 }}>
-                    (opcional — usa o agente padrão do escritório se não selecionado)
+                    (opcional — se escolher um agente, sugerimos o template inicial dele)
                   </span>
                 </label>
                 <select
                   value={form.agente_id}
-                  onChange={(e) =>
-                    setForm((p) => ({ ...p, agente_id: e.target.value }))
-                  }
+                  onChange={(e) => {
+                    setTemplateFoiEditado(false);
+                    setForm((p) => ({ ...p, agente_id: e.target.value }));
+                  }}
                   style={{
                     width: "100%",
                     padding: "8px 12px",
@@ -683,17 +720,59 @@ export default function CampanhasPage() {
                     marginBottom: "6px",
                   }}
                 >
+                  Canal de disparo
+                </label>
+                <select
+                  value={form.whatsapp_number_id}
+                  onChange={(e) =>
+                    setForm((p) => ({ ...p, whatsapp_number_id: e.target.value }))
+                  }
+                  style={{
+                    width: "100%",
+                    padding: "8px 12px",
+                    borderRadius: "8px",
+                    border: "1px solid var(--border)",
+                    background: "var(--bg-hover)",
+                    color: "var(--text-primary)",
+                    fontSize: "13px",
+                  }}
+                >
+                  <option value="">
+                    {channelPadrao
+                      ? `Usar canal padrão do escritório (${channelPadrao.label})`
+                      : "Usar canal padrão do escritório"}
+                  </option>
+                  {whatsAppNumbers.map((channel) => (
+                    <option key={channel.id} value={channel.id}>
+                      {channel.label} — {channel.provider.toUpperCase()}
+                      {channel.display_phone ? ` · ${channel.display_phone}` : ""}
+                      {channel.is_default ? " · padrão" : ""}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div style={{ marginBottom: "16px" }}>
+                <label
+                  style={{
+                    fontSize: "12px",
+                    color: "var(--text-secondary)",
+                    display: "block",
+                    marginBottom: "6px",
+                  }}
+                >
                   Mensagem template * — use {"{nome}"}, {"{nb}"}, {"{banco}"},{" "}
                   {"{valor}"}, {"{ganho}"}
                 </label>
                 <textarea
                   value={form.mensagem_template}
-                  onChange={(e) =>
+                  onChange={(e) => {
+                    setTemplateFoiEditado(true);
                     setForm((p) => ({
                       ...p,
                       mensagem_template: e.target.value,
-                    }))
-                  }
+                    }));
+                  }}
                   rows={4}
                   placeholder="Olá {nome}! Identificamos que o seu benefício {nb} pode ter direito a revisão..."
                   style={{
@@ -708,6 +787,15 @@ export default function CampanhasPage() {
                     boxSizing: "border-box",
                   }}
                 />
+                <div
+                  style={{
+                    marginTop: "6px",
+                    fontSize: "11px",
+                    color: "var(--text-muted)",
+                  }}
+                >
+                  Quando você escolhe um agente, o sistema sugere uma mensagem inicial alinhada ao tipo de abordagem dele. Você pode editar livremente antes de salvar.
+                </div>
               </div>
 
               <div
@@ -1103,8 +1191,68 @@ export default function CampanhasPage() {
                 marginTop: 0,
               }}
             >
-              Conexão Twilio
+              Canal padrão do escritório
             </h2>
+
+            <div
+              style={{
+                marginBottom: "20px",
+                padding: "12px 14px",
+                background: "var(--bg-surface)",
+                border: "1px solid var(--border)",
+                borderRadius: "10px",
+              }}
+            >
+              <div
+                style={{
+                  fontSize: "12px",
+                  color: "var(--text-secondary)",
+                  marginBottom: "8px",
+                }}
+              >
+                Canais ativos conectados ao escritório
+              </div>
+              {whatsAppNumbers.length === 0 ? (
+                <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>
+                  Nenhum canal WhatsApp ativo encontrado. Configure no admin do escritório.
+                </div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                  {whatsAppNumbers.map((channel) => (
+                    <div
+                      key={channel.id}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        gap: "10px",
+                        fontSize: "12px",
+                        color: "var(--text-primary)",
+                      }}
+                    >
+                      <div>
+                        <strong>{channel.label}</strong> — {channel.provider.toUpperCase()}
+                        {channel.display_phone ? ` · ${channel.display_phone}` : ""}
+                      </div>
+                      {channel.is_default && (
+                        <span
+                          style={{
+                            padding: "2px 8px",
+                            borderRadius: "99px",
+                            background: "#22c55e20",
+                            color: "#22c55e",
+                            fontSize: "11px",
+                            fontWeight: "600",
+                          }}
+                        >
+                          padrão
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
 
             <div style={{ marginBottom: "20px" }}>
               <span
@@ -1123,11 +1271,11 @@ export default function CampanhasPage() {
                       : "#f5c842",
                 }}
               >
-                {configDisparo.twilio_modo === "producao"
-                  ? "🟢 Produção"
-                  : "🟡 Sandbox"}
-              </span>
-            </div>
+                  {configDisparo.twilio_modo === "producao"
+                    ? "🟢 Produção"
+                    : "🟡 Sandbox/legado"}
+                </span>
+              </div>
 
             <div style={{ marginBottom: "16px" }}>
               <label
@@ -1139,7 +1287,7 @@ export default function CampanhasPage() {
                   fontFamily: "DM Sans, sans-serif",
                 }}
               >
-                Número de origem
+                Número de origem legado
               </label>
               <input
                 type="text"
@@ -1175,7 +1323,7 @@ export default function CampanhasPage() {
                   fontFamily: "DM Sans, sans-serif",
                 }}
               >
-                Modo de operação
+                Modo de operação legado
               </label>
               <select
                 value={configDisparo.twilio_modo}

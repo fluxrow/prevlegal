@@ -201,6 +201,18 @@ export default function CaixaDeEntradaPage() {
   }, [abaAtiva, conversas, searchParams])
 
   useEffect(() => {
+    if (abaAtiva !== 'portal') return
+
+    const leadId = searchParams.get('leadId')
+    if (!leadId) return
+
+    const encontrada = threadsPortal.find((thread) => thread.lead_id === leadId)
+    if (encontrada) {
+      setThreadSelecionada(encontrada)
+    }
+  }, [abaAtiva, threadsPortal, searchParams])
+
+  useEffect(() => {
     if (conversaSelecionada && abaAtiva !== 'portal') fetchMensagens(conversaSelecionada.id)
   }, [conversaSelecionada, abaAtiva])
 
@@ -270,7 +282,7 @@ export default function CaixaDeEntradaPage() {
       setConversas(data)
       setConversaSelecionada((prev) => {
         if (!prev) return prev
-        return data.find((conversa: Conversa) => conversa.id === prev.id) || prev
+        return data.find((conversa: Conversa) => conversa.id === prev.id) || null
       })
       setLoading(false)
     }
@@ -314,7 +326,16 @@ export default function CaixaDeEntradaPage() {
   }
 
   async function selecionarConversa(conversa: Conversa) {
+    setThreadSelecionada(null)
+    setMsgsPortal([])
     setConversaSelecionada(conversa)
+
+    const params = new URLSearchParams(searchParams.toString())
+    params.delete('tab')
+    params.delete('leadId')
+    params.set('conversaId', conversa.id)
+    params.set('telefone', conversa.telefone)
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false })
 
     if (conversa.nao_lidas > 0) {
       await atualizarConversa(
@@ -329,8 +350,24 @@ export default function CaixaDeEntradaPage() {
     const res = await fetch('/api/portal/threads')
     if (res.ok) {
       const data = await res.json()
-      setThreadsPortal(data.threads || [])
+      const threads = data.threads || []
+      setThreadsPortal(threads)
+      setThreadSelecionada((prev) => {
+        if (!prev) return prev
+        return threads.find((item: ThreadPortal) => item.lead_id === prev.lead_id) || null
+      })
     }
+  }
+
+  function selecionarThreadPortal(thread: ThreadPortal) {
+    setConversaSelecionada(null)
+    setMensagens([])
+    setThreadSelecionada(thread)
+
+    const params = new URLSearchParams(searchParams.toString())
+    params.set('tab', 'portal')
+    params.set('leadId', thread.lead_id)
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false })
   }
 
   async function assumirConversa(conversaId: string) {
@@ -539,7 +576,7 @@ export default function CaixaDeEntradaPage() {
               threadsPortal.map(t => (
                 <div
                   key={t.lead_id}
-                  onClick={() => setThreadSelecionada(t)}
+                  onClick={() => selecionarThreadPortal(t)}
                   style={{
                     padding: '14px 16px',
                     borderBottom: '1px solid var(--border)',

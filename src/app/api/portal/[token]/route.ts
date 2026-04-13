@@ -309,7 +309,10 @@ export async function POST(
     titulo: `Nova mensagem no portal — ${lead.nome}`,
     descricao: mensagem.trim().substring(0, 80),
     lida: false,
-    link: `/leads/${lead.id}`,
+    link: `/caixa-de-entrada?tab=portal&leadId=${lead.id}`,
+    metadata: {
+      lead_id: lead.id,
+    },
   })
 
   return NextResponse.json({ mensagem: data })

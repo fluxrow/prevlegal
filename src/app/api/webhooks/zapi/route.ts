@@ -604,7 +604,7 @@ async function handleReceiveEvent(request: NextRequest, event: string) {
       tipo: 'mensagem',
       titulo: `Nova mensagem de ${nomeRemetente}`,
       descricao: body.slice(0, 100),
-      link: '/caixa-de-entrada',
+      link: `/caixa-de-entrada?conversaId=${conversaId}&telefone=${encodeURIComponent(from)}`,
       whatsapp_number_id: routing.channelId,
       metadata: {
         provider: 'zapi',
@@ -635,7 +635,7 @@ async function handleReceiveEvent(request: NextRequest, event: string) {
           tipo: 'escalada',
           titulo: `⚠️ Escalada detectada — ${nomeRemetente}`,
           descricao: `Gatilho: "${gatilhoAtivado}" — Mensagem: ${body.slice(0, 80)}`,
-          link: '/caixa-de-entrada',
+          link: `/caixa-de-entrada?conversaId=${conversaId}&telefone=${encodeURIComponent(from)}`,
           whatsapp_number_id: routing.channelId,
           metadata: {
             provider: 'zapi',

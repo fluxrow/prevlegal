@@ -38,13 +38,19 @@ export function buildWhatsAppHref(phone: string | null | undefined) {
 export function buildInboxHref({
   conversaId,
   telefone,
+  tab,
+  leadId,
 }: {
   conversaId?: string | null
   telefone?: string | null
+  tab?: 'portal' | 'todas' | null
+  leadId?: string | null
 }) {
   const params = new URLSearchParams()
   if (conversaId) params.set('conversaId', conversaId)
   if (telefone) params.set('telefone', normalizePhoneDigits(telefone))
+  if (tab && tab !== 'todas') params.set('tab', tab)
+  if (leadId) params.set('leadId', leadId)
   const query = params.toString()
   return query ? `/caixa-de-entrada?${query}` : '/caixa-de-entrada'
 }

@@ -75,6 +75,19 @@ export async function POST(
 
   if (threadError) return NextResponse.json({ error: threadError.message }, { status: 500 })
 
+  const { error: leadOwnerError } = await supabase
+    .from('leads')
+    .update({
+      responsavel_id: toUsuarioId,
+      updated_at: now,
+    })
+    .eq('id', id)
+    .eq('tenant_id', context.tenantId)
+
+  if (leadOwnerError) {
+    return NextResponse.json({ error: leadOwnerError.message }, { status: 500 })
+  }
+
   const { data: handoff, error: handoffError } = await supabase
     .from('lead_handoffs')
     .insert({

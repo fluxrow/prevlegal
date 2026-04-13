@@ -23,7 +23,7 @@ export async function GET(
 
   const { data: conversa } = await supabase
     .from('conversas')
-    .select('id, assumido_por, leads!inner(responsavel_id)')
+    .select('id, assumido_por, leads(responsavel_id)')
     .eq('id', id)
     .eq('tenant_id', context.tenantId)
     .maybeSingle()
@@ -54,7 +54,7 @@ export async function PATCH(
 
   const { data: conversa } = await supabase
     .from('conversas')
-    .select('id, status, assumido_por, assumido_em, leads!inner(responsavel_id)')
+    .select('id, status, assumido_por, assumido_em, leads(responsavel_id)')
     .eq('id', id)
     .eq('tenant_id', context.tenantId)
     .maybeSingle()

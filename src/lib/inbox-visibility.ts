@@ -42,6 +42,26 @@ export async function getPersonalInboxLeadIds(
   return (data || []).map((lead) => lead.id)
 }
 
+export async function getVisibleConversationIds(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  context: TenantContext,
+) {
+  if (!context.tenantId) return []
+
+  const { data, error } = await supabase
+    .from('conversas')
+    .select('id, assumido_por, leads(responsavel_id)')
+    .eq('tenant_id', context.tenantId)
+
+  if (error) {
+    throw new Error(error.message)
+  }
+
+  return (data || [])
+    .filter((conversa) => canViewConversationForInbox(context, conversa))
+    .map((conversa) => conversa.id)
+}
+
 export async function canAccessPersonalInboxLeadId(
   supabase: Awaited<ReturnType<typeof createClient>>,
   context: TenantContext,

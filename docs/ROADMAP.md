@@ -72,6 +72,39 @@ Mestra: [[MASTER_PREV_LEGAL]]
   - badge deixa de inflar ou persistir artificialmente
   - a leitura visual da inbox fica coerente com a situação real da carteira
 
+## Atualizacao Campanhas / agente, canal e template passaram a refletir recursos reais do tenant — 13/04/2026
+
+- durante o smoke test, a tela de campanhas ainda mostrava um desenho legado:
+  - dificuldade para usar listas manuais/sistêmicas no teste
+  - escolha de agente pouco operacional
+  - configuração visual ainda muito centrada em Twilio
+  - ausência de mensagem inicial contextualizada pelo agente escolhido
+- correção aplicada:
+  - `/campanhas` agora carrega listas com `include_system=1`
+  - o seletor de `Agente IA para esta campanha` usa os agentes reais do tenant
+  - o seletor de canal passou a usar `/api/whatsapp-numbers`
+  - ao escolher o agente, o sistema sugere uma primeira mensagem coerente com o tipo de operação, ainda com edição livre
+  - `POST /api/campanhas` passou a aceitar `whatsapp_number_id` explícito e validar pertencimento/atividade do canal
+- impacto operacional:
+  - campanha fica utilizável para teste com lead manual e para campanhas não só de prospecção
+  - abre caminho para usar agentes de reativação, agenda, follow-up comercial e documental dentro da mesma superfície
+
+## Atualizacao Inbox / foco de thread e handoff ficaram mais próximos do comportamento esperado — 13/04/2026
+
+- o smoke test mostrou que:
+  - notificações apareciam, mas a thread nem sempre abria
+  - `Abrir conversa` e `Iniciar conversa` a partir do lead nem sempre focavam a thread certa
+  - após transferência, a conversa podia desaparecer do antigo responsável sem surgir claramente para o novo
+- correções aplicadas:
+  - links operacionais foram padronizados com `conversaId`, `telefone`, `tab` e `leadId`
+  - a inbox agora reconcilia melhor a seleção após refresh das conversas e threads do portal
+  - iniciar conversa já cria/assume a thread humana e redireciona com deep link correto
+  - handoff passou a atualizar também `leads.responsavel_id`
+  - notificações passaram a respeitar visibilidade real antes de listar ou marcar como lidas
+- impacto operacional:
+  - reduz a sensação de “a notificação existe, mas a conversa não abre”
+  - prepara a inbox para operação multiusuário real sem ruptura visível de contexto
+
 ## Atualizacao Z-API / inbound e outbound validados em runtime — 10/04/2026
 
 - a integracao Z-API do tenant operacional foi validada ponta a ponta:

@@ -53,6 +53,24 @@ Mestra: [[MASTER_PREV_LEGAL]]
 **Correção:** Ao responder em `POST /api/portal/responder`, marcar como lidas as mensagens pendentes do cliente para aquele `lead_id` antes de inserir a resposta do escritório
 **Regra pratica:** Quando o escritório responde uma thread do portal, o sistema deve considerar que aquela pendência foi tratada, não exigir um segundo gesto do operador só para limpar badge
 
+### 156. Deep link de inbox só funciona de verdade quando thread, notificação e redirecionamento falam a mesma língua
+**Problema:** Notificações apareciam no sino, mas ao abrir a `Caixa de Entrada` a thread não vinha selecionada; o mesmo ruído aparecia em ações como `Abrir conversa` e `Iniciar conversa` a partir do lead
+**Causa:** Cada ponto do produto apontava para a inbox com parâmetros diferentes ou insuficientes, e a própria tela nem sempre reconciliava a seleção com o estado recém-carregado
+**Correção:** Unificar links operacionais com `conversaId`, `telefone`, `tab` e `leadId`, atualizar a inbox para reconciliar conversa/thread selecionada após refresh e fazer notificações/webhooks/atalhos apontarem para o mesmo contrato
+**Regra pratica:** Em superfícies operacionais, “ir para a inbox” não basta. O sistema precisa saber qual thread abrir e manter esse foco após recarregar os dados
+
+### 157. Transferência de atendimento precisa mover carteira e visibilidade, não só gravar um log
+**Problema:** Ao transferir um lead, a conversa podia sair do usuário antigo mas não aparecer corretamente para o novo responsável
+**Causa:** O handoff registrava a transferência operacional, mas a carteira do lead (`leads.responsavel_id`) podia continuar desatualizada em relação à conversa humana
+**Correção:** No handoff interno, além do histórico e da thread, atualizar também `leads.responsavel_id` para o novo usuário
+**Regra pratica:** Transferir atendimento no PrevLegal deve mover o dono operacional do caso. Se a carteira e a thread divergem, a inbox multiusuário fica incoerente
+
+### 158. Campanha precisa nascer de entidades reais do escritório, não de selects estáticos
+**Problema:** Na campanha, não era possível escolher corretamente agente, canal ou listas manuais do escritório, e a mensagem inicial ficava solta do contexto do agente selecionado
+**Causa:** A tela ainda refletia uma fundação legada com foco em Twilio fixo e sem carregar agentes/canais/listas reais do tenant
+**Correção:** Fazer `/campanhas` carregar listas com `include_system=1`, agentes reais do tenant, canais reais via `/api/whatsapp-numbers` e sugerir um template inicial coerente com o tipo do agente, mantendo edição livre
+**Regra pratica:** Se a campanha é uma ferramenta operacional do escritório, ela precisa enxergar os recursos reais daquele tenant e já nascer com uma mensagem inicial contextualizada
+
 ### 147. Webhook de provider nao pode assumir JSON puro
 **Problema:** O inbound da Z-API seguia falhando mesmo com rota publicada, parser ampliado e webhook salvo corretamente
 **Causa:** A variante `web / multi-device` pode enviar o corpo do webhook como `application/x-www-form-urlencoded`, texto cru ou JSON serializado dentro de campos string; assumir `request.json()` fazia o body virar `{}` e o payload era descartado

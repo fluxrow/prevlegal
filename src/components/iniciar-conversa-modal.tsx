@@ -53,7 +53,7 @@ export default function IniciarConversaModal({
       onStarted?.(data.conversaId)
       setMensagem('')
       onClose()
-      router.push(buildInboxHref({ conversaId: data.conversaId }))
+      router.push(buildInboxHref({ conversaId: data.conversaId, telefone }))
     } finally {
       setSending(false)
     }

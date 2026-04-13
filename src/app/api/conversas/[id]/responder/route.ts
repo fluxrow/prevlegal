@@ -33,7 +33,7 @@ export async function POST(
 
   const { data: conversa } = await supabase
     .from('conversas')
-    .select('telefone, lead_id, tenant_id, assumido_por, leads!inner(responsavel_id)')
+    .select('telefone, lead_id, tenant_id, assumido_por, leads(responsavel_id)')
     .eq('id', id)
     .eq('tenant_id', context.tenantId)
     .maybeSingle()

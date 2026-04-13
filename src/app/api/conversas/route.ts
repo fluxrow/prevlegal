@@ -12,7 +12,7 @@ export async function GET() {
 
   const { data, error } = await supabase
     .from('conversas')
-    .select('*, leads!inner(nome, nb, status, responsavel_id)')
+    .select('*, leads(id, nome, nb, status, responsavel_id)')
     .eq('tenant_id', context.tenantId)
     .order('ultima_mensagem_at', { ascending: false })
 

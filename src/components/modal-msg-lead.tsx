@@ -41,6 +41,7 @@ export default function ModalMsgLead({ lead, onClose }: Props) {
   const [conversaId, setConversaId] = useState<string | null>(null)
   const whatsappHref = buildWhatsAppHref(lead.telefone)
   const inboxHref = buildInboxHref({ conversaId, telefone: lead.telefone })
+  const portalInboxHref = buildInboxHref({ tab: 'portal', leadId: lead.id })
 
   useEffect(() => {
     let ativo = true
@@ -241,27 +242,48 @@ export default function ModalMsgLead({ lead, onClose }: Props) {
         </div>
 
         {aba === 'portal' && (
-          <div style={{ padding: '12px 16px', borderTop: '1px solid var(--border)', display: 'flex', gap: '8px' }}>
-            <input
-              value={texto}
-              onChange={e => setTexto(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && !e.shiftKey && enviarPortal()}
-              placeholder="Mensagem pelo portal..."
-              style={inp}
-            />
-            <button
-              onClick={enviarPortal}
-              disabled={enviando || !texto.trim()}
-              style={{
-                display: 'flex', alignItems: 'center', gap: '6px',
-                background: texto.trim() ? 'var(--accent)' : 'var(--bg-hover)',
-                border: 'none', borderRadius: '9px', padding: '9px 14px',
-                color: texto.trim() ? '#fff' : 'var(--text-muted)',
-                fontSize: '12px', cursor: 'pointer', fontFamily: 'DM Sans, sans-serif', flexShrink: 0,
-              }}
-            >
-              <Send size={12} /> {enviando ? '...' : 'Enviar'}
-            </button>
+          <div style={{ padding: '12px 16px', borderTop: '1px solid var(--border)', display: 'grid', gap: '10px' }}>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <input
+                value={texto}
+                onChange={e => setTexto(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && !e.shiftKey && enviarPortal()}
+                placeholder="Mensagem pelo portal..."
+                style={inp}
+              />
+              <button
+                onClick={enviarPortal}
+                disabled={enviando || !texto.trim()}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '6px',
+                  background: texto.trim() ? 'var(--accent)' : 'var(--bg-hover)',
+                  border: 'none', borderRadius: '9px', padding: '9px 14px',
+                  color: texto.trim() ? '#fff' : 'var(--text-muted)',
+                  fontSize: '12px', cursor: 'pointer', fontFamily: 'DM Sans, sans-serif', flexShrink: 0,
+                }}
+              >
+                <Send size={12} /> {enviando ? '...' : 'Enviar'}
+              </button>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+              <div style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Link2 size={11} />
+                Abrir thread do portal na Caixa de Entrada
+              </div>
+              <a
+                href={portalInboxHref}
+                onClick={onClose}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '6px',
+                  padding: '8px 12px', borderRadius: '8px',
+                  background: 'rgba(45,212,160,0.12)', border: '1px solid rgba(45,212,160,0.28)',
+                  color: '#2dd4a0', textDecoration: 'none', fontSize: '12px', fontWeight: '600',
+                }}
+              >
+                <MessageSquare size={12} />
+                Caixa de Entrada
+              </a>
+            </div>
           </div>
         )}
 

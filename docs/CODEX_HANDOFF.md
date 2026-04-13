@@ -20,6 +20,54 @@ Objetivo:
 - facilitar o repasse posterior para o Claude
 - registrar decisoes, arquivos afetados, validacoes e proximos passos
 
+## Atualizacao 2026-04-13 - Campanhas e inbox ganharam alinhamento de runtime para o go-live
+
+- contexto:
+  - o smoke test apontou um bloco misto de problemas:
+    - campanha ainda não refletia bem agentes/canais/listas reais do tenant
+    - notificações e links da inbox levavam o usuário para a tela, mas nem sempre para a thread certa
+    - handoff e abertura de conversa ainda podiam deixar a carteira/thread desalinhadas
+- arquivos alterados:
+  - `src/app/(dashboard)/campanhas/page.tsx`
+  - `src/app/(dashboard)/caixa-de-entrada/page.tsx`
+  - `src/app/api/campanhas/route.ts`
+  - `src/app/api/conversas/route.ts`
+  - `src/app/api/conversas/[id]/route.ts`
+  - `src/app/api/conversas/[id]/responder/route.ts`
+  - `src/app/api/leads/[id]/iniciar-conversa/route.ts`
+  - `src/app/api/leads/[id]/interno/handoff/route.ts`
+  - `src/app/api/notificacoes/route.ts`
+  - `src/app/api/pendencias/route.ts`
+  - `src/app/api/portal/[token]/route.ts`
+  - `src/app/api/webhooks/twilio/route.ts`
+  - `src/app/api/webhooks/zapi/route.ts`
+  - `src/components/iniciar-conversa-modal.tsx`
+  - `src/components/modal-msg-lead.tsx`
+  - `src/lib/contact-shortcuts.ts`
+  - `src/lib/inbox-visibility.ts`
+  - `src/lib/campaign-message-templates.ts`
+- mudancas principais:
+  - campanhas:
+    - agentes reais do tenant entram no seletor
+    - listas são carregadas com `include_system=1`
+    - canais reais do escritório entram no seletor da campanha
+    - a mensagem inicial é sugerida pelo tipo do agente, mas continua editável
+    - `POST /api/campanhas` valida `whatsapp_number_id` do tenant
+  - inbox:
+    - notificações e webhooks agora apontam para a thread específica com `conversaId`/`telefone`
+    - lead detail passou a abrir inbox com deep link mais consistente
+    - iniciar conversa assume a thread e já redireciona com foco correto
+    - handoff atualiza também `leads.responsavel_id`
+    - `/api/notificacoes` passou a filtrar por visibilidade real de conversa/lead
+    - `/api/pendencias` passou a usar IDs visíveis de conversa na contagem humana
+    - portal ganhou deep link por `tab=portal&leadId=...` e a inbox seleciona a thread pela URL
+- validacao:
+  - `npm run build` passou
+- pendencias de reteste:
+  - campanha com lead manual + agente + canal Z-API ponta a ponta
+  - transferencia completa de conversa entre dois usuários
+  - abertura da thread correta via notificação, `abrir conversa` e `iniciar conversa`
+
 ## Atualizacao 2026-04-13 - UX operacional de agentes e inbox endurecida para go-live
 
 - contexto:

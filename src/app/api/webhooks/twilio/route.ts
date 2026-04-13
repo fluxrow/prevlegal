@@ -144,7 +144,7 @@ export async function POST(request: NextRequest) {
       tipo: 'mensagem',
       titulo: `Nova mensagem de ${nomeRemetente}`,
       descricao: body_msg.slice(0, 100),
-      link: '/caixa-de-entrada',
+      link: `/caixa-de-entrada?conversaId=${conversaId}&telefone=${encodeURIComponent(from)}`,
       metadata: { conversa_id: conversaId, telefone: from },
     })
 
@@ -170,7 +170,7 @@ export async function POST(request: NextRequest) {
           tipo: 'escalada',
           titulo: `⚠️ Escalada detectada — ${nomeRemetente}`,
           descricao: `Gatilho: "${gatilhoAtivado}" — Mensagem: ${body_msg.slice(0, 80)}`,
-          link: '/caixa-de-entrada',
+          link: `/caixa-de-entrada?conversaId=${conversaId}&telefone=${encodeURIComponent(from)}`,
           metadata: { conversa_id: conversaId, telefone: from, gatilho: gatilhoAtivado },
         })
       }

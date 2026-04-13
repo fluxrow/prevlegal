@@ -125,6 +125,34 @@ Gatilho automático: a mudança de status do lead na API `PATCH` chama o *Orques
   - notificações e visibilidade da inbox ainda estão desalinhadas em alguns fluxos
   - ações `Abrir conversa` e `Iniciar conversa` a partir do lead precisam abrir a thread correta na `Caixa de Entrada`
 
+## Atualização 2026-04-13 - Campanhas e inbox ganharam alinhamento operacional para o go-live
+
+- campanhas:
+  - `/campanhas` agora carrega:
+    - listas do escritório incluindo listas de sistema/manual (`include_system=1`)
+    - agentes reais do tenant
+    - canais WhatsApp reais do escritório via `/api/whatsapp-numbers`
+  - ao escolher o agente da campanha, o produto sugere automaticamente uma mensagem inicial coerente com o tipo de agente:
+    - `triagem`
+    - `confirmacao_agenda`
+    - `reativacao`
+    - `followup_comercial`
+    - `documental`
+  - a mensagem continua editável pelo usuário
+  - `POST /api/campanhas` passou a aceitar `whatsapp_number_id` explícito, validando se o canal pertence ao tenant e está ativo
+- inbox humana:
+  - links de notificação e de webhook (`Twilio` / `Z-API`) agora carregam `conversaId` e `telefone`, tentando abrir a thread certa em `/caixa-de-entrada`
+  - iniciar conversa a partir do lead agora já cria/assume a thread humana e redireciona com deep link correto
+  - handoff interno agora transfere também `leads.responsavel_id`, para a carteira do novo usuário ficar coerente com a conversa
+  - notificações passaram a respeitar visibilidade real de conversa/lead antes de listar ou marcar como lidas
+  - portal ganhou deep link para `tab=portal&leadId=...` e a UI da inbox passou a selecionar a thread do portal pela URL quando esse contexto existir
+- leitura prática:
+  - o produto ficou bem mais próximo do comportamento esperado para campanha de teste com lead manual e operação multiusuário real
+  - ainda precisamos retestar em runtime os fluxos de:
+    - transferência completa da thread para o novo responsável
+    - abertura/foco da thread a partir de notificação e lead detail
+    - campanha usando agente + canal Z-API + lead manual ponta a ponta
+
 ## Atualização 2026-04-13 - Portal e badge da inbox passaram a refletir tratamento real da carteira pessoal
 
 - a visibilidade de portal foi alinhada à mesma regra da inbox humana:

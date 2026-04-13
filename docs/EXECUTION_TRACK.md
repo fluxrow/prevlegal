@@ -141,6 +141,7 @@ Status em 10/04/2026:
 - inbox pessoal por ownership/assignee: `ok`
 - cadastro manual sem CPF: `ok`
 - seleção de canal WhatsApp por agente: `ok`
+- campanhas com agente real, canal real e template inicial contextualizado: `ok`
 - pendências residuais do smoke test:
   - passe final de convite/aceite com email inédito e permissões customizadas ponta a ponta
   - passe final de portal com tenant real

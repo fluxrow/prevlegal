@@ -49,7 +49,20 @@ export async function POST(request: NextRequest) {
 
     const adminClient = createAdminClient()
     const body = await request.json()
-    const { nome, lista_id, mensagem_template, delay_min_ms, delay_max_ms, tamanho_lote, pausa_entre_lotes_s, limite_diario, apenas_verificados, agendado_para, agente_id } = body
+    const {
+      nome,
+      lista_id,
+      mensagem_template,
+      delay_min_ms,
+      delay_max_ms,
+      tamanho_lote,
+      pausa_entre_lotes_s,
+      limite_diario,
+      apenas_verificados,
+      agendado_para,
+      agente_id,
+      whatsapp_number_id,
+    } = body
 
     if (!nome || !lista_id || !mensagem_template) {
       return NextResponse.json({ error: 'nome, lista_id e mensagem_template são obrigatórios' }, { status: 400 })
@@ -75,7 +88,33 @@ export async function POST(request: NextRequest) {
     countQuery = applyTenantFilter(countQuery, context.tenantId)
     const { count } = await countQuery
 
-    const channel = await resolveWhatsAppChannel(context.tenantId)
+    let channel
+
+    if (typeof whatsapp_number_id === 'string' && whatsapp_number_id.trim()) {
+      const { data: selectedChannel, error: selectedChannelError } = await adminClient
+        .from('whatsapp_numbers')
+        .select('id, ativo, metadata')
+        .eq('tenant_id', context.tenantId)
+        .eq('id', whatsapp_number_id.trim())
+        .maybeSingle()
+
+      if (selectedChannelError) {
+        return NextResponse.json({ error: selectedChannelError.message }, { status: 500 })
+      }
+
+      if (!selectedChannel) {
+        return NextResponse.json({ error: 'Canal WhatsApp não encontrado para este escritório' }, { status: 404 })
+      }
+
+      if (!selectedChannel.ativo) {
+        return NextResponse.json({ error: 'O canal WhatsApp selecionado está pausado' }, { status: 400 })
+      }
+
+      channel = selectedChannel
+    } else {
+      channel = await resolveWhatsAppChannel(context.tenantId)
+    }
+
     const throttleSettings = applyWarmupPolicyToThrottleSettings(
       {
         limitDaily: limite_diario,

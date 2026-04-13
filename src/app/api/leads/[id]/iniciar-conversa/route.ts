@@ -94,6 +94,13 @@ export async function POST(
 
   const agora = new Date().toISOString()
 
+  if (!conversa) {
+    return NextResponse.json(
+      { error: 'Falha ao preparar a conversa' },
+      { status: 500 },
+    )
+  }
+
   await supabase.from('mensagens_inbound').insert({
     tenant_id: context.tenantId,
     conversa_id: conversa.id,
@@ -114,6 +121,8 @@ export async function POST(
       ultima_mensagem: mensagem.trim(),
       ultima_mensagem_at: agora,
       nao_lidas: 0,
+      assumido_por: context.usuarioId,
+      assumido_em: agora,
     })
     .eq('id', conversa.id)
 
