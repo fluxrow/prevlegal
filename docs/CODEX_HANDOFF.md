@@ -3330,3 +3330,23 @@ Pontos que precisam ser preservados durante a implementacao:
   - observação operacional:
     - o seed segue idempotente por `tipo`
     - a troca de modelo é pensada para onboarding inicial; depois disso, o caminho correto é editar os agentes já existentes
+## Atualização 2026-04-13 — Canal WhatsApp dos agentes passou a refletir o escritório real
+
+- foi criada a rota `GET /api/whatsapp-numbers`
+- `agentes-config.tsx` agora lista os canais ativos do tenant em vez de pedir `ID do número no Twilio/Meta`
+- backend de `POST /api/agentes` e `PATCH /api/agentes/[id]` valida que o canal escolhido pertence ao tenant
+- decisão de produto consolidada:
+  - o padrão recomendado é compartilhar o mesmo canal WhatsApp do escritório entre agentes
+  - não obrigar um número por agente
+
+## Atualização 2026-04-13 — Tarefas novas registradas a partir do smoke test
+
+- campanhas:
+  - leads manuais precisam poder entrar em campanhas de teste
+  - seleção de agente por campanha precisa listar os agentes reais do escritório
+  - template da primeira mensagem deve ser sugerido a partir do agente escolhido
+  - configuração de disparo precisa expor Z-API, não só Twilio
+- inbox:
+  - transferência de conversa ainda não aparece corretamente para o novo usuário
+  - notificações estão chegando sem a thread ficar visível/abrível
+  - `Abrir conversa` e `Iniciar conversa` via lead ainda não deep-linkam para a thread certa

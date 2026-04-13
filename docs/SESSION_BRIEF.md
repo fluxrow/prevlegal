@@ -96,6 +96,35 @@ Gatilho automático: a mudança de status do lead na API `PATCH` chama o *Orques
   - cada agente nasce com `prompt_base`, `fluxo_qualificacao`, `gatilhos_escalada`, `frases_proibidas`, `objeccoes` e `fallback` próprios do perfil selecionado
 - também foi neutralizado o fallback antigo do responder que ainda citava `Ana`
 
+## Atualização 2026-04-13 - Agentes passaram a selecionar canal WhatsApp real do escritório
+
+- o campo avançado do agente ainda expunha um input cru com rótulo legado de `Twilio/Meta`
+- isso gerava dois problemas:
+  - a UX não refletia o canal realmente conectado no tenant, como `Z-API`
+  - parecia que cada agente precisava de um número próprio para funcionar bem
+- decisão de produto consolidada:
+  - o padrão recomendado é usar o mesmo canal WhatsApp do escritório para a maioria dos agentes
+  - isso evita que o lead receba mensagens do mesmo caso por números diferentes
+  - separar canal por agente deve ser exceção operacional, não obrigação da configuração
+- correção aplicada:
+  - criação de `GET /api/whatsapp-numbers` no contexto do tenant
+  - formulário de agentes agora lista canais reais ativos do escritório
+  - o texto foi atualizado para `Canal WhatsApp padrão`
+  - o backend passou a validar se o canal escolhido pertence mesmo ao tenant
+
+## Atualização 2026-04-13 - Novas tarefas registradas após smoke test de campanhas e inbox
+
+- campanhas:
+  - permitir escolher também leads cadastrados manualmente para campanhas/testes
+  - ao selecionar `Agente IA para esta campanha`, mostrar os agentes reais do escritório
+  - ao escolher o agente, sugerir a mensagem inicial por template, com edição livre
+  - expor canal `Z-API` na configuração de disparo, e não só `Twilio`
+- inbox humana:
+  - ao transferir um lead/conversa, a thread precisa aparecer para o novo responsável
+  - o usuário antigo não deve continuar recebendo notificação daquela conversa após a transferência
+  - notificações e visibilidade da inbox ainda estão desalinhadas em alguns fluxos
+  - ações `Abrir conversa` e `Iniciar conversa` a partir do lead precisam abrir a thread correta na `Caixa de Entrada`
+
 ## Atualização 2026-04-13 - Portal e badge da inbox passaram a refletir tratamento real da carteira pessoal
 
 - a visibilidade de portal foi alinhada à mesma regra da inbox humana:

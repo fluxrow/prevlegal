@@ -4,6 +4,40 @@ import { getTenantContext } from "@/lib/tenant-context";
 import { createAdminSupabase } from "@/lib/internal-collaboration";
 import { contextHasPermission } from "@/lib/tenant-context";
 
+async function resolveWhatsappNumberId(
+  supabase: ReturnType<typeof createAdminSupabase>,
+  tenantId: string | null,
+  whatsappNumberId: unknown,
+) {
+  const normalized =
+    typeof whatsappNumberId === "string" ? whatsappNumberId.trim() : "";
+
+  if (!normalized) {
+    return { value: null as string | null };
+  }
+
+  if (!tenantId) {
+    return { error: "Tenant inválido para vincular canal WhatsApp." };
+  }
+
+  const { data, error } = await supabase
+    .from("whatsapp_numbers")
+    .select("id")
+    .eq("id", normalized)
+    .eq("tenant_id", tenantId)
+    .maybeSingle();
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  if (!data) {
+    return { error: "Canal WhatsApp não encontrado neste escritório." };
+  }
+
+  return { value: normalized };
+}
+
 export async function GET() {
   const authSupabase = await createServerClient();
   const context = await getTenantContext(authSupabase);
@@ -66,6 +100,19 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  const resolvedWhatsappNumber = await resolveWhatsappNumberId(
+    supabase,
+    context.tenantId,
+    whatsapp_number_id_default,
+  );
+
+  if ("error" in resolvedWhatsappNumber) {
+    return NextResponse.json(
+      { error: resolvedWhatsappNumber.error },
+      { status: 400 },
+    );
+  }
+
   const { data, error } = await supabase
     .from("agentes")
     .insert({
@@ -83,7 +130,7 @@ export async function POST(request: NextRequest) {
       janela_inicio: janela_inicio || null,
       janela_fim: janela_fim || null,
       dias_uteis_only: dias_uteis_only ?? false,
-      whatsapp_number_id_default: whatsapp_number_id_default || null,
+      whatsapp_number_id_default: resolvedWhatsappNumber.value,
       fluxo_qualificacao: fluxo_qualificacao || null,
       exemplos_dialogo: exemplos_dialogo || null,
       gatilhos_escalada: gatilhos_escalada || null,

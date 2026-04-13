@@ -1482,3 +1482,15 @@ Os selects ainda pediam apenas `usuarios(...)`, então o PostgREST não sabia qu
 - `Modelo Jessica`: benefícios previdenciários, acolhimento jurídico inicial e conversão para consulta/análise
 - `Modelo Ana`: planejamento previdenciário consultivo, diagnóstico comercial e fechamento de planos
 **Regra pratica:** Template operacional nunca pode carregar viés oculto de um único cliente; quando houver mais de um playbook válido, a escolha do modelo precisa ser explícita para o escritório
+## 2026-04-13 — Campo de canal WhatsApp do agente não pode ser input cru legado
+
+**Problema:** A configuração avançada dos agentes ainda expunha `whatsapp_number_id_default` como campo texto com placeholder `ID do número no Twilio/Meta`, mesmo depois da operação do tenant já aceitar `Z-API` e múltiplos canais reais em `whatsapp_numbers`.
+
+**Por que isso importa:** A UX empurrava o usuário para um modelo mental errado:
+- parecia que cada agente precisava de um identificador técnico diferente
+- escondia os canais reais já conectados no escritório
+- não reforçava a recomendação operacional de usar o mesmo número do escritório para a maioria dos agentes
+
+**Correção:** Criar `GET /api/whatsapp-numbers` no contexto do tenant, trocar o input cru por um seletor de canais ativos do escritório em `agentes-config.tsx` e validar no backend que o canal escolhido pertence ao tenant.
+
+**Regra de produto derivada:** por padrão, agentes devem compartilhar o mesmo canal do escritório; separação por agente só entra quando houver uma operação explicitamente distinta.

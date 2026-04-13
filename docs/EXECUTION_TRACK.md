@@ -56,6 +56,12 @@ Protocolo complementar entre IAs:
 1. Subir serviço Docling e ligar `DOCLING_SERVICE_URL`
 2. Refinar calendário/agendamentos
 3. Abrir importador inteligente fase 2
+4. Fechar lacunas operacionais de campanhas e inbox multiusuário:
+- permitir usar leads cadastrados manualmente em campanhas de teste/execução
+- permitir escolher qualquer agente do escritório na campanha e sugerir mensagem inicial por template
+- expor canais Z-API/Twilio na configuração de disparo da campanha
+- corrigir transferência de atendimento para que a conversa saia do antigo responsável e apareça no novo
+- corrigir deep link de `abrir conversa` / `iniciar conversa` para abrir a thread correta na inbox
 
 ## Ordem correta de execução agora
 
@@ -134,10 +140,14 @@ Status em 10/04/2026:
 - busca normalizada: `ok`
 - inbox pessoal por ownership/assignee: `ok`
 - cadastro manual sem CPF: `ok`
+- seleção de canal WhatsApp por agente: `ok`
 - pendências residuais do smoke test:
   - passe final de convite/aceite com email inédito e permissões customizadas ponta a ponta
   - passe final de portal com tenant real
   - passe final de usuário não-admin com carteira isolada e permissão customizada
+  - passe final de transferência de conversa entre usuários
+  - passe final de abertura da thread via lead detail / notificações
+  - passe final de campanhas com lead manual, escolha de agente e canal Z-API
 
 Observação operacional do go-live:
 - o convite interno ainda é `link manual`; o sistema gera a URL, mas não envia email automático
@@ -146,6 +156,9 @@ Observação operacional do go-live:
   - vê a conversa quem é dono do lead
   - ou quem assumiu o atendimento humano
 - visão ampla de equipe fica para uma camada posterior de supervisão
+- na configuração de agentes, o comportamento recomendado passa a ser:
+  - usar o mesmo canal WhatsApp do escritório para a maioria dos agentes
+  - só separar por agente quando houver uma operação claramente distinta
 
 Checklist canônico:
 - `docs/TENANT_SMOKE_TEST_CHECKLIST.md`

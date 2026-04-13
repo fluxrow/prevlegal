@@ -3,6 +3,40 @@ import { createClient as createServerClient } from "@/lib/supabase/server";
 import { contextHasPermission, getTenantContext } from "@/lib/tenant-context";
 import { createAdminSupabase } from "@/lib/internal-collaboration";
 
+async function resolveWhatsappNumberId(
+  supabase: ReturnType<typeof createAdminSupabase>,
+  tenantId: string | null,
+  whatsappNumberId: unknown,
+) {
+  const normalized =
+    typeof whatsappNumberId === "string" ? whatsappNumberId.trim() : "";
+
+  if (!normalized) {
+    return { value: null as string | null };
+  }
+
+  if (!tenantId) {
+    return { error: "Tenant inválido para vincular canal WhatsApp." };
+  }
+
+  const { data, error } = await supabase
+    .from("whatsapp_numbers")
+    .select("id")
+    .eq("id", normalized)
+    .eq("tenant_id", tenantId)
+    .maybeSingle();
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  if (!data) {
+    return { error: "Canal WhatsApp não encontrado neste escritório." };
+  }
+
+  return { value: normalized };
+}
+
 const CAMPOS_EDITAVEIS = [
   "nome_interno",
   "nome_publico",
@@ -60,6 +94,24 @@ export async function PATCH(
   const updates: Record<string, unknown> = {
     updated_at: new Date().toISOString(),
   };
+
+  if (body.whatsapp_number_id_default !== undefined) {
+    const resolvedWhatsappNumber = await resolveWhatsappNumberId(
+      supabase,
+      context.tenantId,
+      body.whatsapp_number_id_default,
+    );
+
+    if ("error" in resolvedWhatsappNumber) {
+      return NextResponse.json(
+        { error: resolvedWhatsappNumber.error },
+        { status: 400 },
+      );
+    }
+
+    body.whatsapp_number_id_default = resolvedWhatsappNumber.value;
+  }
+
   CAMPOS_EDITAVEIS.forEach((campo) => {
     if (body[campo] !== undefined) updates[campo] = body[campo];
   });

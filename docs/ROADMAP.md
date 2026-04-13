@@ -1976,3 +1976,14 @@ Status atual em 18/03/2026:
 - decisão de produto:
   - templates não podem carregar viés oculto de um único piloto
   - onboarding assistido precisa oferecer atalhos reais para tipos diferentes de escritório
+## Atualização 2026-04-13 — Backlog operacional pós-smoke test
+
+- campanhas:
+  - suportar seleção de leads cadastrados manualmente para campanhas/teste
+  - listar agentes reais do escritório no campo `Agente IA para esta campanha`
+  - pré-preencher mensagem inicial por template do agente, mantendo edição manual
+  - expor canal Z-API/Twilio na configuração de disparo
+- inbox:
+  - concluir o fluxo de transferência de conversa entre usuários
+  - alinhar notificações com ownership real da thread
+  - corrigir deep links de `abrir conversa` / `iniciar conversa` a partir do lead

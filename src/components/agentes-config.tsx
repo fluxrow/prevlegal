@@ -44,6 +44,17 @@ interface Agente {
   created_at: string;
 }
 
+interface WhatsappChannel {
+  id: string;
+  label: string | null;
+  provider: "twilio" | "zapi";
+  phone: string | null;
+  display_phone: string | null;
+  purpose: string | null;
+  ativo: boolean;
+  is_default: boolean;
+}
+
 const TIPO_OPTIONS = [
   { value: "geral", label: "Geral" },
   { value: "triagem", label: "Triagem" },
@@ -82,11 +93,15 @@ interface FormState extends Omit<Agente, "id" | "created_at"> {}
 
 function AgenteForm({
   initial,
+  whatsappChannels,
+  channelsLoading,
   onSave,
   onCancel,
   saving,
 }: {
   initial: FormState;
+  whatsappChannels: WhatsappChannel[];
+  channelsLoading: boolean;
   onSave: (form: FormState) => void;
   onCancel: () => void;
   saving: boolean;
@@ -123,6 +138,10 @@ function AgenteForm({
     resize: "vertical",
     minHeight: "80px",
   };
+
+  const activeWhatsappChannels = whatsappChannels.filter(
+    (channel) => channel.ativo,
+  );
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
@@ -410,15 +429,46 @@ function AgenteForm({
             />
           </div>
           <div>
-            <label style={labelStyle}>WhatsApp Number ID padrão</label>
-            <input
+            <label style={labelStyle}>Canal WhatsApp padrão</label>
+            <select
               style={inputStyle}
               value={form.whatsapp_number_id_default || ""}
               onChange={(e) =>
                 set("whatsapp_number_id_default", e.target.value)
               }
-              placeholder="ID do número no Twilio/Meta"
-            />
+            >
+              <option value="">Usar canal padrão do escritório</option>
+              {activeWhatsappChannels.map((channel) => {
+                const descriptor = [
+                  channel.label || null,
+                  channel.provider === "zapi" ? "Z-API" : "Twilio",
+                  channel.display_phone || null,
+                  channel.is_default ? "padrão do escritório" : null,
+                ]
+                  .filter(Boolean)
+                  .join(" · ");
+
+                return (
+                  <option key={channel.id} value={channel.id}>
+                    {descriptor}
+                  </option>
+                );
+              })}
+            </select>
+            <div
+              style={{
+                fontSize: "11px",
+                color: "var(--text-muted)",
+                marginTop: "5px",
+                lineHeight: 1.5,
+              }}
+            >
+              {channelsLoading
+                ? "Carregando canais WhatsApp do escritório..."
+                : activeWhatsappChannels.length > 0
+                  ? "Na maioria dos casos, recomendamos usar o mesmo número do escritório para todos os agentes. Isso evita que o lead receba mensagens do mesmo caso por canais diferentes."
+                  : "Nenhum canal ativo encontrado. Se deixar em branco, o runtime tentará usar o canal padrão do escritório quando ele existir."}
+            </div>
           </div>
         </div>
       )}
@@ -567,7 +617,11 @@ function AgenteMetricas({ agenteId }: { agenteId: string }) {
 
 export default function AgentesConfig() {
   const [agentes, setAgentes] = useState<Agente[]>([]);
+  const [whatsappChannels, setWhatsappChannels] = useState<WhatsappChannel[]>(
+    [],
+  );
   const [loading, setLoading] = useState(true);
+  const [channelsLoading, setChannelsLoading] = useState(true);
   const [criando, setCriando] = useState(false);
   const [editandoId, setEditandoId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -592,9 +646,21 @@ export default function AgentesConfig() {
     }
   }, []);
 
+  const fetchWhatsappChannels = useCallback(async () => {
+    setChannelsLoading(true);
+    try {
+      const res = await fetch("/api/whatsapp-numbers");
+      const data = await res.json().catch(() => null);
+      setWhatsappChannels(Array.isArray(data?.numbers) ? data.numbers : []);
+    } finally {
+      setChannelsLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     fetchAgentes();
-  }, [fetchAgentes]);
+    fetchWhatsappChannels();
+  }, [fetchAgentes, fetchWhatsappChannels]);
 
   async function handleCreate(form: FormState) {
     setSaving(true);
@@ -956,6 +1022,8 @@ export default function AgentesConfig() {
           </h4>
           <AgenteForm
             initial={AGENTE_VAZIO}
+            whatsappChannels={whatsappChannels}
+            channelsLoading={channelsLoading}
             onSave={handleCreate}
             onCancel={() => setCriando(false)}
             saving={saving}
@@ -1026,6 +1094,8 @@ export default function AgentesConfig() {
                     ativo: agente.ativo,
                     is_default: agente.is_default,
                   }}
+                  whatsappChannels={whatsappChannels}
+                  channelsLoading={channelsLoading}
                   onSave={(form) => handleUpdate(agente.id, form)}
                   onCancel={() => setEditandoId(null)}
                   saving={saving}
