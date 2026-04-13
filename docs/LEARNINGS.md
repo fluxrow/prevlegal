@@ -26,6 +26,15 @@ Mestra: [[MASTER_PREV_LEGAL]]
 **Correção:** Endurecer o matcher para telefone mascarado e, ao encontrar conversa preexistente, preencher tambem `lead_id` e `whatsapp_number_id`
 **Regra pratica:** Em inbox operacional, o sucesso do inbound nao e apenas “salvar o evento recebido”; o objetivo real e reencaixar a mensagem na conversa certa, com o lead certo, sem criar ruptura visivel na operacao
 
+### 152. Admin do escritorio nao deve herdar visao total da inbox como padrão operacional
+**Problema:** No smoke test com convite de novo usuário, um segundo admin do mesmo escritório passou a enxergar conversas da carteira principal logo no primeiro acesso
+**Causa:** As rotas da inbox usavam bypass automático por `context.isAdmin`, então qualquer admin do tenant via toda a fila humana, independentemente de dono do lead ou de ter assumido o atendimento
+**Correção:** Criar `src/lib/inbox-visibility.ts` e aplicar a mesma regra nas rotas de listagem, detalhe, operação e resposta humana:
+- pode ver a conversa quem é `responsavel_id` do lead
+- ou quem está em `conversas.assumido_por`
+- admin deixa de ser bypass implícito na inbox
+**Regra pratica:** Em operação multiusuário, inbox deve ser pessoal por padrão. Visão total de equipe é ferramenta de supervisão e precisa aparecer como modo explícito, não como atalho invisível do perfil admin
+
 ### 147. Webhook de provider nao pode assumir JSON puro
 **Problema:** O inbound da Z-API seguia falhando mesmo com rota publicada, parser ampliado e webhook salvo corretamente
 **Causa:** A variante `web / multi-device` pode enviar o corpo do webhook como `application/x-www-form-urlencoded`, texto cru ou JSON serializado dentro de campos string; assumir `request.json()` fazia o body virar `{}` e o payload era descartado

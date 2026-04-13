@@ -3245,3 +3245,17 @@ Pontos que precisam ser preservados durante a implementacao:
   - `src/app/api/usuarios/aceitar-convite/route.ts` agora devolve `409` amigável quando o email já existe no Auth, em vez do erro cru do Supabase
   - `src/app/auth/aceitar-convite/page.tsx` ganhou mensagem orientando uso de outro email/migração posterior
   - `src/components/gestao-usuarios.tsx` agora deixa explícito que o convite atual é `link manual`, sem envio automático por email
+- `2026-04-13` - inbox passou a respeitar ownership/assignee para todos os perfis
+  - gatilho: no smoke test, um segundo admin convidado viu conversas da operação principal do escritório
+  - decisão de go-live: inbox humana é pessoal por padrão, inclusive para admin
+  - implementação:
+    - `src/lib/inbox-visibility.ts`
+    - `src/app/api/conversas/route.ts`
+    - `src/app/api/conversas/[id]/route.ts`
+    - `src/app/api/conversas/[id]/responder/route.ts`
+  - regra aplicada:
+    - usuário vê a conversa se for `leads.responsavel_id`
+    - ou `conversas.assumido_por`
+  - implicação:
+    - visão total da equipe deixa de ser bypass implícito de admin
+    - futura supervisão deve entrar como modo explícito, não como padrão da inbox

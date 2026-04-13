@@ -4,6 +4,28 @@ Contexto: [[SESSION_HISTORY_MASTER]]
 Mestra: [[MASTER_PREV_LEGAL]]
 > Última atualização: 10/04/2026
 
+## Atualizacao Inbox / visibilidade pessoal como padrão de go-live — 13/04/2026
+
+- durante o smoke test multiusuário do tenant real, ficou evidente que o modelo atual da inbox era permissivo demais para perfis `admin`
+- problema observado:
+  - um novo admin convidado passava a enxergar conversas da operação principal do escritório logo no primeiro acesso
+  - isso gerava ruído operacional e quebrava a noção de carteira / dono do atendimento
+- correção aplicada:
+  - criação de uma fundação compartilhada de visibilidade em `src/lib/inbox-visibility.ts`
+  - `GET /api/conversas`
+  - `GET|PATCH /api/conversas/[id]`
+  - `POST /api/conversas/[id]/responder`
+  - agora todas essas superfícies usam a mesma regra:
+    - usuário vê a conversa se for dono do lead
+    - ou se tiver assumido o atendimento humano da conversa
+  - o bypass automático por `admin` deixou de existir na inbox operacional
+- impacto operacional:
+  - inbox do escritório fica pessoal por padrão, inclusive para admin master
+  - reduz exposição desnecessária de carteira
+  - prepara melhor o futuro fluxo de transferência de atendimento
+- decisão de produto:
+  - visão total da equipe continua desejável, mas entra depois como modo explícito de supervisão, não como padrão do operador
+
 ## Atualizacao Z-API / inbound e outbound validados em runtime — 10/04/2026
 
 - a integracao Z-API do tenant operacional foi validada ponta a ponta:

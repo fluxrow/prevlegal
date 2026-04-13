@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { contextHasPermission, getTenantContext } from '@/lib/tenant-context'
 import { createAdminSupabase } from '@/lib/internal-collaboration'
+import { canViewConversationForInbox } from '@/lib/inbox-visibility'
 
 const CONVERSA_STATUS = new Set([
   'agente',
@@ -20,17 +21,13 @@ export async function GET(
   if (!context) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const { id } = await params
 
-  let conversaQuery = supabase
+  const { data: conversa } = await supabase
     .from('conversas')
-    .select('id, leads!inner(responsavel_id)')
+    .select('id, assumido_por, leads!inner(responsavel_id)')
     .eq('id', id)
-
-  if (!context.isAdmin) {
-    conversaQuery = conversaQuery.eq('leads.responsavel_id', context.usuarioId)
-  }
-
-  const { data: conversa } = await conversaQuery.maybeSingle()
-  if (!conversa) return NextResponse.json({ error: 'Conversa não encontrada' }, { status: 404 })
+    .eq('tenant_id', context.tenantId)
+    .maybeSingle()
+  if (!canViewConversationForInbox(context, conversa)) return NextResponse.json({ error: 'Conversa não encontrada' }, { status: 404 })
 
   const { data, error } = await supabase
     .from('mensagens_inbound')
@@ -55,17 +52,15 @@ export async function PATCH(
     return NextResponse.json({ error: 'Você não tem permissão para operar a fila humana' }, { status: 403 })
   }
 
-  let conversaQuery = supabase
+  const { data: conversa } = await supabase
     .from('conversas')
     .select('id, status, assumido_por, assumido_em, leads!inner(responsavel_id)')
     .eq('id', id)
+    .eq('tenant_id', context.tenantId)
+    .maybeSingle()
+  if (!canViewConversationForInbox(context, conversa)) return NextResponse.json({ error: 'Conversa não encontrada' }, { status: 404 })
 
-  if (!context.isAdmin) {
-    conversaQuery = conversaQuery.eq('leads.responsavel_id', context.usuarioId)
-  }
-
-  const { data: conversa } = await conversaQuery.maybeSingle()
-  if (!conversa) return NextResponse.json({ error: 'Conversa não encontrada' }, { status: 404 })
+  const conversaAtual = conversa!
 
   const now = new Date().toISOString()
   let payload: Record<string, unknown> | null = null
@@ -75,7 +70,7 @@ export async function PATCH(
       payload = {
         status: 'humano',
         assumido_por: context.usuarioId,
-        assumido_em: conversa.assumido_em || now,
+        assumido_em: conversaAtual.assumido_em || now,
         nao_lidas: 0,
       }
       break
@@ -90,23 +85,23 @@ export async function PATCH(
     case 'awaiting_customer':
       payload = {
         status: 'aguardando_cliente',
-        assumido_por: conversa.assumido_por || context.usuarioId,
-        assumido_em: conversa.assumido_em || now,
+        assumido_por: conversaAtual.assumido_por || context.usuarioId,
+        assumido_em: conversaAtual.assumido_em || now,
       }
       break
     case 'resolve':
       payload = {
         status: 'resolvido',
-        assumido_por: conversa.assumido_por || context.usuarioId,
-        assumido_em: conversa.assumido_em || now,
+        assumido_por: conversaAtual.assumido_por || context.usuarioId,
+        assumido_em: conversaAtual.assumido_em || now,
         nao_lidas: 0,
       }
       break
     case 'reopen':
       payload = {
         status: 'humano',
-        assumido_por: conversa.assumido_por || context.usuarioId,
-        assumido_em: conversa.assumido_em || now,
+        assumido_por: conversaAtual.assumido_por || context.usuarioId,
+        assumido_em: conversaAtual.assumido_em || now,
         nao_lidas: 0,
       }
       break
@@ -119,7 +114,7 @@ export async function PATCH(
 
         if (body.status === 'humano') {
           payload.assumido_por = context.usuarioId
-          payload.assumido_em = conversa.assumido_em || now
+          payload.assumido_em = conversaAtual.assumido_em || now
           payload.nao_lidas = 0
         }
 

@@ -50,6 +50,26 @@ Gatilho automático: a mudança de status do lead na API `PATCH` chama o *Orques
   - para convidar alguém novo no tenant, usar email inédito
   - se o email já existir em outra conta do PrevLegal, tratar migração depois do go-live, não durante o onboarding do cliente
 
+## Atualização 2026-04-13 - Inbox passou a ser pessoal por padrão, inclusive para admins
+
+- no smoke test multiusuário, um novo admin convidado conseguiu ver conversas da carteira principal do escritório logo no primeiro acesso
+- decisão de produto para o go-live:
+  - a inbox humana deve ser pessoal por padrão para todo mundo
+  - inclusive para `admin` do escritório
+  - visão total da equipe fica para depois, como modo explícito de supervisão
+- correção aplicada:
+  - criação de `src/lib/inbox-visibility.ts`
+  - `GET /api/conversas`
+  - `GET|PATCH /api/conversas/[id]`
+  - `POST /api/conversas/[id]/responder`
+  - regra única:
+    - vê a conversa quem é dono do lead
+    - ou quem assumiu a conversa humana
+- impacto operacional:
+  - reduz exposição de carteira
+  - preserva noção de dono do atendimento
+  - prepara melhor futura transferência de atendimento entre usuários
+
 ## Atualização 2026-04-10 - Z-API inbound e outbound validados no tenant operacional
 
 - o canal Z-API do tenant foi validado em produção com:

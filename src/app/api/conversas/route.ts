@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getTenantContext } from '@/lib/tenant-context'
+import { canViewConversationForInbox } from '@/lib/inbox-visibility'
 
 const STATUS_VALIDOS = new Set(['agente', 'humano', 'aguardando_cliente', 'resolvido', 'encerrado'])
 
@@ -9,22 +10,19 @@ export async function GET() {
   const context = await getTenantContext(supabase)
   if (!context) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  let query = supabase
+  const { data, error } = await supabase
     .from('conversas')
     .select('*, leads!inner(nome, nb, status, responsavel_id)')
+    .eq('tenant_id', context.tenantId)
     .order('ultima_mensagem_at', { ascending: false })
-
-  if (!context.isAdmin) {
-    query = query.eq('leads.responsavel_id', context.usuarioId)
-  }
-
-  const { data, error } = await query
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json(
-    (data || []).map((conversa) => ({
-      ...conversa,
-      status: STATUS_VALIDOS.has(conversa.status) ? conversa.status : 'agente',
-    })),
+    (data || [])
+      .filter((conversa) => canViewConversationForInbox(context, conversa))
+      .map((conversa) => ({
+        ...conversa,
+        status: STATUS_VALIDOS.has(conversa.status) ? conversa.status : 'agente',
+      })),
   )
 }

@@ -191,6 +191,8 @@ Estratégia: entrar com R$ 1.997 para gerar cases, subir gradualmente.
   - acentos e sem acentos
   - telefone com ou sem máscara
   - pequenas variações naturais de entrada
+- a inbox humana deve nascer `pessoal por padrão`, mesmo para perfis administrativos do escritório
+- visão ampla da equipe é capacidade de supervisão e deve aparecer como modo explícito, não como padrão invisível
 - quando houver conflito entre rigidez técnica e fluidez de uso, a preferência padrão do produto é resolver a rigidez no backend
 - onboarding, atendimento, diagnóstico e resolução de problemas devem seguir a mesma lógica:
   - menos atrito

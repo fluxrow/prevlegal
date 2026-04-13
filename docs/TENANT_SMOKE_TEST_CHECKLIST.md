@@ -51,6 +51,9 @@ Fechar um smoke test enxuto, mas suficiente, para evitar go-live “meio verde�
 - convidar um usuário novo com email inédito e aceitar convite
 - validar permissões customizadas em usuário não-admin
 - validar inbox humana completa com fluxo inbound -> abrir conversa -> responder
+- validar isolamento da inbox:
+  - novo usuário não deve ver conversas alheias só por ser admin
+  - deve ver apenas leads próprios ou conversas assumidas
 - validar portal no tenant real com:
   - acesso
   - timeline
@@ -88,6 +91,10 @@ Fechar um smoke test enxuto, mas suficiente, para evitar go-live “meio verde�
   - resolvidas
 - conversa abre
 - resposta humana funciona
+- novo admin convidado não vê automaticamente a carteira inteira do escritório
+- usuário vê apenas:
+  - leads sob sua responsabilidade
+  - conversas assumidas por ele
 
 ### 4. Follow-up e automações
 

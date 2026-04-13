@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js'
 import { createClient as createServerClient } from '@/lib/supabase/server'
 import { contextHasPermission, getTenantContext } from '@/lib/tenant-context'
 import { sendWhatsAppMessage } from '@/lib/whatsapp-provider'
+import { canViewConversationForInbox } from '@/lib/inbox-visibility'
 
 function createAdminSupabase() {
   return createClient(
@@ -30,24 +31,22 @@ export async function POST(
     return NextResponse.json({ error: 'mensagem obrigatória' }, { status: 400 })
   }
 
-  let conversaQuery = supabase
+  const { data: conversa } = await supabase
     .from('conversas')
-    .select('telefone, lead_id, tenant_id, leads!inner(responsavel_id)')
+    .select('telefone, lead_id, tenant_id, assumido_por, leads!inner(responsavel_id)')
     .eq('id', id)
     .eq('tenant_id', context.tenantId)
-  if (!context.isAdmin) {
-    conversaQuery = conversaQuery.eq('leads.responsavel_id', context.usuarioId)
-  }
+    .maybeSingle()
 
-  const { data: conversa } = await conversaQuery.single()
-
-  if (!conversa) {
+  if (!canViewConversationForInbox(context, conversa)) {
     return NextResponse.json({ error: 'Conversa não encontrada' }, { status: 404 })
   }
 
+  const conversaSelecionada = conversa!
+
   const result = await sendWhatsAppMessage({
     tenantId: context.tenantId,
-    to: conversa.telefone,
+    to: conversaSelecionada.telefone,
     body: mensagem,
   })
   if (!result.success) {
@@ -59,7 +58,7 @@ export async function POST(
     tenant_id: context.tenantId,
     conversa_id: id,
     telefone_remetente: result.from,
-    telefone_destinatario: conversa.telefone,
+    telefone_destinatario: conversaSelecionada.telefone,
     mensagem,
     respondido_por_agente: false,
     respondido_manualmente: true,
