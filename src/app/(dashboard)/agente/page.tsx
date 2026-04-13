@@ -101,7 +101,8 @@ export default function AgentePage() {
         >
           Esta agora é a superfície canônica de multiagentes do escritório.
           Aqui você cria personas distintas para triagem, reativação,
-          confirmação, documentos e fechamento.
+          confirmação, documentos e fechamento, e também pode começar por um
+          modelo pronto mais alinhado ao tipo de operação do escritório.
         </p>
       </div>
 
@@ -115,7 +116,7 @@ export default function AgentePage() {
         <InfoCard
           icon={<Sparkles size={16} />}
           title="Templates operacionais"
-          text="Use os templates PrevLegal para subir a base inicial do escritório com poucos cliques e depois refine cada agente conforme a operação."
+          text="Use os modelos PrevLegal para subir a base inicial do escritório com poucos cliques. Agora existem dois kits canônicos: um para benefícios previdenciários e outro para planejamento previdenciário."
         />
         <InfoCard
           icon={<Route size={16} />}

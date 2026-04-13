@@ -12,6 +12,10 @@ import {
   BarChart2,
   Sparkles,
 } from "lucide-react";
+import {
+  AGENT_SEED_PROFILE_SUMMARIES,
+  DEFAULT_AGENT_SEED_PROFILE_ID,
+} from "@/lib/agent-seed-profiles";
 
 interface Agente {
   id: string;
@@ -573,6 +577,9 @@ export default function AgentesConfig() {
     tone: "success" | "warning" | "error";
     text: string;
   } | null>(null);
+  const [selectedSeedProfileId, setSelectedSeedProfileId] = useState(
+    DEFAULT_AGENT_SEED_PROFILE_ID,
+  );
 
   const fetchAgentes = useCallback(async () => {
     setLoading(true);
@@ -642,7 +649,14 @@ export default function AgentesConfig() {
     setSeedFeedback(null);
     setErro(null);
     try {
-      const res = await fetch("/api/agentes/seed", { method: "POST" });
+      const selectedProfile = AGENT_SEED_PROFILE_SUMMARIES.find(
+        (profile) => profile.id === selectedSeedProfileId,
+      );
+      const res = await fetch("/api/agentes/seed", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ profile_id: selectedSeedProfileId }),
+      });
       const data = await res.json().catch(() => null);
 
       if (!res.ok) {
@@ -674,9 +688,9 @@ export default function AgentesConfig() {
           (data?.inserted_count ?? 0) > 0
             ? "success"
             : (data?.skipped_count ?? 0) > 0
-              ? "warning"
-              : "success",
-        text: `${data?.message || "Templates processados."}${details ? ` ${details}` : ""}${skippedDetails}`,
+                  ? "warning"
+                  : "success",
+        text: `${data?.message || `Templates processados para ${selectedProfile?.label || "o modelo selecionado"}.`}${details ? ` ${details}` : ""}${skippedDetails}`,
       });
     } finally {
       setIsSeeding(false);
@@ -730,7 +744,8 @@ export default function AgentesConfig() {
               fontWeight: "600",
             }}
           >
-            <Sparkles size={14} /> {isSeeding ? "Aplicando templates..." : "Templates PrevLegal"}
+            <Sparkles size={14} />{" "}
+            {isSeeding ? "Aplicando modelo..." : "Aplicar modelo selecionado"}
           </button>
           {!criando && (
             <button
@@ -815,14 +830,113 @@ export default function AgentesConfig() {
         }}
       >
         <div style={{ fontSize: "13px", fontWeight: "700", color: "var(--text-primary)" }}>
-          Templates recomendados do escritório
+          Modelos prontos PrevLegal
         </div>
         <div style={{ fontSize: "12px", color: "var(--text-muted)", lineHeight: 1.55 }}>
-          O seed cria a base operacional mais útil para começar rápido:
-          triagem, confirmação de agenda, reativação, documentos e um agente de{" "}
+          O cliente pode começar com um kit já alinhado ao tipo de operação do escritório.
+          Cada modelo sobe a base com triagem, confirmação de agenda, reativação,
+          documentos e um agente de{" "}
           <strong style={{ color: "var(--text-primary)" }}>fechamento</strong> no tipo{" "}
           <strong style={{ color: "var(--text-primary)" }}>follow-up comercial</strong>.
         </div>
+      </div>
+
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+          gap: "14px",
+        }}
+      >
+        {AGENT_SEED_PROFILE_SUMMARIES.map((profile) => {
+          const selected = profile.id === selectedSeedProfileId;
+          return (
+            <button
+              key={profile.id}
+              type="button"
+              onClick={() => setSelectedSeedProfileId(profile.id)}
+              style={{
+                textAlign: "left",
+                padding: "18px",
+                borderRadius: "14px",
+                border: selected
+                  ? "1px solid rgba(59,130,246,0.45)"
+                  : "1px solid var(--border)",
+                background: selected ? "var(--accent-glow)" : "var(--bg-surface)",
+                display: "grid",
+                gap: "10px",
+                cursor: "pointer",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px" }}>
+                <div>
+                  <div style={{ fontSize: "15px", fontWeight: "700", color: "var(--text-primary)" }}>
+                    {profile.label}
+                  </div>
+                  <div style={{ marginTop: "4px", fontSize: "12px", color: selected ? "var(--accent)" : "var(--text-muted)" }}>
+                    {profile.subtitle}
+                  </div>
+                </div>
+                {selected && (
+                  <span
+                    style={{
+                      fontSize: "11px",
+                      fontWeight: "700",
+                      color: "var(--accent)",
+                      border: "1px solid rgba(59,130,246,0.28)",
+                      background: "rgba(59,130,246,0.08)",
+                      borderRadius: "999px",
+                      padding: "4px 8px",
+                    }}
+                  >
+                    Selecionado
+                  </span>
+                )}
+              </div>
+
+              <div style={{ fontSize: "12px", color: "var(--text-muted)", lineHeight: 1.6 }}>
+                {profile.summary}
+              </div>
+
+              <div
+                style={{
+                  padding: "10px 12px",
+                  borderRadius: "10px",
+                  background: "var(--bg-hover)",
+                  border: "1px solid var(--border)",
+                  fontSize: "12px",
+                  color: "var(--text-primary)",
+                  lineHeight: 1.6,
+                }}
+              >
+                <strong style={{ color: "var(--text-primary)" }}>Quando usar:</strong>{" "}
+                {profile.audience}
+              </div>
+
+              <div style={{ display: "grid", gap: "6px" }}>
+                {profile.bullets.map((bullet) => (
+                  <div
+                    key={bullet}
+                    style={{
+                      fontSize: "12px",
+                      color: "var(--text-muted)",
+                      lineHeight: 1.5,
+                      display: "flex",
+                      gap: "8px",
+                    }}
+                  >
+                    <span style={{ color: selected ? "var(--accent)" : "var(--text-muted)" }}>•</span>
+                    <span>{bullet}</span>
+                  </div>
+                ))}
+              </div>
+
+              <div style={{ fontSize: "12px", color: selected ? "var(--accent)" : "var(--text-muted)", fontWeight: "600" }}>
+                {profile.highlight}
+              </div>
+            </button>
+          );
+        })}
       </div>
 
       {/* Form de criação */}

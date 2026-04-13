@@ -22,6 +22,7 @@ Protocolo complementar entre IAs:
 - follow-up engine com worker e execução manual
 - gatilhos automáticos por status
 - multiagentes por tenant com seed operacional
+- seed de agentes com dois modelos operacionais explícitos (`Jessica` e `Ana`)
 - templates de automação editáveis
 - portal mobile em estado maduro
 - agenda operacional validada em runtime após `043`, `044` e `045`
@@ -132,7 +133,7 @@ Status em 10/04/2026:
 - Z-API inbound: `ok`
 - busca normalizada: `ok`
 - inbox pessoal por ownership/assignee: `ok`
-- cadastro manual sem CPF: `codigo pronto / depende patch 046 no banco`
+- cadastro manual sem CPF: `ok`
 - pendências residuais do smoke test:
   - passe final de convite/aceite com email inédito e permissões customizadas ponta a ponta
   - passe final de portal com tenant real

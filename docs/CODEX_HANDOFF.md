@@ -3273,3 +3273,25 @@ Pontos que precisam ser preservados durante a implementacao:
     - `src/app/(dashboard)/financeiro/page.tsx`
   - pendência operacional:
     - aplicar o patch `2026-04-13_make_leads_cpf_nullable.sql` no banco antes de repetir o teste no runtime
+- `2026-04-13` - templates de agentes passaram a oferecer dois modelos canônicos
+  - gatilho: o seed de agentes estava enviesado para o fluxo da Ana, enquanto o primeiro uso real do cliente é o contexto previdenciário da Jessica
+  - decisão de produto:
+    - `Templates PrevLegal` não pode embutir um único caso-piloto como padrão implícito
+    - o escritório precisa escolher explicitamente o modelo operacional inicial
+  - implementação:
+    - `src/lib/agent-seed-profiles.ts`
+    - `src/app/api/agentes/seed/route.ts`
+    - `src/components/agentes-config.tsx`
+    - `src/app/(dashboard)/agente/page.tsx`
+  - modelos novos:
+    - `Modelo Jessica`
+      - benefícios previdenciários
+      - acolhimento jurídico inicial
+      - conversão para consulta / análise
+    - `Modelo Ana`
+      - planejamento previdenciário consultivo
+      - diagnóstico comercial
+      - fechamento de planos
+  - observação operacional:
+    - o seed segue idempotente por `tipo`
+    - a troca de modelo é pensada para onboarding inicial; depois disso, o caminho correto é editar os agentes já existentes

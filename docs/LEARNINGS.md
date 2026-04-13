@@ -1462,3 +1462,11 @@ Os selects ainda pediam apenas `usuarios(...)`, então o PostgREST não sabia qu
 **Causa:** O telefone estava salvo como `(41) 99236-1868`, enquanto o webhook chegava normalizado (`+5541992361868`); a busca exata inicial não considerava essa máscara como correspondência já resolvida
 **Correcao aplicada:** Em `src/app/api/webhooks/zapi/route.ts`, manter a busca exata por variantes normalizadas e, se ela falhar, buscar candidatos por sufixo com `like`, normalizar os telefones encontrados em memória e aceitar o match quando houver uma correspondência única
 **Regra pratica:** Em integrações WhatsApp, telefone salvo manualmente nunca deve depender de igualdade literal de string; o matcher precisa normalizar e comparar formatos humanos antes de cair em placeholder
+
+### 146. Seed de agentes precisa expor o modelo operacional do escritório, não esconder o piloto
+**Problema:** O botão `Templates PrevLegal` de agentes estava funcional, mas refletia só o contexto comercial da Ana, o que empurrava todos os escritórios para uma abordagem de planejamento previdenciário consultivo
+**Causa:** O catálogo de seed cresceu a partir de um único caso-piloto sem separar explicitamente os modelos de operação do produto
+**Correcao aplicada:** O seed passou a oferecer dois kits canônicos com escolha explícita na UI de `/agente`:
+- `Modelo Jessica`: benefícios previdenciários, acolhimento jurídico inicial e conversão para consulta/análise
+- `Modelo Ana`: planejamento previdenciário consultivo, diagnóstico comercial e fechamento de planos
+**Regra pratica:** Template operacional nunca pode carregar viés oculto de um único cliente; quando houver mais de um playbook válido, a escolha do modelo precisa ser explícita para o escritório

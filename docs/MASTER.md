@@ -273,6 +273,10 @@ Estratégia: entrar com R$ 1.997 para gerar cases, subir gradualmente.
   - reativacao
   - documental
   - follow-up comercial / fechamento
+- o produto agora oferece dois kits canônicos de agentes para inicio rapido:
+  - `Modelo Jessica`: beneficios previdenciarios, acolhimento juridico inicial e conversao para consulta / analise
+  - `Modelo Ana`: planejamento previdenciario consultivo, diagnostico comercial e fechamento de planos
+- o seed de agentes nao deve mais refletir um unico caso-piloto; a escolha do modelo operacional do escritorio precisa ser explicita na UI
 - o runtime continua com fallback seguro para a configuracao global antiga quando o tenant ainda nao tiver agentes configurados
   - o portal agora tambem permite confirmar presenca na proxima consulta, gerando timeline e notificacao interna para a equipe
   - a home do portal agora combina:

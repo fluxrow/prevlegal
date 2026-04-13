@@ -762,3 +762,27 @@ Gatilho automático: a mudança de status do lead na API `PATCH` chama o *Orques
   - inbound e outbound passam a existir na mesma trilha do produto atual
 - validação:
   - `npm run build` passou
+
+## Atualização 2026-04-13 - Seed de agentes passou a oferecer dois modelos operacionais explícitos
+
+- o seed de agentes deixou de estar implicitamente ancorado apenas no contexto da Ana
+- arquivos principais:
+  - `src/lib/agent-seed-profiles.ts`
+  - `src/app/api/agentes/seed/route.ts`
+  - `src/components/agentes-config.tsx`
+  - `src/app/(dashboard)/agente/page.tsx`
+- comportamento novo:
+  - a UI de `/agente` agora mostra dois kits prontos de onboarding:
+    - `Modelo Jessica`
+      - benefícios previdenciários
+      - acolhimento jurídico inicial
+      - conversão para consulta / análise
+    - `Modelo Ana`
+      - planejamento previdenciário consultivo
+      - diagnóstico comercial
+      - fechamento de planos
+  - o usuário escolhe explicitamente qual modelo aplicar antes de rodar o seed
+  - os prompts-base, fluxos, objeções, gatilhos de escalada e fallback ficaram distintos por contexto
+- leitura de produto:
+  - template de agente não pode mais nascer enviesado por um único piloto
+  - o produto agora oferece um atalho coerente tanto para o caso jurídico/previdenciário tradicional quanto para o comercial consultivo de planejamento

@@ -1922,3 +1922,28 @@ Status atual em 18/03/2026:
 - no smoke test final, tratar convite com email já existente como limitação conhecida do go-live atual:
   - convite segue por link manual
   - cada email fica vinculado a um único escritório até a futura frente de multi-membership
+
+## Atualização 2026-04-13 — Templates de agentes passaram a oferecer dois modelos canônicos
+
+- o seed de agentes deixou de refletir implicitamente apenas a operação da Ana
+- agora a UI de `/agente` permite escolher entre dois modelos prontos:
+  - `Modelo Jessica`
+    - benefícios previdenciários
+    - acolhimento jurídico inicial
+    - conversão para consulta / análise
+  - `Modelo Ana`
+    - planejamento previdenciário consultivo
+    - diagnóstico comercial
+    - fechamento de planos
+- arquivos principais:
+  - `src/lib/agent-seed-profiles.ts`
+  - `src/app/api/agentes/seed/route.ts`
+  - `src/components/agentes-config.tsx`
+  - `src/app/(dashboard)/agente/page.tsx`
+- comportamento novo:
+  - a escolha do modelo operacional do escritório passa a ser explícita
+  - os prompts-base, fluxos, objeções e gatilhos de escalada ficaram distintos para cada contexto
+  - o seed continua idempotente por `tipo`, mas agora respeita o kit selecionado
+- decisão de produto:
+  - templates não podem carregar viés oculto de um único piloto
+  - onboarding assistido precisa oferecer atalhos reais para tipos diferentes de escritório
