@@ -135,7 +135,7 @@ function AgenteForm({
             style={inputStyle}
             value={form.nome_interno}
             onChange={(e) => set("nome_interno", e.target.value)}
-            placeholder="Ex: Ana — Triagem"
+            placeholder="Ex: Lia — Triagem Previdenciária"
           />
         </div>
         <div>
@@ -144,7 +144,7 @@ function AgenteForm({
             style={inputStyle}
             value={form.nome_publico}
             onChange={(e) => set("nome_publico", e.target.value)}
-            placeholder="Ex: Ana"
+            placeholder="Ex: Lia"
           />
         </div>
         <div>

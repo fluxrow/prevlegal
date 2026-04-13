@@ -144,6 +144,12 @@ export default function CaixaDeEntradaPage() {
   const [loading, setLoading] = useState(true)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
+  function notifyPendenciasChanged() {
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('prevlegal:pendencias-changed'))
+    }
+  }
+
   useEffect(() => {
     fetchConversas()
     fetchThreadsPortal()
@@ -245,6 +251,7 @@ export default function CaixaDeEntradaPage() {
           setThreadsPortal(ts => ts.map(t =>
             t.lead_id === threadSelecionada.lead_id ? { ...t, nao_lidas: 0 } : t
           ))
+          notifyPendenciasChanged()
         })
 
     fetchMsgs()
@@ -298,6 +305,7 @@ export default function CaixaDeEntradaPage() {
     if (res.ok) {
       const atualizada = await res.json()
       aplicarConversaAtualizada(atualizada)
+      notifyPendenciasChanged()
       return atualizada as Conversa
     }
 
@@ -377,6 +385,7 @@ export default function CaixaDeEntradaPage() {
     if (res.ok) {
       setTextoResposta('')
       await fetchMensagens(conversaSelecionada.id)
+      notifyPendenciasChanged()
     } else {
       const data = await res.json().catch(() => null)
       setErroEnvio(data?.error || 'Nao foi possivel enviar a mensagem')
@@ -399,6 +408,7 @@ export default function CaixaDeEntradaPage() {
       setThreadsPortal(ts => ts.map(t =>
         t.lead_id === threadSelecionada.lead_id ? { ...t, nao_lidas: 0 } : t
       ))
+      notifyPendenciasChanged()
     }
     setEnviandoPortal(false)
   }

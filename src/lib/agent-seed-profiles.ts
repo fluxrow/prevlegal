@@ -33,9 +33,9 @@ export const DEFAULT_AGENT_SEED_PROFILE_ID = "jessica_previdenciario";
 export const AGENT_SEED_PROFILES: AgentSeedProfile[] = [
   {
     id: "jessica_previdenciario",
-    label: "Modelo Jessica",
-    shortLabel: "Jessica",
-    subtitle: "Benefícios previdenciários e atendimento jurídico inicial",
+    label: "Captação de Benefícios Previdenciários",
+    shortLabel: "Benefícios Previdenciários",
+    subtitle: "Atendimento jurídico inicial, triagem e conversão para consulta",
     audience:
       "Escritórios que captam pessoas com dúvidas sobre benefício, revisão, concessão, pendência documental e consulta previdenciária.",
     summary:
@@ -52,8 +52,8 @@ export const AGENT_SEED_PROFILES: AgentSeedProfile[] = [
     templates: [
       {
         tipo: "triagem",
-        nome_interno: "Jessica — Triagem Previdenciária",
-        nome_publico: "Jessica",
+        nome_interno: "Lia — Triagem Previdenciária",
+        nome_publico: "Lia",
         descricao:
           "Primeiro acolhimento para entender o benefício, a dor do lead e o próximo passo jurídico mais adequado.",
         objetivo:
@@ -189,9 +189,9 @@ export const AGENT_SEED_PROFILES: AgentSeedProfile[] = [
   },
   {
     id: "ana_planejamento",
-    label: "Modelo Ana",
-    shortLabel: "Ana",
-    subtitle: "Planejamento previdenciário consultivo e venda de planos",
+    label: "Captação de Planejamento Previdenciário",
+    shortLabel: "Planejamento Previdenciário",
+    subtitle: "Diagnóstico consultivo, proposta e fechamento de planos",
     audience:
       "Escritórios que captam profissionais e famílias para vender planos de planejamento previdenciário em formato consultivo.",
     summary:
@@ -208,8 +208,8 @@ export const AGENT_SEED_PROFILES: AgentSeedProfile[] = [
     templates: [
       {
         tipo: "triagem",
-        nome_interno: "Ana — Diagnóstico de Planejamento",
-        nome_publico: "Ana",
+        nome_interno: "Bianca — Diagnóstico de Planejamento",
+        nome_publico: "Bianca",
         descricao:
           "Primeiro contato consultivo para qualificar leads com potencial para planejamento previdenciário.",
         objetivo:

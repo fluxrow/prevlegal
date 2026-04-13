@@ -34,12 +34,33 @@ export default function Sidebar() {
     useEffect(() => {
         async function fetchPendencias() {
             const res = await fetch('/api/pendencias')
-            if (res.ok) setPendencias(await res.json())
+            if (!res.ok) return
+
+            const data = await res.json()
+            setPendencias({
+                total: data.inboxTotal ?? data.total ?? 0,
+                agendamentos: data.agendamentos ?? 0,
+            })
         }
 
-        fetchPendencias()
+        function handleVisibilityRefresh() {
+            if (document.visibilityState === 'visible') {
+                void fetchPendencias()
+            }
+        }
+
+        void fetchPendencias()
         const iv = setInterval(fetchPendencias, 20000)
-        return () => clearInterval(iv)
+        window.addEventListener('focus', fetchPendencias)
+        window.addEventListener('prevlegal:pendencias-changed', fetchPendencias as EventListener)
+        document.addEventListener('visibilitychange', handleVisibilityRefresh)
+
+        return () => {
+            clearInterval(iv)
+            window.removeEventListener('focus', fetchPendencias)
+            window.removeEventListener('prevlegal:pendencias-changed', fetchPendencias as EventListener)
+            document.removeEventListener('visibilitychange', handleVisibilityRefresh)
+        }
     }, [])
 
     useEffect(() => {

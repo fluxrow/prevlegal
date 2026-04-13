@@ -82,6 +82,30 @@ Gatilho automático: a mudança de status do lead na API `PATCH` chama o *Orques
   - tipagem de lead atualizada para aceitar `cpf` nulo
   - label do modal ajustada para `CPF (opcional)`
 
+## Atualização 2026-04-13 - Templates de agentes ficaram orientados por tipo de operação, não por nome de cliente
+
+- a configuração padrão de agentes deixou de expor rótulos como `Modelo Jessica` e `Modelo Ana`
+- decisão de produto:
+  - o cliente deve escolher o tipo de operação que quer rodar
+  - não faz sentido expor o nome de outros escritórios/clientes na UX
+- estado atual:
+  - `Captação de Benefícios Previdenciários`
+  - `Captação de Planejamento Previdenciário`
+- confirmação técnica:
+  - a escolha do perfil continua aplicando treinamento realmente específico por abordagem em `POST /api/agentes/seed`
+  - cada agente nasce com `prompt_base`, `fluxo_qualificacao`, `gatilhos_escalada`, `frases_proibidas`, `objeccoes` e `fallback` próprios do perfil selecionado
+- também foi neutralizado o fallback antigo do responder que ainda citava `Ana`
+
+## Atualização 2026-04-13 - Portal e badge da inbox passaram a refletir tratamento real da carteira pessoal
+
+- a visibilidade de portal foi alinhada à mesma regra da inbox humana:
+  - só enxerga a thread quem é dono do lead
+  - ou quem deveria ter acesso pela carteira pessoal
+- ao responder no portal, as mensagens do cliente daquele lead passam a ser marcadas como lidas no banco
+- consequência prática:
+  - o badge da `Caixa de Entrada` deixa de ficar preso só porque o escritório respondeu mas o sistema ainda mantinha `portal_mensagens.lida = false`
+  - o badge lateral agora reflete `inboxTotal` real, sem somar agendamentos
+
 ## Atualização 2026-04-10 - Z-API inbound e outbound validados no tenant operacional
 
 - o canal Z-API do tenant foi validado em produção com:

@@ -41,6 +41,18 @@ Mestra: [[MASTER_PREV_LEGAL]]
 **Correção:** Tornar `leads.cpf` anulável via migration `046_leads_cpf_optional.sql`, alinhar tipagem e explicitar no modal que CPF é opcional
 **Regra pratica:** No PrevLegal, dados sensíveis como CPF não devem ser exigidos antes da hora. No primeiro contato, basta o mínimo operacional para iniciar a relação; documentos mais sensíveis entram depois, quando houver contexto e confiança
 
+### 154. Template de agente deve ser descrito pelo tipo de operação, não pelo nome do cliente que inspirou o playbook
+**Problema:** A UX de templates de agentes expunha rótulos como `Modelo Jessica` e `Modelo Ana`, o que não faz sentido para outros escritórios e ainda escondia a natureza real da operação
+**Causa:** O seed nasceu de casos reais de cliente e o nome da fonte acabou virando rótulo de produto
+**Correção:** Trocar a apresentação para nomes operacionais explícitos, como `Captação de Benefícios Previdenciários` e `Captação de Planejamento Previdenciário`, mantendo o treinamento específico por perfil no backend
+**Regra pratica:** Em produto multi-tenant, o cliente precisa escolher um modelo de operação, não herdar na UX o nome de quem serviu de referência interna
+
+### 155. Responder no portal deve encerrar a pendência visível daquela thread
+**Problema:** O badge da inbox podia continuar mostrando pendência mesmo depois que o escritório já respondeu no portal
+**Causa:** A UI zerava o contador localmente, mas o banco ainda mantinha mensagens do cliente como `lida = false`, então `/api/pendencias` recalculava o badge com o valor antigo
+**Correção:** Ao responder em `POST /api/portal/responder`, marcar como lidas as mensagens pendentes do cliente para aquele `lead_id` antes de inserir a resposta do escritório
+**Regra pratica:** Quando o escritório responde uma thread do portal, o sistema deve considerar que aquela pendência foi tratada, não exigir um segundo gesto do operador só para limpar badge
+
 ### 147. Webhook de provider nao pode assumir JSON puro
 **Problema:** O inbound da Z-API seguia falhando mesmo com rota publicada, parser ampliado e webhook salvo corretamente
 **Causa:** A variante `web / multi-device` pode enviar o corpo do webhook como `application/x-www-form-urlencoded`, texto cru ou JSON serializado dentro de campos string; assumir `request.json()` fazia o body virar `{}` e o payload era descartado

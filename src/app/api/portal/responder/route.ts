@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
-import { canAccessLeadId, getTenantContext } from '@/lib/tenant-context'
+import { getTenantContext } from '@/lib/tenant-context'
+import { canAccessPersonalInboxLeadId } from '@/lib/inbox-visibility'
 
 export async function POST(request: Request) {
   const supabase = await createClient()
@@ -8,8 +9,19 @@ export async function POST(request: Request) {
   if (!context) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { lead_id, mensagem } = await request.json()
-  const allowed = await canAccessLeadId(supabase, context, lead_id)
+  const allowed = await canAccessPersonalInboxLeadId(supabase, context, lead_id)
   if (!allowed) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+
+  const { error: markReadError } = await supabase
+    .from('portal_mensagens')
+    .update({ lida: true })
+    .eq('lead_id', lead_id)
+    .eq('remetente', 'cliente')
+    .eq('lida', false)
+
+  if (markReadError) {
+    return NextResponse.json({ error: markReadError.message }, { status: 500 })
+  }
 
   const { data, error } = await supabase
     .from('portal_mensagens')

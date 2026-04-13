@@ -1,3 +1,4 @@
+import { createClient } from '@/lib/supabase/server'
 import type { TenantContext } from '@/lib/tenant-context'
 
 type ConversaComResponsavel = {
@@ -20,4 +21,45 @@ export function canViewConversationForInbox(
   const assumidoPor = conversa.assumido_por || null
 
   return responsavelId === context.usuarioId || assumidoPor === context.usuarioId
+}
+
+export async function getPersonalInboxLeadIds(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  context: TenantContext,
+) {
+  if (!context.tenantId) return []
+
+  const { data, error } = await supabase
+    .from('leads')
+    .select('id')
+    .eq('tenant_id', context.tenantId)
+    .eq('responsavel_id', context.usuarioId)
+
+  if (error) {
+    throw new Error(error.message)
+  }
+
+  return (data || []).map((lead) => lead.id)
+}
+
+export async function canAccessPersonalInboxLeadId(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  context: TenantContext,
+  leadId: string,
+) {
+  if (!context.tenantId) return false
+
+  const { data, error } = await supabase
+    .from('leads')
+    .select('id')
+    .eq('id', leadId)
+    .eq('tenant_id', context.tenantId)
+    .eq('responsavel_id', context.usuarioId)
+    .maybeSingle()
+
+  if (error) {
+    throw new Error(error.message)
+  }
+
+  return Boolean(data)
 }

@@ -1,18 +1,20 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
-import { getAccessibleLeadIds, getTenantContext } from '@/lib/tenant-context'
+import { getTenantContext } from '@/lib/tenant-context'
+import { getPersonalInboxLeadIds } from '@/lib/inbox-visibility'
 
 export async function GET() {
   const supabase = await createClient()
   const context = await getTenantContext(supabase)
   if (!context) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const accessibleLeadIds = await getAccessibleLeadIds(supabase, context)
+  const accessibleLeadIds = await getPersonalInboxLeadIds(supabase, context)
   if (accessibleLeadIds.length === 0) {
     return NextResponse.json({
       portal: 0,
       humanos: 0,
       agendamentos: 0,
+      inboxTotal: 0,
       total: 0,
     })
   }
@@ -45,11 +47,13 @@ export async function GET() {
   const portal = portalRes.count || 0
   const humanos = humanosRes.count || 0
   const agendamentos = agendamentosRes.count || 0
+  const inboxTotal = portal + humanos
 
   return NextResponse.json({
     portal,
     humanos,
     agendamentos,
-    total: portal + humanos + agendamentos,
+    inboxTotal,
+    total: inboxTotal,
   })
 }

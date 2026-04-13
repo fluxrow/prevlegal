@@ -43,6 +43,35 @@ Mestra: [[MASTER_PREV_LEGAL]]
 - decisão de produto:
   - visão total da equipe continua desejável, mas entra depois como modo explícito de supervisão, não como padrão do operador
 
+## Atualizacao Templates de agentes / rotulagem operacional e treino específico — 13/04/2026
+
+- os templates padrão deixaram de usar nomes de clientes como fonte de identidade da operação
+- problema observado:
+  - `Modelo Jessica` e `Modelo Ana` eram bons atalhos internos, mas inadequados para produto multi-tenant
+  - escondiam o que realmente muda entre os dois kits
+- correção aplicada:
+  - `Captação de Benefícios Previdenciários`
+  - `Captação de Planejamento Previdenciário`
+  - seed continua aplicando treinamento específico por abordagem em cada agente do kit
+- impacto operacional:
+  - o escritório entende o tipo de operação que está escolhendo
+  - reduz confusão para quem não quer montar os agentes manualmente
+  - evita expor nomes de clientes dentro da UX do produto
+
+## Atualizacao Inbox / badge passou a refletir pendência real de inbox, não outros módulos — 13/04/2026
+
+- o badge lateral da `Caixa de Entrada` ficava persistente e não batia com o estado percebido da operação
+- causa:
+  - cálculo misturava pendências de agenda e mensagens
+  - no portal, responder não marcava automaticamente a thread como tratada no banco
+- correção aplicada:
+  - `/api/pendencias` passou a devolver `inboxTotal` separado
+  - sidebar usa `inboxTotal` para a `Caixa de Entrada`
+  - responder no portal marca as mensagens pendentes do cliente como lidas
+- impacto operacional:
+  - badge deixa de inflar ou persistir artificialmente
+  - a leitura visual da inbox fica coerente com a situação real da carteira
+
 ## Atualizacao Z-API / inbound e outbound validados em runtime — 10/04/2026
 
 - a integracao Z-API do tenant operacional foi validada ponta a ponta:

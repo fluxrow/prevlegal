@@ -194,6 +194,8 @@ Estratégia: entrar com R$ 1.997 para gerar cases, subir gradualmente.
 - no cadastro manual inicial, o sistema não deve exigir documentos sensíveis antes da hora
 - CPF pode entrar depois do primeiro contato, quando houver contexto e confiança para pedir esse dado
 - a inbox humana deve nascer `pessoal por padrão`, mesmo para perfis administrativos do escritório
+- o mesmo princípio de carteira pessoal vale para superfícies paralelas da inbox, como portal e badges de pendência
+- templates padrão devem ser nomeados pelo tipo de operação que representam, nunca pelo nome do cliente que inspirou o playbook
 - visão ampla da equipe é capacidade de supervisão e deve aparecer como modo explícito, não como padrão invisível
 - quando houver conflito entre rigidez técnica e fluidez de uso, a preferência padrão do produto é resolver a rigidez no backend
 - onboarding, atendimento, diagnóstico e resolução de problemas devem seguir a mesma lógica:

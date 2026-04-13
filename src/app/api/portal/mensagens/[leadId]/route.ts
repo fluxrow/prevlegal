@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
-import { canAccessLeadId, getTenantContext } from '@/lib/tenant-context'
+import { getTenantContext } from '@/lib/tenant-context'
+import { canAccessPersonalInboxLeadId } from '@/lib/inbox-visibility'
 
 export async function GET(
   request: Request,
@@ -11,7 +12,7 @@ export async function GET(
   if (!context) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { leadId } = await params
-  const allowed = await canAccessLeadId(supabase, context, leadId)
+  const allowed = await canAccessPersonalInboxLeadId(supabase, context, leadId)
   if (!allowed) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   const { data } = await supabase

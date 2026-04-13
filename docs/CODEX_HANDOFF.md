@@ -20,6 +20,41 @@ Objetivo:
 - facilitar o repasse posterior para o Claude
 - registrar decisoes, arquivos afetados, validacoes e proximos passos
 
+## Atualizacao 2026-04-13 - UX operacional de agentes e inbox endurecida para go-live
+
+- contexto:
+  - o smoke test mostrou tres ruídos de produto importantes:
+    - templates de agentes ainda carregavam nomes de clientes (`Jessica`, `Ana`) na UX
+    - portal ainda precisava seguir o mesmo principio de carteira pessoal da inbox
+    - o badge lateral da inbox permanecia ativo mesmo apos resposta no portal
+- arquivos alterados:
+  - `src/lib/agent-seed-profiles.ts`
+  - `src/components/agentes-config.tsx`
+  - `src/app/api/agente/responder/route.ts`
+  - `src/app/api/portal/responder/route.ts`
+  - `src/app/api/pendencias/route.ts`
+  - `src/app/api/portal/threads/route.ts`
+  - `src/app/api/portal/nao-lidas/route.ts`
+  - `src/app/api/portal/mensagens/[leadId]/route.ts`
+  - `src/components/sidebar.tsx`
+  - `src/app/(dashboard)/caixa-de-entrada/page.tsx`
+- mudancas principais:
+  - templates passaram a ser exibidos por tipo de operacao:
+    - `Captação de Benefícios Previdenciários`
+    - `Captação de Planejamento Previdenciário`
+  - o treino especifico por abordagem foi mantido no seed de agentes
+  - o fallback antigo do responder deixou de citar `Ana`
+  - portal passou a obedecer a mesma logica de carteira pessoal da inbox
+  - responder no portal agora marca como lidas as mensagens pendentes do cliente daquela thread
+  - o badge lateral da inbox passou a consumir `inboxTotal`, sem inflar com agendamentos
+- validacao:
+  - `npm run build` passou
+- proximo passo operacional:
+  - retestar:
+    - templates na tela `/agente`
+    - portal em dois perfis do mesmo escritorio
+    - badge da `Caixa de Entrada` apos resposta no portal
+
 ## Atualizacao 2026-04-09 - Z-API inbound endurecido para formatos de body nao-JSON
 
 - contexto:
