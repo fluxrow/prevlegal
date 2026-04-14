@@ -4,6 +4,19 @@ Contexto: [[SESSION_HISTORY_MASTER]]
 Mestra: [[MASTER_PREV_LEGAL]]
 > Última atualização: 10/04/2026
 
+## Atualizacao Campanhas / contador de listas e seleção futura por contatos — 14/04/2026
+
+- durante o smoke test da campanha, a lista `Cadastro manual` apareceu como `0 com WhatsApp` mesmo com leads manuais válidos no tenant
+- causa:
+  - a UI dependia de contadores legado da tabela `listas`, e não do estado vivo da tabela `leads`
+- correção aplicada:
+  - `/api/listas` passou a recalcular `total_leads`, `com_whatsapp`, `sem_whatsapp` e `nao_verificado` diretamente a partir de `leads`
+- impacto operacional:
+  - a campanha fica coerente com a elegibilidade real dos contatos do escritório
+- evolução registrada:
+  - campanhas devem permitir seleção explícita de contatos individuais, além do disparo por lista inteira
+  - esse fluxo será importante para campanhas personalizadas de recuperação, aquecimento e retomada de leads específicos
+
 ## Atualizacao Cadastro manual / CPF deixou de ser obrigatório no primeiro contato — 13/04/2026
 
 - durante o ajuste de go-live, o modal `Novo lead` mostrou um atrito importante:

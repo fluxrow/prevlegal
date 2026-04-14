@@ -20,6 +20,29 @@ Objetivo:
 - facilitar o repasse posterior para o Claude
 - registrar decisoes, arquivos afetados, validacoes e proximos passos
 
+## Atualizacao 2026-04-14 - Contador de listas em campanhas passou a refletir elegibilidade real
+
+- contexto:
+  - no smoke test da tela `Nova Campanha`, a lista `Cadastro manual` aparecia como `0 com WhatsApp` mesmo ja existindo leads manuais com WhatsApp aptos para disparo
+  - isso dava a sensacao de que a campanha nao enxergava os contatos certos
+- arquivo alterado:
+  - `src/app/api/listas/route.ts`
+- mudanca principal:
+  - `/api/listas` deixou de confiar apenas em colunas-resumo da tabela `listas`
+  - agora a rota recalcula por lista:
+    - `total_leads`
+    - `com_whatsapp`
+    - `sem_whatsapp`
+    - `nao_verificado`
+    diretamente a partir da tabela `leads`
+- validacao:
+  - `npm run build` passou
+- decisao de produto registrada:
+  - alem de disparo por lista completa, campanhas devem evoluir para selecao personalizada de contatos
+- proximo passo operacional:
+  - retestar a contagem de `Cadastro manual` na criacao de campanha
+  - depois abrir a evolucao de campanha personalizada por contatos selecionados
+
 ## Atualizacao 2026-04-14 - Inbox passou a tratar deep links como hidratação pontual
 
 - contexto:

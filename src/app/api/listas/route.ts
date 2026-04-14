@@ -31,22 +31,37 @@ export async function GET(request: Request) {
       (listas || [])
       .filter((lista) => includeSystem || !(lista.nome === LISTA_MANUAL_NOME && lista.fornecedor === LISTA_MANUAL_FORNECEDOR))
       .map(async (lista) => {
-        let countQuery = supabase
-          .from('leads')
-          .select('*', { count: 'exact', head: true })
-          .eq('lista_id', lista.id)
+        const buildLeadCountQuery = () => {
+          let query = supabase
+            .from('leads')
+            .select('id', { count: 'exact', head: true })
+            .eq('lista_id', lista.id)
 
-        if (context.tenantId) {
-          countQuery = countQuery.eq('tenant_id', context.tenantId)
+          if (context.tenantId) {
+            query = query.eq('tenant_id', context.tenantId)
+          }
+
+          return query
         }
 
-        const { count } = await countQuery
+        const [
+          { count: totalLeads },
+          { count: comWhatsapp },
+          { count: semWhatsapp },
+          { count: naoVerificado },
+        ] = await Promise.all([
+          buildLeadCountQuery(),
+          buildLeadCountQuery().eq('tem_whatsapp', true),
+          buildLeadCountQuery().eq('tem_whatsapp', false),
+          buildLeadCountQuery().is('tem_whatsapp', null),
+        ])
+
         return {
           ...lista,
-          total_leads: count || lista.total_leads || 0,
-          com_whatsapp: lista.total_com_whatsapp ?? lista.com_whatsapp ?? 0,
-          sem_whatsapp: lista.total_sem_whatsapp ?? lista.sem_whatsapp ?? 0,
-          nao_verificado: lista.total_nao_verificado ?? lista.nao_verificado ?? 0,
+          total_leads: totalLeads ?? lista.total_leads ?? 0,
+          com_whatsapp: comWhatsapp ?? lista.total_com_whatsapp ?? lista.com_whatsapp ?? 0,
+          sem_whatsapp: semWhatsapp ?? lista.total_sem_whatsapp ?? lista.sem_whatsapp ?? 0,
+          nao_verificado: naoVerificado ?? lista.total_nao_verificado ?? lista.nao_verificado ?? 0,
           is_sistema: lista.nome === LISTA_MANUAL_NOME && lista.fornecedor === LISTA_MANUAL_FORNECEDOR,
         }
       })

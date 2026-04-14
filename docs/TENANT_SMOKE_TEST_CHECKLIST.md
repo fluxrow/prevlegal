@@ -104,6 +104,8 @@ Fechar um smoke test enxuto, mas suficiente, para evitar go-live “meio verde�
 - usuário vê apenas:
   - leads sob sua responsabilidade
   - conversas assumidas por ele
+- transferência de conversa remove a thread do antigo responsável e a torna visível para o novo responsável
+- badge lateral e sino refletem o número real de pendências, sem continuar presos em conversas já tratadas
 
 ### 4. Follow-up e automações
 
@@ -139,6 +141,15 @@ Fechar um smoke test enxuto, mas suficiente, para evitar go-live “meio verde�
   - procuração
   - requerimento INSS
 - documento aparece no lead
+
+### 8. Campanhas
+
+- `Cadastro manual` reflete corretamente quantos leads com WhatsApp estão elegíveis
+- campanha consegue usar lead manual já cadastrado
+- campanha permite escolher agente real do escritório
+- template inicial vem sugerido pelo tipo do agente, mas continua editável
+- canal real do tenant aparece para seleção
+- evolução futura registrada: campanha personalizada por contatos selecionados, além do disparo por lista completa
 
 ## Critério de pronto
 

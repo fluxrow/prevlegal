@@ -77,6 +77,12 @@ Mestra: [[MASTER_PREV_LEGAL]]
 **Correção:** Tratar deep link como hidratação pontual, com controle de “já processado”, e limpar parâmetros concorrentes ao alternar entre inbox humana e portal
 **Regra pratica:** Link profundo deve servir para abrir o contexto certo uma vez. Depois disso, quem manda na navegação é o operador, não a query string antiga
 
+### 160. Contador de lista não pode mentir sobre elegibilidade de campanha
+**Problema:** Na criação de campanha, a lista técnica `Cadastro manual` aparecia com `0 com WhatsApp` mesmo já havendo leads manuais aptos para disparo
+**Causa:** `/api/listas` ainda entregava `com_whatsapp`, `sem_whatsapp` e `nao_verificado` com base em colunas-resumo de `listas`, que podem ficar defasadas em relação ao estado real dos leads
+**Correção:** Recalcular os contadores diretamente da tabela `leads` no momento da leitura da lista
+**Regra pratica:** Se uma ação operacional depende de elegibilidade real do lead, o contador mostrado na UI deve vir do dado vivo que alimenta aquela ação, não de um snapshot auxiliar suscetível a drift
+
 ### 147. Webhook de provider nao pode assumir JSON puro
 **Problema:** O inbound da Z-API seguia falhando mesmo com rota publicada, parser ampliado e webhook salvo corretamente
 **Causa:** A variante `web / multi-device` pode enviar o corpo do webhook como `application/x-www-form-urlencoded`, texto cru ou JSON serializado dentro de campos string; assumir `request.json()` fazia o body virar `{}` e o payload era descartado

@@ -146,10 +146,12 @@ Status em 10/04/2026:
   - passe final de convite/aceite com email inédito e permissões customizadas ponta a ponta
   - passe final de portal com tenant real
   - passe final de usuário não-admin com carteira isolada e permissão customizada
-  - passe final de transferência de conversa entre usuários
-  - passe final de abertura da thread via lead detail / notificações
-  - passe final de campanhas com lead manual, escolha de agente e canal Z-API
-  - unificar a aba `Configuração de Disparo` de campanhas com os canais reais do tenant, removendo o viés legado de `Twilio Sandbox`
+- passe final de transferência de conversa entre usuários
+- passe final de abertura da thread via lead detail / notificações
+- passe final de campanhas com lead manual, escolha de agente e canal Z-API
+- unificar a aba `Configuração de Disparo` de campanhas com os canais reais do tenant, removendo o viés legado de `Twilio Sandbox`
+- permitir campanha personalizada por contatos selecionados, sem prender o usuário apenas ao disparo por lista completa
+- revisar o comportamento final das abas da inbox após deep link, transferência e troca de filtro
 
 Observação operacional do go-live:
 - o convite interno ainda é `link manual`; o sistema gera a URL, mas não envia email automático

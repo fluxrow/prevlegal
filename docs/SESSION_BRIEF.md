@@ -170,6 +170,16 @@ Gatilho automático: a mudança de status do lead na API `PATCH` chama o *Orques
   - `Abrir conversa`, `Iniciar conversa` e cliques em notificação deixam de competir com o estado já escolhido pelo operador
   - o reteste de transferência entre usuários fica mais fiel ao estado real do banco, sem ruído de navegação antiga
 
+## Atualização 2026-04-14 - Campanhas passaram a recalcular elegibilidade real das listas
+
+- a lista `Cadastro manual` podia aparecer com `0 com WhatsApp` mesmo já contendo leads manuais aptos para campanha
+- a causa era drift entre a tabela `listas` e o estado real da tabela `leads`
+- correção aplicada:
+  - `/api/listas` agora recalcula `total_leads`, `com_whatsapp`, `sem_whatsapp` e `nao_verificado` diretamente a partir de `leads`
+- decisão de produto registrada:
+  - além do disparo por lista inteira, a campanha deve evoluir para permitir seleção explícita de contatos individuais
+  - isso fica como próxima camada operacional, especialmente útil para campanhas personalizadas de recuperação e follow-up
+
 ## Tasks abertas registradas após o novo smoke test
 
 - campanhas:
