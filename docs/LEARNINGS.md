@@ -20,6 +20,15 @@ Mestra: [[MASTER_PREV_LEGAL]]
 - [[Sessoes/2026-03-18-prevlegal-admin-roi-obsidian]]
 - [[Sessoes/2026-03-18-sessoes-17-18-marco-prevlegal-completo]]
 
+### 157. Em importador com cabeçalho variável, matcher permissivo demais pode transformar linha de dado em linha de schema
+**Problema:** Uma planilha enriquecida com `CPF`, `NOME` e múltiplos campos familiares foi importada com só 6 leads de 78, enquanto o produto reportava dezenas de “duplicatas da planilha”
+**Causa:** O detector de cabeçalho aceitava matches por substring curtos demais (`tipo`, `rma`, `mail`) e acabou elegendo uma linha de dado como se fosse o cabeçalho real; isso embaralhava o field map, gerava `nb` sintético errado e inflava falsamente a deduplicação em memória
+**Correção:** Endurecer `src/lib/import-schema.ts` para:
+- priorizar match exato
+- só aceitar `includes` em aliases compostos
+- exigir fronteira de palavra para aliases curtos
+**Regra pratica:** Em planilhas heterogêneas, detecção automática de schema só é segura quando aliases curtos respeitam fronteiras; substring solta em linha de dado é receita para importação silenciosamente errada
+
 ### 151. Em webhook de mensageria, o critico nao e so receber o payload, e conseguir reutilizar a conversa operacional ja existente
 **Problema:** O inbound da Z-API ja chegava ao sistema, mas a mensagem ainda nao aparecia na plataforma
 **Causa:** Mesmo com o webhook entregue, o fluxo podia falhar ao nao casar corretamente o telefone mascarado com o lead/conversa humanos ja existentes, deixando `lead_id` e `conversa_id` nulos no meio da trilha

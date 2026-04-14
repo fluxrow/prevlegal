@@ -4,6 +4,25 @@ Contexto: [[SESSION_HISTORY_MASTER]]
 Mestra: [[MASTER_PREV_LEGAL]]
 > Última atualização: 10/04/2026
 
+## Atualizacao Importador / detecção de cabeçalho enriquecido endurecida — 14/04/2026
+
+- durante o teste de uma lista enriquecida da Assertivo, a importação concluiu com apenas `6` leads inseridos de `78`, apesar de a planilha conter muito mais registros válidos
+- sintoma observado:
+  - o resumo da importação mostrava dezenas de `duplicatas da planilha`
+  - os campos detectados incluíam mapeamentos impossíveis para o cabeçalho real, como `tipo_beneficio` e `valor_rma`
+- causa:
+  - o detector automático de cabeçalho aceitava matches por substring curtos demais
+  - uma linha de dado acabou sendo escolhida como linha de schema
+  - isso embaralhou o `fieldMap`, gerou `nb` sintético errado e derrubou a maior parte das linhas como duplicatas falsas
+- correção aplicada:
+  - `src/lib/import-schema.ts` agora:
+    - prioriza igualdade exata
+    - só usa `includes` para aliases compostos
+    - exige fronteira de palavra para aliases curtos
+- impacto operacional:
+  - planilhas enriquecidas com colunas familiares deixam de colidir com aliases curtos como `tipo`, `rma` e `mail`
+  - reduz risco de importação “aparentemente concluída” mas semanticamente errada
+
 ## Atualizacao Campanhas / contador de listas e seleção por contatos específicos — 14/04/2026
 
 - durante o smoke test da campanha, a lista `Cadastro manual` apareceu como `0 com WhatsApp` mesmo com leads manuais válidos no tenant

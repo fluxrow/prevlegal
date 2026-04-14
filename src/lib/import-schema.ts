@@ -51,8 +51,21 @@ function normalizeHeader(value: unknown) {
     .trim()
 }
 
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
 function scoreCellAgainstAliases(cell: string, aliases: string[]) {
-  return aliases.some((alias) => cell === alias || cell.includes(alias) || alias.includes(cell))
+  return aliases.some((alias) => {
+    if (cell === alias) return true
+
+    if (alias.includes(' ')) {
+      return cell.includes(alias)
+    }
+
+    const aliasPattern = new RegExp(`(^|\\s)${escapeRegExp(alias)}(\\s|\\d|$)`)
+    return aliasPattern.test(cell)
+  })
 }
 
 function buildFieldMapFromHeaderRow(row: unknown[]) {
