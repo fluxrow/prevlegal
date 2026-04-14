@@ -198,20 +198,34 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Erro ao verificar duplicidade da lista' }, { status: 500 })
     }
 
-    const listasDuplicadas = [...(listasMesmoNome || []), ...(listasMesmoArquivo || [])]
-    const listasOrfas = Array.from(
+    const listasDuplicadas = Array.from(
         new Map(
-            listasDuplicadas
-                .filter((lista) => !lista.total_leads || lista.total_leads === 0)
-                .map((lista) => [lista.id, lista])
+            [...(listasMesmoNome || []), ...(listasMesmoArquivo || [])].map((lista) => [lista.id, lista])
         ).values()
     )
+
+    const listasDuplicadasComContagemReal = await Promise.all(
+        listasDuplicadas.map(async (lista) => {
+            const { count } = await adminSupabase
+                .from('leads')
+                .select('id', { count: 'exact', head: true })
+                .eq('tenant_id', context.tenantId)
+                .eq('lista_id', lista.id)
+
+            return {
+                ...lista,
+                live_lead_count: count ?? 0,
+            }
+        })
+    )
+
+    const listasOrfas = listasDuplicadasComContagemReal.filter((lista) => lista.live_lead_count === 0)
 
     if (listasOrfas.length > 0) {
         await adminSupabase.from('listas').delete().in('id', listasOrfas.map((lista) => lista.id))
     }
 
-    const listasAtivas = listasDuplicadas.filter((lista) => (lista.total_leads || 0) > 0)
+    const listasAtivas = listasDuplicadasComContagemReal.filter((lista) => lista.live_lead_count > 0)
 
     if (listasAtivas.length > 0) {
         return NextResponse.json({
