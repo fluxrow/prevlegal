@@ -123,6 +123,7 @@ function pickPrioritizedContact(row: unknown[], lookup: HeaderLookup) {
 
     const explicitDirectWhatsappCandidates = [
         { source: 'CELULAR', value: getCellByHeaderAliases(row, lookup, ['CELULAR', 'CELULAR1', 'CELULAR_1', 'CELULAR 1', 'MOBILE', 'CELULAR PRINCIPAL']), direct: true, whatsapp: true },
+        { source: 'CELULAR2', value: getCellByHeaderAliases(row, lookup, ['CELULAR2', 'CELULAR_2', 'CELULAR 2']), direct: true, whatsapp: true },
         { source: 'WHATSAPP', value: getCellByHeaderAliases(row, lookup, ['WHATSAPP', 'WHATSAPP 1', 'NUMERO WHATSAPP', 'NUMERO DE WHATSAPP']), direct: true, whatsapp: true },
         { source: 'CELULAR_WHATSAPP_1', value: getCellByHeaderAliases(row, lookup, ['CELULAR_WHATSAPP_NUMERO_1', 'CELULAR WHATSAPP NUMERO 1']), direct: true, whatsapp: true },
         { source: 'TELEFONE_WHATSAPP_1', value: getCellByHeaderAliases(row, lookup, ['TELEFONE_WHATSAPP_NUMERO_1', 'TELEFONE WHATSAPP NUMERO 1']), direct: true, whatsapp: true },
@@ -135,8 +136,11 @@ function pickPrioritizedContact(row: unknown[], lookup: HeaderLookup) {
 
     const relatedCandidates = [
         { source: 'CONJUGE_CELULAR_1', value: getCellByHeaderAliases(row, lookup, ['CONJUGE_CELULAR_1', 'CONJUGE CELULAR 1']), direct: false, whatsapp: true },
+        { source: 'CONJUGE_TELEFONE_1', value: getCellByHeaderAliases(row, lookup, ['CONJUGE_TELEFONE_1', 'CONJUGE TELEFONE 1']), direct: false, whatsapp: false },
         { source: 'FILHO_1_CELULAR_1', value: getCellByHeaderAliases(row, lookup, ['FILHO_1_CELULAR_1', 'FILHO 1 CELULAR 1']), direct: false, whatsapp: true },
+        { source: 'FILHO_1_TELEFONE_1', value: getCellByHeaderAliases(row, lookup, ['FILHO_1_TELEFONE_1', 'FILHO 1 TELEFONE 1']), direct: false, whatsapp: false },
         { source: 'IRMAO_1_CELULAR_1', value: getCellByHeaderAliases(row, lookup, ['IRMAO_1_CELULAR_1', 'IRMAO 1 CELULAR 1']), direct: false, whatsapp: true },
+        { source: 'IRMAO_1_TELEFONE_1', value: getCellByHeaderAliases(row, lookup, ['IRMAO_1_TELEFONE_1', 'IRMAO 1 TELEFONE 1']), direct: false, whatsapp: false },
     ]
 
     const contactCandidates = [
@@ -210,11 +214,11 @@ function buildApproachContext({
             ? `Contato alternativo detectado em ${prioritizedContact.alternateSource}: ${prioritizedContact.alternativo}.`
             : null,
         relatedContacts.length > 0
-            ? `Contatos relacionados detectados: ${relatedContacts.join(' · ')}`
+            ? `Contatos relacionados detectados:\n- ${relatedContacts.join('\n- ')}`
             : null,
     ].filter(Boolean)
 
-    return truncate(notes.join(' '), 1000)
+    return truncate(notes.join('\n\n'), 1000)
 }
 
 function buildEnrichedAlternateContact(prioritizedContact: ReturnType<typeof pickPrioritizedContact>) {
@@ -251,26 +255,34 @@ function collectRelatedContacts(row: unknown[], lookup: HeaderLookup) {
         {
             label: 'Cônjuge',
             nome: getCellByHeaderAliases(row, lookup, ['CONJUGE_NOME', 'CONJUGE NOME']),
-            telefone: getCellByHeaderAliases(row, lookup, ['CONJUGE_CELULAR_1', 'CONJUGE CELULAR 1']),
+            celular: getCellByHeaderAliases(row, lookup, ['CONJUGE_CELULAR_1', 'CONJUGE CELULAR 1']),
+            telefone: getCellByHeaderAliases(row, lookup, ['CONJUGE_TELEFONE_1', 'CONJUGE TELEFONE 1']),
         },
         {
             label: 'Filho',
             nome: getCellByHeaderAliases(row, lookup, ['FILHO_1_NOME', 'FILHO 1 NOME']),
-            telefone: getCellByHeaderAliases(row, lookup, ['FILHO_1_CELULAR_1', 'FILHO 1 CELULAR 1']),
+            celular: getCellByHeaderAliases(row, lookup, ['FILHO_1_CELULAR_1', 'FILHO 1 CELULAR 1']),
+            telefone: getCellByHeaderAliases(row, lookup, ['FILHO_1_TELEFONE_1', 'FILHO 1 TELEFONE 1']),
         },
         {
             label: 'Irmão',
             nome: getCellByHeaderAliases(row, lookup, ['IRMAO_1_NOME', 'IRMAO 1 NOME']),
-            telefone: getCellByHeaderAliases(row, lookup, ['IRMAO_1_CELULAR_1', 'IRMAO 1 CELULAR 1']),
+            celular: getCellByHeaderAliases(row, lookup, ['IRMAO_1_CELULAR_1', 'IRMAO 1 CELULAR 1']),
+            telefone: getCellByHeaderAliases(row, lookup, ['IRMAO_1_TELEFONE_1', 'IRMAO 1 TELEFONE 1']),
         },
     ]
 
     return relatedCandidates
         .map((candidate) => {
+            const celular = parsePhone(candidate.celular)
             const telefone = parsePhone(candidate.telefone)
             const nome = truncate(candidate.nome ? String(candidate.nome) : null, 120)
-            if (!telefone) return null
-            return `${candidate.label}: ${nome || 'sem nome'} (${telefone})`
+            const parts = [
+                celular ? `celular ${celular}` : null,
+                telefone ? `telefone ${telefone}` : null,
+            ].filter(Boolean)
+            if (parts.length === 0) return null
+            return `${candidate.label}: ${nome || 'sem nome'} (${parts.join(' · ')})`
         })
         .filter(Boolean) as string[]
 }

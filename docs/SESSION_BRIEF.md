@@ -991,3 +991,4 @@ Gatilho automático: a mudança de status do lead na API `PATCH` chama o *Orques
 - impacto prático:
   - o clique do operador volta a mandar na navegação
   - reduz a sensação de box/aba “não responde”
+- Importador enriquecido ajustado para priorizar melhor celulares e expor contatos relacionados/telefones de familiares com mais visibilidade no cadastro do lead.

@@ -1563,3 +1563,4 @@ Os selects ainda pediam apenas `usuarios(...)`, então o PostgREST não sabia qu
 **Correção:** Ao trocar de aba manualmente, limpar `conversaId`, `telefone` e `leadId` da query string e resetar a hidratação de deep link para humano e portal.
 
 **Regra de produto derivada:** deep link serve para posicionar a tela uma vez. Depois que o operador assume o controle e troca a aba, a navegação precisa respeitar a intenção humana imediatamente.
+- Import enriquecido de listas familiares: para operação real, o contato prioritário deve preferir `CELULAR1`/`CELULAR2` do titular antes de telefones fixos, e a UI do lead precisa expor claramente contatos relacionados (cônjuge/filho/irmão) sem esconder isso apenas em campos internos.

@@ -499,6 +499,14 @@ export default function LeadDetailPage() {
           <Field label="Contato de abordagem" value={lead.telefone} />
           <Field label="Contato alternativo" value={lead.telefone_enriquecido} />
           <Field label="E-mail" value={lead.email} />
+          {(lead.telefone_enriquecido || lead.anotacao) && (
+            <div style={{ gridColumn: '1 / -1' }}>
+              <p style={{ fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'DM Sans, sans-serif', margin: '0 0 6px' }}>Contatos relacionados e contexto operacional</p>
+              <div style={{ padding: '12px 14px', borderRadius: '10px', border: '1px solid var(--border)', background: 'var(--bg-card)', color: lead.anotacao ? 'var(--text-secondary)' : 'var(--text-muted)', fontSize: '13px', lineHeight: 1.55, whiteSpace: 'pre-wrap' }}>
+                {lead.anotacao || 'Sem observações adicionais de enriquecimento.'}
+              </div>
+            </div>
+          )}
         </Section>
 
         {(lead.telefone_enriquecido || lead.anotacao) && (

@@ -306,6 +306,16 @@ export default function LeadDrawer({
                 <Row label="Idade" value={calcIdade(lead.data_nascimento)} />
                 <Row label="Sexo" value={lead.sexo} />
                 <Row label="Categoria" value={lead.categoria_profissional} />
+                {(lead.telefone_enriquecido || lead.anotacao) && (
+                  <div style={{ gridColumn: '1 / -1' }}>
+                    <div style={{ marginBottom: '6px', fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700 }}>
+                      Contatos relacionados e contexto operacional
+                    </div>
+                    <div style={{ padding: '10px 12px', background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '12px', color: lead.anotacao ? 'var(--text-secondary)' : 'var(--text-muted)', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>
+                      {lead.anotacao || 'Sem contexto adicional de enriquecimento.'}
+                    </div>
+                  </div>
+                )}
               </Section>
               {(lead.telefone_enriquecido || lead.anotacao) && (
                 <Section title="Enriquecimento e Abordagem" icon={AlertCircle}>

@@ -258,10 +258,10 @@ export default function EditarLeadModal({
           <Section title="Contexto de abordagem">
             <div style={{ gridColumn: '1 / -1' }}>
               <Field
-                label="Observação operacional"
+                label="Contatos relacionados e contexto operacional"
                 value={form.anotacao}
                 onChange={(value) => setForm((prev) => ({ ...prev, anotacao: value }))}
-                placeholder="Ex.: contato veio do filho, usar abordagem indireta"
+                placeholder="Ex.: contato veio do filho, celular alternativo do titular, usar abordagem indireta"
                 multiline
               />
             </div>
