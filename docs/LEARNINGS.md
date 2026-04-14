@@ -1564,3 +1564,14 @@ Os selects ainda pediam apenas `usuarios(...)`, então o PostgREST não sabia qu
 
 **Regra de produto derivada:** deep link serve para posicionar a tela uma vez. Depois que o operador assume o controle e troca a aba, a navegação precisa respeitar a intenção humana imediatamente.
 - Import enriquecido de listas familiares: para operação real, o contato prioritário deve preferir `CELULAR1`/`CELULAR2` do titular antes de telefones fixos, e a UI do lead precisa expor claramente contatos relacionados (cônjuge/filho/irmão) sem esconder isso apenas em campos internos.
+### 160. Coluna opcional da planilha não pode derrubar a importação inteira quando o schema operacional ainda não a suporta
+**Problema:** A base enriquecida `consulta completa lista RJ 2.csv` importava só `21` de `50` leads, com `29 falhas no insert`
+**Causa:** As 29 linhas que tinham `EMAIL1/EMAIL2` faziam o importador tentar persistir `email` em `leads`, mas a produção ainda não tem essa coluna
+**Correção:** Parar de enviar `email` no insert de `leads` até o schema operacional suportar esse campo; manter apenas um aviso informativo na UI de importação
+**Regra pratica:** Em go-live, um campo opcional enriquecido nunca deve bloquear a carga do registro principal se o schema central ainda não o absorve
+
+### 161. Contato relacionado não pode viver só em texto livre quando a campanha precisa operar por vínculo familiar
+**Problema:** Depois de enriquecer leads com contatos de cônjuge, filho e irmão, surgiu a necessidade operacional de disparar campanhas por tipo de vínculo
+**Causa:** Hoje o produto expõe esses contatos no `Contexto operacional`, mas ainda não os modela de forma estruturada para segmentação
+**Correção:** Registrar essa frente como próxima evolução correta: contatos relacionados precisam virar estrutura consultável para filtros de campanha, não apenas anotação humana
+**Regra pratica:** Se uma informação precisa virar critério de campanha, ela não pode depender de texto livre como fonte única de verdade

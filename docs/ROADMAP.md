@@ -2060,3 +2060,35 @@ Status atual em 18/03/2026:
   - concluir o fluxo de transferência de conversa entre usuários
   - alinhar notificações com ownership real da thread
   - corrigir deep links de `abrir conversa` / `iniciar conversa` a partir do lead
+## Atualizacao Importador / email da planilha nao pode quebrar go-live quando o schema operacional ainda nao suporta a coluna — 14/04/2026
+
+- durante o reteste da base enriquecida `consulta completa lista RJ 2.csv`, a importação passou a inserir apenas `21` leads e falhar em `29`
+- sintoma observado:
+  - resumo da importação mostrava `29 falhas no insert`
+  - os avisos listavam repetidamente:
+    - `Could not find the 'email' column of 'leads' in the schema cache`
+- causa:
+  - a planilha já traz `EMAIL1/EMAIL2`
+  - o importador tentava persistir `email` em `leads`
+  - mas o schema operacional atual ainda não possui essa coluna
+- correção aplicada:
+  - o importador deixou de enviar `email` no insert de `leads`
+  - quando a planilha trouxer e-mail, a UI passa a avisar que o campo foi detectado, mas ainda não é persistido no schema atual
+- impacto operacional:
+  - a base enriquecida volta a importar inteira sem perder linhas por causa de uma coluna opcional
+  - o go-live não fica travado por divergência de schema periférica
+
+## Proxima evolucao correta / campanhas por tipo de contato relacionado
+
+- a operação enriquecida deixou explícita uma necessidade nova:
+  - não basta guardar contatos de cônjuge, filho e irmão em texto livre
+  - campanhas futuras devem poder filtrar por tipo de contato de abordagem
+- objetivo de produto:
+  - permitir campanhas como:
+    - `só titulares`
+    - `só cônjuges`
+    - `só filhos`
+    - `só irmãos`
+- decisão:
+  - isso entra como evolução estrutural depois do go-live imediato
+  - não deve ser resolvido apenas com campo aberto de observação

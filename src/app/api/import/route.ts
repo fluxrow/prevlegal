@@ -400,6 +400,9 @@ export async function POST(request: NextRequest) {
         } else {
             schemaWarnings.push(`Layout detectado por cabeçalhos (${detectedSchema.detectedFields.length} campo(s) mapeado(s)).`)
         }
+        if ('email' in detectedSchema.fieldMap) {
+            schemaWarnings.push('Campo de e-mail detectado na planilha, mas ainda não persistido no schema operacional atual de leads. A importação segue normalmente sem gravar e-mail.')
+        }
     } else {
         schemaWarnings.push('Layout legado por posição fixa detectado. Para novos fornecedores, prefira planilhas com cabeçalhos.')
     }
@@ -462,7 +465,6 @@ export async function POST(request: NextRequest) {
             ? pickPrioritizedContact(row, headerLookup)
             : pickLegacyContact(row, detectedSchema)
         const telefone = prioritizedContact.telefone
-        const email = parseEmail(detectedSchema.mode === 'header_mapping' ? getMappedCell(row, detectedSchema, 'email') : null)
         const categoriaProfissional = truncate(detectedSchema.mode === 'header_mapping' ? String(getMappedCell(row, detectedSchema, 'categoria_profissional') || '') : null, 255)
         const relatedContacts = detectedSchema.mode === 'header_mapping' ? collectRelatedContacts(row, headerLookup) : []
         const contatoEnriquecido = buildEnrichedAlternateContact(prioritizedContact)
@@ -494,7 +496,6 @@ export async function POST(request: NextRequest) {
             enriquecido_em: prioritizedContact.source ? new Date().toISOString() : null,
             tem_whatsapp: prioritizedContact.whatsapp ? true : null,
             lgpd_optout: false,
-            ...(email ? { email } : {}),
         })
     }
 
