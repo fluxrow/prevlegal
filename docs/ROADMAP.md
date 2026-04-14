@@ -4,6 +4,35 @@ Contexto: [[SESSION_HISTORY_MASTER]]
 Mestra: [[MASTER_PREV_LEGAL]]
 > Última atualização: 10/04/2026
 
+## Atualizacao Campanhas / template padrão passou a respeitar perfil operacional do agente — 14/04/2026
+
+- durante o refinamento das campanhas enriquecidas, ficou claro que o template sugerido ainda estava errado para contato frio com titular
+- problema observado:
+  - mesmo quando o escritório operava no playbook de `benefícios previdenciários`, a campanha padrão podia sugerir texto com cara de `inbound`, como "recebi seu contato"
+  - isso quebrava a coerência entre:
+    - tipo de operação do escritório
+    - agente escolhido
+    - tipo de contato (`titular`, `conjuge`, `filho`, `irmao`)
+- correção aplicada:
+  - `agentes` agora passam a suportar `perfil_operacao`
+  - perfis atualmente válidos:
+    - `beneficios_previdenciarios`
+    - `planejamento_previdenciario`
+  - o seed de agentes passa a gravar esse perfil
+  - o CRUD de agentes permite manter/editar esse campo
+  - a sugestão de template da campanha agora considera:
+    - `perfil_operacao`
+    - `tipo` do agente
+    - `contato_alvo_tipo`
+  - quando nenhum agente específico é escolhido, a campanha passa a usar o agente padrão do escritório como referência real de copy
+- impacto operacional:
+  - o playbook padrão do escritório deixa de parecer genérico
+  - contato com `titular` passa a soar como campanha outbound coerente com a frente ativa
+  - contato com familiar continua usando abordagem cautelosa e contextual
+- decisão de arquitetura:
+  - esta frente justifica schema em `agentes` porque o perfil operacional já afeta seed, campanha, copy e expansão futura para operação híbrida
+  - o próximo passo natural é permitir que o escritório conviva com múltiplos agentes de mesmo `tipo`, desde que em perfis operacionais diferentes
+
 ## Atualizacao Leads + Campanhas / tipo do contato de abordagem como estrutura operacional — 14/04/2026
 
 - a operação enriquecida deixou claro que o produto já não pode tratar todo número como “telefone do lead” sem contexto

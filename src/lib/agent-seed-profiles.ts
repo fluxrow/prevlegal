@@ -18,6 +18,7 @@ export type AgentSeedTemplate = {
 
 export type AgentSeedProfile = {
   id: string;
+  operationProfile: "beneficios_previdenciarios" | "planejamento_previdenciario";
   label: string;
   shortLabel: string;
   subtitle: string;
@@ -33,6 +34,7 @@ export const DEFAULT_AGENT_SEED_PROFILE_ID = "jessica_previdenciario";
 export const AGENT_SEED_PROFILES: AgentSeedProfile[] = [
   {
     id: "jessica_previdenciario",
+    operationProfile: "beneficios_previdenciarios",
     label: "Captação de Benefícios Previdenciários",
     shortLabel: "Benefícios Previdenciários",
     subtitle: "Atendimento jurídico inicial, triagem e conversão para consulta",
@@ -189,6 +191,7 @@ export const AGENT_SEED_PROFILES: AgentSeedProfile[] = [
   },
   {
     id: "ana_planejamento",
+    operationProfile: "planejamento_previdenciario",
     label: "Captação de Planejamento Previdenciário",
     shortLabel: "Planejamento Previdenciário",
     subtitle: "Diagnóstico consultivo, proposta e fechamento de planos",
@@ -346,8 +349,19 @@ export const AGENT_SEED_PROFILES: AgentSeedProfile[] = [
 ];
 
 export const AGENT_SEED_PROFILE_SUMMARIES = AGENT_SEED_PROFILES.map(
-  ({ id, label, shortLabel, subtitle, audience, summary, highlight, bullets }) => ({
+  ({
     id,
+    operationProfile,
+    label,
+    shortLabel,
+    subtitle,
+    audience,
+    summary,
+    highlight,
+    bullets,
+  }) => ({
+    id,
+    operationProfile,
     label,
     shortLabel,
     subtitle,

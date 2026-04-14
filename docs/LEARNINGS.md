@@ -36,6 +36,16 @@ e usar isso para:
 - ajustar o template inicial quando o contato não é o titular
 **Regra pratica:** Quando a operação depende de familiares, o sistema precisa modelar o parentesco como dado operacional e não escondê-lo em texto livre. Só assim campanha, abordagem e supervisão conseguem trabalhar sem ambiguidade.
 
+### 162. Em campanha outbound, `tipo do agente` sozinho não basta; o template precisa conhecer o perfil operacional do playbook
+**Problema:** Mesmo com o filtro por `titular / conjuge / filho / irmao` funcionando, a mensagem sugerida da campanha ainda podia falar como se fosse `inbound`, especialmente quando o escritório usava o modelo padrão de benefícios previdenciários
+**Causa:** A campanha escolhia o template apenas por `tipo` do agente (`triagem`, `reativacao`, etc.), sem saber se o agente pertencia ao playbook de `benefícios previdenciários` ou `planejamento previdenciário`
+**Correção:** Estruturar `agentes.perfil_operacao`, gravar isso no seed e passar a gerar o template da campanha com base em:
+- `perfil_operacao`
+- `tipo`
+- `contato_alvo_tipo`
+além de usar o agente padrão do escritório como fallback real quando nenhum agente específico for selecionado
+**Regra pratica:** Em playbooks operacionais diferentes, o mesmo `tipo` de agente pode exigir mensagens iniciais completamente distintas. Sempre modelar explicitamente o perfil operacional antes de reutilizar template de campanha.
+
 ### 161. Nem todo dado detectado na planilha precisa entrar no schema imediatamente
 **Problema:** A base enriquecida passou a trazer `email`, mas o schema operacional de `leads` ainda não suporta esse campo
 **Causa:** Adicionar `email` em `leads` perto do go-live abriria uma mudança estrutural mais ampla do que o fluxo principal de WhatsApp exigia naquele momento

@@ -3,6 +3,7 @@ import { createClient as createServerClient } from "@/lib/supabase/server";
 import { contextHasPermission, getTenantContext } from "@/lib/tenant-context";
 import { createAdminSupabase } from "@/lib/internal-collaboration";
 import { getAgentSeedProfile } from "@/lib/agent-seed-profiles";
+import { normalizeOperationProfile } from "@/lib/operation-profile";
 
 export async function POST(request: Request) {
   const authSupabase = await createServerClient();
@@ -21,7 +22,7 @@ export async function POST(request: Request) {
   const supabase = createAdminSupabase();
   const { data: existingAgents, error: existingError } = await supabase
     .from("agentes")
-    .select("id, tipo, nome_interno, is_default")
+    .select("id, tipo, nome_interno, is_default, perfil_operacao")
     .eq("tenant_id", context.tenantId)
     .order("created_at", { ascending: true });
 
@@ -31,16 +32,24 @@ export async function POST(request: Request) {
 
   const currentAgents = existingAgents || [];
   const hasDefaultAgent = currentAgents.some((agent) => agent.is_default);
-  const existingTypes = new Set(
+  const existingProfileTypeKeys = new Set(
     currentAgents
-      .map((agent) => (agent.tipo || "").trim())
+      .map((agent) => {
+        const tipo = (agent.tipo || "").trim();
+        const perfil = normalizeOperationProfile(agent.perfil_operacao);
+        return tipo ? `${perfil}:${tipo}` : "";
+      })
       .filter(Boolean),
   );
 
   const toInsert = baseTemplates.filter(
-    (template) => !existingTypes.has(template.tipo),
+    (template) =>
+      !existingProfileTypeKeys.has(
+        `${selectedProfile.operationProfile}:${template.tipo}`,
+      ),
   ).map((template) => ({
     tenant_id: context.tenantId,
+    perfil_operacao: selectedProfile.operationProfile,
     tipo: template.tipo,
     nome_interno: template.nome_interno,
     nome_publico: template.nome_publico,
@@ -73,7 +82,9 @@ export async function POST(request: Request) {
   }
 
   const skipped = baseTemplates.filter((template) =>
-    existingTypes.has(template.tipo),
+    existingProfileTypeKeys.has(
+      `${selectedProfile.operationProfile}:${template.tipo}`,
+    ),
   ).map((template) => ({
     tipo: template.tipo,
     nome_interno: template.nome_interno,

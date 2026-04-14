@@ -16,11 +16,16 @@ import {
   AGENT_SEED_PROFILE_SUMMARIES,
   DEFAULT_AGENT_SEED_PROFILE_ID,
 } from "@/lib/agent-seed-profiles";
+import {
+  OPERATION_PROFILE_OPTIONS,
+  type OperationProfile,
+} from "@/lib/operation-profile";
 
 interface Agente {
   id: string;
   nome_interno: string;
   nome_publico: string;
+  perfil_operacao: OperationProfile | null;
   tipo: string;
   descricao: string | null;
   objetivo: string | null;
@@ -67,6 +72,7 @@ const TIPO_OPTIONS = [
 const AGENTE_VAZIO: Omit<Agente, "id" | "created_at"> = {
   nome_interno: "",
   nome_publico: "",
+  perfil_operacao: "beneficios_previdenciarios",
   tipo: "geral",
   descricao: "",
   objetivo: "",
@@ -165,6 +171,20 @@ function AgenteForm({
             onChange={(e) => set("nome_publico", e.target.value)}
             placeholder="Ex: Lia"
           />
+        </div>
+        <div>
+          <label style={labelStyle}>Perfil operacional</label>
+          <select
+            style={inputStyle}
+            value={(form as any).perfil_operacao || "beneficios_previdenciarios"}
+            onChange={(e) => set("perfil_operacao" as any, e.target.value)}
+          >
+            {OPERATION_PROFILE_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.shortLabel}
+              </option>
+            ))}
+          </select>
         </div>
         <div>
           <label style={labelStyle}>Tipo / Roteamento (Fase D)</label>
@@ -1072,6 +1092,8 @@ export default function AgentesConfig() {
                   initial={{
                     nome_interno: agente.nome_interno,
                     nome_publico: agente.nome_publico,
+                    perfil_operacao:
+                      agente.perfil_operacao || "beneficios_previdenciarios",
                     tipo: agente.tipo,
                     descricao: agente.descricao,
                     objetivo: agente.objetivo,

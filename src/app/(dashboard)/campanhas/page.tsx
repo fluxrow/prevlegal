@@ -4,6 +4,7 @@ import { Megaphone, Plus, Zap, CheckCircle2, XCircle, X } from "lucide-react";
 import CampanhasOnboardingTour from "@/components/campanhas-onboarding-tour";
 import { buildCampaignMessageTemplate } from "@/lib/campaign-message-templates";
 import { CONTACT_TARGET_OPTIONS } from "@/lib/contact-target";
+import { getOperationProfileLabel } from "@/lib/operation-profile";
 
 type Toast = { id: number; type: "success" | "error"; message: string };
 
@@ -128,8 +129,10 @@ interface Agente {
   id: string;
   nome_interno: string;
   nome_publico: string;
+  perfil_operacao: string | null;
   tipo: string;
   ativo: boolean;
+  is_default?: boolean;
 }
 
 interface WhatsAppNumber {
@@ -180,7 +183,7 @@ export default function CampanhasPage() {
     whatsapp_number_id: "",
     agente_id: "",
     contato_alvo_tipo: "",
-    mensagem_template: buildCampaignMessageTemplate(null),
+    mensagem_template: buildCampaignMessageTemplate(),
     delay_min_ms: 1500,
     delay_max_ms: 3500,
     tamanho_lote: 50,
@@ -298,7 +301,7 @@ export default function CampanhasPage() {
         whatsapp_number_id: "",
         agente_id: "",
         contato_alvo_tipo: "",
-        mensagem_template: buildCampaignMessageTemplate(null),
+        mensagem_template: buildCampaignMessageTemplate(),
         delay_min_ms: 1500,
         delay_max_ms: 3500,
         tamanho_lote: 50,
@@ -327,18 +330,28 @@ export default function CampanhasPage() {
   useEffect(() => {
     if (!showForm) return;
 
+    const agentePadraoEscritorio =
+      agentes.find((ag) => ag.is_default) || agentes[0] || null;
     const agenteSelecionado =
-      agentes.find((ag) => ag.id === form.agente_id) || null;
+      agentes.find((ag) => ag.id === form.agente_id) ||
+      agentePadraoEscritorio ||
+      null;
 
     if (!templateFoiEditado) {
       setForm((prev) => ({
         ...prev,
-        mensagem_template: buildCampaignMessageTemplate(agenteSelecionado?.tipo, form.contato_alvo_tipo),
+        mensagem_template: buildCampaignMessageTemplate(
+          agenteSelecionado?.perfil_operacao,
+          agenteSelecionado?.tipo,
+          form.contato_alvo_tipo,
+        ),
       }));
     }
   }, [form.agente_id, form.contato_alvo_tipo, agentes, showForm, templateFoiEditado]);
 
   const channelPadrao = whatsAppNumbers.find((number) => number.is_default);
+  const agentePadraoEscritorio =
+    agentes.find((ag) => ag.is_default) || agentes[0] || null;
   const selectedLeads = form.lead_ids
     .map((leadId) => selectedLeadMap[leadId])
     .filter(Boolean);
@@ -941,12 +954,13 @@ export default function CampanhasPage() {
                   <option value="">
                     {agentes.length === 0
                       ? "Nenhum agente configurado"
-                      : "Usar agente padrão do escritório"}
+                      : `Usar agente padrão do escritório${agentePadraoEscritorio ? ` (${getOperationProfileLabel(agentePadraoEscritorio.perfil_operacao)})` : ""}`}
                   </option>
                   {agentes.map((ag) => (
                     <option key={ag.id} value={ag.id}>
                       {ag.nome_interno}
                       {ag.tipo !== "geral" ? ` — ${ag.tipo.replace(/_/g, " ")}` : ""}
+                      {` · ${getOperationProfileLabel(ag.perfil_operacao)}`}
                     </option>
                   ))}
                 </select>

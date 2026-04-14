@@ -20,6 +20,44 @@ Objetivo:
 - facilitar o repasse posterior para o Claude
 - registrar decisoes, arquivos afetados, validacoes e proximos passos
 
+## Atualizacao 2026-04-14 - Campanha passou a ler o perfil operacional real do agente
+
+- contexto:
+  - o filtro por `titular`, `conjuge`, `filho` e `irmao` ja estava correto
+  - mas o template padrao da campanha ainda nao diferenciava operacao de `beneficios previdenciarios` e `planejamento previdenciario`
+  - isso fazia o contato com `titular` soar generico demais quando o escritorio usava o modelo padrao de beneficios
+- arquivos alterados:
+  - `src/lib/operation-profile.ts`
+  - `src/lib/agent-seed-profiles.ts`
+  - `src/lib/campaign-message-templates.ts`
+  - `src/app/api/agentes/route.ts`
+  - `src/app/api/agentes/[id]/route.ts`
+  - `src/app/api/agentes/seed/route.ts`
+  - `src/components/agentes-config.tsx`
+  - `src/app/(dashboard)/campanhas/page.tsx`
+  - `src/lib/types.ts`
+  - `supabase/migrations/049_agent_operation_profile.sql`
+  - `supabase/manual/2026-04-14_add_agent_operation_profile.sql`
+- mudancas principais:
+  - `agentes` passam a suportar `perfil_operacao`
+  - seed agora grava:
+    - `beneficios_previdenciarios`
+    - `planejamento_previdenciario`
+  - o seed deixa de bloquear automaticamente agentes de mesmo `tipo` quando eles pertencem a perfis operacionais diferentes
+  - a sugestao de template da campanha agora combina:
+    - `perfil_operacao`
+    - `tipo` do agente
+    - `contato_alvo_tipo`
+  - quando nenhum agente especifico e escolhido, a campanha usa o agente padrao real do escritorio como referencia de copy
+- validacao:
+  - `npm run build` passou
+- proximo passo operacional:
+  - aplicar o patch `supabase/manual/2026-04-14_add_agent_operation_profile.sql`
+  - retestar campanha com:
+    - `Somente titular` em beneficios
+    - `Somente conjuge` em beneficios
+    - um agente/pl playbook de planejamento previdenciario para comparar a copy sugerida
+
 ## Atualizacao 2026-04-14 - Tipo do contato de abordagem virou estrutura de campanha
 
 - contexto:

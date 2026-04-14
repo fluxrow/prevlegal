@@ -107,6 +107,7 @@ export interface Agente {
     id: string
     tenant_id: string
     nome: string
+    perfil_operacao?: 'beneficios_previdenciarios' | 'planejamento_previdenciario'
     prompt_base: string
     horario_inicio: string
     horario_fim: string

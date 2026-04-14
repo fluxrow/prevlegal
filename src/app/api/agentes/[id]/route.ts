@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient as createServerClient } from "@/lib/supabase/server";
 import { contextHasPermission, getTenantContext } from "@/lib/tenant-context";
 import { createAdminSupabase } from "@/lib/internal-collaboration";
+import { normalizeOperationProfile } from "@/lib/operation-profile";
 
 async function resolveWhatsappNumberId(
   supabase: ReturnType<typeof createAdminSupabase>,
@@ -40,6 +41,7 @@ async function resolveWhatsappNumberId(
 const CAMPOS_EDITAVEIS = [
   "nome_interno",
   "nome_publico",
+  "perfil_operacao",
   "tipo",
   "descricao",
   "objetivo",
@@ -110,6 +112,10 @@ export async function PATCH(
     }
 
     body.whatsapp_number_id_default = resolvedWhatsappNumber.value;
+  }
+
+  if (body.perfil_operacao !== undefined) {
+    body.perfil_operacao = normalizeOperationProfile(body.perfil_operacao);
   }
 
   CAMPOS_EDITAVEIS.forEach((campo) => {

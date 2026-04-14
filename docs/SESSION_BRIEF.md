@@ -199,6 +199,28 @@ Gatilho automático: a mudança de status do lead na API `PATCH` chama o *Orques
   - além do disparo por lista inteira, a campanha deve evoluir para permitir seleção explícita de contatos individuais
   - isso fica como próxima camada operacional, especialmente útil para campanhas personalizadas de recuperação e follow-up
 
+## Atualização 2026-04-14 - Campanha passou a sugerir copy pelo perfil operacional do agente
+
+- o smoke test mostrou um desalinhamento importante:
+  - a campanha já sabia se falaria com `titular` ou familiar
+  - mas ainda não sabia se o playbook era de `benefícios previdenciários` ou `planejamento previdenciário`
+  - isso fazia o template padrão do escritório soar genérico demais para outbound com titular
+- correção aplicada:
+  - `agentes` agora passam a suportar `perfil_operacao`
+  - o seed grava esse perfil
+  - o CRUD de agentes passa a respeitar esse campo
+  - a campanha passa a sugerir mensagem usando:
+    - `perfil_operacao`
+    - `tipo` do agente
+    - `contato_alvo_tipo`
+  - quando nenhum agente específico é escolhido, a referência passa a ser o agente padrão real do escritório
+- impacto prático:
+  - o template de `titular` deixa de parecer inbound
+  - o template de `cônjuge`, `filho` e `irmão` continua cauteloso
+  - operações de benefícios e planejamento ficam separadas de forma explícita no playbook
+- pendência manual:
+  - aplicar `supabase/manual/2026-04-14_add_agent_operation_profile.sql` no banco operacional
+
 ## Atualização 2026-04-14 - Importador passou a aceitar lista enriquecida por `CPF + nome` para go-live
 
 - o go-live da Jessica ficou dependente da base enriquecida do Assertivo, porque nela estão os números realmente utilizáveis para abordagem

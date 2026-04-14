@@ -3,6 +3,7 @@ import { createClient as createServerClient } from "@/lib/supabase/server";
 import { getTenantContext } from "@/lib/tenant-context";
 import { createAdminSupabase } from "@/lib/internal-collaboration";
 import { contextHasPermission } from "@/lib/tenant-context";
+import { normalizeOperationProfile } from "@/lib/operation-profile";
 
 async function resolveWhatsappNumberId(
   supabase: ReturnType<typeof createAdminSupabase>,
@@ -71,6 +72,7 @@ export async function POST(request: NextRequest) {
   const {
     nome_interno,
     nome_publico,
+    perfil_operacao,
     tipo,
     descricao,
     objetivo,
@@ -119,6 +121,7 @@ export async function POST(request: NextRequest) {
       tenant_id: context.tenantId,
       nome_interno,
       nome_publico,
+      perfil_operacao: normalizeOperationProfile(perfil_operacao),
       tipo: tipo || "geral",
       descricao: descricao || null,
       objetivo: objetivo || null,
