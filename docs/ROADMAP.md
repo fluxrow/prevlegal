@@ -4,18 +4,26 @@ Contexto: [[SESSION_HISTORY_MASTER]]
 Mestra: [[MASTER_PREV_LEGAL]]
 > Última atualização: 10/04/2026
 
-## Atualizacao Campanhas / contador de listas e seleção futura por contatos — 14/04/2026
+## Atualizacao Campanhas / contador de listas e seleção por contatos específicos — 14/04/2026
 
 - durante o smoke test da campanha, a lista `Cadastro manual` apareceu como `0 com WhatsApp` mesmo com leads manuais válidos no tenant
 - causa:
   - a UI dependia de contadores legado da tabela `listas`, e não do estado vivo da tabela `leads`
 - correção aplicada:
   - `/api/listas` passou a recalcular `total_leads`, `com_whatsapp`, `sem_whatsapp` e `nao_verificado` diretamente a partir de `leads`
+- evolução implementada na mesma frente:
+  - campanhas agora suportam dois modos de público:
+    - `lista inteira`
+    - `contatos específicos`
+  - o fluxo de contatos específicos cria uma lista técnica do sistema para sustentar o disparo sem quebrar o schema legado de `campanhas.lista_id`
+  - os leads selecionados ficam persistidos em `campanha_leads`
+  - o disparo respeita `campanha_leads` quando existir seleção explícita
 - impacto operacional:
   - a campanha fica coerente com a elegibilidade real dos contatos do escritório
-- evolução registrada:
-  - campanhas devem permitir seleção explícita de contatos individuais, além do disparo por lista inteira
-  - esse fluxo será importante para campanhas personalizadas de recuperação, aquecimento e retomada de leads específicos
+  - o escritório deixa de ficar preso a disparos por lista completa
+  - abre espaço para campanhas de recuperação, aquecimento e retomada de leads específicos
+- pendência operacional:
+  - aplicar o patch `supabase/manual/2026-04-14_add_campaign_selected_leads.sql` no banco de produção antes do reteste em runtime
 
 ## Atualizacao Cadastro manual / CPF deixou de ser obrigatório no primeiro contato — 13/04/2026
 

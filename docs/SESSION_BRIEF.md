@@ -907,3 +907,33 @@ Gatilho automático: a mudança de status do lead na API `PATCH` chama o *Orques
 - leitura de produto:
   - template de agente não pode mais nascer enviesado por um único piloto
   - o produto agora oferece um atalho coerente tanto para o caso jurídico/previdenciário tradicional quanto para o comercial consultivo de planejamento
+
+## Atualização 2026-04-14 - Campanhas ganharam fundação para público por contatos específicos
+
+- a frente de campanhas deixou de depender só de lista inteira como unidade de disparo
+- arquivos principais:
+  - `src/app/(dashboard)/campanhas/page.tsx`
+  - `src/app/api/campanhas/route.ts`
+  - `src/app/api/campanhas/[id]/disparar/route.ts`
+  - `supabase/migrations/047_campaign_selected_leads.sql`
+  - `supabase/manual/2026-04-14_add_campaign_selected_leads.sql`
+- comportamento novo:
+  - a campanha agora pode operar em dois modos:
+    - `lista inteira`
+    - `contatos específicos`
+  - quando o operador escolhe contatos específicos, o sistema:
+    - cria/reusa uma lista técnica `Seleção personalizada`
+    - persiste os destinatários em `campanha_leads`
+    - faz o disparo respeitar esse recorte explícito
+- pendência operacional:
+  - aplicar o patch manual `2026-04-14_add_campaign_selected_leads.sql` no banco de produção antes do reteste em runtime
+
+## Atualização 2026-04-14 - Troca manual de aba na inbox passou a limpar deep link antigo
+
+- a `Caixa de Entrada` ainda podia parecer travada porque query params antigos (`conversaId`, `telefone`, `leadId`) reabriam a thread anterior logo após o clique do operador
+- ajuste aplicado:
+  - `src/app/(dashboard)/caixa-de-entrada/page.tsx`
+  - ao trocar de aba manualmente, a tela agora limpa esses parâmetros e reseta a hidratação de deep link
+- impacto prático:
+  - o clique do operador volta a mandar na navegação
+  - reduz a sensação de box/aba “não responde”

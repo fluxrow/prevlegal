@@ -161,6 +161,12 @@ export default function CaixaDeEntradaPage() {
     setAbaAtiva(aba)
 
     const params = new URLSearchParams(searchParams.toString())
+    params.delete('conversaId')
+    params.delete('telefone')
+    params.delete('leadId')
+    humanLinkHandledRef.current = null
+    portalLinkHandledRef.current = null
+
     if (aba === 'todas') {
       params.delete('tab')
     } else {
@@ -168,12 +174,9 @@ export default function CaixaDeEntradaPage() {
     }
 
     if (aba === 'portal') {
-      params.delete('conversaId')
-      params.delete('telefone')
       setConversaSelecionada(null)
       setMensagens([])
     } else {
-      params.delete('leadId')
       setThreadSelecionada(null)
       setMsgsPortal([])
     }

@@ -91,13 +91,29 @@ export async function POST(
       .update({ status: "ativa", iniciado_em: new Date().toISOString() })
       .eq("id", campanhaId);
 
-    // Buscar leads da lista
+    const { data: selectedLeadRows, error: selectedLeadRowsError } = await adminClient
+      .from("campanha_leads")
+      .select("lead_id")
+      .eq("tenant_id", context.tenantId)
+      .eq("campanha_id", campanhaId);
+
+    if (selectedLeadRowsError) {
+      return NextResponse.json({ error: selectedLeadRowsError.message }, { status: 500 });
+    }
+
+    const selectedLeadIds = (selectedLeadRows || []).map((row) => row.lead_id).filter(Boolean);
+
     let query = adminClient
       .from("leads")
       .select("id, nome, nb, cpf, telefone, banco, valor_rma, ganho_potencial, tem_whatsapp")
-      .eq("lista_id", campanha.lista_id)
       .eq("lgpd_optout", false);
     query = applyTenantFilter(query, context.tenantId);
+
+    if (selectedLeadIds.length > 0) {
+      query = query.in("id", selectedLeadIds);
+    } else {
+      query = query.eq("lista_id", campanha.lista_id);
+    }
 
     const { data: leadsDaLista } = await query;
 

@@ -115,6 +115,13 @@ interface Lista {
   com_whatsapp: number;
 }
 
+interface LeadOption {
+  id: string;
+  nome: string;
+  telefone: string | null;
+  status: string;
+}
+
 interface Agente {
   id: string;
   nome_interno: string;
@@ -159,9 +166,15 @@ export default function CampanhasPage() {
   const [showForm, setShowForm] = useState(false);
   const [disparando, setDisparando] = useState<string | null>(null);
   const [templateFoiEditado, setTemplateFoiEditado] = useState(false);
+  const [leadSearch, setLeadSearch] = useState("");
+  const [leadOptions, setLeadOptions] = useState<LeadOption[]>([]);
+  const [selectedLeadMap, setSelectedLeadMap] = useState<Record<string, LeadOption>>({});
+  const [loadingLeadOptions, setLoadingLeadOptions] = useState(false);
   const [form, setForm] = useState({
     nome: "",
+    target_mode: "lista" as "lista" | "selecionados",
     lista_id: "",
+    lead_ids: [] as string[],
     whatsapp_number_id: "",
     agente_id: "",
     mensagem_template: buildCampaignMessageTemplate(null),
@@ -185,6 +198,45 @@ export default function CampanhasPage() {
   useEffect(() => {
     fetchAll();
   }, []);
+
+  useEffect(() => {
+    if (!showForm) return;
+
+    let cancelled = false;
+
+    async function fetchLeadOptions() {
+      setLoadingLeadOptions(true);
+      try {
+        const params = new URLSearchParams({
+          scope: "operational",
+          limit: "50",
+        });
+        if (leadSearch.trim()) {
+          params.set("q", leadSearch.trim());
+        }
+
+        const res = await fetch(`/api/leads?${params.toString()}`);
+        const data = await res.json();
+        if (!cancelled) {
+          const leads = data.leads || [];
+          setLeadOptions(leads);
+          setSelectedLeadMap((prev) => {
+            const next = { ...prev };
+            for (const lead of leads) next[lead.id] = lead;
+            return next;
+          });
+        }
+      } finally {
+        if (!cancelled) setLoadingLeadOptions(false);
+      }
+    }
+
+    void fetchLeadOptions();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [showForm, leadSearch]);
 
   useEffect(() => {
     async function fetchConfigDisparo() {
@@ -232,9 +284,14 @@ export default function CampanhasPage() {
     });
     if (res.ok) {
       setShowForm(false);
+      setLeadSearch("");
+      setLeadOptions([]);
+      setSelectedLeadMap({});
       setForm({
         nome: "",
+        target_mode: "lista",
         lista_id: "",
+        lead_ids: [],
         whatsapp_number_id: "",
         agente_id: "",
         mensagem_template: buildCampaignMessageTemplate(null),
@@ -249,6 +306,18 @@ export default function CampanhasPage() {
       await fetchAll();
     }
     setSaving(false);
+  }
+
+  function toggleLeadSelection(leadId: string) {
+    setForm((prev) => {
+      const alreadySelected = prev.lead_ids.includes(leadId);
+      return {
+        ...prev,
+        lead_ids: alreadySelected
+          ? prev.lead_ids.filter((id) => id !== leadId)
+          : [...prev.lead_ids, leadId],
+      };
+    });
   }
 
   useEffect(() => {
@@ -266,6 +335,11 @@ export default function CampanhasPage() {
   }, [form.agente_id, agentes, showForm, templateFoiEditado]);
 
   const channelPadrao = whatsAppNumbers.find((number) => number.is_default);
+  const selectedLeads = form.lead_ids
+    .map((leadId) => selectedLeadMap[leadId])
+    .filter(Boolean);
+  const selectedLeadCount = form.lead_ids.length;
+  const selectedLeadCountWithWhatsApp = selectedLeads.filter((lead) => Boolean(lead.telefone?.trim())).length;
 
   async function disparar(id: string) {
     setConfirmDisparo(null);
@@ -639,8 +713,48 @@ export default function CampanhasPage() {
                       marginBottom: "6px",
                     }}
                   >
-                    Lista de leads *
+                    Público da campanha *
                   </label>
+                  <div
+                    style={{
+                      display: "flex",
+                      gap: "8px",
+                      marginBottom: "8px",
+                    }}
+                  >
+                    {[
+                      { id: "lista", label: "Lista inteira" },
+                      { id: "selecionados", label: "Contatos específicos" },
+                    ].map((mode) => {
+                      const active = form.target_mode === mode.id;
+                      return (
+                        <button
+                          key={mode.id}
+                          type="button"
+                          onClick={() =>
+                            setForm((prev) => ({
+                              ...prev,
+                              target_mode: mode.id as "lista" | "selecionados",
+                              ...(mode.id === "lista" ? { lead_ids: prev.lead_ids } : { lista_id: prev.lista_id }),
+                            }))
+                          }
+                          style={{
+                            padding: "8px 12px",
+                            borderRadius: "999px",
+                            border: active ? "1px solid var(--accent)" : "1px solid var(--border)",
+                            background: active ? "var(--accent-glow)" : "var(--bg-hover)",
+                            color: active ? "var(--accent)" : "var(--text-secondary)",
+                            fontSize: "12px",
+                            fontWeight: "600",
+                            cursor: "pointer",
+                          }}
+                        >
+                          {mode.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {form.target_mode === "lista" ? (
                   <select
                     value={form.lista_id}
                     onChange={(e) =>
@@ -663,6 +777,91 @@ export default function CampanhasPage() {
                       </option>
                     ))}
                   </select>
+                  ) : (
+                    <div
+                      style={{
+                        border: "1px solid var(--border)",
+                        borderRadius: "12px",
+                        background: "var(--bg-card)",
+                        padding: "12px",
+                      }}
+                    >
+                      <input
+                        value={leadSearch}
+                        onChange={(e) => setLeadSearch(e.target.value)}
+                        placeholder="Buscar contatos por nome ou telefone"
+                        style={{
+                          width: "100%",
+                          padding: "8px 12px",
+                          borderRadius: "8px",
+                          border: "1px solid var(--border)",
+                          background: "var(--bg-hover)",
+                          color: "var(--text-primary)",
+                          fontSize: "13px",
+                          boxSizing: "border-box",
+                          marginBottom: "10px",
+                        }}
+                      />
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          marginBottom: "8px",
+                          fontSize: "12px",
+                          color: "var(--text-muted)",
+                        }}
+                      >
+                        <span>{selectedLeadCount} contato(s) selecionado(s)</span>
+                        <span>{selectedLeadCountWithWhatsApp} com telefone</span>
+                      </div>
+                      <div
+                        style={{
+                          maxHeight: "220px",
+                          overflowY: "auto",
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: "8px",
+                        }}
+                      >
+                        {loadingLeadOptions ? (
+                          <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>
+                            Carregando contatos...
+                          </div>
+                        ) : leadOptions.length === 0 ? (
+                          <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>
+                            Nenhum contato encontrado para esta busca.
+                          </div>
+                        ) : (
+                          leadOptions.map((lead) => {
+                            const selected = form.lead_ids.includes(lead.id);
+                            return (
+                              <button
+                                key={lead.id}
+                                type="button"
+                                onClick={() => toggleLeadSelection(lead.id)}
+                                style={{
+                                  textAlign: "left",
+                                  border: selected ? "1px solid rgba(79,122,255,0.45)" : "1px solid var(--border)",
+                                  background: selected ? "rgba(79,122,255,0.14)" : "var(--bg-surface)",
+                                  borderRadius: "10px",
+                                  padding: "10px 12px",
+                                  cursor: "pointer",
+                                }}
+                              >
+                                <div style={{ fontSize: "13px", fontWeight: "600", color: "var(--text-primary)" }}>
+                                  {lead.nome}
+                                </div>
+                                <div style={{ fontSize: "11px", color: "var(--text-muted)", marginTop: "2px" }}>
+                                  {lead.telefone || "Sem telefone"} · {lead.status}
+                                </div>
+                              </button>
+                            );
+                          })
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -928,7 +1127,7 @@ export default function CampanhasPage() {
                   disabled={
                     saving ||
                     !form.nome ||
-                    !form.lista_id ||
+                    (form.target_mode === "lista" ? !form.lista_id : form.lead_ids.length === 0) ||
                     !form.mensagem_template
                   }
                   style={{

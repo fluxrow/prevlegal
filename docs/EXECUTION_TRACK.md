@@ -150,8 +150,8 @@ Status em 10/04/2026:
 - passe final de abertura da thread via lead detail / notificações
 - passe final de campanhas com lead manual, escolha de agente e canal Z-API
 - unificar a aba `Configuração de Disparo` de campanhas com os canais reais do tenant, removendo o viés legado de `Twilio Sandbox`
-- permitir campanha personalizada por contatos selecionados, sem prender o usuário apenas ao disparo por lista completa
-- revisar o comportamento final das abas da inbox após deep link, transferência e troca de filtro
+- aplicar o patch `2026-04-14_add_campaign_selected_leads.sql` em produção e retestar campanha por contatos selecionados
+- revisar o comportamento final das abas da inbox após deep link, transferência e troca manual de filtro
 
 Observação operacional do go-live:
 - o convite interno ainda é `link manual`; o sistema gera a URL, mas não envia email automático

@@ -3423,6 +3423,26 @@ Pontos que precisam ser preservados durante a implementacao:
   - observação operacional:
     - o seed segue idempotente por `tipo`
     - a troca de modelo é pensada para onboarding inicial; depois disso, o caminho correto é editar os agentes já existentes
+- `2026-04-14` - campanhas ganharam fundação para público por contatos específicos
+  - implementação:
+    - `supabase/migrations/047_campaign_selected_leads.sql`
+    - `supabase/manual/2026-04-14_add_campaign_selected_leads.sql`
+    - `src/app/(dashboard)/campanhas/page.tsx`
+    - `src/app/api/campanhas/route.ts`
+    - `src/app/api/campanhas/[id]/disparar/route.ts`
+  - comportamento:
+    - campanha pode nascer por `lista` ou `selecionados`
+    - no modo `selecionados`, o sistema persiste os destinatários em `campanha_leads`
+    - o disparo prioriza `campanha_leads` quando houver recorte explícito
+  - pendência:
+    - aplicar o patch manual `2026-04-14_add_campaign_selected_leads.sql` no banco de produção antes de validar no runtime
+- `2026-04-14` - troca manual de aba da inbox passou a limpar deep link antigo
+  - implementação:
+    - `src/app/(dashboard)/caixa-de-entrada/page.tsx`
+  - motivo:
+    - `conversaId` / `telefone` antigos podiam reabrir a thread anterior e fazer os boxes parecerem travados
+  - comportamento novo:
+    - ao trocar a aba manualmente, a tela limpa `conversaId`, `telefone` e `leadId` da URL e abandona o deep link anterior
 ## Atualização 2026-04-13 — Canal WhatsApp dos agentes passou a refletir o escritório real
 
 - foi criada a rota `GET /api/whatsapp-numbers`
@@ -3435,11 +3455,11 @@ Pontos que precisam ser preservados durante a implementacao:
 ## Atualização 2026-04-13 — Tarefas novas registradas a partir do smoke test
 
 - campanhas:
-  - leads manuais precisam poder entrar em campanhas de teste
-  - seleção de agente por campanha precisa listar os agentes reais do escritório
-  - template da primeira mensagem deve ser sugerido a partir do agente escolhido
-  - configuração de disparo precisa expor Z-API, não só Twilio
+  - foundation de leads manuais/selecionados em campanha foi implementada; falta validar em produção após patch `2026-04-14_add_campaign_selected_leads.sql`
+  - seleção de agente por campanha já lista os agentes reais do escritório
+  - template da primeira mensagem já é sugerido a partir do agente escolhido
+  - configuração de disparo ainda precisa perder o viés visual legado de Twilio
 - inbox:
-  - transferência de conversa ainda não aparece corretamente para o novo usuário
-  - notificações estão chegando sem a thread ficar visível/abrível
-  - `Abrir conversa` e `Iniciar conversa` via lead ainda não deep-linkam para a thread certa
+  - retestar transferência de conversa para confirmar visibilidade só no novo responsável
+  - retestar badges/notificações versus thread visível após a última rodada
+  - retestar boxes/filtros da inbox após a limpeza de deep link na troca manual de aba

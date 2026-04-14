@@ -146,10 +146,13 @@ Fechar um smoke test enxuto, mas suficiente, para evitar go-live “meio verde�
 
 - `Cadastro manual` reflete corretamente quantos leads com WhatsApp estão elegíveis
 - campanha consegue usar lead manual já cadastrado
+- campanha consegue operar por:
+  - lista inteira
+  - contatos específicos selecionados manualmente
 - campanha permite escolher agente real do escritório
 - template inicial vem sugerido pelo tipo do agente, mas continua editável
 - canal real do tenant aparece para seleção
-- evolução futura registrada: campanha personalizada por contatos selecionados, além do disparo por lista completa
+- se o modo de contatos específicos estiver ligado no código mas não no runtime, aplicar antes o patch `supabase/manual/2026-04-14_add_campaign_selected_leads.sql`
 
 ## Critério de pronto
 

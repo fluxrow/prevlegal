@@ -1524,3 +1524,23 @@ Os selects ainda pediam apenas `usuarios(...)`, então o PostgREST não sabia qu
 **Correção:** Criar `GET /api/whatsapp-numbers` no contexto do tenant, trocar o input cru por um seletor de canais ativos do escritório em `agentes-config.tsx` e validar no backend que o canal escolhido pertence ao tenant.
 
 **Regra de produto derivada:** por padrão, agentes devem compartilhar o mesmo canal do escritório; separação por agente só entra quando houver uma operação explicitamente distinta.
+
+## 2026-04-14 — Campanha personalizada precisa aceitar contatos específicos como público nativo
+
+**Problema:** No uso real, o escritório pode querer disparar para dois, três ou poucos leads específicos, sem transformar isso numa lista inteira só para contornar a UI.
+
+**Por que isso importa:** Campanhas de recuperação, retomada, teste e abordagem dirigida ficam artificiais quando o produto só aceita `lista completa` como unidade de público.
+
+**Correção:** Criar a fundação `campanha_leads`, permitir dois modos de público em campanhas (`lista` e `selecionados`) e fazer o disparo priorizar `campanha_leads` quando existir seleção explícita. Para manter compatibilidade com o schema legado, o sistema cria uma lista técnica do tipo `Seleção personalizada`.
+
+**Regra de produto derivada:** lista completa é apenas um modo de público. Quando o operador quer falar com contatos específicos, o sistema deve tratar isso como comportamento nativo, não como exceção improvisada.
+
+## 2026-04-14 — Troca manual de aba na inbox precisa cancelar o deep link antigo
+
+**Problema:** Os filtros da `Caixa de Entrada` podiam parecer travados porque `conversaId` e `telefone` antigos continuavam na URL, reabrindo a mesma thread logo depois do clique do operador.
+
+**Por que isso importa:** Para quem está operando a inbox, isso passa sensação de sistema “teimoso” ou de box que não responde, mesmo quando o clique foi aceito.
+
+**Correção:** Ao trocar de aba manualmente, limpar `conversaId`, `telefone` e `leadId` da query string e resetar a hidratação de deep link para humano e portal.
+
+**Regra de produto derivada:** deep link serve para posicionar a tela uma vez. Depois que o operador assume o controle e troca a aba, a navegação precisa respeitar a intenção humana imediatamente.
