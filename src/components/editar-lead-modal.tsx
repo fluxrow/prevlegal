@@ -8,7 +8,9 @@ type EditableLead = {
   nome: string
   cpf?: string | null
   telefone?: string | null
+  telefone_enriquecido?: string | null
   email?: string | null
+  anotacao?: string | null
   status?: string | null
   nb?: string | null
   nit?: string | null
@@ -55,7 +57,9 @@ function buildInitialForm(lead: EditableLead) {
   return {
     nome: lead.nome || '',
     telefone: toText(lead.telefone),
+    telefone_enriquecido: toText(lead.telefone_enriquecido),
     email: toText(lead.email),
+    anotacao: toText(lead.anotacao),
     cpf: toText(lead.cpf),
     status: lead.status || 'new',
     nb: toText(lead.nb),
@@ -119,6 +123,7 @@ function Field({
   type = 'text',
   options,
   placeholder,
+  multiline = false,
 }: {
   label: string
   value: string
@@ -126,6 +131,7 @@ function Field({
   type?: string
   options?: Array<{ value: string; label: string }>
   placeholder?: string
+  multiline?: boolean
 }) {
   return (
     <div>
@@ -140,6 +146,8 @@ function Field({
             </option>
           ))}
         </select>
+      ) : multiline ? (
+        <textarea value={value} onChange={(e) => onChange(e.target.value)} style={{ ...inputStyle, minHeight: '92px', resize: 'vertical' }} placeholder={placeholder} />
       ) : (
         <input type={type} value={value} onChange={(e) => onChange(e.target.value)} style={inputStyle} placeholder={placeholder} />
       )}
@@ -240,10 +248,23 @@ export default function EditarLeadModal({
           <Section title="Contato e CRM">
             <Field label="Nome" value={form.nome} onChange={(value) => setForm((prev) => ({ ...prev, nome: value }))} />
             <Field label="Status" value={form.status} onChange={(value) => setForm((prev) => ({ ...prev, status: value }))} options={STATUS_OPTIONS} />
-            <Field label="Telefone" value={form.telefone} onChange={(value) => setForm((prev) => ({ ...prev, telefone: value }))} />
+            <Field label="Contato de abordagem" value={form.telefone} onChange={(value) => setForm((prev) => ({ ...prev, telefone: value }))} />
+            <Field label="Contato enriquecido / alternativo" value={form.telefone_enriquecido} onChange={(value) => setForm((prev) => ({ ...prev, telefone_enriquecido: value }))} />
             <Field label="Email" value={form.email} onChange={(value) => setForm((prev) => ({ ...prev, email: value }))} type="email" />
             <Field label="CPF" value={form.cpf} onChange={(value) => setForm((prev) => ({ ...prev, cpf: value }))} />
             <Field label="NB" value={form.nb} onChange={(value) => setForm((prev) => ({ ...prev, nb: value }))} />
+          </Section>
+
+          <Section title="Contexto de abordagem">
+            <div style={{ gridColumn: '1 / -1' }}>
+              <Field
+                label="Observação operacional"
+                value={form.anotacao}
+                onChange={(value) => setForm((prev) => ({ ...prev, anotacao: value }))}
+                placeholder="Ex.: contato veio do filho, usar abordagem indireta"
+                multiline
+              />
+            </div>
           </Section>
 
           <Section title="Benefício e elegibilidade">

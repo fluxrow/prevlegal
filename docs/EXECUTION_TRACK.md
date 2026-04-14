@@ -155,6 +155,7 @@ Status em 10/04/2026:
 - seleção de canal WhatsApp por agente: `ok`
 - campanhas com agente real, canal real e template inicial contextualizado: `ok`
 - importador enriquecido por `CPF + nome` com contato prioritário para disparo: `ok`
+- visualização de lead com `contato de abordagem`, `contato alternativo` e contexto de enriquecimento: `ok`
 - pendências residuais do smoke test:
   - passe final de convite/aceite com email inédito e permissões customizadas ponta a ponta
   - passe final de portal com tenant real

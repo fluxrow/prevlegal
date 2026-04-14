@@ -104,9 +104,11 @@ export async function PATCH(
   payload.status = status || 'new'
   payload.cpf = normalizeTrimmed(body.cpf)
   payload.telefone = normalizeTrimmed(body.telefone)
+  payload.telefone_enriquecido = normalizeTrimmed(body.telefone_enriquecido)
   payload.nb = normalizeTrimmed(body.nb)
   payload.nit = normalizeTrimmed(body.nit)
   payload.banco = normalizeTrimmed(body.banco)
+  payload.anotacao = normalizeTrimmed(body.anotacao)
   payload.tipo_beneficio = normalizeTrimmed(body.tipo_beneficio)
   payload.aps = normalizeTrimmed(body.aps)
   payload.sexo = normalizeTrimmed(body.sexo)

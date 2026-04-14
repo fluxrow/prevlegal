@@ -17,7 +17,10 @@ type Lead = {
   nb: string
   cpf: string | null
   telefone: string | null
+  telefone_enriquecido?: string | null
   email?: string | null
+  anotacao?: string | null
+  enriquecido?: boolean | null
   status: string
   score: number
   ganho_potencial: number | null
@@ -297,12 +300,21 @@ export default function LeadDrawer({
             <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
               <Section title="Dados Pessoais" icon={User}>
                 <Row label="CPF" value={lead.cpf} mono />
-                <Row label="Telefone" value={lead.telefone} />
+                <Row label="Contato de abordagem" value={lead.telefone} />
+                <Row label="Contato alternativo" value={lead.telefone_enriquecido} />
                 <Row label="Nascimento" value={fmtDate(lead.data_nascimento)} />
                 <Row label="Idade" value={calcIdade(lead.data_nascimento)} />
                 <Row label="Sexo" value={lead.sexo} />
                 <Row label="Categoria" value={lead.categoria_profissional} />
               </Section>
+              {(lead.telefone_enriquecido || lead.anotacao) && (
+                <Section title="Enriquecimento e Abordagem" icon={AlertCircle}>
+                  <Row label="Lead enriquecido" value={lead.enriquecido ? 'Sim' : '—'} />
+                  <div style={{ padding: '10px 12px', background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '12px', color: lead.anotacao ? 'var(--text-secondary)' : 'var(--text-muted)', lineHeight: 1.5 }}>
+                    {lead.anotacao || 'Sem contexto adicional de enriquecimento.'}
+                  </div>
+                </Section>
+              )}
               <Section title="Benefício" icon={FileText}>
                 <Row label="NB" value={lead.nb} mono />
                 <Row label="Tipo" value={lead.tipo_beneficio} />

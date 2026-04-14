@@ -63,6 +63,12 @@ function parseDate(val: unknown): string | null {
     return null
 }
 
+function parseBooleanFlag(val: unknown): boolean {
+    if (val === null || val === undefined) return false
+    const normalized = String(val).trim().toLowerCase()
+    return ['sim', 's', 'true', '1', 'yes', 'y'].includes(normalized)
+}
+
 function truncate(value: string | null | undefined, max: number) {
     if (!value) return null
     const normalized = value.trim()
@@ -110,34 +116,163 @@ function buildSyntheticNb(cpf: string, nome: string | null, dataNascimento: stri
 }
 
 function pickPrioritizedContact(row: unknown[], lookup: HeaderLookup) {
-    const contactCandidates = [
-        { source: 'CELULAR_WHATSAPP_1', value: getCellByHeaderAliases(row, lookup, ['CELULAR_WHATSAPP_1', 'CELULAR WHATSAPP 1']), direct: true, whatsapp: true },
-        { source: 'TELEFONE_WHATSAPP_1', value: getCellByHeaderAliases(row, lookup, ['TELEFONE_WHATSAPP_1', 'TELEFONE WHATSAPP 1']), direct: true, whatsapp: true },
-        { source: 'TELEFONE1', value: getCellByHeaderAliases(row, lookup, ['TELEFONE1', 'TELEFONE 1']), direct: true, whatsapp: false },
-        { source: 'TELEFONE2', value: getCellByHeaderAliases(row, lookup, ['TELEFONE2', 'TELEFONE 2']), direct: true, whatsapp: false },
-        { source: 'CONJUGE_CELULAR_1', value: getCellByHeaderAliases(row, lookup, ['CONJUGE_CELULAR_1', 'CONJUGE CELULAR 1']), direct: false, whatsapp: false },
-        { source: 'FILHO_1_CELULAR_1', value: getCellByHeaderAliases(row, lookup, ['FILHO_1_CELULAR_1', 'FILHO 1 CELULAR 1']), direct: false, whatsapp: false },
-        { source: 'IRMAO_1_CELULAR_1', value: getCellByHeaderAliases(row, lookup, ['IRMAO_1_CELULAR_1', 'IRMAO 1 CELULAR 1']), direct: false, whatsapp: false },
+    const directWhatsAppFlag = [
+        getCellByHeaderAliases(row, lookup, ['CELULAR_WHATSAPP_1', 'CELULAR WHATSAPP 1']),
+        getCellByHeaderAliases(row, lookup, ['TELEFONE_WHATSAPP_1', 'TELEFONE WHATSAPP 1']),
+    ].some(parseBooleanFlag)
+
+    const explicitDirectWhatsappCandidates = [
+        { source: 'CELULAR', value: getCellByHeaderAliases(row, lookup, ['CELULAR', 'CELULAR1', 'CELULAR_1', 'CELULAR 1', 'MOBILE', 'CELULAR PRINCIPAL']), direct: true, whatsapp: true },
+        { source: 'WHATSAPP', value: getCellByHeaderAliases(row, lookup, ['WHATSAPP', 'WHATSAPP 1', 'NUMERO WHATSAPP', 'NUMERO DE WHATSAPP']), direct: true, whatsapp: true },
+        { source: 'CELULAR_WHATSAPP_1', value: getCellByHeaderAliases(row, lookup, ['CELULAR_WHATSAPP_NUMERO_1', 'CELULAR WHATSAPP NUMERO 1']), direct: true, whatsapp: true },
+        { source: 'TELEFONE_WHATSAPP_1', value: getCellByHeaderAliases(row, lookup, ['TELEFONE_WHATSAPP_NUMERO_1', 'TELEFONE WHATSAPP NUMERO 1']), direct: true, whatsapp: true },
     ]
 
-    for (const candidate of contactCandidates) {
-        const parsed = parsePhone(candidate.value)
-        if (parsed) {
-            return {
-                telefone: parsed,
-                source: candidate.source,
-                direct: candidate.direct,
-                whatsapp: candidate.whatsapp,
-            }
+    const directPhoneCandidates = [
+        { source: 'TELEFONE1', value: getCellByHeaderAliases(row, lookup, ['TELEFONE1', 'TELEFONE 1']), direct: true, whatsapp: directWhatsAppFlag },
+        { source: 'TELEFONE2', value: getCellByHeaderAliases(row, lookup, ['TELEFONE2', 'TELEFONE 2']), direct: true, whatsapp: directWhatsAppFlag },
+    ]
+
+    const relatedCandidates = [
+        { source: 'CONJUGE_CELULAR_1', value: getCellByHeaderAliases(row, lookup, ['CONJUGE_CELULAR_1', 'CONJUGE CELULAR 1']), direct: false, whatsapp: true },
+        { source: 'FILHO_1_CELULAR_1', value: getCellByHeaderAliases(row, lookup, ['FILHO_1_CELULAR_1', 'FILHO 1 CELULAR 1']), direct: false, whatsapp: true },
+        { source: 'IRMAO_1_CELULAR_1', value: getCellByHeaderAliases(row, lookup, ['IRMAO_1_CELULAR_1', 'IRMAO 1 CELULAR 1']), direct: false, whatsapp: true },
+    ]
+
+    const contactCandidates = [
+        ...explicitDirectWhatsappCandidates,
+        ...directPhoneCandidates,
+        ...relatedCandidates,
+    ]
+
+    const prioritizedCandidates = [
+        ...explicitDirectWhatsappCandidates,
+        ...relatedCandidates,
+        ...directPhoneCandidates.filter((candidate) => candidate.whatsapp),
+        ...directPhoneCandidates.filter((candidate) => !candidate.whatsapp),
+    ]
+
+    const primaryCandidate = prioritizedCandidates.find((candidate) => parsePhone(candidate.value))
+
+    if (!primaryCandidate) {
+        return {
+            telefone: null,
+            source: null,
+            direct: true,
+            whatsapp: false,
+            alternativo: null,
+            alternateSource: null,
         }
     }
 
+    const telefone = parsePhone(primaryCandidate.value)
+    const alternatePriority = primaryCandidate.direct
+        ? [
+            ...relatedCandidates,
+            ...directPhoneCandidates.filter((candidate) => candidate.source !== primaryCandidate.source),
+            ...explicitDirectWhatsappCandidates.filter((candidate) => candidate.source !== primaryCandidate.source),
+        ]
+        : [
+            ...explicitDirectWhatsappCandidates,
+            ...directPhoneCandidates,
+            ...relatedCandidates.filter((candidate) => candidate.source !== primaryCandidate.source),
+        ]
+
+    const alternateCandidate = alternatePriority.find((candidate) => {
+        const parsed = parsePhone(candidate.value)
+        return parsed && parsed !== telefone
+    })
+
+    return {
+        telefone,
+        source: primaryCandidate.source,
+        direct: primaryCandidate.direct,
+        whatsapp: primaryCandidate.whatsapp,
+        alternativo: alternateCandidate ? parsePhone(alternateCandidate.value) : null,
+        alternateSource: alternateCandidate?.source || null,
+    }
+}
+
+function buildApproachContext({
+    prioritizedContact,
+    relatedContacts,
+}: {
+    prioritizedContact: ReturnType<typeof pickPrioritizedContact>
+    relatedContacts: string[]
+}) {
+    const notes = [
+        prioritizedContact.source
+            ? prioritizedContact.direct
+                ? `Contato de abordagem importado de ${prioritizedContact.source}.`
+                : `Contato de abordagem importado de ${prioritizedContact.source} (contato relacionado; ajuste a abordagem da campanha).`
+            : null,
+        prioritizedContact.alternateSource && prioritizedContact.alternativo
+            ? `Contato alternativo detectado em ${prioritizedContact.alternateSource}: ${prioritizedContact.alternativo}.`
+            : null,
+        relatedContacts.length > 0
+            ? `Contatos relacionados detectados: ${relatedContacts.join(' · ')}`
+            : null,
+    ].filter(Boolean)
+
+    return truncate(notes.join(' '), 1000)
+}
+
+function buildEnrichedAlternateContact(prioritizedContact: ReturnType<typeof pickPrioritizedContact>) {
+    if (prioritizedContact.alternativo) return prioritizedContact.alternativo
+
+    return null
+}
+
+function pickLegacyContact(row: unknown[], schema: ReturnType<typeof detectImportSchema>) {
+    const telefone = parsePhone(getMappedCell(row, schema, 'telefone'))
+    return {
+        telefone,
+        source: 'telefone',
+        direct: true,
+        whatsapp: false,
+        alternativo: null,
+        alternateSource: null,
+    }
+}
+
+function emptyPrioritizedContact() {
     return {
         telefone: null,
         source: null,
         direct: true,
         whatsapp: false,
+        alternativo: null,
+        alternateSource: null,
     }
+}
+
+function collectRelatedContacts(row: unknown[], lookup: HeaderLookup) {
+    const relatedCandidates = [
+        {
+            label: 'Cônjuge',
+            nome: getCellByHeaderAliases(row, lookup, ['CONJUGE_NOME', 'CONJUGE NOME']),
+            telefone: getCellByHeaderAliases(row, lookup, ['CONJUGE_CELULAR_1', 'CONJUGE CELULAR 1']),
+        },
+        {
+            label: 'Filho',
+            nome: getCellByHeaderAliases(row, lookup, ['FILHO_1_NOME', 'FILHO 1 NOME']),
+            telefone: getCellByHeaderAliases(row, lookup, ['FILHO_1_CELULAR_1', 'FILHO 1 CELULAR 1']),
+        },
+        {
+            label: 'Irmão',
+            nome: getCellByHeaderAliases(row, lookup, ['IRMAO_1_NOME', 'IRMAO 1 NOME']),
+            telefone: getCellByHeaderAliases(row, lookup, ['IRMAO_1_CELULAR_1', 'IRMAO 1 CELULAR 1']),
+        },
+    ]
+
+    return relatedCandidates
+        .map((candidate) => {
+            const telefone = parsePhone(candidate.telefone)
+            const nome = truncate(candidate.nome ? String(candidate.nome) : null, 120)
+            if (!telefone) return null
+            return `${candidate.label}: ${nome || 'sem nome'} (${telefone})`
+        })
+        .filter(Boolean) as string[]
 }
 
 function calcScore(ganho: number | null, tipo: string): number {
@@ -313,18 +448,13 @@ export async function POST(request: NextRequest) {
         const tipo = tipoRaw ? String(tipoRaw).trim() : ''
         const prioritizedContact = detectedSchema.mode === 'header_mapping'
             ? pickPrioritizedContact(row, headerLookup)
-            : { telefone: parsePhone(getMappedCell(row, detectedSchema, 'telefone')), source: 'telefone', direct: true, whatsapp: false }
+            : pickLegacyContact(row, detectedSchema)
         const telefone = prioritizedContact.telefone
         const email = parseEmail(detectedSchema.mode === 'header_mapping' ? getMappedCell(row, detectedSchema, 'email') : null)
         const categoriaProfissional = truncate(detectedSchema.mode === 'header_mapping' ? String(getMappedCell(row, detectedSchema, 'categoria_profissional') || '') : null, 255)
-        const anotacoesImportacao = [
-            dataNascimento ? `Data de nascimento: ${dataNascimento}` : null,
-            prioritizedContact.source
-                ? prioritizedContact.direct
-                    ? `Contato prioritário importado de ${prioritizedContact.source}.`
-                    : `Contato prioritário importado de ${prioritizedContact.source} (contato relacionado; ajuste a abordagem da campanha).`
-                : null,
-        ].filter(Boolean).join(' ')
+        const relatedContacts = detectedSchema.mode === 'header_mapping' ? collectRelatedContacts(row, headerLookup) : []
+        const contatoEnriquecido = buildEnrichedAlternateContact(prioritizedContact)
+        const anotacoesImportacao = buildApproachContext({ prioritizedContact, relatedContacts })
 
         if (ganho) ganhoTotal += ganho
 
@@ -336,17 +466,18 @@ export async function POST(request: NextRequest) {
             nome: truncate(nome, 255),
             cpf: cpf ? cpf.slice(0, 14) : null,
             telefone,
-            telefone_enriquecido: prioritizedContact.direct ? null : telefone,
+            telefone_enriquecido: contatoEnriquecido,
             aps: truncate(detectedSchema.mode === 'header_mapping' ? String(getMappedCell(row, detectedSchema, 'aps') || '') : (row[COL.APS] ? String(row[COL.APS]) : null), 255),
             banco: truncate(detectedSchema.mode === 'header_mapping' ? String(getMappedCell(row, detectedSchema, 'banco') || '') : (row[COL.BANCO] ? String(row[COL.BANCO]) : null), 100),
             dib: parseDate(detectedSchema.mode === 'header_mapping' ? getMappedCell(row, detectedSchema, 'dib') : row[COL.DIB]),
+            data_nascimento: dataNascimento,
             tipo_beneficio: truncate(tipo, 255),
             valor_rma: parseGanho(detectedSchema.mode === 'header_mapping' ? getMappedCell(row, detectedSchema, 'valor_rma') : row[COL.VALOR_RMA]),
             categoria_profissional: categoriaProfissional,
             ganho_potencial: ganho,
             score: calcScore(ganho, tipo),
             status: 'new' as const,
-            anotacao: truncate(anotacoesImportacao, 1000),
+            anotacao: anotacoesImportacao,
             enriquecido: Boolean(prioritizedContact.source),
             enriquecido_em: prioritizedContact.source ? new Date().toISOString() : null,
             tem_whatsapp: prioritizedContact.whatsapp ? true : null,

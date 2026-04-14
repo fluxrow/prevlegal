@@ -20,6 +20,16 @@ Mestra: [[MASTER_PREV_LEGAL]]
 - [[Sessoes/2026-03-18-prevlegal-admin-roi-obsidian]]
 - [[Sessoes/2026-03-18-sessoes-17-18-marco-prevlegal-completo]]
 
+### 159. Base enriquecida pode parecer “rica em WhatsApp”, mas o produto precisa distinguir contato do titular de contato relacionado
+**Problema:** Após importar a base enriquecida da Jessica, o operador esperava ver um `CELULAR` principal do titular, mas o cadastro mostrava telefone fixo do beneficiário e não deixava claro de onde vinham os contatos melhores da família
+**Causa:** A CSV `Enriquecimento_COMPLETO-LISTA-RJ.csv` traz `TELEFONE1/2` do titular e celulares de cônjuge, filho e irmão, mas não traz uma coluna numérica `CELULAR` do próprio titular; sem explicitar isso na UI, o sistema parecia “escolher o telefone errado”
+**Correção:** Ajustar o importador para:
+- priorizar contato direto com melhor sinal de WhatsApp
+- depois priorizar celulares de familiares como canal de abordagem
+- só então cair para telefone direto do titular
+- registrar no lead o `Contato de abordagem`, `Contato alternativo` e o `Contexto operacional` com origem e parentes detectados
+**Regra pratica:** Em operação previdenciária enriquecida, o melhor canal de abordagem nem sempre é o do titular. O sistema precisa mostrar claramente quando está falando com um familiar e preservar um contato alternativo para o operador não agir no escuro.
+
 ### 157. Em importador com cabeçalho variável, matcher permissivo demais pode transformar linha de dado em linha de schema
 **Problema:** Uma planilha enriquecida com `CPF`, `NOME` e múltiplos campos familiares foi importada com só 6 leads de 78, enquanto o produto reportava dezenas de “duplicatas da planilha”
 **Causa:** O detector de cabeçalho aceitava matches por substring curtos demais (`tipo`, `rma`, `mail`) e acabou elegendo uma linha de dado como se fosse o cabeçalho real; isso embaralhava o field map, gerava `nb` sintético errado e inflava falsamente a deduplicação em memória

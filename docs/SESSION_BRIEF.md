@@ -212,12 +212,19 @@ Gatilho automático: a mudança de status do lead na API `PATCH` chama o *Orques
 - correção aplicada no importador:
   - layouts com `CPF + nome` agora são aceitos mesmo sem `NB`
   - quando não existir `NB`, o sistema gera um identificador técnico determinístico por lead
-  - o importador escolhe automaticamente um contato prioritário por lead na ordem:
-    - `CELULAR_WHATSAPP_1`
-    - `TELEFONE_WHATSAPP_1`
-    - `TELEFONE1`
-    - `TELEFONE2`
-    - `CONJUGE_CELULAR_1`
+  - o importador escolhe automaticamente um contato prioritário por lead priorizando:
+    - contato direto marcado/interpretado como WhatsApp
+    - celulares de familiares (`CONJUGE_CELULAR_1`, `FILHO_1_CELULAR_1`, `IRMAO_1_CELULAR_1`) quando forem o melhor canal disponível
+    - telefones diretos do titular só como fallback
+  - quando o melhor contato vier de terceiro, o sistema registra isso na observação operacional do lead
+  - o lead passou a exibir:
+    - `Contato de abordagem`
+    - `Contato alternativo`
+    - `Contexto operacional` com origem do contato e familiares detectados
+- observação importante da base atual:
+  - a CSV `Enriquecimento_COMPLETO-LISTA-RJ.csv` não traz uma coluna numérica `CELULAR` do titular
+  - ela traz `TELEFONE1`, `TELEFONE2` e celulares de familiares
+  - por isso o produto não pode assumir “celular do titular” quando essa coluna simplesmente não existe no arquivo
     - `FILHO_1_CELULAR_1`
     - `IRMAO_1_CELULAR_1`
   - o contato prioritário vai direto para `leads.telefone`, porque o disparo de campanha usa esse campo

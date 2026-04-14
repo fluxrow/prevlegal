@@ -56,6 +56,8 @@ export interface Lead {
     nome: string
     cpf?: string | null
     telefone?: string
+    telefone_enriquecido?: string | null
+    anotacao?: string | null
     aps?: string
     banco?: string
     dib?: string

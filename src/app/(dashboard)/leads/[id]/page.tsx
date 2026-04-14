@@ -19,7 +19,9 @@ interface Lead {
   nome: string
   cpf: string | null
   telefone: string | null
+  telefone_enriquecido?: string | null
   email: string | null
+  anotacao?: string | null
   status: string
   score: number
   ganho_potencial: number
@@ -40,6 +42,7 @@ interface Lead {
   isencao_ir: string | null
   pensionista?: string | null
   bloqueado?: boolean | null
+  enriquecido?: boolean | null
   created_at: string
 }
 
@@ -493,9 +496,22 @@ export default function LeadDetailPage() {
           <Field label="Idade" value={lead.idade ? `${lead.idade} anos` : null} />
           <Field label="Sexo" value={lead.sexo} />
           <Field label="Categoria" value={lead.categoria_profissional || lead.categoria} />
-          <Field label="Telefone" value={lead.telefone} />
+          <Field label="Contato de abordagem" value={lead.telefone} />
+          <Field label="Contato alternativo" value={lead.telefone_enriquecido} />
           <Field label="E-mail" value={lead.email} />
         </Section>
+
+        {(lead.telefone_enriquecido || lead.anotacao) && (
+          <Section icon={<Users size={14} />} title="Enriquecimento e Abordagem">
+            <Field label="Lead enriquecido" value={lead.enriquecido ? 'Sim' : '—'} />
+            <div style={{ gridColumn: '1 / -1' }}>
+              <p style={{ fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'DM Sans, sans-serif', margin: '0 0 6px' }}>Contexto operacional</p>
+              <div style={{ padding: '12px 14px', borderRadius: '10px', border: '1px solid var(--border)', background: 'var(--bg-card)', color: lead.anotacao ? 'var(--text-secondary)' : 'var(--text-muted)', fontSize: '13px', lineHeight: 1.55, whiteSpace: 'pre-wrap' }}>
+                {lead.anotacao || 'Sem observações adicionais de enriquecimento.'}
+              </div>
+            </div>
+          </Section>
+        )}
 
         <Section icon={<FileText size={14} />} title="Benefício Previdenciário">
           <Field label="NB" value={lead.nb} />
