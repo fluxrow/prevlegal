@@ -20,6 +20,28 @@ Objetivo:
 - facilitar o repasse posterior para o Claude
 - registrar decisoes, arquivos afetados, validacoes e proximos passos
 
+## Atualizacao 2026-04-14 - Inbox passou a tratar deep links como hidratação pontual
+
+- contexto:
+  - no reteste multiusuário da inbox, duas queixas apareceram juntas:
+    - após um handoff, a aba da inbox parecia “parar de clicar”
+    - notificações e atalhos de abrir/iniciar conversa levavam para a tela, mas o foco operacional não ficava estável
+- arquivo alterado:
+  - `src/app/(dashboard)/caixa-de-entrada/page.tsx`
+- mudancas principais:
+  - a tela agora usa refs para marcar quando um deep link humano ou do portal já foi processado
+  - hidratação por `conversaId` / `telefone` e por `leadId` deixou de rodar em loop a cada refresh
+  - alternar entre inbox humana e portal limpa os parâmetros concorrentes da URL
+  - `selecionarConversa` e `selecionarThreadPortal` ganharam opção para não ressincronizar a URL quando o foco veio de um deep link já conhecido
+- validacao:
+  - `npm run build` passou
+- proximo passo operacional:
+  - retestar no tenant real:
+    - transferência de `Fabio` para `Dr. Fabio`
+    - permanência da thread `Cauã` com o usuário original
+    - clique das abas da inbox
+    - abertura correta via notificação, `Abrir conversa` e `Iniciar conversa`
+
 ## Atualizacao 2026-04-13 - Campanhas e inbox ganharam alinhamento de runtime para o go-live
 
 - contexto:

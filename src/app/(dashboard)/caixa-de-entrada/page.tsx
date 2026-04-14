@@ -143,6 +143,8 @@ export default function CaixaDeEntradaPage() {
   const [erroEnvio, setErroEnvio] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const humanLinkHandledRef = useRef<string | null>(null)
+  const portalLinkHandledRef = useRef<string | null>(null)
 
   function notifyPendenciasChanged() {
     if (typeof window !== 'undefined') {
@@ -165,6 +167,17 @@ export default function CaixaDeEntradaPage() {
       params.set('tab', aba)
     }
 
+    if (aba === 'portal') {
+      params.delete('conversaId')
+      params.delete('telefone')
+      setConversaSelecionada(null)
+      setMensagens([])
+    } else {
+      params.delete('leadId')
+      setThreadSelecionada(null)
+      setMsgsPortal([])
+    }
+
     router.replace(params.toString() ? `${pathname}?${params.toString()}` : pathname, { scroll: false })
   }
 
@@ -182,11 +195,13 @@ export default function CaixaDeEntradaPage() {
   }, [searchParams])
 
   useEffect(() => {
-    if (abaAtiva === 'portal') return
-
     const conversaId = searchParams.get('conversaId')
     const telefone = searchParams.get('telefone')
-    if (!conversaId && !telefone) return
+    const token = `${conversaId || ''}:${telefone || ''}`
+    if (!conversaId && !telefone) {
+      humanLinkHandledRef.current = null
+      return
+    }
 
     const encontrada = conversas.find((conversa) => {
       if (conversaId && conversa.id === conversaId) return true
@@ -194,23 +209,35 @@ export default function CaixaDeEntradaPage() {
       return false
     })
 
-    if (encontrada) {
-      setAbaAtiva('todas')
-      void selecionarConversa(encontrada)
+    if (!encontrada) return
+
+    if (humanLinkHandledRef.current === token && conversaSelecionada?.id === encontrada.id) {
+      return
     }
-  }, [abaAtiva, conversas, searchParams])
+
+    humanLinkHandledRef.current = token
+    setAbaAtiva('todas')
+    void selecionarConversa(encontrada, { syncUrl: false })
+  }, [conversas, searchParams, conversaSelecionada?.id])
 
   useEffect(() => {
-    if (abaAtiva !== 'portal') return
-
     const leadId = searchParams.get('leadId')
-    if (!leadId) return
+    if (!leadId) {
+      portalLinkHandledRef.current = null
+      return
+    }
 
     const encontrada = threadsPortal.find((thread) => thread.lead_id === leadId)
-    if (encontrada) {
-      setThreadSelecionada(encontrada)
+    if (!encontrada) return
+
+    if (portalLinkHandledRef.current === leadId && threadSelecionada?.lead_id === leadId) {
+      return
     }
-  }, [abaAtiva, threadsPortal, searchParams])
+
+    portalLinkHandledRef.current = leadId
+    setAbaAtiva('portal')
+    selecionarThreadPortal(encontrada, { syncUrl: false })
+  }, [threadsPortal, searchParams, threadSelecionada?.lead_id])
 
   useEffect(() => {
     if (conversaSelecionada && abaAtiva !== 'portal') fetchMensagens(conversaSelecionada.id)
@@ -325,17 +352,22 @@ export default function CaixaDeEntradaPage() {
     return null
   }
 
-  async function selecionarConversa(conversa: Conversa) {
+  async function selecionarConversa(
+    conversa: Conversa,
+    options?: { syncUrl?: boolean },
+  ) {
     setThreadSelecionada(null)
     setMsgsPortal([])
     setConversaSelecionada(conversa)
 
-    const params = new URLSearchParams(searchParams.toString())
-    params.delete('tab')
-    params.delete('leadId')
-    params.set('conversaId', conversa.id)
-    params.set('telefone', conversa.telefone)
-    router.replace(`${pathname}?${params.toString()}`, { scroll: false })
+    if (options?.syncUrl !== false) {
+      const params = new URLSearchParams(searchParams.toString())
+      params.delete('tab')
+      params.delete('leadId')
+      params.set('conversaId', conversa.id)
+      params.set('telefone', conversa.telefone)
+      router.replace(`${pathname}?${params.toString()}`, { scroll: false })
+    }
 
     if (conversa.nao_lidas > 0) {
       await atualizarConversa(
@@ -359,15 +391,22 @@ export default function CaixaDeEntradaPage() {
     }
   }
 
-  function selecionarThreadPortal(thread: ThreadPortal) {
+  function selecionarThreadPortal(
+    thread: ThreadPortal,
+    options?: { syncUrl?: boolean },
+  ) {
     setConversaSelecionada(null)
     setMensagens([])
     setThreadSelecionada(thread)
 
-    const params = new URLSearchParams(searchParams.toString())
-    params.set('tab', 'portal')
-    params.set('leadId', thread.lead_id)
-    router.replace(`${pathname}?${params.toString()}`, { scroll: false })
+    if (options?.syncUrl !== false) {
+      const params = new URLSearchParams(searchParams.toString())
+      params.delete('conversaId')
+      params.delete('telefone')
+      params.set('tab', 'portal')
+      params.set('leadId', thread.lead_id)
+      router.replace(`${pathname}?${params.toString()}`, { scroll: false })
+    }
   }
 
   async function assumirConversa(conversaId: string) {

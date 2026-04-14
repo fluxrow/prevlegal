@@ -149,6 +149,7 @@ Status em 10/04/2026:
   - passe final de transferência de conversa entre usuários
   - passe final de abertura da thread via lead detail / notificações
   - passe final de campanhas com lead manual, escolha de agente e canal Z-API
+  - unificar a aba `Configuração de Disparo` de campanhas com os canais reais do tenant, removendo o viés legado de `Twilio Sandbox`
 
 Observação operacional do go-live:
 - o convite interno ainda é `link manual`; o sistema gera a URL, mas não envia email automático

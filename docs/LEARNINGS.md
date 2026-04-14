@@ -71,6 +71,12 @@ Mestra: [[MASTER_PREV_LEGAL]]
 **Correção:** Fazer `/campanhas` carregar listas com `include_system=1`, agentes reais do tenant, canais reais via `/api/whatsapp-numbers` e sugerir um template inicial coerente com o tipo do agente, mantendo edição livre
 **Regra pratica:** Se a campanha é uma ferramenta operacional do escritório, ela precisa enxergar os recursos reais daquele tenant e já nascer com uma mensagem inicial contextualizada
 
+### 159. Deep link de inbox não pode sequestrar a aba ativa depois que o operador assume o controle da tela
+**Problema:** Após transferências, notificações ou ações como `Abrir conversa` / `Iniciar conversa`, a inbox podia ficar visualmente incoerente: abas deixavam de responder, a thread certa não abria de forma estável e a página parecia “presa” em um estado antigo
+**Causa:** A tela de `/caixa-de-entrada` reaplicava o deep link (`conversaId`, `telefone`, `leadId`) a cada refresh de dados, mesmo depois que o usuário já tinha clicado em outra aba ou mudado o foco operacional
+**Correção:** Tratar deep link como hidratação pontual, com controle de “já processado”, e limpar parâmetros concorrentes ao alternar entre inbox humana e portal
+**Regra pratica:** Link profundo deve servir para abrir o contexto certo uma vez. Depois disso, quem manda na navegação é o operador, não a query string antiga
+
 ### 147. Webhook de provider nao pode assumir JSON puro
 **Problema:** O inbound da Z-API seguia falhando mesmo com rota publicada, parser ampliado e webhook salvo corretamente
 **Causa:** A variante `web / multi-device` pode enviar o corpo do webhook como `application/x-www-form-urlencoded`, texto cru ou JSON serializado dentro de campos string; assumir `request.json()` fazia o body virar `{}` e o payload era descartado

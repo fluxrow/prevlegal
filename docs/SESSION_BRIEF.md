@@ -153,6 +153,36 @@ Gatilho automático: a mudança de status do lead na API `PATCH` chama o *Orques
     - abertura/foco da thread a partir de notificação e lead detail
     - campanha usando agente + canal Z-API + lead manual ponta a ponta
 
+## Atualização 2026-04-14 - Inbox deixou de reimpor deep links antigos e voltou a respeitar a navegação do operador
+
+- no smoke test multiusuário, a transferência do lead `Fabio` para `Dr. Fabio` coincidiu com dois sintomas visuais:
+  - abas da `Caixa de Entrada` pareciam travadas
+  - notificações levavam para a inbox, mas a thread/foco não se estabilizava
+- leitura técnica:
+  - a tela reaplicava `conversaId` / `telefone` / `leadId` sempre que os dados eram recarregados
+  - isso podia devolver a UI para `Todas` ou para uma thread antiga, mesmo depois de o usuário clicar em outra aba
+- correção aplicada:
+  - deep link humano e deep link do portal agora são tratados como hidratação pontual
+  - a inbox passou a memorizar quando o link já foi processado
+  - trocar de aba limpa parâmetros concorrentes (`conversaId`, `telefone`, `leadId`) e reseta a seleção do outro contexto
+- impacto esperado:
+  - filtros voltam a responder normalmente
+  - `Abrir conversa`, `Iniciar conversa` e cliques em notificação deixam de competir com o estado já escolhido pelo operador
+  - o reteste de transferência entre usuários fica mais fiel ao estado real do banco, sem ruído de navegação antiga
+
+## Tasks abertas registradas após o novo smoke test
+
+- campanhas:
+  - revisar a aba `Configuração de Disparo`, que ainda expõe um modelo legado focado em Twilio, em vez de refletir os canais reais do tenant (`Z-API` / `Twilio`)
+  - confirmar no runtime que lead manual, agente escolhido e template inicial sugerido estão fechados ponta a ponta
+- inbox / portal:
+  - retestar transferência de conversa entre `Cauã` e `Dr. Fabio` após a correção de deep link
+  - retestar abertura da thread a partir de:
+    - notificação no sino
+    - `Abrir conversa` no lead
+    - `Iniciar conversa` no lead
+  - confirmar se a separação das threads do portal por carteira pessoal está estável no runtime após as últimas correções
+
 ## Atualização 2026-04-13 - Portal e badge da inbox passaram a refletir tratamento real da carteira pessoal
 
 - a visibilidade de portal foi alinhada à mesma regra da inbox humana:
