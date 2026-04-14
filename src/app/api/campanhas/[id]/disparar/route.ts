@@ -105,7 +105,7 @@ export async function POST(
 
     let query = adminClient
       .from("leads")
-      .select("id, nome, nb, cpf, telefone, banco, valor_rma, ganho_potencial, tem_whatsapp")
+      .select("id, nome, nb, cpf, telefone, banco, valor_rma, ganho_potencial, tem_whatsapp, contato_abordagem_tipo")
       .eq("lgpd_optout", false);
     query = applyTenantFilter(query, context.tenantId);
 
@@ -132,7 +132,9 @@ export async function POST(
     // Filtrar leads: apenas com WhatsApp verificado se configurado
     const leads = leadsDaLista.filter(
       (l: any) =>
-        l && (!campanha.apenas_verificados || l.tem_whatsapp === true),
+        l &&
+        (!campanha.apenas_verificados || l.tem_whatsapp === true) &&
+        (!campanha.contato_alvo_tipo || l.contato_abordagem_tipo === campanha.contato_alvo_tipo),
     );
 
     const channel = await resolveWhatsAppChannel(

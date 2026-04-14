@@ -22,6 +22,7 @@ function applyTenantFilter(query: any, tenantId: string | null) {
 
 const LISTA_SELECAO_PERSONALIZADA_NOME = 'Seleção personalizada'
 const LISTA_SELECAO_PERSONALIZADA_FORNECEDOR = 'sistema'
+const ALLOWED_CONTACT_TARGET_TYPES = new Set(['titular', 'conjuge', 'filho', 'irmao'])
 
 async function getOrCreateSelectionList(adminClient: ReturnType<typeof createAdminClient>, tenantId: string, usuarioId: string) {
   const { data: existing, error: existingError } = await adminClient
@@ -105,6 +106,7 @@ export async function POST(request: NextRequest) {
       agendado_para,
       agente_id,
       whatsapp_number_id,
+      contato_alvo_tipo,
     } = body
 
     const selectedLeadIds = Array.isArray(lead_ids)
@@ -114,6 +116,15 @@ export async function POST(request: NextRequest) {
 
     if (!nome || !mensagem_template) {
       return NextResponse.json({ error: 'nome e mensagem_template são obrigatórios' }, { status: 400 })
+    }
+
+    const normalizedContatoAlvoTipo =
+      typeof contato_alvo_tipo === 'string' && contato_alvo_tipo.trim()
+        ? contato_alvo_tipo.trim().toLowerCase()
+        : null
+
+    if (normalizedContatoAlvoTipo && !ALLOWED_CONTACT_TARGET_TYPES.has(normalizedContatoAlvoTipo)) {
+      return NextResponse.json({ error: 'contato_alvo_tipo inválido' }, { status: 400 })
     }
 
     if (campaignTargetMode === 'lista' && !lista_id) {
@@ -235,6 +246,7 @@ export async function POST(request: NextRequest) {
         apenas_verificados: apenas_verificados ?? true,
         agendado_para: agendado_para || null,
         agente_id: agente_id || null,
+        contato_alvo_tipo: normalizedContatoAlvoTipo,
       })
       .select()
       .single()

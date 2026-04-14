@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { Megaphone, Plus, Zap, CheckCircle2, XCircle, X } from "lucide-react";
 import CampanhasOnboardingTour from "@/components/campanhas-onboarding-tour";
 import { buildCampaignMessageTemplate } from "@/lib/campaign-message-templates";
+import { CONTACT_TARGET_OPTIONS } from "@/lib/contact-target";
 
 type Toast = { id: number; type: "success" | "error"; message: string };
 
@@ -106,6 +107,7 @@ interface Campanha {
   listas?: { nome: string };
   agentes?: { id: string; nome_interno: string; nome_publico: string } | null;
   agente_id?: string | null;
+  contato_alvo_tipo?: string | null;
 }
 
 interface Lista {
@@ -177,6 +179,7 @@ export default function CampanhasPage() {
     lead_ids: [] as string[],
     whatsapp_number_id: "",
     agente_id: "",
+    contato_alvo_tipo: "",
     mensagem_template: buildCampaignMessageTemplate(null),
     delay_min_ms: 1500,
     delay_max_ms: 3500,
@@ -294,6 +297,7 @@ export default function CampanhasPage() {
         lead_ids: [],
         whatsapp_number_id: "",
         agente_id: "",
+        contato_alvo_tipo: "",
         mensagem_template: buildCampaignMessageTemplate(null),
         delay_min_ms: 1500,
         delay_max_ms: 3500,
@@ -329,10 +333,10 @@ export default function CampanhasPage() {
     if (!templateFoiEditado) {
       setForm((prev) => ({
         ...prev,
-        mensagem_template: buildCampaignMessageTemplate(agenteSelecionado?.tipo),
+        mensagem_template: buildCampaignMessageTemplate(agenteSelecionado?.tipo, form.contato_alvo_tipo),
       }));
     }
-  }, [form.agente_id, agentes, showForm, templateFoiEditado]);
+  }, [form.agente_id, form.contato_alvo_tipo, agentes, showForm, templateFoiEditado]);
 
   const channelPadrao = whatsAppNumbers.find((number) => number.is_default);
   const selectedLeads = form.lead_ids
@@ -866,6 +870,44 @@ export default function CampanhasPage() {
               </div>
 
               {/* Seletor de Agente IA — Fase D */}
+              <div style={{ marginBottom: "16px" }}>
+                <label
+                  style={{
+                    fontSize: "12px",
+                    color: "var(--text-secondary)",
+                    display: "block",
+                    marginBottom: "6px",
+                  }}
+                >
+                  Tipo de contato da campanha
+                </label>
+                <select
+                  value={form.contato_alvo_tipo}
+                  onChange={(e) => {
+                    setTemplateFoiEditado(false);
+                    setForm((p) => ({ ...p, contato_alvo_tipo: e.target.value }));
+                  }}
+                  style={{
+                    width: "100%",
+                    padding: "8px 12px",
+                    borderRadius: "8px",
+                    border: "1px solid var(--border)",
+                    background: "var(--bg-hover)",
+                    color: "var(--text-primary)",
+                    fontSize: "13px",
+                  }}
+                >
+                  {CONTACT_TARGET_OPTIONS.map((option) => (
+                    <option key={option.value || "all"} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+                <p style={{ margin: "6px 0 0", fontSize: "11px", color: "var(--text-muted)" }}>
+                  Filtre campanhas para titular, cônjuge, filho ou irmão conforme o contato de abordagem importado.
+                </p>
+              </div>
+
               <div style={{ marginBottom: "16px" }}>
                 <label
                   style={{

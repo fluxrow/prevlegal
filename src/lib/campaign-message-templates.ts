@@ -1,5 +1,13 @@
-export function buildCampaignMessageTemplate(agentType: string | null | undefined) {
+export function buildCampaignMessageTemplate(
+  agentType: string | null | undefined,
+  contactTargetType?: string | null | undefined,
+) {
   const normalized = String(agentType || "triagem").trim().toLowerCase()
+  const target = String(contactTargetType || "").trim().toLowerCase()
+
+  if (["conjuge", "filho", "irmao"].includes(target)) {
+    return "Olá! Estou tentando falar com um familiar de {nome} sobre um assunto previdenciário importante. Se você puder confirmar se é a melhor pessoa para receber esse recado, eu explico de forma breve por aqui."
+  }
 
   switch (normalized) {
     case "confirmacao_agenda":

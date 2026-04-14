@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { Loader2, Save, X } from 'lucide-react'
+import { CONTACT_TARGET_OPTIONS } from '@/lib/contact-target'
 
 type EditableLead = {
   id: string
@@ -9,6 +10,10 @@ type EditableLead = {
   cpf?: string | null
   telefone?: string | null
   telefone_enriquecido?: string | null
+  contato_abordagem_tipo?: string | null
+  contato_abordagem_origem?: string | null
+  contato_alternativo_tipo?: string | null
+  contato_alternativo_origem?: string | null
   email?: string | null
   anotacao?: string | null
   status?: string | null
@@ -40,6 +45,11 @@ const STATUS_OPTIONS = [
   { value: 'lost', label: 'Perdido' },
 ]
 
+const CONTACT_EDIT_OPTIONS = [
+  { value: '', label: 'Não definido' },
+  ...CONTACT_TARGET_OPTIONS.filter((option) => option.value),
+]
+
 function toDateInput(value?: string | null) {
   if (!value) return ''
   return String(value).slice(0, 10)
@@ -58,6 +68,10 @@ function buildInitialForm(lead: EditableLead) {
     nome: lead.nome || '',
     telefone: toText(lead.telefone),
     telefone_enriquecido: toText(lead.telefone_enriquecido),
+    contato_abordagem_tipo: toText(lead.contato_abordagem_tipo),
+    contato_abordagem_origem: toText(lead.contato_abordagem_origem),
+    contato_alternativo_tipo: toText(lead.contato_alternativo_tipo),
+    contato_alternativo_origem: toText(lead.contato_alternativo_origem),
     email: toText(lead.email),
     anotacao: toText(lead.anotacao),
     cpf: toText(lead.cpf),
@@ -249,7 +263,11 @@ export default function EditarLeadModal({
             <Field label="Nome" value={form.nome} onChange={(value) => setForm((prev) => ({ ...prev, nome: value }))} />
             <Field label="Status" value={form.status} onChange={(value) => setForm((prev) => ({ ...prev, status: value }))} options={STATUS_OPTIONS} />
             <Field label="Contato de abordagem" value={form.telefone} onChange={(value) => setForm((prev) => ({ ...prev, telefone: value }))} />
+            <Field label="Tipo do contato de abordagem" value={form.contato_abordagem_tipo} onChange={(value) => setForm((prev) => ({ ...prev, contato_abordagem_tipo: value }))} options={CONTACT_EDIT_OPTIONS} />
+            <Field label="Origem do contato de abordagem" value={form.contato_abordagem_origem} onChange={(value) => setForm((prev) => ({ ...prev, contato_abordagem_origem: value }))} />
             <Field label="Contato enriquecido / alternativo" value={form.telefone_enriquecido} onChange={(value) => setForm((prev) => ({ ...prev, telefone_enriquecido: value }))} />
+            <Field label="Tipo do contato alternativo" value={form.contato_alternativo_tipo} onChange={(value) => setForm((prev) => ({ ...prev, contato_alternativo_tipo: value }))} options={CONTACT_EDIT_OPTIONS} />
+            <Field label="Origem do contato alternativo" value={form.contato_alternativo_origem} onChange={(value) => setForm((prev) => ({ ...prev, contato_alternativo_origem: value }))} />
             <Field label="Email" value={form.email} onChange={(value) => setForm((prev) => ({ ...prev, email: value }))} type="email" />
             <Field label="CPF" value={form.cpf} onChange={(value) => setForm((prev) => ({ ...prev, cpf: value }))} />
             <Field label="NB" value={form.nb} onChange={(value) => setForm((prev) => ({ ...prev, nb: value }))} />

@@ -12,6 +12,7 @@ import IniciarConversaModal from '@/components/iniciar-conversa-modal'
 import EditarLeadModal from '@/components/editar-lead-modal'
 import NovoAgendamentoModal from '@/components/novo-agendamento-modal'
 import { buildInboxHref, buildWhatsAppHref } from '@/lib/contact-shortcuts'
+import { getContactTargetLabel } from '@/lib/contact-target'
 import FollowupLead from '@/components/followup-lead'
 
 interface Lead {
@@ -20,6 +21,10 @@ interface Lead {
   cpf: string | null
   telefone: string | null
   telefone_enriquecido?: string | null
+  contato_abordagem_tipo?: string | null
+  contato_abordagem_origem?: string | null
+  contato_alternativo_tipo?: string | null
+  contato_alternativo_origem?: string | null
   email: string | null
   anotacao?: string | null
   status: string
@@ -497,7 +502,11 @@ export default function LeadDetailPage() {
           <Field label="Sexo" value={lead.sexo} />
           <Field label="Categoria" value={lead.categoria_profissional || lead.categoria} />
           <Field label="Contato de abordagem" value={lead.telefone} />
+          <Field label="Tipo do contato de abordagem" value={getContactTargetLabel(lead.contato_abordagem_tipo)} />
+          <Field label="Origem do contato de abordagem" value={lead.contato_abordagem_origem} />
           <Field label="Contato alternativo" value={lead.telefone_enriquecido} />
+          <Field label="Tipo do contato alternativo" value={getContactTargetLabel(lead.contato_alternativo_tipo)} />
+          <Field label="Origem do contato alternativo" value={lead.contato_alternativo_origem} />
           <Field label="E-mail" value={lead.email} />
           {(lead.telefone_enriquecido || lead.anotacao) && (
             <div style={{ gridColumn: '1 / -1' }}>

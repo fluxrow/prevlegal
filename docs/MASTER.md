@@ -152,6 +152,7 @@ Estratégia: entrar com R$ 1.997 para gerar cases, subir gradualmente.
 - **Auth:** Supabase Auth
 - **Deploy:** Vercel (auto-deploy no push para main)
 - **WhatsApp:** camada em transicao para providers (`Twilio` agora, `Z-API` a seguir) com suporte planejado a multiplos numeros por tenant
+- **Mail marketing planejado:** `Resend`, com entrada prevista primeiro para operações de planejamento previdenciário e newsletter
 - **IA:** Claude API (claude-sonnet-4-20250514)
 - **Agendamentos:** Google Calendar OAuth por usuário com fallback do escritório
 - **Charts:** Recharts

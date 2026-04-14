@@ -44,6 +44,7 @@ export interface Campanha {
     agente_id?: string
     responsavel_id?: string
     status: 'rascunho' | 'ativa' | 'pausada' | 'encerrada'
+    contato_alvo_tipo?: 'titular' | 'conjuge' | 'filho' | 'irmao' | null
     created_at: string
 }
 
@@ -57,6 +58,10 @@ export interface Lead {
     cpf?: string | null
     telefone?: string
     telefone_enriquecido?: string | null
+    contato_abordagem_tipo?: 'titular' | 'conjuge' | 'filho' | 'irmao' | 'outro' | null
+    contato_abordagem_origem?: string | null
+    contato_alternativo_tipo?: 'titular' | 'conjuge' | 'filho' | 'irmao' | 'outro' | null
+    contato_alternativo_origem?: string | null
     anotacao?: string | null
     aps?: string
     banco?: string

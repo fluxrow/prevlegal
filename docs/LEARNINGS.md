@@ -20,6 +20,31 @@ Mestra: [[MASTER_PREV_LEGAL]]
 - [[Sessoes/2026-03-18-prevlegal-admin-roi-obsidian]]
 - [[Sessoes/2026-03-18-sessoes-17-18-marco-prevlegal-completo]]
 
+### 160. Em operação previdenciária enriquecida, “telefone” sozinho não basta; campanha precisa saber quem é o contato de abordagem
+**Problema:** Depois da importação da base enriquecida, o lead já mostrava o melhor número de abordagem e os familiares detectados, mas a campanha ainda não tinha estrutura para distinguir se o disparo deveria ir para titular, cônjuge, filho ou irmão
+**Causa:** O modelo legado de `leads` e `campanhas` guardava apenas números, sem um tipo operacional do contato escolhido
+**Correção:** Criar colunas estruturadas para:
+- `leads.contato_abordagem_tipo`
+- `leads.contato_abordagem_origem`
+- `leads.contato_alternativo_tipo`
+- `leads.contato_alternativo_origem`
+- `campanhas.contato_alvo_tipo`
+e usar isso para:
+- exibir o contexto certo no cadastro
+- editar manualmente o tipo/origem do contato
+- filtrar campanhas por relação familiar
+- ajustar o template inicial quando o contato não é o titular
+**Regra pratica:** Quando a operação depende de familiares, o sistema precisa modelar o parentesco como dado operacional e não escondê-lo em texto livre. Só assim campanha, abordagem e supervisão conseguem trabalhar sem ambiguidade.
+
+### 161. Nem todo dado detectado na planilha precisa entrar no schema imediatamente
+**Problema:** A base enriquecida passou a trazer `email`, mas o schema operacional de `leads` ainda não suporta esse campo
+**Causa:** Adicionar `email` em `leads` perto do go-live abriria uma mudança estrutural mais ampla do que o fluxo principal de WhatsApp exigia naquele momento
+**Correção:** O importador agora:
+- detecta a presença de email
+- informa isso claramente no resumo da importação
+- segue normalmente sem falhar nem persistir `email`
+**Regra pratica:** Se um dado novo ainda não é necessário para o fluxo principal validado, prefira registrá-lo como evolução planejada em vez de expandir o schema no reflexo. A mudança estrutural entra quando já existe um caso de uso fechado, como a futura frente de `Resend` para mail marketing/newsletter.
+
 ### 159. Base enriquecida pode parecer “rica em WhatsApp”, mas o produto precisa distinguir contato do titular de contato relacionado
 **Problema:** Após importar a base enriquecida da Jessica, o operador esperava ver um `CELULAR` principal do titular, mas o cadastro mostrava telefone fixo do beneficiário e não deixava claro de onde vinham os contatos melhores da família
 **Causa:** A CSV `Enriquecimento_COMPLETO-LISTA-RJ.csv` traz `TELEFONE1/2` do titular e celulares de cônjuge, filho e irmão, mas não traz uma coluna numérica `CELULAR` do próprio titular; sem explicitar isso na UI, o sistema parecia “escolher o telefone errado”

@@ -10,6 +10,7 @@ import IniciarConversaModal from '@/components/iniciar-conversa-modal'
 import EditarLeadModal from '@/components/editar-lead-modal'
 import NovoAgendamentoModal from '@/components/novo-agendamento-modal'
 import { buildInboxHref, buildWhatsAppHref } from '@/lib/contact-shortcuts'
+import { getContactTargetLabel } from '@/lib/contact-target'
 
 type Lead = {
   id: string
@@ -18,6 +19,10 @@ type Lead = {
   cpf: string | null
   telefone: string | null
   telefone_enriquecido?: string | null
+  contato_abordagem_tipo?: string | null
+  contato_abordagem_origem?: string | null
+  contato_alternativo_tipo?: string | null
+  contato_alternativo_origem?: string | null
   email?: string | null
   anotacao?: string | null
   enriquecido?: boolean | null
@@ -301,7 +306,11 @@ export default function LeadDrawer({
               <Section title="Dados Pessoais" icon={User}>
                 <Row label="CPF" value={lead.cpf} mono />
                 <Row label="Contato de abordagem" value={lead.telefone} />
+                <Row label="Tipo do contato de abordagem" value={getContactTargetLabel(lead.contato_abordagem_tipo)} />
+                <Row label="Origem do contato de abordagem" value={lead.contato_abordagem_origem} />
                 <Row label="Contato alternativo" value={lead.telefone_enriquecido} />
+                <Row label="Tipo do contato alternativo" value={getContactTargetLabel(lead.contato_alternativo_tipo)} />
+                <Row label="Origem do contato alternativo" value={lead.contato_alternativo_origem} />
                 <Row label="Nascimento" value={fmtDate(lead.data_nascimento)} />
                 <Row label="Idade" value={calcIdade(lead.data_nascimento)} />
                 <Row label="Sexo" value={lead.sexo} />

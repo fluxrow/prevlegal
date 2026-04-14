@@ -4,6 +4,35 @@ Contexto: [[SESSION_HISTORY_MASTER]]
 Mestra: [[MASTER_PREV_LEGAL]]
 > Última atualização: 10/04/2026
 
+## Atualizacao Leads + Campanhas / tipo do contato de abordagem como estrutura operacional — 14/04/2026
+
+- a operação enriquecida deixou claro que o produto já não pode tratar todo número como “telefone do lead” sem contexto
+- para campanhas previdenciárias reais, o escritório precisa distinguir pelo menos:
+  - `titular`
+  - `conjuge`
+  - `filho`
+  - `irmao`
+- evolução aplicada:
+  - `leads` passam a suportar:
+    - `contato_abordagem_tipo`
+    - `contato_abordagem_origem`
+    - `contato_alternativo_tipo`
+    - `contato_alternativo_origem`
+  - `campanhas` passam a suportar:
+    - `contato_alvo_tipo`
+  - a UI do lead e da edição manual agora mostram explicitamente o tipo e a origem do contato escolhido para abordagem
+  - a criação de campanha já consegue filtrar o público por `titular`, `conjuge`, `filho` ou `irmao`
+  - o template inicial da campanha se ajusta quando o disparo vai para familiar em vez do titular
+- impacto operacional:
+  - reduz erro de abordagem com contato indireto
+  - prepara o produto para campanhas por relação familiar
+  - cria uma base limpa para futuros playbooks híbridos de benefícios e planejamento
+- decisão de arquitetura:
+  - esta frente justifica schema próprio porque muda a segmentação e o comportamento da campanha
+  - `email` da planilha, por outro lado, continua fora do schema de `leads` por enquanto para não abrir uma mudança estrutural maior sem fechar antes a frente de mail marketing
+- próxima evolução natural:
+  - integrar `email` de lead e playbooks de newsletter/mail marketing via `Resend`, especialmente para operações de planejamento previdenciário
+
 ## Atualizacao Importador / detecção de cabeçalho enriquecido endurecida — 14/04/2026
 
 - durante o teste de uma lista enriquecida da Assertivo, a importação concluiu com apenas `6` leads inseridos de `78`, apesar de a planilha conter muito mais registros válidos

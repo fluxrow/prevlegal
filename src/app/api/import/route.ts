@@ -7,6 +7,7 @@ import { createClient as createAdminClient } from '@supabase/supabase-js'
 import * as XLSX from 'xlsx'
 import { getTenantContext } from '@/lib/tenant-context'
 import { detectImportSchema, getMappedCell } from '@/lib/import-schema'
+import { inferContactTargetType, type ContactTargetType } from '@/lib/contact-target'
 
 // Mapeamento das colunas da planilha NOMES_RJ_BNG.xlsx
 // Baseado na análise real da planilha (índice base 0)
@@ -115,7 +116,18 @@ function buildSyntheticNb(cpf: string, nome: string | null, dataNascimento: stri
     return `IMP-${digest}`.slice(0, 20)
 }
 
-function pickPrioritizedContact(row: unknown[], lookup: HeaderLookup) {
+type PrioritizedContact = {
+    telefone: string | null
+    source: string | null
+    tipo: ContactTargetType
+    direct: boolean
+    whatsapp: boolean
+    alternativo: string | null
+    alternateSource: string | null
+    alternateTipo: ContactTargetType
+}
+
+function pickPrioritizedContact(row: unknown[], lookup: HeaderLookup): PrioritizedContact {
     const directWhatsAppFlag = [
         getCellByHeaderAliases(row, lookup, ['CELULAR_WHATSAPP_1', 'CELULAR WHATSAPP 1']),
         getCellByHeaderAliases(row, lookup, ['TELEFONE_WHATSAPP_1', 'TELEFONE WHATSAPP 1']),
@@ -162,10 +174,12 @@ function pickPrioritizedContact(row: unknown[], lookup: HeaderLookup) {
         return {
             telefone: null,
             source: null,
+            tipo: 'titular' as ContactTargetType,
             direct: true,
             whatsapp: false,
             alternativo: null,
             alternateSource: null,
+            alternateTipo: 'titular' as ContactTargetType,
         }
     }
 
@@ -190,10 +204,12 @@ function pickPrioritizedContact(row: unknown[], lookup: HeaderLookup) {
     return {
         telefone,
         source: primaryCandidate.source,
+        tipo: inferContactTargetType(primaryCandidate.source),
         direct: primaryCandidate.direct,
         whatsapp: primaryCandidate.whatsapp,
         alternativo: alternateCandidate ? parsePhone(alternateCandidate.value) : null,
         alternateSource: alternateCandidate?.source || null,
+        alternateTipo: inferContactTargetType(alternateCandidate?.source || null),
     }
 }
 
@@ -201,7 +217,7 @@ function buildApproachContext({
     prioritizedContact,
     relatedContacts,
 }: {
-    prioritizedContact: ReturnType<typeof pickPrioritizedContact>
+    prioritizedContact: PrioritizedContact
     relatedContacts: string[]
 }) {
     const notes = [
@@ -221,32 +237,36 @@ function buildApproachContext({
     return truncate(notes.join('\n\n'), 1000)
 }
 
-function buildEnrichedAlternateContact(prioritizedContact: ReturnType<typeof pickPrioritizedContact>) {
+function buildEnrichedAlternateContact(prioritizedContact: PrioritizedContact) {
     if (prioritizedContact.alternativo) return prioritizedContact.alternativo
 
     return null
 }
 
-function pickLegacyContact(row: unknown[], schema: ReturnType<typeof detectImportSchema>) {
+function pickLegacyContact(row: unknown[], schema: ReturnType<typeof detectImportSchema>): PrioritizedContact {
     const telefone = parsePhone(getMappedCell(row, schema, 'telefone'))
     return {
         telefone,
         source: 'telefone',
+        tipo: 'titular',
         direct: true,
         whatsapp: false,
         alternativo: null,
         alternateSource: null,
+        alternateTipo: 'titular',
     }
 }
 
-function emptyPrioritizedContact() {
+function emptyPrioritizedContact(): PrioritizedContact {
     return {
         telefone: null,
         source: null,
+        tipo: 'titular',
         direct: true,
         whatsapp: false,
         alternativo: null,
         alternateSource: null,
+        alternateTipo: 'titular',
     }
 }
 
@@ -481,6 +501,10 @@ export async function POST(request: NextRequest) {
             cpf: cpf ? cpf.slice(0, 14) : null,
             telefone,
             telefone_enriquecido: contatoEnriquecido,
+            contato_abordagem_tipo: prioritizedContact.tipo,
+            contato_abordagem_origem: truncate(prioritizedContact.source, 80),
+            contato_alternativo_tipo: contatoEnriquecido ? prioritizedContact.alternateTipo : null,
+            contato_alternativo_origem: truncate(prioritizedContact.alternateSource, 80),
             aps: truncate(detectedSchema.mode === 'header_mapping' ? String(getMappedCell(row, detectedSchema, 'aps') || '') : (row[COL.APS] ? String(row[COL.APS]) : null), 255),
             banco: truncate(detectedSchema.mode === 'header_mapping' ? String(getMappedCell(row, detectedSchema, 'banco') || '') : (row[COL.BANCO] ? String(row[COL.BANCO]) : null), 100),
             dib: parseDate(detectedSchema.mode === 'header_mapping' ? getMappedCell(row, detectedSchema, 'dib') : row[COL.DIB]),

@@ -217,7 +217,30 @@ Gatilho automático: a mudança de status do lead na API `PATCH` chama o *Orques
     - celulares de familiares (`CONJUGE_CELULAR_1`, `FILHO_1_CELULAR_1`, `IRMAO_1_CELULAR_1`) quando forem o melhor canal disponível
     - telefones diretos do titular só como fallback
   - quando o melhor contato vier de terceiro, o sistema registra isso na observação operacional do lead
-  - o lead passou a exibir:
+- o lead passou a exibir:
+
+## Atualização 2026-04-14 - Leads e campanhas ganharam tipo estruturado do contato de abordagem
+
+- a operação enriquecida já não cabe mais no modelo implícito de “telefone do lead”
+- decisão aplicada:
+  - `leads` agora suportam:
+    - `contato_abordagem_tipo`
+    - `contato_abordagem_origem`
+    - `contato_alternativo_tipo`
+    - `contato_alternativo_origem`
+  - `campanhas` agora suportam:
+    - `contato_alvo_tipo`
+- impacto prático:
+  - o cadastro do lead passa a deixar explícito se o contato atual é:
+    - titular
+    - cônjuge
+    - filho
+    - irmão
+  - a campanha passa a poder filtrar o público por esse tipo de contato
+  - o template sugerido se adapta quando o disparo é para familiar e não para o titular
+- decisão de arquitetura:
+  - esta frente entrou no schema porque muda a segmentação operacional do produto
+  - `email` detectado na planilha continua fora de `leads` por enquanto; essa evolução fica reservada para a frente de mail marketing/newsletter com `Resend`
     - `Contato de abordagem`
     - `Contato alternativo`
     - `Contexto operacional` com origem do contato e familiares detectados

@@ -20,6 +20,39 @@ Objetivo:
 - facilitar o repasse posterior para o Claude
 - registrar decisoes, arquivos afetados, validacoes e proximos passos
 
+## Atualizacao 2026-04-14 - Tipo do contato de abordagem virou estrutura de campanha
+
+- contexto:
+  - depois da importação enriquecida, o produto já conseguia escolher melhor o número de abordagem
+  - mas campanha ainda não distinguia se o disparo iria para `titular`, `cônjuge`, `filho` ou `irmão`
+- arquivos alterados:
+  - `src/lib/contact-target.ts`
+  - `src/app/api/import/route.ts`
+  - `src/app/api/campanhas/route.ts`
+  - `src/app/api/campanhas/[id]/disparar/route.ts`
+  - `src/lib/campaign-message-templates.ts`
+  - `src/app/(dashboard)/campanhas/page.tsx`
+  - `src/app/(dashboard)/leads/[id]/page.tsx`
+  - `src/components/lead-drawer.tsx`
+  - `src/components/editar-lead-modal.tsx`
+  - `src/app/api/leads/[id]/route.ts`
+  - `src/lib/types.ts`
+  - `supabase/migrations/048_contact_target_types.sql`
+  - `supabase/manual/2026-04-14_add_contact_target_types.sql`
+- mudancas principais:
+  - o importador agora persiste tipo e origem do contato principal e alternativo
+  - o cadastro e a edição do lead passaram a mostrar esses campos explicitamente
+  - campanha agora aceita filtro por `contato_alvo_tipo`
+  - o template sugerido da campanha muda quando o público é familiar em vez de titular
+- decisao de arquitetura:
+  - esta mudança justificou schema porque altera a segmentação real da operação
+  - `email` detectado na planilha continua fora do schema de `leads` por enquanto para não misturar go-live WhatsApp com a futura frente de mail marketing via `Resend`
+- validacao:
+  - `npm run build` passou
+- proximo passo operacional:
+  - aplicar no banco operacional o patch `supabase/manual/2026-04-14_add_contact_target_types.sql`
+  - retestar criação de campanha filtrando por `titular`, `conjuge`, `filho` e `irmao`
+
 ## Atualizacao 2026-04-14 - Contador de listas em campanhas passou a refletir elegibilidade real
 
 - contexto:
