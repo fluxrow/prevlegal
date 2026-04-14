@@ -170,6 +170,25 @@ Gatilho automático: a mudança de status do lead na API `PATCH` chama o *Orques
   - `Abrir conversa`, `Iniciar conversa` e cliques em notificação deixam de competir com o estado já escolhido pelo operador
   - o reteste de transferência entre usuários fica mais fiel ao estado real do banco, sem ruído de navegação antiga
 
+## Atualização 2026-04-14 - Tabelas `UNRESTRICTED` no Supabase viraram item formal de hardening
+
+- no painel do Supabase apareceram várias tabelas novas e antigas como `UNRESTRICTED`, ou seja, sem RLS habilitado
+- leitura atual:
+  - isso não explica os testes funcionais que já estão verdes
+  - mas é um ponto real de segurança antes de escalar operação com escritórios pagantes
+- prioridade de endurecimento:
+  - `whatsapp_numbers` por guardar credenciais sensíveis
+  - `portal_access_links` e `portal_sessions` por guardarem hashes de acesso
+  - `portal_users` por envolver identidade do portal
+- segunda onda:
+  - `campanha_leads`
+  - `followup_*`
+  - `lead_*` internas
+  - `document_*`
+- decisão prática:
+  - não bloquear o smoke test funcional por isso
+  - registrar como hardening explícito no pós-go-live imediato
+
 ## Atualização 2026-04-14 - Campanhas passaram a recalcular elegibilidade real das listas
 
 - a lista `Cadastro manual` podia aparecer com `0 com WhatsApp` mesmo já contendo leads manuais aptos para campanha

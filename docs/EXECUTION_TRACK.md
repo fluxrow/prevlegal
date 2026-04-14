@@ -56,7 +56,19 @@ Protocolo complementar entre IAs:
 1. Subir serviço Docling e ligar `DOCLING_SERVICE_URL`
 2. Refinar calendário/agendamentos
 3. Abrir importador inteligente fase 2
-4. Fechar lacunas operacionais de campanhas e inbox multiusuário:
+4. Harden de segurança no Supabase (RLS / tabelas sensíveis):
+- aplicar RLS nas tabelas hoje marcadas como `UNRESTRICTED`
+- priorizar tabelas com segredos, links mágicos e sessão:
+  - `whatsapp_numbers`
+  - `portal_access_links`
+  - `portal_sessions`
+  - `portal_users`
+- segunda onda:
+  - `campanha_leads`
+  - `followup_*`
+  - `lead_*` internas
+  - `document_*`
+5. Fechar lacunas operacionais de campanhas e inbox multiusuário:
 - permitir usar leads cadastrados manualmente em campanhas de teste/execução
 - permitir escolher qualquer agente do escritório na campanha e sugerir mensagem inicial por template
 - expor canais Z-API/Twilio na configuração de disparo da campanha
