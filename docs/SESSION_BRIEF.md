@@ -199,6 +199,34 @@ Gatilho automático: a mudança de status do lead na API `PATCH` chama o *Orques
   - além do disparo por lista inteira, a campanha deve evoluir para permitir seleção explícita de contatos individuais
   - isso fica como próxima camada operacional, especialmente útil para campanhas personalizadas de recuperação e follow-up
 
+## Atualização 2026-04-14 - Importador passou a aceitar lista enriquecida por `CPF + nome` para go-live
+
+- o go-live da Jessica ficou dependente da base enriquecida do Assertivo, porque nela estão os números realmente utilizáveis para abordagem
+- a lista nutrida nova trouxe:
+  - `CPF`
+  - `NOME`
+  - `DATANASC`
+  - telefones do titular
+  - telefones com sinalização de WhatsApp
+  - contatos de cônjuge, filho e irmão
+- correção aplicada no importador:
+  - layouts com `CPF + nome` agora são aceitos mesmo sem `NB`
+  - quando não existir `NB`, o sistema gera um identificador técnico determinístico por lead
+  - o importador escolhe automaticamente um contato prioritário por lead na ordem:
+    - `CELULAR_WHATSAPP_1`
+    - `TELEFONE_WHATSAPP_1`
+    - `TELEFONE1`
+    - `TELEFONE2`
+    - `CONJUGE_CELULAR_1`
+    - `FILHO_1_CELULAR_1`
+    - `IRMAO_1_CELULAR_1`
+  - o contato prioritário vai direto para `leads.telefone`, porque o disparo de campanha usa esse campo
+  - quando o contato vier de familiar, o sistema registra isso em `anotacao` para orientar uma abordagem indireta
+- decisão de operação para o go-live:
+  - continua valendo `1 lead = 1 beneficiário`
+  - a campanha aborda um único contato por vez
+  - árvore familiar e múltiplos contatos relacionados ficam para a próxima fase, sem bloquear a operação de segunda
+
 ## Tasks abertas registradas após o novo smoke test
 
 - campanhas:

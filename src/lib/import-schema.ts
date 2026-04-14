@@ -22,6 +22,7 @@ export type ImportDetectionSummary = {
   fieldMap: Partial<Record<ImportCanonicalField, number>>
   detectedFields: ImportCanonicalField[]
   missingCoreFields: ImportCanonicalField[]
+  coreStrategy: 'nb_nome' | 'cpf_nome' | 'none'
 }
 
 const HEADER_ALIASES: Record<ImportCanonicalField, string[]> = {
@@ -83,16 +84,20 @@ export function detectImportSchema(rows: unknown[][]): ImportDetectionSummary {
   }
 
   const detectedFields = Object.keys(bestFieldMap) as ImportCanonicalField[]
-  const coreFields: ImportCanonicalField[] = ['nb', 'nome']
-  const hasHeaderMapping = detectedFields.length >= 3 && coreFields.every((field) => field in bestFieldMap)
+  const hasNbNome = 'nb' in bestFieldMap && 'nome' in bestFieldMap
+  const hasCpfNome = 'cpf' in bestFieldMap && 'nome' in bestFieldMap
+  const hasHeaderMapping = detectedFields.length >= 2 && (hasNbNome || hasCpfNome)
+  const coreStrategy = hasNbNome ? 'nb_nome' : hasCpfNome ? 'cpf_nome' : 'none'
 
   if (hasHeaderMapping) {
+    const requiredCoreFields: ImportCanonicalField[] = coreStrategy === 'nb_nome' ? ['nb', 'nome'] : ['cpf', 'nome']
     return {
       mode: 'header_mapping',
       headerRowIndex: bestHeaderRowIndex,
       fieldMap: bestFieldMap,
       detectedFields,
-      missingCoreFields: coreFields.filter((field) => !(field in bestFieldMap)),
+      missingCoreFields: requiredCoreFields.filter((field) => !(field in bestFieldMap)),
+      coreStrategy,
     }
   }
 
@@ -102,6 +107,7 @@ export function detectImportSchema(rows: unknown[][]): ImportDetectionSummary {
     fieldMap: {},
     detectedFields: [],
     missingCoreFields: [],
+    coreStrategy: 'none',
   }
 }
 

@@ -86,7 +86,7 @@ export default function ImportPage() {
           onChange={e => { const f = e.target.files?.[0]; if (f) handleImport(f) }} />
         {loading
           ? <div><Loader2 size={36} color="var(--accent)" style={{ marginBottom: '12px', animation: 'spin 1s linear infinite' }} /><p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Processando...</p></div>
-          : <div><FileSpreadsheet size={36} color="var(--text-muted)" style={{ marginBottom: '12px' }} /><p style={{ color: 'var(--text-primary)', fontSize: '14px', fontWeight: '500', marginBottom: '6px' }}>Arraste a planilha ou clique para selecionar</p><p style={{ color: 'var(--text-muted)', fontSize: '12px' }}>.xlsx e .xls suportados</p></div>
+          : <div><FileSpreadsheet size={36} color="var(--text-muted)" style={{ marginBottom: '12px' }} /><p style={{ color: 'var(--text-primary)', fontSize: '14px', fontWeight: '500', marginBottom: '6px' }}>Arraste a planilha ou clique para selecionar</p><p style={{ color: 'var(--text-muted)', fontSize: '12px' }}>.xlsx, .xls e .csv suportados</p></div>
         }
       </div>
 

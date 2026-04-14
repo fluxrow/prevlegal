@@ -1,5 +1,6 @@
 export const runtime = 'nodejs'
 
+import { createHash } from 'crypto'
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
@@ -36,8 +37,9 @@ function parseCPF(val: unknown): string {
 
 function parsePhone(val: unknown): string | null {
     if (!val) return null
-    const normalized = String(val).trim()
-    return normalized ? normalized.slice(0, 30) : null
+    const digits = String(val).replace(/\D/g, '')
+    if (!digits) return null
+    return digits.slice(0, 20)
 }
 
 function parseEmail(val: unknown): string | null {
@@ -65,6 +67,77 @@ function truncate(value: string | null | undefined, max: number) {
     if (!value) return null
     const normalized = value.trim()
     return normalized ? normalized.slice(0, max) : null
+}
+
+function normalizeHeader(value: unknown) {
+    return String(value || '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, ' ')
+        .trim()
+}
+
+type HeaderLookup = Map<string, number>
+
+function buildHeaderLookup(row: unknown[]): HeaderLookup {
+    return new Map(
+        row
+            .map((cell, index) => [normalizeHeader(cell), index] as const)
+            .filter(([header]) => Boolean(header))
+    )
+}
+
+function getCellByHeaderAliases(row: unknown[], lookup: HeaderLookup, aliases: string[]) {
+    for (const alias of aliases) {
+        const index = lookup.get(normalizeHeader(alias))
+        if (index !== undefined) {
+            return row[index] ?? null
+        }
+    }
+
+    return null
+}
+
+function buildSyntheticNb(cpf: string, nome: string | null, dataNascimento: string | null) {
+    if (cpf) return `CPF-${cpf}`.slice(0, 20)
+    const digest = createHash('sha1')
+        .update(`${nome || ''}|${dataNascimento || ''}`)
+        .digest('hex')
+        .slice(0, 16)
+        .toUpperCase()
+    return `IMP-${digest}`.slice(0, 20)
+}
+
+function pickPrioritizedContact(row: unknown[], lookup: HeaderLookup) {
+    const contactCandidates = [
+        { source: 'CELULAR_WHATSAPP_1', value: getCellByHeaderAliases(row, lookup, ['CELULAR_WHATSAPP_1', 'CELULAR WHATSAPP 1']), direct: true, whatsapp: true },
+        { source: 'TELEFONE_WHATSAPP_1', value: getCellByHeaderAliases(row, lookup, ['TELEFONE_WHATSAPP_1', 'TELEFONE WHATSAPP 1']), direct: true, whatsapp: true },
+        { source: 'TELEFONE1', value: getCellByHeaderAliases(row, lookup, ['TELEFONE1', 'TELEFONE 1']), direct: true, whatsapp: false },
+        { source: 'TELEFONE2', value: getCellByHeaderAliases(row, lookup, ['TELEFONE2', 'TELEFONE 2']), direct: true, whatsapp: false },
+        { source: 'CONJUGE_CELULAR_1', value: getCellByHeaderAliases(row, lookup, ['CONJUGE_CELULAR_1', 'CONJUGE CELULAR 1']), direct: false, whatsapp: false },
+        { source: 'FILHO_1_CELULAR_1', value: getCellByHeaderAliases(row, lookup, ['FILHO_1_CELULAR_1', 'FILHO 1 CELULAR 1']), direct: false, whatsapp: false },
+        { source: 'IRMAO_1_CELULAR_1', value: getCellByHeaderAliases(row, lookup, ['IRMAO_1_CELULAR_1', 'IRMAO 1 CELULAR 1']), direct: false, whatsapp: false },
+    ]
+
+    for (const candidate of contactCandidates) {
+        const parsed = parsePhone(candidate.value)
+        if (parsed) {
+            return {
+                telefone: parsed,
+                source: candidate.source,
+                direct: candidate.direct,
+                whatsapp: candidate.whatsapp,
+            }
+        }
+    }
+
+    return {
+        telefone: null,
+        source: null,
+        direct: true,
+        whatsapp: false,
+    }
 }
 
 function calcScore(ganho: number | null, tipo: string): number {
@@ -155,10 +228,17 @@ export async function POST(request: NextRequest) {
     const rowsToProcess = detectedSchema.mode === 'header_mapping' && detectedSchema.headerRowIndex !== null
         ? rows.slice(detectedSchema.headerRowIndex + 1)
         : rows
+    const headerLookup = detectedSchema.mode === 'header_mapping' && detectedSchema.headerRowIndex !== null
+        ? buildHeaderLookup(rows[detectedSchema.headerRowIndex] || [])
+        : new Map<string, number>()
 
     const schemaWarnings: string[] = []
     if (detectedSchema.mode === 'header_mapping') {
-        schemaWarnings.push(`Layout detectado por cabeçalhos (${detectedSchema.detectedFields.length} campo(s) mapeado(s)).`)
+        if (detectedSchema.coreStrategy === 'cpf_nome' && !('nb' in detectedSchema.fieldMap)) {
+            schemaWarnings.push('Layout enriquecido detectado por CPF + nome. O importador vai gerar um identificador técnico por lead e escolher automaticamente o melhor contato de abordagem.')
+        } else {
+            schemaWarnings.push(`Layout detectado por cabeçalhos (${detectedSchema.detectedFields.length} campo(s) mapeado(s)).`)
+        }
     } else {
         schemaWarnings.push('Layout legado por posição fixa detectado. Para novos fornecedores, prefira planilhas com cabeçalhos.')
     }
@@ -197,12 +277,18 @@ export async function POST(request: NextRequest) {
         const nb = nbRaw ? String(nbRaw).trim() : null
         const nome = nomeRaw ? String(nomeRaw).trim() : null
         const status = statusRaw ? String(statusRaw).trim().toLowerCase() : ''
+        const cpf = parseCPF(detectedSchema.mode === 'header_mapping' ? getMappedCell(row, detectedSchema, 'cpf') : row[COL.CPF])
+        const dataNascimento = detectedSchema.mode === 'header_mapping'
+            ? parseDate(getCellByHeaderAliases(row, headerLookup, ['DATANASC', 'DATA NASC', 'DATA DE NASCIMENTO']))
+            : null
+        const syntheticNb = buildSyntheticNb(cpf, nome, dataNascimento)
+        const effectiveNb = nb || syntheticNb
 
-        if (!nb || !nome) continue
+        if (!effectiveNb || !nome) continue
 
         // Deduplicação na planilha
-        if (nbsVistas.has(nb)) { totalDuplicados++; continue }
-        nbsVistas.add(nb)
+        if (nbsVistas.has(effectiveNb)) { totalDuplicados++; continue }
+        nbsVistas.add(effectiveNb)
 
         // Filtrar apenas ativos quando a origem informa status
         if (status && !status.includes('ativo')) { totalCessados++; continue }
@@ -211,10 +297,20 @@ export async function POST(request: NextRequest) {
         const ganho = parseGanho(detectedSchema.mode === 'header_mapping' ? getMappedCell(row, detectedSchema, 'ganho_potencial') : row[COL.GANHO])
         const tipoRaw = detectedSchema.mode === 'header_mapping' ? getMappedCell(row, detectedSchema, 'tipo_beneficio') : row[COL.TIPO]
         const tipo = tipoRaw ? String(tipoRaw).trim() : ''
-        const cpf = parseCPF(detectedSchema.mode === 'header_mapping' ? getMappedCell(row, detectedSchema, 'cpf') : row[COL.CPF])
-        const telefone = parsePhone(detectedSchema.mode === 'header_mapping' ? getMappedCell(row, detectedSchema, 'telefone') : null)
+        const prioritizedContact = detectedSchema.mode === 'header_mapping'
+            ? pickPrioritizedContact(row, headerLookup)
+            : { telefone: parsePhone(getMappedCell(row, detectedSchema, 'telefone')), source: 'telefone', direct: true, whatsapp: false }
+        const telefone = prioritizedContact.telefone
         const email = parseEmail(detectedSchema.mode === 'header_mapping' ? getMappedCell(row, detectedSchema, 'email') : null)
         const categoriaProfissional = truncate(detectedSchema.mode === 'header_mapping' ? String(getMappedCell(row, detectedSchema, 'categoria_profissional') || '') : null, 255)
+        const anotacoesImportacao = [
+            dataNascimento ? `Data de nascimento: ${dataNascimento}` : null,
+            prioritizedContact.source
+                ? prioritizedContact.direct
+                    ? `Contato prioritário importado de ${prioritizedContact.source}.`
+                    : `Contato prioritário importado de ${prioritizedContact.source} (contato relacionado; ajuste a abordagem da campanha).`
+                : null,
+        ].filter(Boolean).join(' ')
 
         if (ganho) ganhoTotal += ganho
 
@@ -222,10 +318,11 @@ export async function POST(request: NextRequest) {
             tenant_id: context.tenantId,
             lista_id: lista.id,
             responsavel_id: context.usuarioId,
-            nb: truncate(nb, 20),
+            nb: truncate(effectiveNb, 20),
             nome: truncate(nome, 255),
-            cpf: cpf.slice(0, 14),
+            cpf: cpf ? cpf.slice(0, 14) : null,
             telefone,
+            telefone_enriquecido: prioritizedContact.direct ? null : telefone,
             email,
             aps: truncate(detectedSchema.mode === 'header_mapping' ? String(getMappedCell(row, detectedSchema, 'aps') || '') : (row[COL.APS] ? String(row[COL.APS]) : null), 255),
             banco: truncate(detectedSchema.mode === 'header_mapping' ? String(getMappedCell(row, detectedSchema, 'banco') || '') : (row[COL.BANCO] ? String(row[COL.BANCO]) : null), 100),
@@ -236,7 +333,10 @@ export async function POST(request: NextRequest) {
             ganho_potencial: ganho,
             score: calcScore(ganho, tipo),
             status: 'new' as const,
-            enriquecido: false,
+            anotacao: truncate(anotacoesImportacao, 1000),
+            enriquecido: Boolean(prioritizedContact.source),
+            enriquecido_em: prioritizedContact.source ? new Date().toISOString() : null,
+            tem_whatsapp: prioritizedContact.whatsapp ? true : null,
             lgpd_optout: false
         })
     }

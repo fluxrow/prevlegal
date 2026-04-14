@@ -154,6 +154,7 @@ Status em 10/04/2026:
 - cadastro manual sem CPF: `ok`
 - seleção de canal WhatsApp por agente: `ok`
 - campanhas com agente real, canal real e template inicial contextualizado: `ok`
+- importador enriquecido por `CPF + nome` com contato prioritário para disparo: `ok`
 - pendências residuais do smoke test:
   - passe final de convite/aceite com email inédito e permissões customizadas ponta a ponta
   - passe final de portal com tenant real
@@ -164,6 +165,7 @@ Status em 10/04/2026:
 - unificar a aba `Configuração de Disparo` de campanhas com os canais reais do tenant, removendo o viés legado de `Twilio Sandbox`
 - aplicar o patch `2026-04-14_add_campaign_selected_leads.sql` em produção e retestar campanha por contatos selecionados
 - revisar o comportamento final das abas da inbox após deep link, transferência e troca manual de filtro
+- importar a base enriquecida nova da Jessica como lista operacional de disparo e validar a escolha automática do contato prioritário
 
 Observação operacional do go-live:
 - o convite interno ainda é `link manual`; o sistema gera a URL, mas não envia email automático
