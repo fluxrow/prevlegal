@@ -323,7 +323,6 @@ export async function POST(request: NextRequest) {
             cpf: cpf ? cpf.slice(0, 14) : null,
             telefone,
             telefone_enriquecido: prioritizedContact.direct ? null : telefone,
-            email,
             aps: truncate(detectedSchema.mode === 'header_mapping' ? String(getMappedCell(row, detectedSchema, 'aps') || '') : (row[COL.APS] ? String(row[COL.APS]) : null), 255),
             banco: truncate(detectedSchema.mode === 'header_mapping' ? String(getMappedCell(row, detectedSchema, 'banco') || '') : (row[COL.BANCO] ? String(row[COL.BANCO]) : null), 100),
             dib: parseDate(detectedSchema.mode === 'header_mapping' ? getMappedCell(row, detectedSchema, 'dib') : row[COL.DIB]),
@@ -337,7 +336,8 @@ export async function POST(request: NextRequest) {
             enriquecido: Boolean(prioritizedContact.source),
             enriquecido_em: prioritizedContact.source ? new Date().toISOString() : null,
             tem_whatsapp: prioritizedContact.whatsapp ? true : null,
-            lgpd_optout: false
+            lgpd_optout: false,
+            ...(email ? { email } : {}),
         })
     }
 
