@@ -29,6 +29,12 @@ Mestra: [[MASTER_PREV_LEGAL]]
   - o playbook padrão do escritório deixa de parecer genérico
   - contato com `titular` passa a soar como campanha outbound coerente com a frente ativa
   - contato com familiar continua usando abordagem cautelosa e contextual
+  - cada etapa da operação agora pode nascer com copy própria:
+    - `triagem`
+    - `reativacao`
+    - `followup_comercial`
+    - `documental`
+    - `confirmacao_agenda`
 - decisão de arquitetura:
   - esta frente justifica schema em `agentes` porque o perfil operacional já afeta seed, campanha, copy e expansão futura para operação híbrida
   - o próximo passo natural é permitir que o escritório conviva com múltiplos agentes de mesmo `tipo`, desde que em perfis operacionais diferentes

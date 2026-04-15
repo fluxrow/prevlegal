@@ -46,6 +46,18 @@ e usar isso para:
 além de usar o agente padrão do escritório como fallback real quando nenhum agente específico for selecionado
 **Regra pratica:** Em playbooks operacionais diferentes, o mesmo `tipo` de agente pode exigir mensagens iniciais completamente distintas. Sempre modelar explicitamente o perfil operacional antes de reutilizar template de campanha.
 
+### 163. Em operação outbound, o template precisa refletir a etapa do funil, não só o público
+**Problema:** Mesmo depois de separar `titular` de `conjuge/filho/irmao`, o escritório ainda corria o risco de usar uma mensagem boa para triagem em uma campanha que, na prática, era de reativação, confirmação ou etapa documental
+**Causa:** Sem uma matriz clara por etapa, a copy padrão ficava genérica demais para um produto que pretende funcionar “pronto para uso”
+**Correção:** A fundação de templates passou a separar, por perfil operacional:
+- `triagem`
+- `reativacao`
+- `followup_comercial`
+- `documental`
+- `confirmacao_agenda`
+e cruzar isso com `titular` ou familiar
+**Regra pratica:** Quando o produto oferece templates operacionais prontos, eles precisam acompanhar o estágio real da conversa. Template bom de triagem não é automaticamente bom de reativação, e vice-versa.
+
 ### 161. Nem todo dado detectado na planilha precisa entrar no schema imediatamente
 **Problema:** A base enriquecida passou a trazer `email`, mas o schema operacional de `leads` ainda não suporta esse campo
 **Causa:** Adicionar `email` em `leads` perto do go-live abriria uma mudança estrutural mais ampla do que o fluxo principal de WhatsApp exigia naquele momento

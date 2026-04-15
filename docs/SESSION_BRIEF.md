@@ -214,6 +214,12 @@ Gatilho automático: a mudança de status do lead na API `PATCH` chama o *Orques
     - `tipo` do agente
     - `contato_alvo_tipo`
   - quando nenhum agente específico é escolhido, a referência passa a ser o agente padrão real do escritório
+  - a copy padrão também passou a respeitar a etapa do funil:
+    - `triagem`
+    - `reativacao`
+    - `followup_comercial`
+    - `documental`
+    - `confirmacao_agenda`
 - impacto prático:
   - o template de `titular` deixa de parecer inbound
   - o template de `cônjuge`, `filho` e `irmão` continua cauteloso
