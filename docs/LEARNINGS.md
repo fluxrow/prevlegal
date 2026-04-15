@@ -36,6 +36,16 @@ e usar isso para:
 - ajustar o template inicial quando o contato não é o titular
 **Regra pratica:** Quando a operação depende de familiares, o sistema precisa modelar o parentesco como dado operacional e não escondê-lo em texto livre. Só assim campanha, abordagem e supervisão conseguem trabalhar sem ambiguidade.
 
+### 164. Em captação de benefícios, o primeiro contato precisa vender atenção, não despejar a tese inteira
+**Problema:** O template padrão de `benefícios previdenciários` ainda soava genérico demais para o caso real da Jessica e podia cair no erro oposto: explicar demais logo na primeira mensagem
+**Causa:** A operação manual atual já parte de uma base mapeada para possível revisão/readequação, mas o produto ainda tratava o primeiro toque como triagem previdenciária ampla; além disso, os prompts não explicitavam como continuar a conversa sem reiniciar contexto quando vários agentes da esteira estivessem ativos
+**Correção:** Reescrever a copy de campanha e os prompts seedados de benefícios para:
+- primeiro toque curto, específico e crível
+- nada de valores, retroativos ou tese jurídica longa na abertura
+- aquecimento breve até a continuidade com a advogada responsável
+- instrução operacional clara para que qualquer agente use o histórico da conversa como fonte de verdade e continue o atendimento sem parecer que está começando do zero
+**Regra pratica:** Em outbound previdenciário, a primeira mensagem deve conquistar abertura para explicar. A tese, a prova e o aprofundamento entram depois que o lead demonstra interesse.
+
 ### 162. Em campanha outbound, `tipo do agente` sozinho não basta; o template precisa conhecer o perfil operacional do playbook
 **Problema:** Mesmo com o filtro por `titular / conjuge / filho / irmao` funcionando, a mensagem sugerida da campanha ainda podia falar como se fosse `inbound`, especialmente quando o escritório usava o modelo padrão de benefícios previdenciários
 **Causa:** A campanha escolhia o template apenas por `tipo` do agente (`triagem`, `reativacao`, etc.), sem saber se o agente pertencia ao playbook de `benefícios previdenciários` ou `planejamento previdenciário`

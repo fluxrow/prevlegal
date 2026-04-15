@@ -4,6 +4,33 @@ Contexto: [[SESSION_HISTORY_MASTER]]
 Mestra: [[MASTER_PREV_LEGAL]]
 > Última atualização: 10/04/2026
 
+## Atualizacao Agentes + Campanhas / playbook de benefícios ficou alinhado ao contexto real de readequação e continuidade — 15/04/2026
+
+- durante o refinamento final para go-live, ficou claro que o template e o prompt padrão de `benefícios previdenciários` ainda estavam genéricos demais para o caso real da Jessica
+- problema observado:
+  - o primeiro contato podia soar como triagem ampla de previdenciário, quando na prática a lista já vem com pessoas mapeadas para uma possível revisão ou readequação
+  - a copy inicial ainda corria risco de despejar informação demais cedo demais
+  - o runtime do agente não deixava explícito como continuar a conversa sem reiniciar contexto quando mais de um agente estivesse ativo
+- correção aplicada:
+  - templates de campanha de `benefícios previdenciários` foram reescritos para:
+    - primeiro contato mais curto
+    - foco em informação previdenciária importante
+    - nada de valores/retroativos na abertura
+    - variação específica para titular e familiar
+  - o seed dos agentes de `benefícios` foi ajustado para refletir a operação real:
+    - triagem aquece e deixa o caso pronto para a advogada responsável
+    - follow-up comercial avança para atendimento jurídico, não “vende promessa”
+    - documental continua a conversa como parte da mesma esteira
+  - o runtime do agente agora injeta uma camada de `continuidade operacional`, informando:
+    - que o histórico da conversa é a fonte oficial do caso
+    - qual etapa da esteira o agente atual ocupa
+    - se existem ou não agentes seguintes ativos
+    - que, sem agentes seguintes, a triagem deve deixar o caso pronto para handoff humano
+- impacto operacional:
+  - a copy padrão do escritório fica mais crível no primeiro contato
+  - o aquecimento do lead passa a refletir melhor a operação manual atual da Jessica
+  - os agentes seguintes deixam de parecer “cegos” ao que já foi falado
+
 ## Atualizacao Campanhas / template padrão passou a respeitar perfil operacional do agente — 14/04/2026
 
 - durante o refinamento das campanhas enriquecidas, ficou claro que o template sugerido ainda estava errado para contato frio com titular

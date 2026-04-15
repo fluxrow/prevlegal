@@ -20,6 +20,42 @@ Objetivo:
 - facilitar o repasse posterior para o Claude
 - registrar decisoes, arquivos afetados, validacoes e proximos passos
 
+## Atualizacao 2026-04-15 - Copy e continuidade dos agentes ficaram mais fiéis à operação real de benefícios
+
+- contexto:
+  - a fundação de `perfil_operacao + tipo + contato_alvo_tipo` já estava funcionando
+  - mas a copy de benefícios ainda parecia triagem genérica demais para a lista da Jessica, onde o escritório já entra em contato com pessoas mapeadas para possível revisão/readequação
+  - além disso, o runtime do agente ainda não deixava claro como continuar a conversa sem reiniciar contexto quando vários agentes estivessem ativos
+- arquivos alterados:
+  - `src/lib/campaign-message-templates.ts`
+  - `src/lib/agent-seed-profiles.ts`
+  - `src/app/api/agente/responder/route.ts`
+  - `docs/MASTER.md`
+  - `docs/ROADMAP.md`
+  - `docs/LEARNINGS.md`
+  - `docs/SESSION_BRIEF.md`
+- mudanças principais:
+  - templates de benefícios ficaram mais aderentes ao fluxo real:
+    - informação previdenciária importante
+    - nada de valores/retroativos na abertura
+    - abordagem específica para titular e familiar
+  - agentes seedados de benefícios passaram a refletir melhor o papel da triagem:
+    - aquecer o lead
+    - explicar em linguagem simples
+    - preparar o handoff para a advogada responsável
+  - `POST /api/agente/responder` agora injeta uma seção de `CONTINUIDADE OPERACIONAL` no prompt:
+    - sempre usar o histórico da conversa como fonte de verdade
+    - sempre chamar o lead pelo nome quando possível
+    - saber se está em triagem ou em etapa posterior
+    - saber se existem agentes seguintes ativos ou se a triagem precisa deixar tudo pronto para o handoff humano
+  - planejamento previdenciário também foi alinhado para permitir que os agentes avancem até o ponto em que o especialista/advogado assume para validar a estrutura final e colher assinatura
+- validação:
+  - `npm run build` passou
+- próximo passo operacional:
+  - retestar campanha com `benefícios previdenciários` em `Somente titular` e `Somente cônjuge`
+  - validar que a copy inicial ficou mais curta e crível
+  - depois disparar teste pequeno e confirmar continuidade na inbox com agente/humano
+
 ## Atualizacao 2026-04-14 - Campanha passou a ler o perfil operacional real do agente
 
 - contexto:

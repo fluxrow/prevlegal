@@ -41,6 +41,26 @@ Gatilho automático: a mudança de status do lead na API `PATCH` chama o *Orques
 2. Fechar as pendências residuais do smoke test final do tenant real.
 3. Só depois: Docling operacional, agenda premium extra e importador fase 2.
 
+## Atualização 2026-04-15 - Playbook de benefícios ficou mais aderente ao caso real da Jessica
+
+- a copy padrão de `benefícios previdenciários` deixou de soar como triagem genérica ou inbound
+- decisão de produto consolidada:
+  - primeiro toque deve ser curto, específico e crível
+  - não falar de valores, retroativos ou tese jurídica longa na abertura
+  - objetivo inicial é conseguir abertura para explicar e preparar a continuidade com a equipe jurídica
+- correções aplicadas:
+  - templates de campanha de benefícios reescritos para `titular` e familiares
+  - prompts dos agentes seedados de benefícios ajustados para:
+    - aquecer o lead
+    - explicar em linguagem simples
+    - deixar o caso pronto para handoff jurídico
+  - runtime do agente agora injeta instruções de continuidade:
+    - usar o histórico como fonte oficial do caso
+    - não reiniciar a conversa do zero
+    - saber se existem agentes seguintes ativos ou se a triagem precisa preparar o handoff humano sozinha
+- planejamento previdenciário também foi alinhado:
+  - os agentes podem carregar o processo até o momento em que o especialista/advogado assume para validar a estrutura final e colher assinatura
+
 ## Atualização 2026-04-10 - Convite de usuário endurecido para o go-live
 
 - o fluxo de convite continua sendo `link manual`; a UI agora deixa explícito que o sistema não envia email automaticamente

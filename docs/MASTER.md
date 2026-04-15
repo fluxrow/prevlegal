@@ -105,6 +105,11 @@ A empresa de captação NUNCA se identifica como vinculada ao escritório parcei
 - NUNCA revela NB, valores do benefício ou dados bancários
 - Referência jurídica: STF RE 564.354 (08/09/2010, Informativo 599)
 - ~70% dos contatos são feitos por filhos/familiares do beneficiário
+- Em campanhas de benefícios, o primeiro toque deve ser curto, crível e focado em obter abertura para explicar, sem despejar tese jurídica
+- Em campanhas de benefícios, a mensagem inicial não deve falar de valores, retroativos ou cifras antes de existir interesse claro
+- Todo agente deve continuar a conversa com base no histórico real do lead, sem reiniciar o atendimento como se fosse um contato novo
+- Quando só a triagem estiver ativa, ela deve aquecer brevemente o lead e deixar o caso pronto para a advogada responsável assumir
+- Em planejamento previdenciário, a esteira pode seguir com agentes até o momento em que o especialista ou advogado assume para validar a estrutura final e colher assinatura
 
 ---
 

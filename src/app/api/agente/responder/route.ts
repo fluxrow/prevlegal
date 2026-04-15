@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import Anthropic from '@anthropic-ai/sdk'
 import { getConfiguracaoAtual } from '@/lib/configuracoes'
+import { normalizeOperationProfile } from '@/lib/operation-profile'
 import { sendWhatsAppMessage } from '@/lib/whatsapp-provider'
 
 function createAdminSupabase() {
@@ -16,26 +17,70 @@ const anthropic = new Anthropic({
 })
 
 // Prompt padrão do sistema caso o escritório não tenha configurado um personalizado
-const PROMPT_PADRAO = `Você é uma assistente virtual de um escritório de advocacia previdenciária.
+const PROMPT_PADRAO = `Você é uma consultora virtual de atendimento previdenciário.
 
-Seu objetivo é acolher, qualificar leads e conduzir para o próximo passo mais adequado, como consulta, análise inicial ou confirmação de agenda.
+Seu objetivo é acolher, qualificar leads e conduzir para o próximo passo mais adequado, como explicação breve, atendimento com a equipe jurídica, análise inicial ou confirmação de agenda.
 
 CONTEXTO DO LEAD:
 Nome: {nome}
-Benefício (NB): {nb}
-Banco pagador: {banco}
-Valor atual: R$ {valor}
-Ganho potencial com revisão: R$ {ganho}
 
 INSTRUÇÕES:
 - Seja cordial, direta e profissional
 - Use linguagem simples, acessível para idosos
+- Sempre chame o lead pelo nome quando ele estiver disponível
+- Considere o histórico da conversa como fonte de verdade; não reinicie o atendimento como se fosse um contato novo se já houver contexto
 - Nunca prometa valores ou resultados garantidos
 - Foque em orientar o lead e avançar para o próximo passo certo
-- Se o lead demonstrar interesse, peça disponibilidade de horário
+- Não cite valores, retroativos, NB ou dados sensíveis na primeira explicação
+- Se o lead demonstrar interesse, explique em poucas linhas o cenário e deixe a conversa pronta para a equipe jurídica continuar
 - Se recusar, agradeça e encerre educadamente
 - Respostas curtas (máximo 3 linhas no WhatsApp)
 - Nunca use markdown, listas ou asteriscos`
+
+function buildAgentContinuitySection({
+  leadName,
+  currentAgentType,
+  operationProfile,
+  activeAgentTypes,
+  hasHistory,
+}: {
+  leadName?: string | null
+  currentAgentType?: string | null
+  operationProfile?: string | null
+  activeAgentTypes: string[]
+  hasHistory: boolean
+}) {
+  const normalizedProfile = normalizeOperationProfile(operationProfile || 'beneficios_previdenciarios')
+  const normalizedType = String(currentAgentType || 'triagem').trim().toLowerCase()
+  const downstreamTypes = activeAgentTypes.filter((tipo) => tipo !== normalizedType)
+  const hasDownstream = downstreamTypes.length > 0
+  const leadRef = leadName?.trim() ? leadName.trim() : 'o lead'
+  const profileHint =
+    normalizedProfile === 'planejamento_previdenciario'
+      ? 'No playbook de planejamento, a operação pode seguir com agentes até o momento em que o especialista ou advogado assume para validar a estrutura final e colher assinatura.'
+      : 'No playbook de benefícios, a abordagem deve aquecer o lead com clareza, sem despejar tese jurídica, sem falar de valores e sem parecer promessa de resultado.'
+
+  const stageHint =
+    normalizedType === 'triagem'
+      ? hasDownstream
+        ? `Você está na etapa de triagem. Seu papel é aquecer ${leadRef}, validar interesse e deixar o contexto pronto para os próximos agentes ativos (${downstreamTypes.join(', ')}). Não antecipe etapas demais se ainda for cedo.`
+        : `Você está na etapa de triagem e não há agentes posteriores ativos no momento. Seu papel é aquecer ${leadRef}, explicar o essencial em linguagem simples e deixar a conversa pronta para a advogada responsável assumir sem perda de contexto.`
+      : `Você está na etapa ${normalizedType}. Continue a conversa como parte do mesmo atendimento, assumindo que ${leadRef} já ouviu a explicação inicial e que o histórico registra o que foi falado ou combinado.`
+
+  const continuityHint = hasHistory
+    ? `Já existe histórico anterior. Nunca recomece a conversa do zero, nunca repita apresentação inicial desnecessária e sempre responda como alguém que sabe o que já foi alinhado com ${leadRef}.`
+    : `Se esta for a primeira resposta efetiva da esteira, apresente o assunto com delicadeza, objetividade e sem despejar informação demais de uma vez.`
+
+  return [
+    'CONTINUIDADE OPERACIONAL:',
+    '- Sempre trate o histórico da conversa como o contexto oficial do caso.',
+    `- Sempre que possível, chame ${leadRef} pelo nome.`,
+    `- ${profileHint}`,
+    `- ${stageHint}`,
+    `- ${continuityHint}`,
+    '- Quando o lead demonstrar interesse real, organize a conversa para facilitar o handoff humano em vez de encerrar com resposta vaga.',
+  ].join('\n')
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -82,6 +127,23 @@ export async function POST(request: NextRequest) {
     }
 
     let agenteRow: any = null
+    let activeAgentTypes: string[] = []
+
+    if (tenantId) {
+      const { data: agentesAtivos } = await supabase
+        .from('agentes')
+        .select('tipo')
+        .eq('tenant_id', tenantId)
+        .eq('ativo', true)
+
+      activeAgentTypes = Array.from(
+        new Set(
+          (agentesAtivos || [])
+            .map((row: any) => String(row?.tipo || '').trim().toLowerCase())
+            .filter(Boolean),
+        ),
+      )
+    }
 
     // 2a. Agente específico da campanha do lead
     if (campanha_id) {
@@ -154,6 +216,8 @@ export async function POST(request: NextRequest) {
       agente_frases_proibidas: agenteRow.frases_proibidas,
       agente_objeccoes: agenteRow.objeccoes,
       agente_fallback: agenteRow.fallback,
+      agente_tipo: agenteRow.tipo,
+      agente_perfil_operacao: agenteRow.perfil_operacao,
     } : globalConfig
 
     if (!config?.agente_ativo) {
@@ -203,10 +267,19 @@ export async function POST(request: NextRequest) {
     const partes = [promptBase]
     if (config.agente_fluxo_qualificacao) partes.push(`\nFLUXO DE QUALIFICAÇÃO:\n${config.agente_fluxo_qualificacao}`)
     if (config.agente_exemplos_dialogo) partes.push(`\nEXEMPLOS DE DIÁLOGO:\n${config.agente_exemplos_dialogo}`)
-    if (config.agente_gatilhos_escalada) partes.push(`\nGATILHOS DE ESCALADA — quando ocorrerem, encerre e informe que a advogada entrará em contato:\n${config.agente_gatilhos_escalada}`)
+    if (config.agente_gatilhos_escalada) partes.push(`\nGATILHOS DE ESCALADA — quando ocorrerem, encerre e informe que a equipe jurídica responsável continuará o atendimento:\n${config.agente_gatilhos_escalada}`)
     if (config.agente_frases_proibidas) partes.push(`\nFRASES ABSOLUTAMENTE PROIBIDAS:\n${config.agente_frases_proibidas}`)
     if (config.agente_objeccoes) partes.push(`\nCOMO LIDAR COM OBJEÇÕES:\n${config.agente_objeccoes}`)
     if (config.agente_fallback) partes.push(`\nFALLBACK — quando não entender a mensagem, responda: "${config.agente_fallback}"`)
+    partes.push(
+      `\n${buildAgentContinuitySection({
+        leadName: lead?.nome,
+        currentAgentType: config.agente_tipo || agenteRow?.tipo || null,
+        operationProfile: config.agente_perfil_operacao || agenteRow?.perfil_operacao || null,
+        activeAgentTypes,
+        hasHistory: historico.length > 1,
+      })}`,
+    )
 
     const systemPrompt = partes.join('\n')
       .replace('{nome}', lead?.nome || 'Beneficiário')

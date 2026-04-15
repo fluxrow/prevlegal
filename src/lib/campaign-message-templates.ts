@@ -8,28 +8,28 @@ type TemplateMap = Record<string, string>;
 
 const BENEFITS_TITULAR_TEMPLATES: TemplateMap = {
   triagem:
-    "Olá, {nome}. Estou entrando em contato porque estamos fazendo uma triagem previdenciária para identificar pessoas que podem se beneficiar de uma orientação mais cuidadosa sobre benefício, revisão ou pendência no INSS. Se fizer sentido para você, eu posso te explicar em poucas linhas e ver se vale avançar.",
+    "Olá, {nome}. Estou entrando em contato porque identificamos uma informação previdenciária importante que pode estar ligada a uma revisão ou readequação do seu benefício. Se fizer sentido para você, eu posso te explicar isso em poucas linhas por aqui e ver se vale avançar.",
   reativacao:
-    "Olá, {nome}. Estou retomando este contato porque seu caso previdenciário ainda pode merecer uma análise mais organizada, sem pressa e sem compromisso imediato. Se você quiser, eu te explico por aqui qual seria o próximo passo mais seguro.",
+    "Olá, {nome}. Estou retomando este contato porque ficou pendente uma informação previdenciária importante sobre uma possível revisão do seu benefício. Se você quiser, eu posso te resumir por aqui o que vale entender antes de avançar.",
   followup_comercial:
-    "Olá, {nome}. Revendo o seu caso, acredito que ainda pode valer uma orientação previdenciária mais clara antes de você deixar isso para depois. Se fizer sentido, eu te explico de forma simples como funciona o próximo passo.",
+    "Olá, {nome}. Como já existe interesse no seu caso, o próximo passo mais seguro é organizar sua conversa com a equipe jurídica responsável. Se fizer sentido, eu deixo isso encaminhado de forma simples por aqui.",
   documental:
-    "Olá, {nome}. Estou organizando a parte documental do seu caso previdenciário. Se fizer sentido para você, eu posso te mostrar exatamente o que costuma ser mais importante separar primeiro, sem complicação.",
+    "Olá, {nome}. Para avançar com segurança no seu caso, o próximo passo é organizar alguns documentos básicos do benefício. Se quiser, eu te digo exatamente o que costuma ser mais importante separar primeiro.",
   confirmacao_agenda:
-    "Olá, {nome}. Estou confirmando sua consulta previdenciária já agendada. Se estiver tudo certo para seguir, me responda por aqui e eu deixo a equipe alinhada com você.",
+    "Olá, {nome}. Estou confirmando seu atendimento sobre a revisão ou readequação do benefício. Se estiver tudo certo para seguir, me responda por aqui e eu deixo a equipe alinhada com você.",
 };
 
 const BENEFITS_FAMILY_TEMPLATES: TemplateMap = {
   triagem:
-    "Olá. Estou tentando falar com um familiar de {nome} sobre uma triagem previdenciária importante. Se você puder me confirmar se é a melhor pessoa para receber esse recado, eu explico de forma breve por aqui.",
+    "Olá. Estou tentando falar com um familiar responsável por {nome} sobre uma informação previdenciária importante ligada ao benefício dele(a). Se você puder me confirmar se é a melhor pessoa para receber esse recado, eu explico em poucas linhas por aqui.",
   reativacao:
-    "Olá. Estou retomando um contato relacionado a um familiar de {nome} sobre um possível encaminhamento previdenciário. Se você for a pessoa mais adequada para receber esse recado, eu posso resumir o contexto por aqui.",
+    "Olá. Estou retomando um contato relacionado a um familiar de {nome} porque ficou pendente uma informação previdenciária importante sobre o benefício dele(a). Se você for a pessoa mais adequada para receber esse recado, eu posso resumir o contexto por aqui.",
   followup_comercial:
-    "Olá. Estou tentando alinhar com um familiar de {nome} se ainda faz sentido avançar numa orientação previdenciária mais organizada. Se você puder me confirmar se é a melhor pessoa para falar sobre isso, eu explico de forma breve.",
+    "Olá. Estou tentando alinhar com um familiar responsável por {nome} se ainda faz sentido avançar para uma conversa com a equipe jurídica sobre o benefício dele(a). Se você puder me confirmar se é a melhor pessoa para isso, eu explico de forma breve.",
   documental:
-    "Olá. Estou tentando organizar com um familiar de {nome} uma pendência documental previdenciária. Se você for a pessoa mais adequada para receber esse recado, eu explico com clareza o próximo passo por aqui.",
+    "Olá. Estou tentando organizar com um familiar de {nome} os documentos básicos para avançar com segurança no caso previdenciário dele(a). Se você for a pessoa mais adequada para receber esse recado, eu explico com clareza o próximo passo por aqui.",
   confirmacao_agenda:
-    "Olá. Estou tentando confirmar um compromisso previdenciário relacionado a um familiar de {nome}. Se você puder me dizer se é a melhor pessoa para receber esse recado, eu explico rapidamente por aqui.",
+    "Olá. Estou tentando confirmar um atendimento relacionado ao caso previdenciário de {nome}. Se você puder me dizer se é a melhor pessoa para receber esse recado, eu explico rapidamente por aqui.",
 };
 
 const PLANNING_TITULAR_TEMPLATES: TemplateMap = {
