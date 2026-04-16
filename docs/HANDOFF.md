@@ -18,6 +18,7 @@
 - a continuidade do agente em benefícios passou a tratar a conversa como sequência de uma revisão/readequação já identificada, sem voltar para triagem genérica
 - o playbook de planejamento foi reforçado para permitir que a esteira avance até proposta, contrato e preparação de assinatura antes do handoff do advogado
 - o playbook de planejamento foi refinado para ficar mais consultivo e tecnicamente responsável: mais conhecimento geral de planejamento previdenciário brasileiro, menos copy genérica e limite explícito para não inventar análise individual
+- foi formalizada a necessidade de isolar evolução por tenant/perfil e parar de tratar mudanças de playbook como comportamento global quando já existem escritórios pagantes
 - o timeout do acionamento interno do auto-responder foi ampliado para 120s por padrão
 - quando o auto-responder falhar por horário, timeout ou erro interno, os webhooks agora devolvem a conversa para humano e geram notificação explícita
 - o auto-responder agora devolve payload estruturado quando falha por fora do horário, permitindo mensagem automática ao lead com a janela configurada
@@ -47,6 +48,7 @@
 - o comportamento recente de "lead responde e nada acontece" ainda precisa de reteste com a nova instrumentação, porque o sistema antes só registrava em log e podia parecer silencioso
 - o comportamento recente de "fora do horário cai para humano sem mensagem visível" foi coberto com resposta automática ao lead + gravação na thread
 - a próxima validação relevante saiu de benefícios e passou para planejamento: precisamos confirmar em runtime se o agente conduz com consistência até proposta/contrato sem soar telemarketing nem responder com certezas indevidas
+- a próxima camada estrutural deixou de ser só copy/runtime: agora precisamos criar estratégia canônica de isolamento, versionamento e rollout para não quebrar tenants ativos
 
 ## Estado após a última entrega
 
@@ -57,6 +59,7 @@
 - pendente:
   - validar o fluxo completo de `planejamento_previdenciario` até proposta, contrato e assinatura
   - desenhar fallback multi-provider do auto-responder para não depender de um único saldo/provedor
+  - transformar isolamento por tenant/perfil/flag em fundação real de produto
 - risco residual:
   - confirmar o payload `fromMe` real da Z-API no uso diário para garantir que a heurística de `counterpartyPhone` cobre todos os casos
 
@@ -67,6 +70,7 @@
   - resposta do agente sem inventar análise individual
   - condução natural para diagnóstico
   - continuação para proposta, contrato e preparação de assinatura antes do handoff humano
+  - e manter esse rollout isolado em tenant próprio, sem misturar com o tenant ativo de benefícios
 
 ## Referência rápida
 

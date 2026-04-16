@@ -4,6 +4,33 @@ Contexto: [[SESSION_HISTORY_MASTER]]
 Mestra: [[MASTER_PREV_LEGAL]]
 > Última atualização: 10/04/2026
 
+## Atualizacao Arquitetura de Producao / isolamento por tenant, playbook e rollout controlado — 16/04/2026
+
+- com o PrevLegal entrando em fase de pagantes, ficou inadequado continuar tratando mudanças de playbook como comportamento global da produção
+- decisão de arquitetura:
+  - manter `core único`
+  - isolar playbooks operacionais por perfil:
+    - `beneficios_previdenciarios`
+    - `planejamento_previdenciario`
+  - ativar mudanças novas por tenant/flag antes de rollout amplo
+- implicações práticas:
+  - `benefícios` e `planejamento` deixam de evoluir no mesmo tenant de teste
+  - o escritório da Jessica permanece como base de `beneficios_previdenciarios`
+  - o escritório de planejamento deve nascer em tenant próprio, já alinhado ao playbook `titular-only`
+  - toda evolução relevante de agente, campanha ou esteira deve passar a considerar:
+    - tenant piloto
+    - versão do playbook
+    - rollback simples
+- direção aprovada:
+  - criar camada formal de flags/versionamento por tenant
+  - usar rollout controlado para features como:
+    - `planning_flow_v1`
+    - `planning_contract_handoff_v1`
+    - `resend_mailmarketing_v1`
+    - `agent_multistage_memory_v1`
+- referência canônica:
+  - `docs/PRODUCTION_ISOLATION_STRATEGY.md`
+
 ## Atualizacao Inbox + Campanhas / outbound passou a entrar na thread e inbound voltou a acionar o agente automaticamente — 16/04/2026
 
 - durante o reteste da campanha com a lista enriquecida, o envio do WhatsApp estava funcionando, mas a experiência da inbox ainda estava quebrada em dois pontos importantes:

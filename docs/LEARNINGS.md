@@ -26,6 +26,20 @@ Mestra: [[MASTER_PREV_LEGAL]]
 **Correção:** Calcular a janela do agente com `America/Sao_Paulo` como fuso operacional padrão
 **Regra pratica:** Toda automação dependente de horário no PrevLegal deve comparar contra o relógio operacional do produto, nunca contra a hora crua do servidor
 
+### 169. Depois que existem tenants pagantes, evolução de playbook precisa ser isolada por tenant e rollout, não lançada como comportamento global
+**Problema:** `beneficios_previdenciarios` e `planejamento_previdenciario` passaram a evoluir em paralelo, mas qualquer bug novo ainda poderia atingir escritórios já ativos porque o produto não tinha uma camada formal de isolamento/versionamento para essas frentes
+**Causa:** O PrevLegal vinha sendo tratado como um único comportamento-base em produção, mesmo depois de entrar na fase de clientes pagantes e playbooks operacionais distintos
+**Correção:** Formalizar a estratégia canônica de:
+- `core único`
+- `playbooks por perfil operacional`
+- `tenant como unidade de rollout`
+- `flags/versionamento por tenant`
+e decidir que:
+- Jessica permanece como tenant de `beneficios_previdenciarios`
+- o escritório de planejamento deve nascer em tenant próprio
+- novas evoluções devem entrar primeiro em tenant piloto antes de rollout mais amplo
+**Regra pratica:** Quando o produto já tem pagantes, estabilidade deixa de ser só “qualidade de código” e vira arquitetura. Mudança nova precisa saber exatamente qual tenant pode ou não ser impactado.
+
 ### 166. Campanha com “agente padrão do escritório” deve persistir o agente resolvido
 **Problema:** Campanhas criadas com “Usar agente padrão do escritório” podiam nascer com `agente_id = null`, o que enfraquecia a continuidade operacional quando o lead respondia depois
 **Causa:** A UI tratava o agente padrão como fallback visual, mas o backend gravava `null` quando nenhum agente explícito vinha no payload

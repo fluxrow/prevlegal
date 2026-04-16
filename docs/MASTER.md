@@ -24,6 +24,7 @@ Mestra: [[MASTER_PREV_LEGAL]]
 - [[PRODUCT_PORTFOLIO_STRATEGY]]
 - [[IMPORTADOR_INTELIGENTE_PLAN]]
 - [[DOCLING_INTEGRATION_PLAN]]
+- [[PRODUCTION_ISOLATION_STRATEGY]]
 
 ## Produto
 
@@ -110,6 +111,8 @@ A empresa de captação NUNCA se identifica como vinculada ao escritório parcei
 - Todo agente deve continuar a conversa com base no histórico real do lead, sem reiniciar o atendimento como se fosse um contato novo
 - Quando só a triagem estiver ativa, ela deve aquecer brevemente o lead e deixar o caso pronto para a advogada responsável assumir
 - Em planejamento previdenciário, a esteira pode seguir com agentes até o momento em que o especialista ou advogado assume para validar a estrutura final e colher assinatura
+- em planejamento previdenciário, a abordagem padrão é `titular-only`; contatos de familiares não entram como fluxo principal desse playbook
+- com tenants pagantes ativos, mudanças de playbook devem ser isoladas por tenant, perfil operacional e rollout controlado
 
 ---
 
