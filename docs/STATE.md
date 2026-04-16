@@ -31,6 +31,7 @@
 - memória operacional de tenant e de conversa para agentes ainda não foi estruturada como camada formal
 - `email` em `leads` segue adiado para a futura frente de mail marketing com Resend
 - Anthropic está com saldo insuficiente no ambiente operacional atual; enquanto isso, o agente não conseguirá continuar conversas automaticamente
+- agente do WhatsApp não deve usar emojis; a remoção agora é aplicada também no runtime, não só por prompt
 
 ## Próximos 3 blocos
 

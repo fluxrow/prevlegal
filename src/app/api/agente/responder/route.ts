@@ -37,7 +37,17 @@ INSTRUÇÕES:
 - Se o lead demonstrar interesse, explique em poucas linhas o cenário e deixe a conversa pronta para a equipe jurídica continuar
 - Se recusar, agradeça e encerre educadamente
 - Respostas curtas (máximo 3 linhas no WhatsApp)
+- Nunca use emojis
 - Nunca use markdown, listas ou asteriscos`
+
+function stripEmojis(text: string) {
+  return text
+    .replace(/[\u{1F1E6}-\u{1F1FF}]{2}/gu, '')
+    .replace(/[\p{Extended_Pictographic}\p{Emoji_Presentation}]/gu, '')
+    .replace(/\uFE0F/gu, '')
+    .replace(/[ \t]{2,}/g, ' ')
+    .trim()
+}
 
 function buildAgentContinuitySection({
   leadName,
@@ -402,7 +412,8 @@ export async function POST(request: NextRequest) {
       throw modelError
     }
 
-    const respostaTexto = response.content[0].type === 'text' ? response.content[0].text : ''
+    const respostaTextoBruta = response.content[0].type === 'text' ? response.content[0].text : ''
+    const respostaTexto = stripEmojis(respostaTextoBruta)
 
     if (!respostaTexto) {
       return NextResponse.json({ error: 'Resposta vazia do modelo' }, { status: 500 })

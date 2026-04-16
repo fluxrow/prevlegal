@@ -14,6 +14,7 @@
 - campanha agora persiste o agente padrão resolvido quando nenhum agente explícito é escolhido
 - `/api/agente/responder` agora tenta recuperar a última `campanha_mensagens` do lead quando `lead.campanha_id` vier vazio
 - quando a API Anthropic estiver sem crédito, a rota do agente agora rebaixa a conversa para humano e gera notificação explícita para a equipe
+- o runtime do agente agora remove emojis da resposta final antes do envio, mesmo que o modelo tente usar esse tipo de caractere
 
 ## Arquivos ou áreas afetadas
 
