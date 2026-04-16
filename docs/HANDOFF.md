@@ -13,6 +13,7 @@
 - corrigida a leitura de janela horária do agente para usar o fuso operacional (`America/Sao_Paulo`) em vez da hora crua do servidor
 - campanha agora persiste o agente padrão resolvido quando nenhum agente explícito é escolhido
 - `/api/agente/responder` agora tenta recuperar a última `campanha_mensagens` do lead quando `lead.campanha_id` vier vazio
+- quando a API Anthropic estiver sem crédito, a rota do agente agora rebaixa a conversa para humano e gera notificação explícita para a equipe
 
 ## Arquivos ou áreas afetadas
 
@@ -31,6 +32,7 @@
 - a chamada interna para `/api/agente/responder` estava sendo redirecionada para `/login`
 - mensagens diretas do celular do escritório não apareciam porque o webhook Z-API ignorava `fromMe`
 - a rota `/api/agente/responder` estava retornando `403 Fora do horário de atendimento` durante horário comercial por usar a hora do servidor em vez do fuso operacional
+- a rota `/api/agente/responder` em produção passou a retornar `500` com erro explícito de saldo insuficiente na Anthropic API; isso explica por que a conversa não continuava mesmo com o gatilho correto
 
 ## Estado após a última entrega
 
@@ -38,7 +40,8 @@
   - correção estrutural aplicada no código para campanha, auto-responder e espelhamento `fromMe`
   - memória curta nativa do projeto criada
 - pendente:
-  - reteste funcional em produção do fluxo completo após deploy do ajuste de timezone
+  - reteste funcional em produção do fluxo completo após deploy do fallback de saldo insuficiente
+  - recompor crédito Anthropic ou trocar temporariamente o provedor/modelo do auto-responder
 - risco residual:
   - confirmar o payload `fromMe` real da Z-API no uso diário para garantir que a heurística de `counterpartyPhone` cobre todos os casos
 
@@ -47,7 +50,7 @@
 - disparar uma campanha pequena de novo, responder pelo WhatsApp e validar:
   - mensagem inicial da campanha na thread
   - resposta do lead na thread
-  - continuação automática do agente
+  - continuação automática do agente, ou fallback claro para humano quando a Anthropic estiver indisponível
   - mensagem enviada direto do celular da Jessica refletida no sistema
 
 ## Referência rápida

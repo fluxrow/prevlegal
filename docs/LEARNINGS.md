@@ -32,6 +32,12 @@ Mestra: [[MASTER_PREV_LEGAL]]
 **Correção:** Resolver o agente padrão no backend durante a criação da campanha e persistir esse `agente_id`; além disso, o auto-responder passou a consultar a última `campanha_mensagens` do lead quando `lead.campanha_id` estiver vazio
 **Regra pratica:** Quando o produto oferece um “padrão do escritório”, esse padrão precisa virar dado persistido, não só convenção implícita da interface
 
+### 167. Falha de crédito do provedor de IA não pode parecer bug silencioso do fluxo
+**Problema:** O lead respondia, a mensagem entrava na thread e a conversa permanecia em modo `agente`, mas nenhuma continuação aparecia
+**Causa:** A rota `/api/agente/responder` estava chegando corretamente ao provedor, porém a Anthropic API retornava erro de saldo insuficiente (`credit balance is too low`)
+**Correção:** Tratar esse erro de forma operacional: rebaixar a conversa para `humano`, gerar notificação explícita para a equipe e deixar claro que o bloqueio é do provedor, não da thread ou do webhook
+**Regra pratica:** Quando um provedor externo falhar por crédito, quota ou billing, o produto precisa degradar para atendimento humano com sinalização clara. Nunca deixar o operador achando que “o sistema travou”
+
 ### 160. Em operação previdenciária enriquecida, “telefone” sozinho não basta; campanha precisa saber quem é o contato de abordagem
 **Problema:** Depois da importação da base enriquecida, o lead já mostrava o melhor número de abordagem e os familiares detectados, mas a campanha ainda não tinha estrutura para distinguir se o disparo deveria ir para titular, cônjuge, filho ou irmão
 **Causa:** O modelo legado de `leads` e `campanhas` guardava apenas números, sem um tipo operacional do contato escolhido

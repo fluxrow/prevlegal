@@ -26,10 +26,11 @@
 ## O que está quebrado ou incompleto
 
 - confirmar em runtime se:
-  - resposta do lead aciona continuação automática do agente após o ajuste do fuso `America/Sao_Paulo`
+  - resposta do lead aciona continuação automática do agente depois da normalização de crédito/provedor
   - mensagem enviada diretamente pelo celular do escritório aparece na mesma thread de forma consistente
 - memória operacional de tenant e de conversa para agentes ainda não foi estruturada como camada formal
 - `email` em `leads` segue adiado para a futura frente de mail marketing com Resend
+- Anthropic está com saldo insuficiente no ambiente operacional atual; enquanto isso, o agente não conseguirá continuar conversas automaticamente
 
 ## Próximos 3 blocos
 

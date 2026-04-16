@@ -111,6 +111,15 @@ function getOperationalClock() {
   }
 }
 
+function isAnthropicCreditError(error: unknown) {
+  const message = String((error as any)?.message || '').toLowerCase()
+  return (
+    message.includes('credit balance is too low') ||
+    message.includes('purchase credits') ||
+    message.includes('plans & billing')
+  )
+}
+
 export async function POST(request: NextRequest) {
   try {
     const supabase = createAdminSupabase()
@@ -127,6 +136,7 @@ export async function POST(request: NextRequest) {
         id,
         mensagem,
         campanha_id,
+        conversa_id,
         telefone_remetente,
         telefone_destinatario,
         lead_id,
@@ -349,12 +359,48 @@ export async function POST(request: NextRequest) {
       .replace('{ganho}', lead?.ganho_potencial ? `${Number(lead.ganho_potencial).toFixed(2)}` : 'N/A')
 
     // 6. Chamar Claude
-    const response = await anthropic.messages.create({
-      model: config.agente_modelo || 'claude-sonnet-4-20250514',
-      max_tokens: config.agente_max_tokens || 500,
-      system: systemPrompt,
-      messages: historico,
-    })
+    let response
+
+    try {
+      response = await anthropic.messages.create({
+        model: config.agente_modelo || 'claude-sonnet-4-20250514',
+        max_tokens: config.agente_max_tokens || 500,
+        system: systemPrompt,
+        messages: historico,
+      })
+    } catch (modelError: any) {
+      if (isAnthropicCreditError(modelError)) {
+        if (mensagem.conversa_id) {
+          await supabase
+            .from('conversas')
+            .update({
+              status: 'humano',
+            })
+            .eq('id', mensagem.conversa_id)
+        }
+
+        if (tenantId) {
+          const nomeLead = lead?.nome || 'Lead sem nome'
+          await supabase.from('notificacoes').insert({
+            tenant_id: tenantId,
+            tipo: 'escalada',
+            titulo: `Agente indisponível — ${nomeLead}`,
+            descricao: 'O agente não conseguiu responder porque o saldo da API Anthropic está insuficiente. Assuma a conversa manualmente.',
+            link: mensagem.conversa_id
+              ? `/caixa-de-entrada?conversaId=${mensagem.conversa_id}&telefone=${encodeURIComponent(mensagem.telefone_remetente || '')}`
+              : '/caixa-de-entrada',
+            metadata: {
+              motivo: 'anthropic_credit_low',
+              conversa_id: mensagem.conversa_id || null,
+              lead_id: mensagem.lead_id || null,
+              mensagem_id,
+            },
+          })
+        }
+      }
+
+      throw modelError
+    }
 
     const respostaTexto = response.content[0].type === 'text' ? response.content[0].text : ''
 
