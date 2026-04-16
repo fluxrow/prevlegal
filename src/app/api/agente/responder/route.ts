@@ -93,6 +93,8 @@ function buildAgentContinuitySection({
       : [
           '- No playbook de benefícios, parta do contexto de que o lead foi mapeado para uma possibilidade já identificada de revisão ou readequação do benefício.',
           '- Se o lead pedir explicação, explique diretamente o cenário já identificado em linguagem simples, curta e segura. Não volte para perguntas genéricas como se ainda estivesse descobrindo se existe problema no benefício.',
+          '- Quando o lead pedir para explicar melhor, primeiro confirme o cenário em poucas linhas: diga que a equipe identificou uma possível revisão ou readequação do benefício já mapeada para o caso dele e que o próximo passo é confirmar detalhes e encaminhar a continuidade com a Dra. Jessica.',
+          '- Depois da explicação inicial, faça no máximo uma pergunta útil de continuidade, ligada ao próximo passo do escritório, e não reabra uma triagem ampla.',
           '- Não pergunte se o benefício foi negado, cortado ou se o valor deveria ser maior quando o contato já veio de uma base mapeada para revisão/readequação.',
           '- Depois de explicar o essencial, o objetivo é confirmar interesse real e deixar a conversa pronta para a Dra. Jessica ou equipe jurídica continuar.',
         ].join('\n')

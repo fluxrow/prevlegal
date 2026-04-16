@@ -1,6 +1,7 @@
 export async function triggerAgentAutoresponder(mensagemId: string) {
   const appUrl = (process.env.NEXT_PUBLIC_APP_URL || '').trim()
   const internalToken = (process.env.ADMIN_FLUXROW_TOKEN || '').trim()
+  const timeoutMs = Number(process.env.AGENT_AUTORESPONDER_TIMEOUT_MS || 120000)
 
   if (!appUrl) {
     return {
@@ -18,7 +19,7 @@ export async function triggerAgentAutoresponder(mensagemId: string) {
         ...(internalToken ? { authorization: `Bearer ${internalToken}` } : {}),
       },
       body: JSON.stringify({ mensagem_id: mensagemId }),
-      signal: AbortSignal.timeout(30000),
+      signal: AbortSignal.timeout(Number.isFinite(timeoutMs) && timeoutMs > 0 ? timeoutMs : 120000),
     })
 
     if (!response.ok) {

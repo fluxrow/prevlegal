@@ -17,6 +17,8 @@
 - o runtime do agente agora remove emojis da resposta final antes do envio, mesmo que o modelo tente usar esse tipo de caractere
 - a continuidade do agente em benefícios passou a tratar a conversa como sequência de uma revisão/readequação já identificada, sem voltar para triagem genérica
 - o playbook de planejamento foi reforçado para permitir que a esteira avance até proposta, contrato e preparação de assinatura antes do handoff do advogado
+- o timeout do acionamento interno do auto-responder foi ampliado para 120s por padrão
+- quando o auto-responder falhar por horário, timeout ou erro interno, os webhooks agora devolvem a conversa para humano e geram notificação explícita
 
 ## Arquivos ou áreas afetadas
 
@@ -25,6 +27,8 @@
 - `src/app/api/webhooks/zapi/route.ts`
 - `src/lib/agent-autoresponder.ts`
 - `src/lib/supabase/middleware.ts`
+- `src/app/api/webhooks/twilio/route.ts`
+- `src/app/api/webhooks/zapi/route.ts`
 - `docs/ROADMAP.md`
 - `docs/LEARNINGS.md`
 
@@ -36,6 +40,7 @@
 - mensagens diretas do celular do escritório não apareciam porque o webhook Z-API ignorava `fromMe`
 - a rota `/api/agente/responder` estava retornando `403 Fora do horário de atendimento` durante horário comercial por usar a hora do servidor em vez do fuso operacional
 - a rota `/api/agente/responder` em produção passou a retornar `500` com erro explícito de saldo insuficiente na Anthropic API; isso explica por que a conversa não continuava mesmo com o gatilho correto
+- o comportamento recente de "lead responde e nada acontece" ainda precisa de reteste com a nova instrumentação, porque o sistema antes só registrava em log e podia parecer silencioso
 
 ## Estado após a última entrega
 
@@ -43,7 +48,7 @@
   - correção estrutural aplicada no código para campanha, auto-responder e espelhamento `fromMe`
   - memória curta nativa do projeto criada
 - pendente:
-  - reteste funcional em produção do fluxo completo após deploy do fallback de saldo insuficiente
+  - reteste funcional em produção do fluxo completo após deploy do fallback explícito de timeout/horário/erro do auto-responder
   - recompor crédito Anthropic ou trocar temporariamente o provedor/modelo do auto-responder
 - risco residual:
   - confirmar o payload `fromMe` real da Z-API no uso diário para garantir que a heurística de `counterpartyPhone` cobre todos os casos

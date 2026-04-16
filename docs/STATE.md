@@ -13,7 +13,7 @@
   - campanhas por lista e contatos específicos
   - campanhas por tipo de contato (`titular`, `conjuge`, `filho`, `irmao`)
 - maior risco atual:
-  - reteste completo de campanha + resposta + continuação do agente ainda precisa ser confirmado em produção depois do ajuste da estratégia de continuidade para benefícios previdenciários
+  - reteste completo de campanha + resposta + continuação do agente ainda precisa ser confirmado em produção depois do ajuste da estratégia de continuidade para benefícios previdenciários e do fallback explícito quando o auto-responder falhar
 
 ## O que está funcionando
 
@@ -26,13 +26,14 @@
 ## O que está quebrado ou incompleto
 
 - confirmar em runtime se:
-  - resposta do lead aciona continuação automática do agente depois da normalização de crédito/provedor
+  - resposta do lead aciona continuação automática do agente depois do aumento do timeout interno do auto-responder
   - mensagem enviada diretamente pelo celular do escritório aparece na mesma thread de forma consistente
 - memória operacional de tenant e de conversa para agentes ainda não foi estruturada como camada formal
 - `email` em `leads` segue adiado para a futura frente de mail marketing com Resend
 - Anthropic está com saldo insuficiente no ambiente operacional atual; enquanto isso, o agente não conseguirá continuar conversas automaticamente
 - agente do WhatsApp não deve usar emojis; a remoção agora é aplicada também no runtime, não só por prompt
 - a continuidade do agente em benefícios precisa assumir que a base já veio mapeada para revisão/readequação; em planejamento, a esteira deve poder ir até proposta/contrato antes do handoff humano
+- quando o auto-responder falhar por horário, timeout ou provedor, a conversa deve sair do silêncio e cair para humano com notificação explícita
 
 ## Próximos 3 blocos
 

@@ -16,6 +16,64 @@ function applyTenantFilter(query: any, tenantId: string | null) {
   return tenantId ? query.eq('tenant_id', tenantId) : query.is('tenant_id', null)
 }
 
+async function registerAgentAutoresponderFailure({
+  supabase,
+  tenantId,
+  conversaId,
+  from,
+  leadName,
+  result,
+}: {
+  supabase: ReturnType<typeof createAdminSupabase>
+  tenantId: string | null
+  conversaId: string | null
+  from: string
+  leadName: string
+  result: { status: number; error: string }
+}) {
+  if (conversaId) {
+    await supabase
+      .from('conversas')
+      .update({ status: 'humano' })
+      .eq('id', conversaId)
+  }
+
+  if (!tenantId) return
+
+  const normalizedError = String(result.error || '').toLowerCase()
+  const outsideHours = normalizedError.includes('fora do horário')
+  const timeout = normalizedError.includes('timed out') || normalizedError.includes('timeout')
+
+  const titulo = outsideHours
+    ? `Agente fora do horário — ${leadName}`
+    : timeout
+      ? `Agente não respondeu a tempo — ${leadName}`
+      : `Agente indisponível — ${leadName}`
+
+  const descricao = outsideHours
+    ? 'O lead respondeu fora da janela configurada do agente. A conversa foi devolvida para atendimento humano.'
+    : timeout
+      ? 'O agente demorou além do limite interno para responder. A conversa foi devolvida para atendimento humano.'
+      : `O agente não conseguiu continuar a conversa automaticamente. Motivo: ${result.error}`
+
+  await supabase.from('notificacoes').insert({
+    tenant_id: tenantId,
+    tipo: 'escalada',
+    titulo,
+    descricao,
+    link: conversaId
+      ? `/caixa-de-entrada?conversaId=${conversaId}&telefone=${encodeURIComponent(from)}`
+      : '/caixa-de-entrada',
+    metadata: {
+      motivo: outsideHours ? 'agent_outside_hours' : timeout ? 'agent_timeout' : 'agent_autoresponder_failed',
+      conversa_id: conversaId,
+      telefone: from,
+      erro: result.error,
+      status: result.status,
+    },
+  })
+}
+
 export async function POST(request: NextRequest) {
   const supabase = createAdminSupabase()
   const body = await request.text()
@@ -238,6 +296,17 @@ export async function POST(request: NextRequest) {
       const result = await triggerAgentAutoresponder(mensagemInserida.id)
       if (!result.ok) {
         console.error('Falha ao acionar agente automaticamente via webhook Twilio:', result.error)
+        await registerAgentAutoresponderFailure({
+          supabase,
+          tenantId,
+          conversaId,
+          from,
+          leadName: lead?.nome || telefoneNormalizado,
+          result: {
+            status: result.status,
+            error: result.error,
+          },
+        })
       }
     })
   }
