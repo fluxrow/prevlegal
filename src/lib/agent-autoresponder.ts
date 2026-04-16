@@ -24,10 +24,17 @@ export async function triggerAgentAutoresponder(mensagemId: string) {
 
     if (!response.ok) {
       const body = await response.text().catch(() => '')
+      let payload: any = null
+      try {
+        payload = body ? JSON.parse(body) : null
+      } catch {
+        payload = null
+      }
       return {
         ok: false,
         status: response.status,
-        error: body || `Falha ao acionar agente (${response.status})`,
+        error: payload?.error || body || `Falha ao acionar agente (${response.status})`,
+        payload,
       }
     }
 

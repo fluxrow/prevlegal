@@ -19,6 +19,8 @@
 - o playbook de planejamento foi reforçado para permitir que a esteira avance até proposta, contrato e preparação de assinatura antes do handoff do advogado
 - o timeout do acionamento interno do auto-responder foi ampliado para 120s por padrão
 - quando o auto-responder falhar por horário, timeout ou erro interno, os webhooks agora devolvem a conversa para humano e geram notificação explícita
+- o auto-responder agora devolve payload estruturado quando falha por fora do horário, permitindo mensagem automática ao lead com a janela configurada
+- o espelhamento `fromMe` da Z-API agora deduplica mensagens já registradas pela campanha para evitar outbound duplicado na thread
 
 ## Arquivos ou áreas afetadas
 
@@ -29,6 +31,7 @@
 - `src/lib/supabase/middleware.ts`
 - `src/app/api/webhooks/twilio/route.ts`
 - `src/app/api/webhooks/zapi/route.ts`
+- `src/app/api/agente/responder/route.ts`
 - `docs/ROADMAP.md`
 - `docs/LEARNINGS.md`
 
@@ -41,6 +44,7 @@
 - a rota `/api/agente/responder` estava retornando `403 Fora do horário de atendimento` durante horário comercial por usar a hora do servidor em vez do fuso operacional
 - a rota `/api/agente/responder` em produção passou a retornar `500` com erro explícito de saldo insuficiente na Anthropic API; isso explica por que a conversa não continuava mesmo com o gatilho correto
 - o comportamento recente de "lead responde e nada acontece" ainda precisa de reteste com a nova instrumentação, porque o sistema antes só registrava em log e podia parecer silencioso
+- o comportamento recente de "fora do horário cai para humano sem mensagem visível" foi coberto com resposta automática ao lead + gravação na thread
 
 ## Estado após a última entrega
 

@@ -309,11 +309,23 @@ export async function POST(request: NextRequest) {
       const { hourMinute, isWeekend } = getOperationalClock()
 
       if (config.agente_apenas_dias_uteis && isWeekend) {
-        return NextResponse.json({ error: 'Fora do horário de atendimento (fim de semana)' }, { status: 403 })
+        return NextResponse.json({
+          error: 'Fora do horário de atendimento (fim de semana)',
+          reason: 'outside_hours',
+          horario_inicio: config.agente_horario_inicio,
+          horario_fim: config.agente_horario_fim,
+          dias_uteis_only: Boolean(config.agente_apenas_dias_uteis),
+        }, { status: 403 })
       }
 
       if (hourMinute < config.agente_horario_inicio || hourMinute > config.agente_horario_fim) {
-        return NextResponse.json({ error: 'Fora do horário de atendimento' }, { status: 403 })
+        return NextResponse.json({
+          error: 'Fora do horário de atendimento',
+          reason: 'outside_hours',
+          horario_inicio: config.agente_horario_inicio,
+          horario_fim: config.agente_horario_fim,
+          dias_uteis_only: Boolean(config.agente_apenas_dias_uteis),
+        }, { status: 403 })
       }
     }
 

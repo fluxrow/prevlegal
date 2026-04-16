@@ -4,6 +4,7 @@ import { getConfiguracaoAtual } from '@/lib/configuracoes'
 import { getZApiRoutingContextByInstanceId } from '@/lib/whatsapp-provider'
 import { normalizeWhatsAppRecipient } from '@/lib/twilio'
 import { triggerAgentAutoresponder } from '@/lib/agent-autoresponder'
+import { sendWhatsAppMessage } from '@/lib/whatsapp-provider'
 
 const LISTA_MANUAL_NOME = 'Cadastro manual'
 const LISTA_MANUAL_FORNECEDOR = 'sistema'
@@ -109,6 +110,9 @@ async function registerAgentAutoresponderFailure({
   tenantId,
   conversaId,
   from,
+  leadId,
+  campanhaId,
+  channelId,
   leadName,
   result,
 }: {
@@ -116,21 +120,69 @@ async function registerAgentAutoresponderFailure({
   tenantId: string | null
   conversaId: string | null
   from: string
+  leadId?: string | null
+  campanhaId?: string | null
+  channelId?: string | null
   leadName: string
-  result: { status: number; error: string }
+  result: { status: number; error: string; payload?: any }
 }) {
+  const normalizedError = String(result.error || '').toLowerCase()
+  const outsideHours = normalizedError.includes('fora do horário')
+  const timeout = normalizedError.includes('timed out') || normalizedError.includes('timeout')
+  const horarioInicio = String(result.payload?.horario_inicio || '').trim()
+  const horarioFim = String(result.payload?.horario_fim || '').trim()
+  const diasUteisOnly = Boolean(result.payload?.dias_uteis_only)
+
+  let noticeBody = ''
+
+  if (outsideHours && tenantId) {
+    const faixa = horarioInicio && horarioFim ? `das ${horarioInicio} às ${horarioFim}` : 'no próximo horário de atendimento'
+    const dias = diasUteisOnly ? 'em dias úteis ' : ''
+    noticeBody = `Olá. No momento estamos fora do horário de atendimento. Nossa equipe retorna ${dias}${faixa}. Assim que estivermos no horário configurado, seguimos com o seu atendimento.`
+
+    const sendResult = await sendWhatsAppMessage({
+      tenantId,
+      to: from,
+      body: noticeBody,
+      preferredNumberId: channelId || null,
+    })
+
+    if (sendResult.success) {
+      await supabase.from('mensagens_inbound').insert({
+        tenant_id: tenantId,
+        lead_id: leadId || null,
+        campanha_id: campanhaId || null,
+        conversa_id: conversaId,
+        whatsapp_number_id: channelId || null,
+        telefone_remetente: sendResult.from,
+        telefone_destinatario: from,
+        mensagem: noticeBody,
+        respondido_por_agente: true,
+        respondido_manualmente: false,
+        resposta_agente: noticeBody,
+        twilio_sid: sendResult.externalMessageId,
+        lido: true,
+        lido_em: new Date().toISOString(),
+      })
+    }
+  }
+
   if (conversaId) {
     await supabase
       .from('conversas')
-      .update({ status: 'humano' })
+      .update({
+        status: 'humano',
+        ...(noticeBody
+          ? {
+              ultima_mensagem: noticeBody,
+              ultima_mensagem_at: new Date().toISOString(),
+            }
+          : {}),
+      })
       .eq('id', conversaId)
   }
 
   if (!tenantId) return
-
-  const normalizedError = String(result.error || '').toLowerCase()
-  const outsideHours = normalizedError.includes('fora do horário')
-  const timeout = normalizedError.includes('timed out') || normalizedError.includes('timeout')
 
   const titulo = outsideHours
     ? `Agente fora do horário — ${leadName}`
@@ -159,6 +211,9 @@ async function registerAgentAutoresponderFailure({
       telefone: from,
       erro: result.error,
       status: result.status,
+      horario_inicio: horarioInicio || null,
+      horario_fim: horarioFim || null,
+      dias_uteis_only: diasUteisOnly,
     },
   })
 }
@@ -536,8 +591,8 @@ async function handleChannelOriginatedMessage({
     let duplicateQuery = supabase
       .from('mensagens_inbound')
       .select('id')
-      .eq('twilio_message_sid', externalId)
       .eq('whatsapp_number_id', routing.channelId)
+      .or(`twilio_message_sid.eq.${externalId},twilio_sid.eq.${externalId}`)
 
     duplicateQuery = applyTenantFilter(duplicateQuery, routing.tenantId)
 
@@ -941,10 +996,14 @@ async function handleReceiveEvent(request: NextRequest, event: string) {
           tenantId,
           conversaId,
           from,
+          leadId: lead?.id || null,
+          campanhaId: lead?.campanha_id || null,
+          channelId: routing.channelId,
           leadName: lead?.nome || from,
           result: {
             status: result.status,
             error: result.error,
+            payload: result.payload,
           },
         })
       }

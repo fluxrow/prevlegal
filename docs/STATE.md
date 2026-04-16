@@ -34,6 +34,8 @@
 - agente do WhatsApp não deve usar emojis; a remoção agora é aplicada também no runtime, não só por prompt
 - a continuidade do agente em benefícios precisa assumir que a base já veio mapeada para revisão/readequação; em planejamento, a esteira deve poder ir até proposta/contrato antes do handoff humano
 - quando o auto-responder falhar por horário, timeout ou provedor, a conversa deve sair do silêncio e cair para humano com notificação explícita
+- quando o lead responder fora do horário, o sistema deve enviar mensagem automática de retorno com a janela de atendimento e registrar essa saída na própria thread
+- mensagens de campanha enviadas por Z-API não devem duplicar na inbox por causa do espelhamento `fromMe`
 
 ## Próximos 3 blocos
 
