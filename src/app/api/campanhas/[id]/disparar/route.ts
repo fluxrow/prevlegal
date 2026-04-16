@@ -49,6 +49,69 @@ function buildMessage(template: string, lead: any): string {
     );
 }
 
+async function ensureConversationForCampaignLead(
+  adminClient: ReturnType<typeof createAdminClient>,
+  {
+    tenantId,
+    leadId,
+    phone,
+    whatsappNumberId,
+    lastMessage,
+  }: {
+    tenantId: string | null
+    leadId: string
+    phone: string
+    whatsappNumberId: string | null
+    lastMessage: string
+  },
+) {
+  let query = adminClient
+    .from("conversas")
+    .select("id, status, whatsapp_number_id")
+    .eq("lead_id", leadId)
+    .limit(1)
+
+  query = applyTenantFilter(query, tenantId)
+
+  const { data: existente } = await query.maybeSingle()
+  const agora = new Date().toISOString()
+
+  if (existente) {
+    await adminClient
+      .from("conversas")
+      .update({
+        telefone: phone,
+        whatsapp_number_id: existente.whatsapp_number_id || whatsappNumberId,
+        ultima_mensagem: lastMessage,
+        ultima_mensagem_at: agora,
+      })
+      .eq("id", existente.id)
+
+    return existente.id as string
+  }
+
+  const { data: criada, error } = await adminClient
+    .from("conversas")
+    .insert({
+      tenant_id: tenantId,
+      lead_id: leadId,
+      telefone: phone,
+      status: "agente",
+      ultima_mensagem: lastMessage,
+      ultima_mensagem_at: agora,
+      nao_lidas: 0,
+      whatsapp_number_id: whatsappNumberId,
+    })
+    .select("id")
+    .single()
+
+  if (error || !criada?.id) {
+    throw new Error(error?.message || "Falha ao criar conversa da campanha")
+  }
+
+  return criada.id as string
+}
+
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
@@ -192,6 +255,14 @@ export async function POST(
           preferredNumberId: channel.id,
         });
         if (result.success) {
+          const conversaId = await ensureConversationForCampaignLead(adminClient, {
+            tenantId: context.tenantId,
+            leadId: lead.id,
+            phone,
+            whatsappNumberId: channel.id,
+            lastMessage: mensagem,
+          });
+
           await adminClient.from("campanha_mensagens").insert({
             campanha_id: campanhaId,
             lead_id: lead.id,
@@ -201,6 +272,21 @@ export async function POST(
             status: "enviado",
             twilio_sid: result.externalMessageId,
             enviado_at: new Date().toISOString(),
+          });
+
+          await adminClient.from("mensagens_inbound").insert({
+            tenant_id: context.tenantId,
+            lead_id: lead.id,
+            campanha_id: campanhaId,
+            conversa_id: conversaId,
+            whatsapp_number_id: channel.id,
+            telefone_remetente: result.from || null,
+            telefone_destinatario: phone,
+            mensagem,
+            respondido_por_agente: true,
+            respondido_manualmente: false,
+            resposta_agente: mensagem,
+            twilio_sid: result.externalMessageId,
           });
           enviados++;
         } else {

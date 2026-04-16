@@ -1,8 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { after, NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { getConfiguracaoAtual } from '@/lib/configuracoes'
 import { getZApiRoutingContextByInstanceId } from '@/lib/whatsapp-provider'
 import { normalizeWhatsAppRecipient } from '@/lib/twilio'
+import { triggerAgentAutoresponder } from '@/lib/agent-autoresponder'
 
 const LISTA_MANUAL_NOME = 'Cadastro manual'
 const LISTA_MANUAL_FORNECEDOR = 'sistema'
@@ -682,6 +683,15 @@ async function handleReceiveEvent(request: NextRequest, event: string) {
         },
       })
     }
+  }
+
+  if (mensagemInserida?.id && conversaId && !shouldResumeHuman) {
+    after(async () => {
+      const result = await triggerAgentAutoresponder(mensagemInserida.id)
+      if (!result.ok) {
+        console.error('Falha ao acionar agente automaticamente via webhook Z-API:', result.error)
+      }
+    })
   }
 
   return NextResponse.json({

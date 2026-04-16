@@ -1,8 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { after, NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import twilio from 'twilio'
 import { getConfiguracaoAtual } from '@/lib/configuracoes'
 import { getTwilioRoutingContextByWhatsAppNumber } from '@/lib/twilio'
+import { triggerAgentAutoresponder } from '@/lib/agent-autoresponder'
 
 function createAdminSupabase() {
   return createClient(
@@ -87,6 +88,7 @@ export async function POST(request: NextRequest) {
   // 5b. Upsert conversa (thread por telefone)
   let conversaId: string | null = null
   let conversaStatus: string = 'agente'
+  let shouldResumeHuman = false
 
   if (mensagemInserida) {
     let conversaQuery = supabase
@@ -99,7 +101,7 @@ export async function POST(request: NextRequest) {
     if (conversaExistente) {
       conversaId = conversaExistente.id
       conversaStatus = conversaExistente.status || 'agente'
-      const shouldResumeHuman =
+      shouldResumeHuman =
         conversaStatus === 'aguardando_cliente' || conversaStatus === 'resolvido'
 
       await supabase.from('conversas').update({
@@ -229,6 +231,15 @@ export async function POST(request: NextRequest) {
         metadata: { mensagem: body_msg.slice(0, 200) },
       })
     }
+  }
+
+  if (mensagemInserida?.id && conversaId && !shouldResumeHuman) {
+    after(async () => {
+      const result = await triggerAgentAutoresponder(mensagemInserida.id)
+      if (!result.ok) {
+        console.error('Falha ao acionar agente automaticamente via webhook Twilio:', result.error)
+      }
+    })
   }
 
   // 7. Retornar TwiML vazio (Twilio exige resposta 200)

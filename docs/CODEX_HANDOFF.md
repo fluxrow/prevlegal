@@ -56,6 +56,37 @@ Objetivo:
   - validar que a copy inicial ficou mais curta e crível
   - depois disparar teste pequeno e confirmar continuidade na inbox com agente/humano
 
+## Atualizacao 2026-04-16 - Reconciliação entre campanha, thread e auto-resposta do agente
+
+- contexto:
+  - o disparo da campanha passou a funcionar bem no WhatsApp
+  - mas, no reteste com respostas reais de lead, a thread da inbox mostrava apenas a resposta inbound
+  - além disso, o agente não dava continuidade automaticamente após a resposta
+- arquivos alterados:
+  - `src/lib/agent-autoresponder.ts`
+  - `src/app/api/campanhas/[id]/disparar/route.ts`
+  - `src/app/api/agente/responder/route.ts`
+  - `src/app/api/webhooks/twilio/route.ts`
+  - `src/app/api/webhooks/zapi/route.ts`
+  - `docs/ROADMAP.md`
+  - `docs/LEARNINGS.md`
+  - `docs/SESSION_BRIEF.md`
+- mudanças principais:
+  - campanha agora cria/reaproveita `conversa` e espelha o outbound em `mensagens_inbound`
+  - a inbox passa a conseguir renderizar o primeiro toque da campanha no mesmo histórico da resposta do lead
+  - o responder do agente passou a montar histórico levando em conta direção real da mensagem:
+    - inbound do lead -> `user`
+    - outbound já enviado -> `assistant`
+  - webhooks `Z-API` e `Twilio` agora agendam o acionamento do auto-responder quando a conversa permanece em modo `agente`
+- validação:
+  - `npm run build` passou
+- próximo passo operacional:
+  - retestar com os leads `Cauã` e `Fabio Cauã`
+  - confirmar que a thread mostra:
+    - mensagem outbound da campanha
+    - resposta inbound do lead
+    - continuação automática do agente
+
 ## Atualizacao 2026-04-14 - Campanha passou a ler o perfil operacional real do agente
 
 - contexto:

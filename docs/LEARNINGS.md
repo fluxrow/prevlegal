@@ -1632,3 +1632,17 @@ Os selects ainda pediam apenas `usuarios(...)`, então o PostgREST não sabia qu
 **Causa:** Hoje o produto expõe esses contatos no `Contexto operacional`, mas ainda não os modela de forma estruturada para segmentação
 **Correção:** Registrar essa frente como próxima evolução correta: contatos relacionados precisam virar estrutura consultável para filtros de campanha, não apenas anotação humana
 **Regra pratica:** Se uma informação precisa virar critério de campanha, ela não pode depender de texto livre como fonte única de verdade
+## 2026-04-16 — campanha enviada e thread da inbox não são a mesma coisa por padrão
+
+- sintomas observados no reteste:
+  - a campanha enviava corretamente pelo WhatsApp
+  - a resposta do lead aparecia na inbox
+  - a mensagem originalmente enviada pela campanha não aparecia na mesma thread
+  - o agente não continuava automaticamente a conversa após a resposta
+- aprendizado:
+  - `campanha_mensagens` não serve sozinho como fonte da thread operacional
+  - a inbox lê `mensagens_inbound`, então qualquer outbound que precise aparecer na conversa também precisa ser espelhado ali
+  - salvar o inbound no webhook sem disparar explicitamente a continuação do agente não é suficiente para a automação “parecer viva”
+- regra consolidada:
+  - campanha outbound que inicia atendimento precisa entrar também na trilha de `mensagens_inbound`
+  - webhook inbound precisa reconciliar a thread e acionar o auto-responder quando a conversa ainda está em modo `agente`

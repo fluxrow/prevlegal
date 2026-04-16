@@ -61,6 +61,19 @@ Gatilho automático: a mudança de status do lead na API `PATCH` chama o *Orques
 - planejamento previdenciário também foi alinhado:
   - os agentes podem carregar o processo até o momento em que o especialista/advogado assume para validar a estrutura final e colher assinatura
 
+## Atualização 2026-04-16 - Campanha passou a aparecer na thread e inbound voltou a puxar o agente
+
+- no teste real com os contatos `Cauã` e `Fabio Cauã`, ficou evidente que a campanha e a inbox ainda estavam em trilhas diferentes:
+  - a mensagem enviada pela campanha não aparecia na thread
+  - a resposta do lead aparecia, mas o agente não continuava automaticamente
+- correção aplicada:
+  - envio da campanha agora cria/reaproveita `conversa` e espelha o outbound em `mensagens_inbound`
+  - o histórico do agente passou a distinguir corretamente outbound já enviado versus inbound do lead
+  - webhooks `Z-API` e `Twilio` agora acionam o auto-responder em background quando a conversa segue no modo `agente`
+- efeito esperado no próximo reteste:
+  - a thread deve mostrar o primeiro toque da campanha + a resposta do lead
+  - o agente deve continuar automaticamente quando o lead responder e a conversa ainda não tiver sido assumida por humano
+
 ## Atualização 2026-04-10 - Convite de usuário endurecido para o go-live
 
 - o fluxo de convite continua sendo `link manual`; a UI agora deixa explícito que o sistema não envia email automaticamente

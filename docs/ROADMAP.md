@@ -4,6 +4,31 @@ Contexto: [[SESSION_HISTORY_MASTER]]
 Mestra: [[MASTER_PREV_LEGAL]]
 > Última atualização: 10/04/2026
 
+## Atualizacao Inbox + Campanhas / outbound passou a entrar na thread e inbound voltou a acionar o agente automaticamente — 16/04/2026
+
+- durante o reteste da campanha com a lista enriquecida, o envio do WhatsApp estava funcionando, mas a experiência da inbox ainda estava quebrada em dois pontos importantes:
+  - a resposta do lead aparecia na thread, mas a mensagem originalmente enviada pela campanha não aparecia
+  - o lead respondia com interesse, mas o agente não continuava automaticamente a conversa
+- causa identificada:
+  - `POST /api/campanhas/[id]/disparar` registrava o envio apenas em `campanha_mensagens`
+  - a inbox, por outro lado, lê o histórico apenas de `mensagens_inbound`
+  - além disso, os webhooks de inbound (`Z-API` e `Twilio`) salvavam a nova mensagem e atualizavam a conversa, mas não acionavam a rota do agente para continuar o atendimento
+- correção aplicada:
+  - a campanha agora cria ou reaproveita a `conversa` do lead no momento do disparo
+  - cada envio bem-sucedido da campanha passa a ser espelhado também em `mensagens_inbound`, com `conversa_id`, `lead_id` e `whatsapp_number_id`
+  - o histórico do agente passou a diferenciar corretamente:
+    - mensagem inbound do lead
+    - mensagem outbound já enviada pelo sistema/agente
+  - os webhooks `Z-API` e `Twilio` agora disparam o auto-responder em background quando a conversa continua no modo `agente`
+- impacto operacional:
+  - a inbox passa a mostrar a thread completa, incluindo o primeiro toque da campanha
+  - quando o lead responde positivamente, o agente pode continuar a conversa usando o contexto real do que já foi enviado
+  - isso reduz o risco de o agente parecer “cego” ao disparo que iniciou o atendimento
+- observação de arquitetura:
+  - `campanha_mensagens` continua sendo a trilha analítica/comercial da campanha
+  - `mensagens_inbound` passa a ser a trilha operacional unificada da thread humana/IA
+  - essa separação é intencional, mas agora as duas trilhas ficam reconciliadas no runtime
+
 ## Atualizacao Agentes + Campanhas / playbook de benefícios ficou alinhado ao contexto real de readequação e continuidade — 15/04/2026
 
 - durante o refinamento final para go-live, ficou claro que o template e o prompt padrão de `benefícios previdenciários` ainda estavam genéricos demais para o caso real da Jessica

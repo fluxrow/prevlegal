@@ -82,6 +82,13 @@ function buildAgentContinuitySection({
   ].join('\n')
 }
 
+function normalizeComparablePhone(value: string | null | undefined) {
+  const digits = String(value || '').replace(/\D/g, '')
+  if (!digits) return ''
+  if (digits.startsWith('55') && digits.length >= 12) return digits.slice(2)
+  return digits
+}
+
 export async function POST(request: NextRequest) {
   try {
     const supabase = createAdminSupabase()
@@ -98,6 +105,7 @@ export async function POST(request: NextRequest) {
         id,
         mensagem,
         telefone_remetente,
+        telefone_destinatario,
         lead_id,
         leads (
           nome, nb, banco, valor_rma, ganho_potencial, status, campanha_id, tenant_id
@@ -245,14 +253,33 @@ export async function POST(request: NextRequest) {
     if (mensagem.lead_id) {
       const { data: inbounds } = await supabase
         .from('mensagens_inbound')
-        .select('mensagem, respondido_por_agente, resposta_agente, created_at')
+        .select('mensagem, telefone_remetente, telefone_destinatario, respondido_por_agente, respondido_manualmente, resposta_agente, created_at')
         .eq('lead_id', mensagem.lead_id)
         .neq('id', mensagem_id)
         .order('created_at', { ascending: true })
         .limit(10)
 
+      const leadPhone = normalizeComparablePhone(mensagem.telefone_remetente)
+
       inbounds?.forEach(msg => {
-        historico.push({ role: 'user', content: msg.mensagem })
+        const outboundToLead =
+          Boolean(leadPhone) &&
+          normalizeComparablePhone(msg.telefone_destinatario) === leadPhone &&
+          normalizeComparablePhone(msg.telefone_remetente) !== leadPhone
+
+        if (outboundToLead) {
+          const outboundText = (msg.resposta_agente || msg.mensagem || '').trim()
+          if (outboundText) {
+            historico.push({ role: 'assistant', content: outboundText })
+          }
+          return
+        }
+
+        const inboundText = (msg.mensagem || '').trim()
+        if (inboundText) {
+          historico.push({ role: 'user', content: inboundText })
+        }
+
         if (msg.respondido_por_agente && msg.resposta_agente) {
           historico.push({ role: 'assistant', content: msg.resposta_agente })
         }
