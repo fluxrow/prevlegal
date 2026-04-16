@@ -109,6 +109,11 @@ export async function POST(request: NextRequest) {
       contato_alvo_tipo,
     } = body
 
+    let resolvedAgenteId =
+      typeof agente_id === 'string' && agente_id.trim()
+        ? agente_id.trim()
+        : null
+
     const selectedLeadIds = Array.isArray(lead_ids)
       ? lead_ids.filter((value) => typeof value === 'string' && value.trim()).map((value) => value.trim())
       : []
@@ -133,6 +138,18 @@ export async function POST(request: NextRequest) {
 
     if (campaignTargetMode === 'selecionados' && selectedLeadIds.length === 0) {
       return NextResponse.json({ error: 'Selecione ao menos um contato para a campanha personalizada' }, { status: 400 })
+    }
+
+    if (!resolvedAgenteId) {
+      const { data: defaultAgent } = await adminClient
+        .from('agentes')
+        .select('id')
+        .eq('tenant_id', context.tenantId)
+        .eq('ativo', true)
+        .eq('is_default', true)
+        .maybeSingle()
+
+      resolvedAgenteId = defaultAgent?.id || null
     }
 
     let resolvedListaId = lista_id
@@ -245,7 +262,7 @@ export async function POST(request: NextRequest) {
         limite_diario: throttleSettings.limitDaily,
         apenas_verificados: apenas_verificados ?? true,
         agendado_para: agendado_para || null,
-        agente_id: agente_id || null,
+        agente_id: resolvedAgenteId,
         contato_alvo_tipo: normalizedContatoAlvoTipo,
       })
       .select()

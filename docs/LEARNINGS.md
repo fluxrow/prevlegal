@@ -20,6 +20,18 @@ Mestra: [[MASTER_PREV_LEGAL]]
 - [[Sessoes/2026-03-18-prevlegal-admin-roi-obsidian]]
 - [[Sessoes/2026-03-18-sessoes-17-18-marco-prevlegal-completo]]
 
+### 165. Automação por janela horária precisa usar o relógio operacional do produto, não o relógio do servidor
+**Problema:** O lead respondia a campanha, a mensagem entrava na thread, mas o agente não continuava a conversa
+**Causa:** `/api/agente/responder` comparava `janela_inicio/janela_fim` com `new Date().toTimeString()`, o que usa a hora local do host e bloqueava o agente com `403 Fora do horário de atendimento` mesmo durante o horário comercial do escritório
+**Correção:** Calcular a janela do agente com `America/Sao_Paulo` como fuso operacional padrão
+**Regra pratica:** Toda automação dependente de horário no PrevLegal deve comparar contra o relógio operacional do produto, nunca contra a hora crua do servidor
+
+### 166. Campanha com “agente padrão do escritório” deve persistir o agente resolvido
+**Problema:** Campanhas criadas com “Usar agente padrão do escritório” podiam nascer com `agente_id = null`, o que enfraquecia a continuidade operacional quando o lead respondia depois
+**Causa:** A UI tratava o agente padrão como fallback visual, mas o backend gravava `null` quando nenhum agente explícito vinha no payload
+**Correção:** Resolver o agente padrão no backend durante a criação da campanha e persistir esse `agente_id`; além disso, o auto-responder passou a consultar a última `campanha_mensagens` do lead quando `lead.campanha_id` estiver vazio
+**Regra pratica:** Quando o produto oferece um “padrão do escritório”, esse padrão precisa virar dado persistido, não só convenção implícita da interface
+
 ### 160. Em operação previdenciária enriquecida, “telefone” sozinho não basta; campanha precisa saber quem é o contato de abordagem
 **Problema:** Depois da importação da base enriquecida, o lead já mostrava o melhor número de abordagem e os familiares detectados, mas a campanha ainda não tinha estrutura para distinguir se o disparo deveria ir para titular, cônjuge, filho ou irmão
 **Causa:** O modelo legado de `leads` e `campanhas` guardava apenas números, sem um tipo operacional do contato escolhido

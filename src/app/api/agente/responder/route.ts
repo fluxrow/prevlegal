@@ -16,6 +16,8 @@ const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY!,
 })
 
+const APP_TIMEZONE = process.env.APP_TIMEZONE || 'America/Sao_Paulo'
+
 // Prompt padrão do sistema caso o escritório não tenha configurado um personalizado
 const PROMPT_PADRAO = `Você é uma consultora virtual de atendimento previdenciário.
 
@@ -89,6 +91,26 @@ function normalizeComparablePhone(value: string | null | undefined) {
   return digits
 }
 
+function getOperationalClock() {
+  const now = new Date()
+  const hourMinute = new Intl.DateTimeFormat('en-GB', {
+    timeZone: APP_TIMEZONE,
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).format(now)
+
+  const weekday = new Intl.DateTimeFormat('en-US', {
+    timeZone: APP_TIMEZONE,
+    weekday: 'short',
+  }).format(now)
+
+  return {
+    hourMinute,
+    isWeekend: weekday === 'Sat' || weekday === 'Sun',
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const supabase = createAdminSupabase()
@@ -104,6 +126,7 @@ export async function POST(request: NextRequest) {
       .select(`
         id,
         mensagem,
+        campanha_id,
         telefone_remetente,
         telefone_destinatario,
         lead_id,
@@ -121,8 +144,20 @@ export async function POST(request: NextRequest) {
     // 2. Resolver agente — prioridade: campanha → tipo/estágio → padrão tenant → config global
     const tenantId = (mensagem.leads as any)?.tenant_id || null
     const lead = mensagem.leads as any
-    const campanha_id = lead?.campanha_id || null
+    let campanha_id = lead?.campanha_id || mensagem.campanha_id || null
     const leadStatus = lead?.status || null
+
+    if (!campanha_id && mensagem.lead_id) {
+      const { data: ultimaCampanhaMensagem } = await supabase
+        .from('campanha_mensagens')
+        .select('campanha_id')
+        .eq('lead_id', mensagem.lead_id)
+        .order('enviado_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+
+      campanha_id = ultimaCampanhaMensagem?.campanha_id || null
+    }
 
     // Mapa de status do lead → tipo de agente (Fase D — roteamento por estágio)
     const STATUS_TO_TIPO: Record<string, string> = {
@@ -234,15 +269,13 @@ export async function POST(request: NextRequest) {
 
     // 3. Verificar janela de horário
     if (config.agente_horario_inicio && config.agente_horario_fim) {
-      const agora = new Date()
-      const horaAtual = agora.toTimeString().slice(0, 5) // "HH:MM"
-      const diaSemana = agora.getDay() // 0=dom, 6=sáb
+      const { hourMinute, isWeekend } = getOperationalClock()
 
-      if (config.agente_apenas_dias_uteis && (diaSemana === 0 || diaSemana === 6)) {
+      if (config.agente_apenas_dias_uteis && isWeekend) {
         return NextResponse.json({ error: 'Fora do horário de atendimento (fim de semana)' }, { status: 403 })
       }
 
-      if (horaAtual < config.agente_horario_inicio || horaAtual > config.agente_horario_fim) {
+      if (hourMinute < config.agente_horario_inicio || hourMinute > config.agente_horario_fim) {
         return NextResponse.json({ error: 'Fora do horário de atendimento' }, { status: 403 })
       }
     }

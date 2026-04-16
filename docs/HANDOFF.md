@@ -10,6 +10,9 @@
 - middleware passou a permitir apenas a chamada interna autenticada para `/api/agente/responder`
 - webhook Z-API passou a espelhar mensagens `fromMe` como outbound manual na thread
 - criada a memória curta nativa do projeto com `STATE.md` e `HANDOFF.md`
+- corrigida a leitura de janela horária do agente para usar o fuso operacional (`America/Sao_Paulo`) em vez da hora crua do servidor
+- campanha agora persiste o agente padrão resolvido quando nenhum agente explícito é escolhido
+- `/api/agente/responder` agora tenta recuperar a última `campanha_mensagens` do lead quando `lead.campanha_id` vier vazio
 
 ## Arquivos ou áreas afetadas
 
@@ -27,6 +30,7 @@
 - campanhas problemáticas antigas tinham `0 enviados` porque o lead manual estava com `contato_abordagem_tipo = null`
 - a chamada interna para `/api/agente/responder` estava sendo redirecionada para `/login`
 - mensagens diretas do celular do escritório não apareciam porque o webhook Z-API ignorava `fromMe`
+- a rota `/api/agente/responder` estava retornando `403 Fora do horário de atendimento` durante horário comercial por usar a hora do servidor em vez do fuso operacional
 
 ## Estado após a última entrega
 
@@ -34,7 +38,7 @@
   - correção estrutural aplicada no código para campanha, auto-responder e espelhamento `fromMe`
   - memória curta nativa do projeto criada
 - pendente:
-  - reteste funcional em produção do fluxo completo
+  - reteste funcional em produção do fluxo completo após deploy do ajuste de timezone
 - risco residual:
   - confirmar o payload `fromMe` real da Z-API no uso diário para garantir que a heurística de `counterpartyPhone` cobre todos os casos
 

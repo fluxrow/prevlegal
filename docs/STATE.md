@@ -13,7 +13,7 @@
   - campanhas por lista e contatos específicos
   - campanhas por tipo de contato (`titular`, `conjuge`, `filho`, `irmao`)
 - maior risco atual:
-  - reteste completo de campanha + resposta + continuação do agente ainda precisa ser confirmado em produção depois do último pacote de correções
+  - reteste completo de campanha + resposta + continuação do agente ainda precisa ser confirmado em produção depois do ajuste de timezone da janela do agente
 
 ## O que está funcionando
 
@@ -26,9 +26,8 @@
 ## O que está quebrado ou incompleto
 
 - confirmar em runtime se:
-  - campanha `Somente titular` voltou a enviar em leads manuais/legados
-  - resposta do lead aciona continuação automática do agente
-  - mensagem enviada diretamente pelo celular do escritório aparece na mesma thread
+  - resposta do lead aciona continuação automática do agente após o ajuste do fuso `America/Sao_Paulo`
+  - mensagem enviada diretamente pelo celular do escritório aparece na mesma thread de forma consistente
 - memória operacional de tenant e de conversa para agentes ainda não foi estruturada como camada formal
 - `email` em `leads` segue adiado para a futura frente de mail marketing com Resend
 
