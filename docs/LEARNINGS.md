@@ -1646,3 +1646,40 @@ Os selects ainda pediam apenas `usuarios(...)`, então o PostgREST não sabia qu
 - regra consolidada:
   - campanha outbound que inicia atendimento precisa entrar também na trilha de `mensagens_inbound`
   - webhook inbound precisa reconciliar a thread e acionar o auto-responder quando a conversa ainda está em modo `agente`
+
+## 2026-04-16 — Lead manual legado sem tipo explícito não pode ser excluído de campanha “Somente titular”
+
+- problema:
+  - campanhas novas criadas com `contato_alvo_tipo = titular` podiam encerrar com `0 enviados` mesmo quando havia lead manual válido e `tem_whatsapp = true`
+- causa:
+  - o filtro exigia `lead.contato_abordagem_tipo === 'titular'`
+  - leads manuais/legados ainda estavam com `contato_abordagem_tipo = null`
+- correção:
+  - no disparo, `titular` agora aceita `null` como fallback compatível
+  - novos leads manuais e leads automáticos criados por inbound passam a nascer com `contato_abordagem_tipo = titular`
+- regra prática:
+  - quando o produto introduzir um campo estruturante novo no meio da operação, o runtime precisa tratar o legado com fallback explícito para não matar fluxo válido
+
+## 2026-04-16 — Auto-responder interno não pode depender da mesma proteção de sessão do navegador
+
+- problema:
+  - o lead respondia, a mensagem entrava em `mensagens_inbound`, mas o agente não continuava a conversa
+- causa:
+  - o `triggerAgentAutoresponder` chamava `/api/agente/responder` sem credencial interna
+  - o middleware redirecionava a chamada para `/login`, então a continuação automática nunca atingia a rota
+- correção:
+  - usar `ADMIN_FLUXROW_TOKEN` como `Bearer` interno
+  - liberar bypass no middleware apenas para `/api/agente/responder` quando esse token vier correto
+- regra prática:
+  - worker, webhook e auto-responder internos precisam de autenticação própria de máquina; não devem depender de cookie/sessão de navegador
+
+## 2026-04-16 — Mensagem enviada diretamente pelo celular do escritório também precisa entrar na thread operacional
+
+- problema:
+  - quando a advogada respondia pelo celular conectado ao número do escritório, o lead recebia normalmente no WhatsApp, mas a thread do sistema ficava “capada”
+- causa:
+  - o webhook Z-API descartava eventos `fromMe`
+- correção:
+  - espelhar `fromMe` como outbound manual, reconciliando lead e conversa, mas sem gerar notificação nem acionar auto-responder
+- regra prática:
+  - se o número do escritório é a fonte de verdade do atendimento, o sistema precisa refletir tanto o outbound enviado pela plataforma quanto o outbound digitado fora dela

@@ -10,6 +10,15 @@ import {
 } from "@/lib/session-config";
 import { canBypassContainmentForBootstrap, isBlockedByTenantContainment } from "@/lib/tenant-containment";
 
+function isInternalAgentResponderRequest(request: NextRequest) {
+  if (request.nextUrl.pathname !== '/api/agente/responder') return false
+
+  const internalToken = (process.env.ADMIN_FLUXROW_TOKEN || '').trim()
+  if (!internalToken) return false
+
+  return request.headers.get('authorization') === `Bearer ${internalToken}`
+}
+
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
 
@@ -77,6 +86,10 @@ export async function updateSession(request: NextRequest) {
     '/api/session/touch',
     '/api/session/reauth',
   ]
+
+  if (isInternalAgentResponderRequest(request)) {
+    return supabaseResponse
+  }
 
   if ((isAdminRoute && pathname !== '/admin/login' && pathname !== '/admin/reauth') || isAdminApiRoute) {
     const adminToken = request.cookies.get('admin_token')?.value

@@ -2208,3 +2208,24 @@ Status atual em 18/03/2026:
 - decisão:
   - isso entra como evolução estrutural depois do go-live imediato
   - não deve ser resolvido apenas com campo aberto de observação
+
+## Atualização 2026-04-16 — Campanha titular legado, autoresponder interno e espelhamento `fromMe`
+
+- problemas observados no reteste operacional:
+  - campanhas criadas com `Somente titular` podiam encerrar com `0 enviados` quando o lead vinha de cadastro manual ou legado sem `contato_abordagem_tipo`
+  - a continuação automática do agente não acontecia mesmo com resposta do lead entrando na inbox
+  - mensagens enviadas diretamente do celular conectado ao número do escritório apareciam no WhatsApp real, mas não eram espelhadas na thread do sistema
+- causas encontradas:
+  - o disparo filtrava `contato_abordagem_tipo` por igualdade estrita, então `null` não entrava em `titular`
+  - `triggerAgentAutoresponder` chamava `/api/agente/responder`, mas o middleware redirecionava a requisição interna para `/login`
+  - o webhook Z-API ignorava payloads `fromMe`, então o sistema perdia o outbound digitado fora da plataforma
+- correções aplicadas:
+  - `titular` agora aceita lead sem tipo explícito como fallback seguro
+  - leads manuais e leads automáticos criados por inbound passam a nascer com `contato_abordagem_tipo = titular`
+  - o auto-responder interno passou a usar `ADMIN_FLUXROW_TOKEN` em header
+  - o middleware passou a liberar apenas essa chamada interna autenticada para `/api/agente/responder`
+  - o webhook Z-API agora espelha mensagens `fromMe` como outbound manual na mesma conversa
+- efeito esperado no produto:
+  - campanhas para leads manuais deixam de morrer com `0 enviados`
+  - o agente consegue continuar a conversa depois da resposta do lead
+  - a thread mostra tanto o que foi enviado pelo sistema quanto o que foi enviado diretamente do celular do escritório

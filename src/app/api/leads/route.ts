@@ -152,6 +152,8 @@ export async function POST(request: Request) {
       nome: body.nome,
       cpf: body.cpf || null,
       telefone: body.telefone || null,
+      contato_abordagem_tipo: 'titular',
+      contato_abordagem_origem: 'manual',
       nb: nbManual,
       banco: body.banco || null,
       valor_rma: body.valor_rma ? parseFloat(body.valor_rma) : null,

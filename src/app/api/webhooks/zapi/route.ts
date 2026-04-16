@@ -379,6 +379,8 @@ async function ensureLeadForInbound(
       lista_id: listaId,
       nome: `Lead WhatsApp ${phone10or11 || phoneDigits || from}`,
       telefone: phone10or11 || phoneDigits || from,
+      contato_abordagem_tipo: 'titular',
+      contato_abordagem_origem: 'whatsapp_inbound',
       nb: inboundNb,
       status: 'awaiting',
       tem_whatsapp: true,
@@ -395,6 +397,185 @@ async function ensureLeadForInbound(
   }
 
   return novoLead
+}
+
+function resolveZApiOutboundParties({
+  from,
+  to,
+  routingFrom,
+}: {
+  from: string
+  to: string
+  routingFrom?: string | null
+}) {
+  const normalizedRouting = normalizeStoredPhone(routingFrom || '')
+  const normalizedFrom = normalizeStoredPhone(from)
+  const normalizedTo = normalizeStoredPhone(to)
+
+  const fromDigits = getPhoneDigits(normalizedFrom)
+  const toDigits = getPhoneDigits(normalizedTo)
+  const routingDigits = getPhoneDigits(normalizedRouting)
+
+  if (routingDigits) {
+    if (fromDigits && fromDigits === routingDigits && normalizedTo) {
+      return {
+        channelPhone: normalizedFrom,
+        counterpartyPhone: normalizedTo,
+      }
+    }
+
+    if (toDigits && toDigits === routingDigits && normalizedFrom) {
+      return {
+        channelPhone: normalizedTo,
+        counterpartyPhone: normalizedFrom,
+      }
+    }
+  }
+
+  return {
+    channelPhone: normalizedRouting || normalizedTo || normalizedFrom,
+    counterpartyPhone: normalizedFrom || normalizedTo,
+  }
+}
+
+async function handleChannelOriginatedMessage({
+  supabase,
+  routing,
+  instanceId,
+  inbound,
+  event,
+}: {
+  supabase: ReturnType<typeof createAdminSupabase>
+  routing: Awaited<ReturnType<typeof getZApiRoutingContextByInstanceId>>
+  instanceId: string
+  inbound: ReturnType<typeof extractInboundPayload>
+  event: string
+}) {
+  if (!routing.channelId) {
+    return NextResponse.json(
+      { ok: false, ignored: true, reason: 'Canal Z-API não encontrado para a instância' },
+      { status: 202 },
+    )
+  }
+
+  const parties = resolveZApiOutboundParties({
+    from: inbound.from,
+    to: inbound.to,
+    routingFrom: routing.from,
+  })
+
+  const body = inbound.message.trim()
+  if (!parties.counterpartyPhone || !body) {
+    return NextResponse.json(
+      { ok: false, ignored: true, reason: 'Payload outbound sem telefone de destino ou mensagem textual' },
+      { status: 202 },
+    )
+  }
+
+  const externalId = inbound.externalId
+  if (externalId) {
+    let duplicateQuery = supabase
+      .from('mensagens_inbound')
+      .select('id')
+      .eq('twilio_message_sid', externalId)
+      .eq('whatsapp_number_id', routing.channelId)
+
+    duplicateQuery = applyTenantFilter(duplicateQuery, routing.tenantId)
+
+    const { data: duplicate } = await duplicateQuery.maybeSingle()
+    if (duplicate) {
+      return NextResponse.json({ ok: true, duplicate: true, mirrored: true })
+    }
+  }
+
+  let lead = null as Awaited<ReturnType<typeof ensureLeadForInbound>> | null
+  let tenantId = routing.tenantId
+
+  try {
+    if (routing.tenantId) {
+      lead = await ensureLeadForInbound(supabase, routing.tenantId, parties.counterpartyPhone, body)
+      tenantId = lead?.tenant_id || routing.tenantId
+    }
+  } catch (error) {
+    console.error('Erro ao garantir lead para outbound Z-API originado no canal:', error)
+  }
+
+  const conversaExistente = await findConversationByNormalizedPhone(
+    supabase,
+    tenantId,
+    routing.channelId,
+    parties.counterpartyPhone,
+  )
+
+  let conversaId: string | null = null
+
+  if (conversaExistente) {
+    conversaId = conversaExistente.id
+    await supabase
+      .from('conversas')
+      .update({
+        lead_id: lead?.id || null,
+        whatsapp_number_id: conversaExistente.whatsapp_number_id || routing.channelId,
+        ultima_mensagem: body,
+        ultima_mensagem_at: new Date().toISOString(),
+      })
+      .eq('id', conversaExistente.id)
+  } else {
+    const { data: novaConversa, error: conversaError } = await supabase
+      .from('conversas')
+      .insert({
+        tenant_id: tenantId,
+        lead_id: lead?.id || null,
+        telefone: parties.counterpartyPhone,
+        status: 'humano',
+        ultima_mensagem: body,
+        ultima_mensagem_at: new Date().toISOString(),
+        nao_lidas: 0,
+        whatsapp_number_id: routing.channelId,
+      })
+      .select('id')
+      .single()
+
+    if (conversaError) {
+      console.error('Erro ao criar conversa outbound Z-API originado no canal:', conversaError)
+    }
+
+    conversaId = novaConversa?.id || null
+  }
+
+  const { error: insertError } = await supabase
+    .from('mensagens_inbound')
+    .insert({
+      tenant_id: tenantId,
+      lead_id: lead?.id || null,
+      campanha_id: lead?.campanha_id || null,
+      conversa_id: conversaId,
+      whatsapp_number_id: routing.channelId,
+      telefone_remetente: parties.channelPhone || routing.from,
+      telefone_destinatario: parties.counterpartyPhone,
+      mensagem: body,
+      respondido_por_agente: false,
+      respondido_manualmente: true,
+      twilio_message_sid: externalId || null,
+      twilio_sid: event,
+      lido: true,
+      lido_em: new Date().toISOString(),
+    })
+
+  if (insertError) {
+    console.error('Erro ao espelhar mensagem enviada pelo próprio canal Z-API:', insertError)
+    return NextResponse.json({ error: insertError.message }, { status: 500 })
+  }
+
+  return NextResponse.json({
+    ok: true,
+    mirrored: true,
+    event,
+    tenantId,
+    conversaId,
+    leadId: lead?.id || null,
+    instanceId,
+  })
 }
 
 function extractInboundPayload(payload: unknown) {
@@ -476,7 +657,13 @@ async function handleReceiveEvent(request: NextRequest, event: string) {
   const body = inbound.message.trim()
 
   if (inbound.fromMe) {
-    return NextResponse.json({ ok: true, ignored: true, reason: 'Mensagem originada pelo próprio canal' })
+    return handleChannelOriginatedMessage({
+      supabase,
+      routing,
+      instanceId,
+      inbound,
+      event,
+    })
   }
 
   if (!from || !body) {

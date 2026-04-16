@@ -49,6 +49,21 @@ function buildMessage(template: string, lead: any): string {
     );
 }
 
+function matchesCampaignContactTarget(
+  lead: { contato_abordagem_tipo?: string | null },
+  targetType?: string | null,
+) {
+  const normalizedTarget = String(targetType || '').trim().toLowerCase()
+  if (!normalizedTarget) return true
+
+  const normalizedLeadType = String(lead.contato_abordagem_tipo || '').trim().toLowerCase()
+  if (normalizedTarget === 'titular') {
+    return !normalizedLeadType || normalizedLeadType === 'titular'
+  }
+
+  return normalizedLeadType === normalizedTarget
+}
+
 async function ensureConversationForCampaignLead(
   adminClient: ReturnType<typeof createAdminClient>,
   {
@@ -197,7 +212,7 @@ export async function POST(
       (l: any) =>
         l &&
         (!campanha.apenas_verificados || l.tem_whatsapp === true) &&
-        (!campanha.contato_alvo_tipo || l.contato_abordagem_tipo === campanha.contato_alvo_tipo),
+        matchesCampaignContactTarget(l, campanha.contato_alvo_tipo),
     );
 
     const channel = await resolveWhatsAppChannel(
