@@ -17,6 +17,7 @@
 - o runtime do agente agora remove emojis da resposta final antes do envio, mesmo que o modelo tente usar esse tipo de caractere
 - a continuidade do agente em benefícios passou a tratar a conversa como sequência de uma revisão/readequação já identificada, sem voltar para triagem genérica
 - o playbook de planejamento foi reforçado para permitir que a esteira avance até proposta, contrato e preparação de assinatura antes do handoff do advogado
+- o playbook de planejamento foi refinado para ficar mais consultivo e tecnicamente responsável: mais conhecimento geral de planejamento previdenciário brasileiro, menos copy genérica e limite explícito para não inventar análise individual
 - o timeout do acionamento interno do auto-responder foi ampliado para 120s por padrão
 - quando o auto-responder falhar por horário, timeout ou erro interno, os webhooks agora devolvem a conversa para humano e geram notificação explícita
 - o auto-responder agora devolve payload estruturado quando falha por fora do horário, permitindo mensagem automática ao lead com a janela configurada
@@ -45,25 +46,27 @@
 - a rota `/api/agente/responder` em produção passou a retornar `500` com erro explícito de saldo insuficiente na Anthropic API; isso explica por que a conversa não continuava mesmo com o gatilho correto
 - o comportamento recente de "lead responde e nada acontece" ainda precisa de reteste com a nova instrumentação, porque o sistema antes só registrava em log e podia parecer silencioso
 - o comportamento recente de "fora do horário cai para humano sem mensagem visível" foi coberto com resposta automática ao lead + gravação na thread
+- a próxima validação relevante saiu de benefícios e passou para planejamento: precisamos confirmar em runtime se o agente conduz com consistência até proposta/contrato sem soar telemarketing nem responder com certezas indevidas
 
 ## Estado após a última entrega
 
 - funcionando:
   - correção estrutural aplicada no código para campanha, auto-responder e espelhamento `fromMe`
   - memória curta nativa do projeto criada
+  - fallback fora do horário validado em produção com mensagem visível ao lead e thread coerente
 - pendente:
-  - reteste funcional em produção do fluxo completo após deploy do fallback explícito de timeout/horário/erro do auto-responder
-  - recompor crédito Anthropic ou trocar temporariamente o provedor/modelo do auto-responder
+  - validar o fluxo completo de `planejamento_previdenciario` até proposta, contrato e assinatura
+  - desenhar fallback multi-provider do auto-responder para não depender de um único saldo/provedor
 - risco residual:
   - confirmar o payload `fromMe` real da Z-API no uso diário para garantir que a heurística de `counterpartyPhone` cobre todos os casos
 
 ## Próximo passo certo
 
-- disparar uma campanha pequena de novo, responder pelo WhatsApp e validar:
-  - mensagem inicial da campanha na thread
-  - resposta do lead na thread
-  - continuação automática do agente, ou fallback claro para humano quando a Anthropic estiver indisponível
-  - mensagem enviada direto do celular da Jessica refletida no sistema
+- iniciar a bateria de testes do playbook de `planejamento_previdenciario`, validando:
+  - copy inicial mais consultiva
+  - resposta do agente sem inventar análise individual
+  - condução natural para diagnóstico
+  - continuação para proposta, contrato e preparação de assinatura antes do handoff humano
 
 ## Referência rápida
 

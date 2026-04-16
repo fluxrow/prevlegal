@@ -34,26 +34,26 @@ const BENEFITS_FAMILY_TEMPLATES: TemplateMap = {
 
 const PLANNING_TITULAR_TEMPLATES: TemplateMap = {
   triagem:
-    "Olá, {nome}. Estou entrando em contato porque muita gente contribui para o INSS sem uma estratégia clara de aposentadoria. Se fizer sentido para você, eu posso te explicar em poucas linhas como funciona um diagnóstico de planejamento previdenciário.",
+    "Olá, {nome}. Estou entrando em contato porque muitas pessoas com carreira consolidada contribuem para o INSS sem revisar a estratégia previdenciária com a profundidade que o tema exige. Se fizer sentido para você, eu posso te explicar em poucas linhas como funciona um diagnóstico de planejamento previdenciário e ver se isso faz sentido para o seu momento.",
   reativacao:
-    "Olá, {nome}. Estou retomando nosso contato porque talvez ainda faça sentido organizar sua estratégia previdenciária com mais clareza. Se você quiser, eu te explico em poucas linhas como funciona o próximo passo.",
+    "Olá, {nome}. Estou retomando nosso contato porque talvez ainda faça sentido revisar sua estratégia previdenciária com mais clareza. Se você quiser, eu te explico em poucas linhas como costuma funcionar o próximo passo de um diagnóstico bem feito.",
   followup_comercial:
-    "Olá, {nome}. Pelo seu perfil, ainda acredito que vale uma conversa estratégica sobre planejamento previdenciário e aposentadoria futura. Se fizer sentido, eu já te explico como funciona esse diagnóstico.",
+    "Olá, {nome}. Pelo que conversamos, ainda faz sentido avançar com uma conversa estratégica de planejamento previdenciário. Se você quiser, eu te explico de forma objetiva como funciona o diagnóstico, a proposta e os próximos passos até a formalização.",
   documental:
-    "Olá, {nome}. Estou organizando a etapa documental do seu diagnóstico de planejamento previdenciário. Se quiser, eu posso te orientar sobre o que normalmente faz mais diferença separar primeiro.",
+    "Olá, {nome}. Estou organizando a etapa documental do seu diagnóstico de planejamento previdenciário. Se quiser, eu posso te orientar com clareza sobre quais documentos costumam fazer mais diferença separar primeiro e por quê.",
   confirmacao_agenda:
     "Olá, {nome}. Estou confirmando sua reunião de diagnóstico de planejamento previdenciário. Se estiver tudo certo para seguir, me responda por aqui e eu deixo a equipe alinhada com você.",
 };
 
 const PLANNING_FAMILY_TEMPLATES: TemplateMap = {
   triagem:
-    "Olá. Estou tentando falar com um familiar de {nome} sobre organização previdenciária e planejamento de aposentadoria. Se você puder me confirmar se é a melhor pessoa para receber esse recado, eu explico de forma breve por aqui.",
+    "Olá. Estou tentando falar com um familiar de {nome} sobre organização previdenciária e planejamento de aposentadoria. Se você puder me confirmar se é a melhor pessoa para receber esse recado, eu explico de forma breve e respeitosa por aqui.",
   reativacao:
-    "Olá. Estou retomando um contato relacionado a um familiar de {nome} sobre planejamento previdenciário e organização de aposentadoria. Se você for a melhor pessoa para receber esse recado, eu posso resumir por aqui.",
+    "Olá. Estou retomando um contato relacionado a um familiar de {nome} sobre planejamento previdenciário e organização de aposentadoria. Se você for a melhor pessoa para receber esse recado, eu posso resumir o contexto por aqui.",
   followup_comercial:
-    "Olá. Estou tentando alinhar com um familiar de {nome} se ainda faz sentido avançar numa conversa de planejamento previdenciário. Se você puder confirmar se é a pessoa mais adequada para isso, eu explico de forma breve.",
+    "Olá. Estou tentando alinhar com um familiar de {nome} se ainda faz sentido avançar numa conversa de planejamento previdenciário. Se você puder confirmar se é a pessoa mais adequada para isso, eu explico de forma breve como funciona o próximo passo.",
   documental:
-    "Olá. Estou tentando organizar com um familiar de {nome} a etapa documental de um diagnóstico de planejamento previdenciário. Se você for a pessoa mais adequada para receber esse recado, eu explico com clareza o próximo passo.",
+    "Olá. Estou tentando organizar com um familiar de {nome} a etapa documental de um diagnóstico de planejamento previdenciário. Se você for a pessoa mais adequada para receber esse recado, eu explico com clareza o próximo passo e o que costuma ser necessário separar.",
   confirmacao_agenda:
     "Olá. Estou tentando confirmar uma reunião de diagnóstico de planejamento previdenciário relacionada a um familiar de {nome}. Se você puder me dizer se é a melhor pessoa para receber esse recado, eu explico rapidamente por aqui.",
 };

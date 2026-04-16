@@ -33,13 +33,14 @@
 - Anthropic está com saldo insuficiente no ambiente operacional atual; enquanto isso, o agente não conseguirá continuar conversas automaticamente
 - agente do WhatsApp não deve usar emojis; a remoção agora é aplicada também no runtime, não só por prompt
 - a continuidade do agente em benefícios precisa assumir que a base já veio mapeada para revisão/readequação; em planejamento, a esteira deve poder ir até proposta/contrato antes do handoff humano
+- o playbook de planejamento previdenciário ainda precisa de validação em runtime com copy mais consultiva, mais conhecimento técnico geral do cenário brasileiro e limite explícito para não inventar análise individual
 - quando o auto-responder falhar por horário, timeout ou provedor, a conversa deve sair do silêncio e cair para humano com notificação explícita
 - quando o lead responder fora do horário, o sistema deve enviar mensagem automática de retorno com a janela de atendimento e registrar essa saída na própria thread
 - mensagens de campanha enviadas por Z-API não devem duplicar na inbox por causa do espelhamento `fromMe`
 
 ## Próximos 3 blocos
 
-1. retestar campanha ponta a ponta (`disparo -> resposta -> continuação do agente`)
+1. validar o playbook de `planejamento_previdenciario` até diagnóstico, proposta, contrato e preparação de assinatura
 2. criar memória curta nativa por tenant e por conversa para os agentes
 3. abrir a frente controlada de `email + Resend` para planejamento previdenciário
 
