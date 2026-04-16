@@ -13,7 +13,7 @@
   - campanhas por lista e contatos específicos
   - campanhas por tipo de contato (`titular`, `conjuge`, `filho`, `irmao`)
 - maior risco atual:
-  - reteste completo de campanha + resposta + continuação do agente ainda precisa ser confirmado em produção depois do ajuste de timezone da janela do agente
+  - reteste completo de campanha + resposta + continuação do agente ainda precisa ser confirmado em produção depois do ajuste da estratégia de continuidade para benefícios previdenciários
 
 ## O que está funcionando
 
@@ -32,6 +32,7 @@
 - `email` em `leads` segue adiado para a futura frente de mail marketing com Resend
 - Anthropic está com saldo insuficiente no ambiente operacional atual; enquanto isso, o agente não conseguirá continuar conversas automaticamente
 - agente do WhatsApp não deve usar emojis; a remoção agora é aplicada também no runtime, não só por prompt
+- a continuidade do agente em benefícios precisa assumir que a base já veio mapeada para revisão/readequação; em planejamento, a esteira deve poder ir até proposta/contrato antes do handoff humano
 
 ## Próximos 3 blocos
 

@@ -83,6 +83,20 @@ function buildAgentContinuitySection({
     ? `Já existe histórico anterior. Nunca recomece a conversa do zero, nunca repita apresentação inicial desnecessária e sempre responda como alguém que sabe o que já foi alinhado com ${leadRef}.`
     : `Se esta for a primeira resposta efetiva da esteira, apresente o assunto com delicadeza, objetividade e sem despejar informação demais de uma vez.`
 
+  const operationSpecificHint =
+    normalizedProfile === 'planejamento_previdenciario'
+      ? [
+          '- No playbook de planejamento, a conversa pode avançar por agentes até proposta, contrato e preparação de assinatura antes do handoff humano.',
+          '- Se o lead estiver qualificado, conduza com naturalidade para diagnóstico, proposta, próximo compromisso ou preparação contratual, sem parecer venda agressiva.',
+          '- Nunca trate o planejamento como curiosidade genérica se o lead já estiver engajado; continue a conversa no estágio em que ela está.',
+        ].join('\n')
+      : [
+          '- No playbook de benefícios, parta do contexto de que o lead foi mapeado para uma possibilidade já identificada de revisão ou readequação do benefício.',
+          '- Se o lead pedir explicação, explique diretamente o cenário já identificado em linguagem simples, curta e segura. Não volte para perguntas genéricas como se ainda estivesse descobrindo se existe problema no benefício.',
+          '- Não pergunte se o benefício foi negado, cortado ou se o valor deveria ser maior quando o contato já veio de uma base mapeada para revisão/readequação.',
+          '- Depois de explicar o essencial, o objetivo é confirmar interesse real e deixar a conversa pronta para a Dra. Jessica ou equipe jurídica continuar.',
+        ].join('\n')
+
   return [
     'CONTINUIDADE OPERACIONAL:',
     '- Sempre trate o histórico da conversa como o contexto oficial do caso.',
@@ -90,6 +104,7 @@ function buildAgentContinuitySection({
     `- ${profileHint}`,
     `- ${stageHint}`,
     `- ${continuityHint}`,
+    operationSpecificHint,
     '- Quando o lead demonstrar interesse real, organize a conversa para facilitar o handoff humano em vez de encerrar com resposta vaga.',
   ].join('\n')
 }

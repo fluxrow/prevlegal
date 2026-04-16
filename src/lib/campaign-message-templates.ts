@@ -8,7 +8,7 @@ type TemplateMap = Record<string, string>;
 
 const BENEFITS_TITULAR_TEMPLATES: TemplateMap = {
   triagem:
-    "Olá, {nome}. Estou entrando em contato porque identificamos uma informação previdenciária importante que pode estar ligada a uma revisão ou readequação do seu benefício. Se fizer sentido para você, eu posso te explicar isso em poucas linhas por aqui e ver se vale avançar.",
+    "Olá, {nome}. Estou entrando em contato porque identificamos uma possibilidade previdenciária importante de revisão ou readequação do seu benefício. Se fizer sentido para você, eu posso te explicar isso em poucas linhas por aqui e ver se vale avançar.",
   reativacao:
     "Olá, {nome}. Estou retomando este contato porque ficou pendente uma informação previdenciária importante sobre uma possível revisão do seu benefício. Se você quiser, eu posso te resumir por aqui o que vale entender antes de avançar.",
   followup_comercial:
@@ -21,7 +21,7 @@ const BENEFITS_TITULAR_TEMPLATES: TemplateMap = {
 
 const BENEFITS_FAMILY_TEMPLATES: TemplateMap = {
   triagem:
-    "Olá. Estou tentando falar com um familiar responsável por {nome} sobre uma informação previdenciária importante ligada ao benefício dele(a). Se você puder me confirmar se é a melhor pessoa para receber esse recado, eu explico em poucas linhas por aqui.",
+    "Olá. Estou tentando falar com um familiar responsável por {nome} sobre uma possibilidade previdenciária importante de revisão ou readequação do benefício dele(a). Se você puder me confirmar se é a melhor pessoa para receber esse recado, eu explico em poucas linhas por aqui.",
   reativacao:
     "Olá. Estou retomando um contato relacionado a um familiar de {nome} porque ficou pendente uma informação previdenciária importante sobre o benefício dele(a). Se você for a pessoa mais adequada para receber esse recado, eu posso resumir o contexto por aqui.",
   followup_comercial:

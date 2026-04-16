@@ -15,6 +15,8 @@
 - `/api/agente/responder` agora tenta recuperar a última `campanha_mensagens` do lead quando `lead.campanha_id` vier vazio
 - quando a API Anthropic estiver sem crédito, a rota do agente agora rebaixa a conversa para humano e gera notificação explícita para a equipe
 - o runtime do agente agora remove emojis da resposta final antes do envio, mesmo que o modelo tente usar esse tipo de caractere
+- a continuidade do agente em benefícios passou a tratar a conversa como sequência de uma revisão/readequação já identificada, sem voltar para triagem genérica
+- o playbook de planejamento foi reforçado para permitir que a esteira avance até proposta, contrato e preparação de assinatura antes do handoff do advogado
 
 ## Arquivos ou áreas afetadas
 

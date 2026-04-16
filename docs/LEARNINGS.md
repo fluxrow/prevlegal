@@ -38,6 +38,12 @@ Mestra: [[MASTER_PREV_LEGAL]]
 **Correção:** Tratar esse erro de forma operacional: rebaixar a conversa para `humano`, gerar notificação explícita para a equipe e deixar claro que o bloqueio é do provedor, não da thread ou do webhook
 **Regra pratica:** Quando um provedor externo falhar por crédito, quota ou billing, o produto precisa degradar para atendimento humano com sinalização clara. Nunca deixar o operador achando que “o sistema travou”
 
+### 168. Continuidade de agente precisa respeitar o motivo real do contato outbound
+**Problema:** O lead respondia pedindo explicação sobre a revisão, mas o agente continuava com perguntas genéricas como se ainda estivesse descobrindo se havia algum problema no benefício
+**Causa:** A continuidade do agente ainda carregava uma lógica ampla de triagem previdenciária, sem assumir que a base da Jessica já veio mapeada para revisão/readequação
+**Correção:** Reforçar no runtime e nos templates seedados que, em `beneficios_previdenciarios`, o agente deve partir de uma possibilidade já identificada, explicar o essencial de forma curta e preparar o handoff para a Dra. Jessica; em `planejamento_previdenciario`, a esteira pode seguir até proposta, contrato e preparação de assinatura antes do handoff humano
+**Regra pratica:** Em operação outbound, o agente deve continuar do estágio real da conversa. Nunca reiniciar a triagem como se o caso ainda estivesse no zero
+
 ### 160. Em operação previdenciária enriquecida, “telefone” sozinho não basta; campanha precisa saber quem é o contato de abordagem
 **Problema:** Depois da importação da base enriquecida, o lead já mostrava o melhor número de abordagem e os familiares detectados, mas a campanha ainda não tinha estrutura para distinguir se o disparo deveria ir para titular, cônjuge, filho ou irmão
 **Causa:** O modelo legado de `leads` e `campanhas` guardava apenas números, sem um tipo operacional do contato escolhido
