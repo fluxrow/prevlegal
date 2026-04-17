@@ -1766,3 +1766,19 @@ Os selects ainda pediam apenas `usuarios(...)`, então o PostgREST não sabia qu
   - espelhar `fromMe` como outbound manual, reconciliando lead e conversa, mas sem gerar notificação nem acionar auto-responder
 - regra prática:
   - se o número do escritório é a fonte de verdade do atendimento, o sistema precisa refletir tanto o outbound enviado pela plataforma quanto o outbound digitado fora dela
+
+## 2026-04-17 — Outbound precisa empurrar o lead para `Contatados`, e o Kanban precisa deixar claro com quem estamos falando
+
+- problema:
+  - o lead recebia mensagem por campanha ou envio individual, mas o card podia continuar em `Novos`
+  - no Kanban, não ficava visualmente claro se o contato atual era `titular`, `cônjuge`, `filho` ou `irmão`
+- causa:
+  - o outbound não promovia o status do lead para `contacted`
+  - o card do Kanban não consumia `contato_abordagem_tipo`
+- correção:
+  - campanha e `iniciar conversa` agora promovem leads `new` para `contacted` e disparam `processEventTriggers`
+  - a página de leads passou a carregar `contato_abordagem_tipo`
+  - o card do Kanban agora renderiza um selo visual com o tipo de contato
+- regra prática:
+  - mensagem enviada para lead novo deve refletir imediatamente em `Contatados`
+  - o operador precisa enxergar no card, sem abrir o lead, se está falando com titular ou familiar

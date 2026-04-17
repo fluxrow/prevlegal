@@ -15,6 +15,33 @@ function applyTenantFilter(query: any, tenantId: string | null) {
   return tenantId ? query.eq('tenant_id', tenantId) : query.is('tenant_id', null)
 }
 
+async function promoteLeadToContactedIfNew(
+  supabase: ReturnType<typeof createAdminSupabase>,
+  tenantId: string | null,
+  leadId: string,
+) {
+  if (!tenantId) return
+
+  const { data: currentLead } = await supabase
+    .from('leads')
+    .select('status')
+    .eq('id', leadId)
+    .eq('tenant_id', tenantId)
+    .maybeSingle()
+
+  if (!currentLead || currentLead.status !== 'new') return
+
+  await supabase
+    .from('leads')
+    .update({ status: 'contacted', updated_at: new Date().toISOString() })
+    .eq('id', leadId)
+    .eq('tenant_id', tenantId)
+
+  const { processEventTriggers } = await import('@/lib/events/orchestrator')
+  await processEventTriggers(tenantId, leadId, 'lead_status_mudou', 'contacted')
+    .catch(err => console.error('[Orquestrador] Erro ao disparar gatilho após iniciar conversa:', err))
+}
+
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
@@ -36,7 +63,7 @@ export async function POST(
 
   let leadQuery = supabase
     .from('leads')
-    .select('id, nome, telefone, tenant_id')
+    .select('id, nome, telefone, tenant_id, status')
     .eq('id', id)
   leadQuery = applyTenantFilter(leadQuery, context.tenantId)
 
@@ -125,6 +152,8 @@ export async function POST(
       assumido_em: agora,
     })
     .eq('id', conversa.id)
+
+  await promoteLeadToContactedIfNew(supabase, context.tenantId, lead.id)
 
   return NextResponse.json({
     success: true,

@@ -88,6 +88,7 @@
 - `npm run build` passou após a automação que joga a conversa para `aguardando_cliente` quando o lead confirma a passagem para a Dra. Jessica
 - `npm run build` passou após a correção da exclusão de lista presa por campanhas antigas
 - `npm run build` passou após endurecer a regra de dispatch para usar somente contatos móveis/WhatsApp
+- `npm run build` passou após adicionar selo visual do tipo de contato no card do Kanban e promover outbound de `new` para `contacted`
 
 ## Estado após a última entrega
 
@@ -98,6 +99,8 @@
   - admin pronto para registrar tenant com valor mensal contratado diferente da LP, sem sobrecarregar `plano`
   - runtime do agente endurecido para continuidade mais natural em benefícios e reconciliação do `fromMe` automático
   - disparo de campanha por tipo de contato familiar agora pode usar campos estruturados do lead (`conjuge`, `filho`, `irmao`) em vez de depender de anotação ou alternativo genérico
+  - cards do Kanban agora mostram explicitamente o tipo de contato de abordagem (`Titular`, `Cônjuge`, `Filho`, `Irmão`)
+  - quando campanha ou envio individual sai para um lead ainda `Novo`, o lead é promovido automaticamente para `Contatados`
   - handoff confirmado para a Dra. Jessica agora troca a conversa para `aguardando_cliente`, alinhando o fluxo com o box correto da inbox
   - listas vazias ou de teste não ficam mais bloqueadas por campanhas não ativas; a exclusão limpa a campanha associada antes de remover a lista
 - pendente:
@@ -109,6 +112,7 @@
   - confirmar o payload `fromMe` real da Z-API no uso diário para garantir que a heurística de `counterpartyPhone` cobre todos os casos
   - aplicar o patch manual de contatos estruturados no banco operacional antes do reteste da campanha `filhos`
   - retestar no runtime a exclusão da lista `Seleção personalizada` e, em seguida, reimportar a base enriquecida para validar `filho/irmão`
+  - confirmar que o selo visual do Kanban segue coerente quando o lead muda manualmente de tipo de contato em edição
 
 ## Próximo passo certo
 
@@ -124,4 +128,4 @@
 
 - commit: pendente após sync/commit desta janela
 - deploy: pendente push
-- nota de sessão: `2026-04-17-delete-list-cleans-non-active-campaigns`
+- nota de sessão: `2026-04-17-kanban-contact-badge-and-contacted-promotion`

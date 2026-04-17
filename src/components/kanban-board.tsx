@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { DollarSign, User, ChevronDown, MessageSquare } from 'lucide-react'
 import LeadDrawer from './lead-drawer'
 import ModalMsgLead from './modal-msg-lead'
+import { getContactTargetLabel } from '@/lib/contact-target'
 
 type Lead = {
   id: string
@@ -16,6 +17,7 @@ type Lead = {
   tipo_beneficio: string | null
   banco: string | null
   origem?: string | null
+  contato_abordagem_tipo?: string | null
 }
 
 type Column = {
@@ -55,6 +57,7 @@ function LeadCard({
   const [showModal, setShowModal] = useState(false)
 
   const scoreColor = lead.score >= 80 ? '#2dd4a0' : lead.score >= 60 ? '#f5c842' : '#ff8c42'
+  const contactTargetLabel = getContactTargetLabel(lead.contato_abordagem_tipo)
 
   return (
     <>
@@ -138,6 +141,22 @@ function LeadCard({
                 Manual
               </span>
             )}
+            <div style={{ marginTop: '4px' }}>
+              <span style={{
+                fontSize: '9px',
+                fontWeight: '700',
+                background: 'rgba(79,122,255,0.12)',
+                color: 'var(--accent)',
+                border: '1px solid rgba(79,122,255,0.22)',
+                borderRadius: '20px',
+                padding: '1px 7px',
+                textTransform: 'uppercase',
+                letterSpacing: '0.04em',
+                display: 'inline-block',
+              }}>
+                {contactTargetLabel}
+              </span>
+            </div>
           </div>
         </div>
 

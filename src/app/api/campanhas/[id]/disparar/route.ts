@@ -20,6 +20,34 @@ function applyTenantFilter(query: any, tenantId: string | null) {
   return tenantId ? query.eq("tenant_id", tenantId) : query.is("tenant_id", null);
 }
 
+async function promoteLeadToContactedIfNew(
+  adminClient: ReturnType<typeof createAdminClient>,
+  tenantId: string | null,
+  leadId: string,
+) {
+  let currentLeadQuery = adminClient
+    .from("leads")
+    .select("status")
+    .eq("id", leadId)
+    .limit(1);
+
+  currentLeadQuery = applyTenantFilter(currentLeadQuery, tenantId);
+
+  const { data: currentLead } = await currentLeadQuery.maybeSingle();
+  if (!currentLead || currentLead.status !== "new" || !tenantId) return;
+
+  await adminClient
+    .from("leads")
+    .update({ status: "contacted", updated_at: new Date().toISOString() })
+    .eq("id", leadId)
+    .eq("tenant_id", tenantId);
+
+  const { processEventTriggers } = await import("@/lib/events/orchestrator");
+  await processEventTriggers(tenantId, leadId, "lead_status_mudou", "contacted").catch((err) =>
+    console.error("[Orquestrador] Erro ao disparar gatilho após envio de campanha:", err),
+  );
+}
+
 function normalizePhone(cpf: string): string | null {
   const digits = cpf.replace(/\D/g, "");
   if (digits.length === 11) return "+55" + digits;
@@ -258,7 +286,7 @@ export async function POST(
 
     let query = adminClient
       .from("leads")
-      .select("id, nome, nb, cpf, telefone, telefone_enriquecido, conjuge_celular, conjuge_telefone, filho_celular, filho_telefone, irmao_celular, irmao_telefone, banco, valor_rma, ganho_potencial, tem_whatsapp, contato_abordagem_tipo, contato_abordagem_origem, contato_alternativo_tipo, contato_alternativo_origem")
+      .select("id, nome, nb, cpf, telefone, telefone_enriquecido, conjuge_celular, conjuge_telefone, filho_celular, filho_telefone, irmao_celular, irmao_telefone, banco, valor_rma, ganho_potencial, tem_whatsapp, contato_abordagem_tipo, contato_abordagem_origem, contato_alternativo_tipo, contato_alternativo_origem, status")
       .eq("lgpd_optout", false);
     query = applyTenantFilter(query, context.tenantId);
 
@@ -393,6 +421,8 @@ export async function POST(
             resposta_agente: mensagem,
             twilio_sid: result.externalMessageId,
           });
+
+          await promoteLeadToContactedIfNew(adminClient, context.tenantId, lead.id);
           enviados++;
         } else {
           await adminClient.from("campanha_mensagens").insert({
