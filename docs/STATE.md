@@ -39,6 +39,8 @@
 - quando o auto-responder falhar por horário, timeout ou provedor, a conversa deve sair do silêncio e cair para humano com notificação explícita
 - quando o lead responder fora do horário, o sistema deve enviar mensagem automática de retorno com a janela de atendimento e registrar essa saída na própria thread
 - mensagens de campanha enviadas por Z-API não devem duplicar na inbox por causa do espelhamento `fromMe`
+- a continuidade do agente em benefícios ainda precisava de endurecimento para não reabrir apresentação nem pedir interesse de novo depois de um retorno positivo curto do lead
+- a resposta automática do agente precisava reconciliar `twilio_sid` no mesmo registro para a Z-API não espelhar o mesmo texto depois como mensagem humana
 
 ## Próximos 3 blocos
 

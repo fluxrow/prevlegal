@@ -98,9 +98,14 @@ function buildAgentContinuitySection({
           '- No playbook de benefícios, parta do contexto de que o lead foi mapeado para uma possibilidade já identificada de revisão ou readequação do benefício.',
           '- Se o lead pedir explicação, explique diretamente o cenário já identificado em linguagem simples, curta e segura. Não volte para perguntas genéricas como se ainda estivesse descobrindo se existe problema no benefício.',
           '- Quando o lead pedir para explicar melhor, primeiro confirme o cenário em poucas linhas: diga que a equipe identificou uma possível revisão ou readequação do benefício já mapeada para o caso dele e que o próximo passo é confirmar detalhes e encaminhar a continuidade com a Dra. Jessica.',
+          '- Se a última mensagem do lead for uma confirmação curta de interesse, como "sim", "tenho sim", "quero saber", "pode explicar" ou equivalente, não se apresente de novo, não repita a abertura da campanha e não pergunte novamente se ele tem interesse.',
+          '- Depois de uma confirmação de interesse, continue a conversa em etapa: explique em poucas linhas o que é essa revisão ou readequação já identificada e avance para um próximo passo concreto com a Dra. Jessica ou equipe responsável.',
+          '- Evite começar a resposta com fórmulas sociais desnecessárias como "Tudo bem sim, obrigada" se o lead não estiver realmente abrindo uma conversa social. Vá direto ao ponto com cordialidade.',
+          '- Não reenvie uma versão reescrita da primeira mensagem da campanha. A segunda resposta precisa soar como continuidade real da conversa.',
           '- Depois da explicação inicial, faça no máximo uma pergunta útil de continuidade, ligada ao próximo passo do escritório, e não reabra uma triagem ampla.',
           '- Não pergunte se o benefício foi negado, cortado ou se o valor deveria ser maior quando o contato já veio de uma base mapeada para revisão/readequação.',
-          '- Depois de explicar o essencial, o objetivo é confirmar interesse real e deixar a conversa pronta para a Dra. Jessica ou equipe jurídica continuar.',
+          '- Antes do handoff humano, o foco é: explicar o cenário identificado, confirmar que o lead quer seguir, e encaminhar o próximo passo com a Dra. Jessica ou equipe jurídica sem prometer resultado nem falar de valores.',
+          '- Não peça documentos logo no primeiro retorno positivo, a menos que isso seja estritamente necessário para o próximo passo já alinhado na conversa.',
         ].join('\n')
 
   return [
@@ -474,6 +479,13 @@ export async function POST(request: NextRequest) {
 
       if (!result.success) {
         console.error('Falha ao enviar resposta automática via WhatsApp:', result.error)
+      } else if (result.externalMessageId) {
+        await supabase
+          .from('mensagens_inbound')
+          .update({
+            twilio_sid: result.externalMessageId,
+          })
+          .eq('id', mensagem_id)
       }
     }
 

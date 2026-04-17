@@ -48,13 +48,29 @@ Mestra: [[MASTER_PREV_LEGAL]]
     - mensagem outbound já enviada pelo sistema/agente
   - os webhooks `Z-API` e `Twilio` agora disparam o auto-responder em background quando a conversa continua no modo `agente`
 - impacto operacional:
-  - a inbox passa a mostrar a thread completa, incluindo o primeiro toque da campanha
-  - quando o lead responde positivamente, o agente pode continuar a conversa usando o contexto real do que já foi enviado
-  - isso reduz o risco de o agente parecer “cego” ao disparo que iniciou o atendimento
+- a inbox passa a mostrar a thread completa, incluindo o primeiro toque da campanha
+- quando o lead responde positivamente, o agente pode continuar a conversa usando o contexto real do que já foi enviado
+- isso reduz o risco de o agente parecer “cego” ao disparo que iniciou o atendimento
 - observação de arquitetura:
   - `campanha_mensagens` continua sendo a trilha analítica/comercial da campanha
   - `mensagens_inbound` passa a ser a trilha operacional unificada da thread humana/IA
   - essa separação é intencional, mas agora as duas trilhas ficam reconciliadas no runtime
+
+## Atualizacao Agente / continuidade de benefícios endurecida e resposta automática reconciliada com webhook `fromMe` — 17/04/2026
+
+- durante o uso real da operação da Jessica, ficou evidente que o agente ainda cometia dois erros de percepção:
+  - depois de um `sim` curto do lead, ele podia se reapresentar ou reabrir a conversa como se estivesse começando de novo
+  - a resposta automática enviada pelo agente podia reaparecer na thread como mensagem `humana` por causa do espelhamento `fromMe` da Z-API
+- correção aplicada:
+  - endurecer a camada de continuidade em `beneficios_previdenciarios` para:
+    - não repetir a abertura da campanha
+    - não pedir interesse de novo depois de retorno positivo curto
+    - não começar com socialização desnecessária
+    - explicar o cenário identificado e avançar em etapa
+  - gravar o `twilio_sid` da resposta automática do agente no próprio registro de `mensagens_inbound`, permitindo que o webhook `fromMe` reconheça o envio e não o replique como mensagem manual
+- impacto operacional:
+  - a conversa tende a ficar mais natural e menos “em círculo”
+  - o histórico da inbox deixa de misturar resposta do agente com resposta humana quando a origem foi a própria automação
 
 ## Atualizacao Agentes + Campanhas / playbook de benefícios ficou alinhado ao contexto real de readequação e continuidade — 15/04/2026
 

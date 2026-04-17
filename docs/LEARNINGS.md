@@ -58,6 +58,18 @@ e decidir que:
 **Correção:** Reforçar no runtime e nos templates seedados que, em `beneficios_previdenciarios`, o agente deve partir de uma possibilidade já identificada, explicar o essencial de forma curta e preparar o handoff para a Dra. Jessica; em `planejamento_previdenciario`, a esteira pode seguir até proposta, contrato e preparação de assinatura antes do handoff humano
 **Regra pratica:** Em operação outbound, o agente deve continuar do estágio real da conversa. Nunca reiniciar a triagem como se o caso ainda estivesse no zero
 
+### 170. Resposta automática do agente precisa reconciliar o `fromMe` do provider para não reaparecer como mensagem humana
+**Problema:** Depois que o agente respondia automaticamente, o mesmo texto podia aparecer na thread como `Agente` e depois como `Humano`
+**Causa:** A resposta automática do agente ficava registrada no próprio `mensagens_inbound` original como `resposta_agente`, mas o webhook `fromMe` da Z-API não tinha um identificador externo salvo para reconhecer que aquele outbound já pertencia à automação
+**Correção:** Quando o envio automático do agente retornar `externalMessageId`, gravar esse valor em `mensagens_inbound.twilio_sid` no mesmo registro que guarda a resposta do agente; assim o webhook `fromMe` consegue deduplicar o evento e não inserir uma réplica manual
+**Regra pratica:** Sempre que uma automação depender de espelhamento posterior do provider, o id externo do envio precisa ser persistido na mesma trilha operacional que representa aquela mensagem
+
+### 171. Em benefícios, um "sim" curto do lead não deve fazer o agente reiniciar a conversa
+**Problema:** Depois de o lead responder com algo como `Tenho sim` ou `pode explicar`, o agente podia se reapresentar, repetir a abertura da campanha ou voltar a perguntar se havia interesse
+**Causa:** Mesmo com o contexto de revisão/readequação já identificado, o prompt ainda deixava espaço demais para a IA reabrir a conversa como se fosse uma nova etapa de convencimento
+**Correção:** Endurecer a camada de continuidade para obrigar que respostas curtas de aceite levem a conversa direto para a próxima etapa: explicação breve do cenário identificado + próximo passo operacional com a equipe ou Dra. Jessica
+**Regra pratica:** Em outbound previdenciário, confirmações curtas do lead devem mover a conversa adiante. Não apresentar de novo, não perguntar interesse de novo, não reescrever a primeira mensagem da campanha
+
 ### 160. Em operação previdenciária enriquecida, “telefone” sozinho não basta; campanha precisa saber quem é o contato de abordagem
 **Problema:** Depois da importação da base enriquecida, o lead já mostrava o melhor número de abordagem e os familiares detectados, mas a campanha ainda não tinha estrutura para distinguir se o disparo deveria ir para titular, cônjuge, filho ou irmão
 **Causa:** O modelo legado de `leads` e `campanhas` guardava apenas números, sem um tipo operacional do contato escolhido

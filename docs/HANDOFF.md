@@ -24,6 +24,8 @@
 - o auto-responder agora devolve payload estruturado quando falha por fora do horário, permitindo mensagem automática ao lead com a janela configurada
 - o espelhamento `fromMe` da Z-API agora deduplica mensagens já registradas pela campanha para evitar outbound duplicado na thread
 - admin agora separa pacote operacional (`plano`) de cobrança negociada do tenant (`cobranca_tipo` + `valor_mensal_contratado`)
+- a continuidade do agente em benefícios foi endurecida para não reabrir apresentação, não repetir a abertura da campanha e não pedir interesse novamente depois de um "sim" curto do lead
+- a resposta automática do agente agora grava `twilio_sid` no próprio registro da thread para o webhook `fromMe` da Z-API não espelhar o mesmo texto como mensagem humana
 
 ## Arquivos ou áreas afetadas
 
@@ -41,6 +43,8 @@
 - `src/app/api/webhooks/twilio/route.ts`
 - `src/app/api/webhooks/zapi/route.ts`
 - `src/app/api/agente/responder/route.ts`
+- `docs/STATE.md`
+- `docs/HANDOFF.md`
 - `docs/ROADMAP.md`
 - `docs/LEARNINGS.md`
 
@@ -54,6 +58,7 @@
 - a rota `/api/agente/responder` em produção passou a retornar `500` com erro explícito de saldo insuficiente na Anthropic API; isso explica por que a conversa não continuava mesmo com o gatilho correto
 - o comportamento recente de "lead responde e nada acontece" ainda precisa de reteste com a nova instrumentação, porque o sistema antes só registrava em log e podia parecer silencioso
 - o comportamento recente de "fora do horário cai para humano sem mensagem visível" foi coberto com resposta automática ao lead + gravação na thread
+- a continuidade do agente ainda estava "andando em círculo" em benefícios depois de respostas curtas como "Tenho sim", e a resposta automática do agente ainda podia ser espelhada pela Z-API como mensagem humana porque faltava reconciliar `twilio_sid`
 - a próxima validação relevante saiu de benefícios e passou para planejamento: precisamos confirmar em runtime se o agente conduz com consistência até proposta/contrato sem soar telemarketing nem responder com certezas indevidas
 - a próxima camada estrutural deixou de ser só copy/runtime: agora precisamos criar estratégia canônica de isolamento, versionamento e rollout para não quebrar tenants ativos
 - `npm run build` passou após a introdução da cobrança negociada por tenant no admin
@@ -65,8 +70,8 @@
   - memória curta nativa do projeto criada
   - fallback fora do horário validado em produção com mensagem visível ao lead e thread coerente
   - admin pronto para registrar tenant com valor mensal contratado diferente da LP, sem sobrecarregar `plano`
+  - runtime do agente endurecido para continuidade mais natural em benefícios e reconciliação do `fromMe` automático
 - pendente:
-  - aplicar no banco de produção o patch `2026-04-17_add_tenant_custom_billing.sql`
   - validar o fluxo completo de `planejamento_previdenciario` até proposta, contrato e assinatura
   - desenhar fallback multi-provider do auto-responder para não depender de um único saldo/provedor
   - transformar isolamento por tenant/perfil/flag em fundação real de produto
