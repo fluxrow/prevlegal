@@ -53,6 +53,12 @@ Mestra: [[MASTER_PREV_LEGAL]]
 **Correção:** Endurecer o dispatch para usar apenas contatos com origem `CELULAR/WHATSAPP/MOBILE`; `telefone` e `*_telefone` permanecem no cadastro como referência, mas não entram mais como fallback automático de envio
 **Regra pratica:** Em operação de WhatsApp, fixo é contexto e cadastro. O número de disparo precisa ser móvel/WhatsApp explícito, senão o sistema parece “inteligente”, mas toma decisão errada no momento mais sensível
 
+### 177. Modal do card do Kanban não pode depender da mesma visibilidade da inbox humana
+**Problema:** Ao clicar no ícone de conversa no card do lead, alguns contatos mostravam "Nenhuma conversa encontrada" mesmo já tendo histórico, e outros abriam só pedaços da thread
+**Causa:** O modal tentava se apoiar na lista e no detalhe da inbox (`/api/conversas` e `/api/conversas/[id]`), que obedecem à visibilidade operacional da fila humana. Isso é diferente da necessidade do Kanban, que precisa mostrar o histórico do próprio lead
+**Correção:** Fazer o modal partir de `/api/leads/[id]`, resolver a conversa principal por `lead_id` com fallback por telefone e devolver também o histórico de WhatsApp por `lead_id`/telefone dentro do próprio escopo do lead
+**Regra pratica:** Kanban e inbox servem propósitos diferentes. Se a UI está ancorada no lead, o histórico deve ser resolvido pelo lead, não pela fila operacional da inbox
+
 ### 169. Depois que existem tenants pagantes, evolução de playbook precisa ser isolada por tenant e rollout, não lançada como comportamento global
 **Problema:** `beneficios_previdenciarios` e `planejamento_previdenciario` passaram a evoluir em paralelo, mas qualquer bug novo ainda poderia atingir escritórios já ativos porque o produto não tinha uma camada formal de isolamento/versionamento para essas frentes
 **Causa:** O PrevLegal vinha sendo tratado como um único comportamento-base em produção, mesmo depois de entrar na fase de clientes pagantes e playbooks operacionais distintos

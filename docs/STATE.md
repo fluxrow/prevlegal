@@ -42,6 +42,7 @@
   - contagem de `cônjuges`, `filhos` e `irmãos` com celular
   - checagem de WhatsApp usando o telefone operacional do lead, não o CPF
   - modal do card do Kanban abrindo a conversa pelo `lead_id` quando existir, usando o endpoint do próprio lead como fonte prioritária
+  - confirmar se o modal agora mostra também as mensagens do próprio lead, não só as respostas do agente/manual
 - o produto ainda não tem camada formal de flags/versionamento por tenant para proteger escritórios pagantes de evoluções novas
 - o admin ainda estava acoplado demais aos preços da LP; para contratos negociados, `plano` deve continuar sendo pacote operacional e a cobrança precisa viver em campo próprio do tenant
 - quando o auto-responder falhar por horário, timeout ou provedor, a conversa deve sair do silêncio e cair para humano com notificação explícita
@@ -67,6 +68,7 @@
 6. confirmar no runtime que campanhas de `filho` usam apenas `Celular do filho`, nunca `Telefone do filho`
 7. confirmar na aba de listas se `Verificar WhatsApp` retorna números reais depois da troca de `cpf` para `telefone`
 8. confirmar no Kanban se o ícone de conversa abre a thread existente via `lead_id`, sem depender da lista geral da inbox
+9. confirmar no Kanban se o contato `Fabio Caua` abre o histórico mesmo quando a thread antiga não estava amarrada perfeitamente ao `lead_id`
 
 ## Para retomar sem atrito
 

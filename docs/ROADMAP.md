@@ -80,6 +80,25 @@ Mestra: [[MASTER_PREV_LEGAL]]
   - `telefone_enriquecido` continua existindo para compatibilidade e contexto
   - mas campanhas por familiar devem preferir sempre os campos estruturados do lead
 
+## Atualizacao Kanban / modal de conversa passou a resolver histórico pelo lead em vez da fila da inbox — 17/04/2026
+
+- durante o reteste da visão rápida do Kanban, apareceu uma diferença importante entre `lead com histórico` e `conversa visível na inbox`
+- problema observado:
+  - alguns cards mostravam o nome do contato certo, mas o modal ainda dizia que não existia conversa
+  - em outros casos, o modal abria só parte da thread, escondendo mensagens do próprio lead
+- causa identificada:
+  - o modal ainda dependia demais das rotas da inbox (`/api/conversas` e `/api/conversas/[id]`), que seguem a lógica de visibilidade da fila humana
+  - isso não é equivalente ao que o Kanban precisa mostrar, porque o Kanban é uma superfície ancorada no `lead`
+- correção aplicada:
+  - `/api/leads/[id]` agora resolve:
+    - a conversa principal por `lead_id`
+    - fallback por telefone do lead quando necessário
+    - histórico de WhatsApp do lead por `lead_id` e telefone
+  - o modal do card passou a usar esse payload como fonte primária
+- impacto operacional:
+  - o operador consegue abrir a visão rápida da conversa direto do Kanban sem depender da fila da inbox
+  - threads antigas ou parcialmente desvinculadas do `lead_id` continuam acessíveis quando o telefone bate com o lead correto
+
 ## Atualizacao Inbox + Agente / confirmação de handoff para Dra. Jessica agora sai do modo agente e entra em aguardando — 17/04/2026
 
 - durante o refino final do fluxo de benefícios, o agente já conseguia explicar o cenário e confirmar que a Dra. Jessica continuaria o atendimento

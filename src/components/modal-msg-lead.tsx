@@ -38,7 +38,9 @@ interface LeadComConversaResponse {
   conversa?: {
     id: string
     status?: string | null
+    telefone?: string | null
   } | null
+  mensagensWhatsapp?: MsgWpp[]
 }
 
 export default function ModalMsgLead({ lead, onClose }: Props) {
@@ -62,14 +64,14 @@ export default function ModalMsgLead({ lead, onClose }: Props) {
       const leadPayload = await leadRes.json() as LeadComConversaResponse
       if (!ativo) return
 
+      if (Array.isArray(leadPayload?.mensagensWhatsapp)) {
+        setMsgsWpp(leadPayload.mensagensWhatsapp)
+      } else {
+        setMsgsWpp([])
+      }
+
       if (leadPayload?.conversa?.id) {
         setConversaId(leadPayload.conversa.id)
-
-        const mensagensRes = await fetch(`/api/conversas/${leadPayload.conversa.id}`)
-        if (!mensagensRes.ok) return
-
-        const mensagens = await mensagensRes.json()
-        if (ativo) setMsgsWpp(mensagens || [])
         return
       }
 
@@ -89,17 +91,10 @@ export default function ModalMsgLead({ lead, onClose }: Props) {
         || (conversas || []).find(c => samePhone(c.telefone || '', lead.telefone))
       if (!conversaFallback) {
         setConversaId(null)
-        setMsgsWpp([])
         return
       }
 
       setConversaId(conversaFallback.id)
-
-      const mensagensRes = await fetch(`/api/conversas/${conversaFallback.id}`)
-      if (!mensagensRes.ok) return
-
-      const mensagens = await mensagensRes.json()
-      if (ativo) setMsgsWpp(mensagens || [])
     }
 
     function carregarPortal() {
@@ -220,7 +215,11 @@ export default function ModalMsgLead({ lead, onClose }: Props) {
                   Nenhuma conversa WhatsApp encontrada para este lead.
                 </div>
               : msgsWpp.map(m => {
-                  const isResposta = m.respondido_por_agente || m.respondido_manualmente
+                  const isAgent = m.respondido_por_agente
+                  const isManual = !isAgent && m.respondido_manualmente
+                  const isResposta = isAgent || isManual
+                  const label = isAgent ? 'Agente IA' : isManual ? 'Você' : 'Lead'
+                  const body = isResposta ? (m.resposta_agente || m.mensagem) : m.mensagem
                   return (
                     <div key={m.id} style={{ display: 'flex', justifyContent: isResposta ? 'flex-end' : 'flex-start' }}>
                       <div style={{
@@ -228,10 +227,10 @@ export default function ModalMsgLead({ lead, onClose }: Props) {
                         border: '1px solid var(--border)', borderRadius: '10px', padding: '8px 12px',
                       }}>
                         <div style={{ fontSize: '9px', fontWeight: '700', color: isResposta ? 'var(--accent)' : 'var(--green)', marginBottom: '3px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                          {isResposta ? (m.respondido_por_agente ? 'Agente IA' : 'Você') : 'Lead'}
+                          {label}
                         </div>
                         <div style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
-                          {isResposta ? (m.resposta_agente || m.mensagem) : m.mensagem}
+                          {body}
                         </div>
                         <div style={{ fontSize: '9px', color: 'var(--text-muted)', marginTop: '4px', textAlign: 'right' }}>
                           {new Date(m.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}

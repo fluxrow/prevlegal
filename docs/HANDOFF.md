@@ -40,6 +40,7 @@
 - a rota `Verificar WhatsApp` foi corrigida para checar o `telefone` operacional do lead em vez de usar `cpf` como se fosse número
 - o ícone de conversa do card do Kanban agora tenta abrir a thread pelo `lead_id` antes de cair em heurística por telefone, evitando o falso "Nenhuma conversa encontrada" em leads que já têm histórico
 - o modal do card do Kanban foi endurecido para consultar primeiro `/api/leads/[id]` e usar a `conversa` já vinculada ao lead; a lista geral de conversas agora fica apenas como fallback
+- o payload de `/api/leads/[id]` agora também devolve o histórico de WhatsApp resolvido pelo próprio lead (`lead_id` + telefone), para o modal do Kanban não depender da visibilidade da inbox humana
 
 ## Arquivos ou áreas afetadas
 
@@ -115,6 +116,7 @@
   - a aba de listas agora mostra também quantos `cônjuges`, `filhos` e `irmãos` vieram com celular preenchido na importação
   - o botão `Verificar WhatsApp` voltou a avaliar o número operacional do lead, e não mais um campo incorreto
   - o ícone de conversa do card do Kanban agora abre a thread existente com base no `lead_id` quando houver vínculo direto
+  - o modal do card do Kanban agora também consegue recuperar histórico antigo do lead por telefone quando a conversa não estava perfeitamente ligada ao `lead_id`
 - pendente:
   - validar o fluxo completo de `planejamento_previdenciario` até proposta, contrato e assinatura
   - desenhar fallback multi-provider do auto-responder para não depender de um único saldo/provedor
@@ -127,6 +129,7 @@
   - confirmar que o selo visual do Kanban segue coerente quando o lead muda manualmente de tipo de contato em edição
 - validar em produção se a nova contagem da aba de listas (`cônjuge/filho/irmão com celular`) bate com a planilha importada
   - confirmar no runtime se o modal de conversa do card resolve corretamente um lead já conversado via `lead_id`
+  - confirmar no runtime se as mensagens do próprio lead voltam a aparecer no modal rápido do Kanban
 
 ## Próximo passo certo
 
@@ -142,4 +145,4 @@
 
 - commit: pendente após sync/commit desta janela
 - deploy: pendente push
-- nota de sessão: `2026-04-17-kanban-contact-badge-and-contacted-promotion`
+- nota de sessão: `2026-04-17-kanban-modal-lead-history-fallback`

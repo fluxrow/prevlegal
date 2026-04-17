@@ -4,6 +4,33 @@ import { canAccessLeadId, getTenantContext } from '@/lib/tenant-context'
 
 const ALLOWED_STATUS = new Set(['new', 'contacted', 'awaiting', 'scheduled', 'converted', 'lost'])
 
+function normalizePhoneDigits(value: unknown) {
+  return String(value || '').replace(/\D/g, '')
+}
+
+function buildPhoneVariants(value: unknown) {
+  const raw = typeof value === 'string' ? value.trim() : ''
+  const digits = normalizePhoneDigits(value)
+  const variants = new Set<string>()
+
+  if (raw) variants.add(raw)
+  if (digits) {
+    variants.add(digits)
+    variants.add(`+${digits}`)
+
+    if (digits.startsWith('55') && digits.length > 2) {
+      const withoutCountry = digits.slice(2)
+      variants.add(withoutCountry)
+      variants.add(`+${withoutCountry}`)
+    } else {
+      variants.add(`55${digits}`)
+      variants.add(`+55${digits}`)
+    }
+  }
+
+  return Array.from(variants).filter(Boolean)
+}
+
 function normalizeTrimmed(value: unknown) {
   if (typeof value !== 'string') return null
   const trimmed = value.trim()
@@ -49,27 +76,69 @@ export async function GET(
   const allowed = await canAccessLeadId(supabase, context, id)
   if (!allowed) return NextResponse.json({ error: 'Lead não encontrado' }, { status: 404 })
 
-  const [leadRes, anotacoesRes, conversaRes] = await Promise.all([
+  const [leadRes, anotacoesRes] = await Promise.all([
     supabase.from('leads').select('*').eq('id', id).single(),
     supabase
       .from('lead_anotacoes')
       .select('id, texto, created_at, usuario_id')
       .eq('lead_id', id)
       .order('created_at', { ascending: false }),
-    supabase
-      .from('conversas')
-      .select('id, status')
-      .eq('lead_id', id)
-      .limit(1)
-      .maybeSingle(),
   ])
 
   if (leadRes.error) return NextResponse.json({ error: leadRes.error.message }, { status: 404 })
 
+  const lead = leadRes.data
+  const phoneVariants = buildPhoneVariants(lead.telefone)
+
+  let conversa = await supabase
+    .from('conversas')
+    .select('id, status, telefone, ultima_mensagem_at')
+    .eq('lead_id', id)
+    .order('ultima_mensagem_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  if ((!conversa.data || conversa.error) && phoneVariants.length > 0) {
+    const orConditions = phoneVariants.map((phone) => `telefone.eq.${phone}`).join(',')
+    conversa = await supabase
+      .from('conversas')
+      .select('id, status, telefone, ultima_mensagem_at')
+      .eq('tenant_id', context.tenantId)
+      .or(orConditions)
+      .order('ultima_mensagem_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+  }
+
+  const messageClauses = [`lead_id.eq.${id}`]
+  for (const phone of phoneVariants) {
+    messageClauses.push(`telefone_remetente.eq.${phone}`)
+    messageClauses.push(`telefone_destinatario.eq.${phone}`)
+  }
+
+  const mensagensWhatsappRes = await supabase
+    .from('mensagens_inbound')
+    .select(`
+      id,
+      mensagem,
+      telefone_remetente,
+      telefone_destinatario,
+      resposta_agente,
+      respondido_por_agente,
+      respondido_manualmente,
+      created_at,
+      conversa_id
+    `)
+    .eq('tenant_id', context.tenantId)
+    .or(messageClauses.join(','))
+    .order('created_at', { ascending: true })
+    .limit(200)
+
   return NextResponse.json({
-    lead: leadRes.data,
+    lead,
     anotacoes: anotacoesRes.data || [],
-    conversa: conversaRes.data || null,
+    conversa: conversa.data || null,
+    mensagensWhatsapp: mensagensWhatsappRes.data || [],
   })
 }
 
