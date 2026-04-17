@@ -26,6 +26,7 @@
 - admin agora separa pacote operacional (`plano`) de cobrança negociada do tenant (`cobranca_tipo` + `valor_mensal_contratado`)
 - a continuidade do agente em benefícios foi endurecida para não reabrir apresentação, não repetir a abertura da campanha e não pedir interesse novamente depois de um "sim" curto do lead
 - a resposta automática do agente agora grava `twilio_sid` no próprio registro da thread para o webhook `fromMe` da Z-API não espelhar o mesmo texto como mensagem humana
+- a montagem do histórico do agente foi corrigida para usar as mensagens mais recentes da conversa, e não as mais antigas; além disso, o runtime agora injeta a última fala do lead e a intenção imediata como diretiva obrigatória da resposta
 
 ## Arquivos ou áreas afetadas
 
@@ -59,9 +60,11 @@
 - o comportamento recente de "lead responde e nada acontece" ainda precisa de reteste com a nova instrumentação, porque o sistema antes só registrava em log e podia parecer silencioso
 - o comportamento recente de "fora do horário cai para humano sem mensagem visível" foi coberto com resposta automática ao lead + gravação na thread
 - a continuidade do agente ainda estava "andando em círculo" em benefícios depois de respostas curtas como "Tenho sim", e a resposta automática do agente ainda podia ser espelhada pela Z-API como mensagem humana porque faltava reconciliar `twilio_sid`
+- a continuidade estranha do agente tinha uma causa-raiz adicional: o histórico consultava as 10 mensagens mais antigas do lead, então a IA podia responder para uma saudação velha em vez da última fala atual
 - a próxima validação relevante saiu de benefícios e passou para planejamento: precisamos confirmar em runtime se o agente conduz com consistência até proposta/contrato sem soar telemarketing nem responder com certezas indevidas
 - a próxima camada estrutural deixou de ser só copy/runtime: agora precisamos criar estratégia canônica de isolamento, versionamento e rollout para não quebrar tenants ativos
 - `npm run build` passou após a introdução da cobrança negociada por tenant no admin
+- `npm run build` passou após a correção do histórico recente + diretiva de resposta à última fala do lead
 
 ## Estado após a última entrega
 
@@ -75,6 +78,7 @@
   - validar o fluxo completo de `planejamento_previdenciario` até proposta, contrato e assinatura
   - desenhar fallback multi-provider do auto-responder para não depender de um único saldo/provedor
   - transformar isolamento por tenant/perfil/flag em fundação real de produto
+  - liberar a Ana hoje via allowlist controlada de containment para onboarding do novo tenant de planejamento
 - risco residual:
   - confirmar o payload `fromMe` real da Z-API no uso diário para garantir que a heurística de `counterpartyPhone` cobre todos os casos
 
@@ -92,4 +96,4 @@
 
 - commit: pendente após sync/commit desta janela
 - deploy: pendente push
-- nota de sessão: `2026-04-17-tenant-custom-billing-admin`
+- nota de sessão: `2026-04-17-agent-last-turn-prioritization-and-ana-containment-release`

@@ -41,12 +41,14 @@
 - mensagens de campanha enviadas por Z-API não devem duplicar na inbox por causa do espelhamento `fromMe`
 - a continuidade do agente em benefícios ainda precisava de endurecimento para não reabrir apresentação nem pedir interesse de novo depois de um retorno positivo curto do lead
 - a resposta automática do agente precisava reconciliar `twilio_sid` no mesmo registro para a Z-API não espelhar o mesmo texto depois como mensagem humana
+- o runtime do agente ainda precisava ser retestado após a correção da montagem de histórico, que antes buscava as mensagens mais antigas da conversa em vez das mais recentes e podia fazer a IA responder para uma saudação velha em vez da fala atual do lead
 
 ## Próximos 3 blocos
 
 1. estruturar isolamento e rollout por tenant/perfil para produção paga
 2. validar o playbook de `planejamento_previdenciario` até diagnóstico, proposta, contrato e preparação de assinatura
 3. consolidar cobrança negociada por tenant no admin sem depender só da tabela pública da LP
+4. liberar a Ana via allowlist controlada (`TENANT_CONTAINMENT_ALLOWED_EMAILS`) sem abrir o rollout multi-tenant para todos
 
 ## Para retomar sem atrito
 

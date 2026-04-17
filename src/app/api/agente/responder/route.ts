@@ -49,6 +49,106 @@ function stripEmojis(text: string) {
     .trim()
 }
 
+function classifyLatestLeadTurn(message: string) {
+  const normalized = String(message || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+
+  if (!normalized) return 'mensagem_vazia'
+
+  if (
+    /^(sim|tenho sim|claro|claro que sim|quero sim|aceito|pode|pode sim|pode explicar|me explica|me explique|pode me explicar|quero saber|quero saber sim|pode falar|pode mandar|tenho interesse|tenho interesse sim)$/.test(
+      normalized,
+    )
+  ) {
+    return 'confirmacao_curta'
+  }
+
+  if (
+    normalized.includes('explica') ||
+    normalized.includes('explicar') ||
+    normalized.includes('como funciona') ||
+    normalized.includes('qual revisao') ||
+    normalized.includes('qual readequacao') ||
+    normalized.includes('mais informacao') ||
+    normalized.includes('mais informacoes')
+  ) {
+    return 'pedido_de_explicacao'
+  }
+
+  if (
+    normalized.includes('tenho interesse') ||
+    normalized.includes('quero seguir') ||
+    normalized.includes('quero prosseguir') ||
+    normalized.includes('vamos seguir') ||
+    normalized.includes('pode continuar')
+  ) {
+    return 'interesse_explicito'
+  }
+
+  if (
+    normalized.includes('documento') ||
+    normalized.includes('documentos') ||
+    normalized.includes('contrato') ||
+    normalized.includes('assinar') ||
+    normalized.includes('assinatura')
+  ) {
+    return 'documentos_ou_contrato'
+  }
+
+  return 'mensagem_livre'
+}
+
+function buildImmediateResponseDirective({
+  latestLeadMessage,
+  latestLeadIntent,
+  operationProfile,
+}: {
+  latestLeadMessage: string
+  latestLeadIntent: string
+  operationProfile?: string | null
+}) {
+  const normalizedProfile = normalizeOperationProfile(operationProfile || 'beneficios_previdenciarios')
+
+  const shared = [
+    'RESPOSTA IMEDIATA OBRIGATÓRIA:',
+    `- A última mensagem do lead que você precisa responder agora é: "${latestLeadMessage}"`,
+    `- A intenção atual do lead foi classificada como: ${latestLeadIntent}.`,
+    '- Responda principalmente a essa última mensagem. Não responda saudações antigas nem perguntas antigas se elas não forem mais a prioridade atual da conversa.',
+    '- Nunca reinicie a conversa como se fosse um novo contato.',
+    '- Nunca repita a apresentação inicial da campanha se o lead já respondeu antes.',
+    '- Nunca use emojis.',
+  ]
+
+  if (normalizedProfile === 'planejamento_previdenciario') {
+    return [
+      ...shared,
+      '- Em planejamento previdenciário, responda como uma consultora técnica e segura, sem telemarketing e sem inventar análise individual.',
+      '- Se o lead pedir explicação, explique o conceito pedido em linguagem simples e continue para o próximo passo da esteira.',
+      '- O handoff humano acontece na etapa de contrato/assinatura, não no meio da conversa por simples complexidade.',
+    ].join('\n')
+  }
+
+  if (latestLeadIntent === 'confirmacao_curta' || latestLeadIntent === 'pedido_de_explicacao' || latestLeadIntent === 'interesse_explicito') {
+    return [
+      ...shared,
+      '- Em benefícios previdenciários, parta do contexto de que a equipe já identificou uma possibilidade de revisão ou readequação do benefício.',
+      '- Não pergunte novamente se o lead tem interesse.',
+      '- Não volte para triagem genérica e não pergunte sobre benefício negado, cortado ou valor que deveria ser maior.',
+      '- Não comece com "Oi, tudo bem" nem com agradecimento social se o lead não abriu uma conversa social agora.',
+      '- Explique em poucas linhas o cenário já identificado e avance um passo concreto da conversa.',
+      '- Depois da explicação, faça no máximo uma pergunta útil de continuidade.',
+    ].join('\n')
+  }
+
+  return [
+    ...shared,
+    '- Em benefícios previdenciários, mantenha a continuidade do contexto já identificado e avance a conversa com naturalidade.',
+  ].join('\n')
+}
+
 function buildAgentContinuitySection({
   leadName,
   currentAgentType,
@@ -347,12 +447,12 @@ export async function POST(request: NextRequest) {
         .select('mensagem, telefone_remetente, telefone_destinatario, respondido_por_agente, respondido_manualmente, resposta_agente, created_at')
         .eq('lead_id', mensagem.lead_id)
         .neq('id', mensagem_id)
-        .order('created_at', { ascending: true })
+        .order('created_at', { ascending: false })
         .limit(10)
 
       const leadPhone = normalizeComparablePhone(mensagem.telefone_remetente)
 
-      inbounds?.forEach(msg => {
+      ;[...(inbounds || [])].reverse().forEach(msg => {
         const outboundToLead =
           Boolean(leadPhone) &&
           normalizeComparablePhone(msg.telefone_destinatario) === leadPhone &&
@@ -380,6 +480,9 @@ export async function POST(request: NextRequest) {
     // Adicionar a mensagem atual ao histórico
     historico.push({ role: 'user', content: mensagem.mensagem })
 
+    const latestLeadMessage = String(mensagem.mensagem || '').trim()
+    const latestLeadIntent = classifyLatestLeadTurn(latestLeadMessage)
+
     // 5. Montar system prompt com dados do lead
     const promptBase = config.agente_prompt_sistema || PROMPT_PADRAO
     const partes = [promptBase]
@@ -396,6 +499,13 @@ export async function POST(request: NextRequest) {
         operationProfile: config.agente_perfil_operacao || agenteRow?.perfil_operacao || null,
         activeAgentTypes,
         hasHistory: historico.length > 1,
+      })}`,
+    )
+    partes.push(
+      `\n${buildImmediateResponseDirective({
+        latestLeadMessage,
+        latestLeadIntent,
+        operationProfile: config.agente_perfil_operacao || agenteRow?.perfil_operacao || null,
       })}`,
     )
 

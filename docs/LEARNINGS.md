@@ -70,6 +70,12 @@ e decidir que:
 **Correção:** Endurecer a camada de continuidade para obrigar que respostas curtas de aceite levem a conversa direto para a próxima etapa: explicação breve do cenário identificado + próximo passo operacional com a equipe ou Dra. Jessica
 **Regra pratica:** Em outbound previdenciário, confirmações curtas do lead devem mover a conversa adiante. Não apresentar de novo, não perguntar interesse de novo, não reescrever a primeira mensagem da campanha
 
+### 172. Histórico de conversa para agente precisa ser montado pelas mensagens mais recentes, não pelas mais antigas
+**Problema:** Mesmo depois de ajustes de prompt, o agente ainda podia responder de forma estranha, parecendo reagir a uma saudação antiga da conversa em vez da última fala do lead
+**Causa:** `/api/agente/responder` buscava `mensagens_inbound` com `order(created_at asc).limit(10)`, o que na prática carregava as 10 mensagens mais antigas do lead, não as 10 mais recentes
+**Correção:** Buscar o histórico em `created_at desc`, limitar as 10 mais recentes e reverter em memória para remontar a ordem cronológica antes de enviar ao modelo; além disso, injetar a última fala do lead e a intenção imediata como diretiva obrigatória no system prompt
+**Regra pratica:** Em agentes conversacionais, "último turno" não pode ser inferido por sorte. O runtime precisa carregar o recorte mais recente do histórico e explicitar qual mensagem deve ser respondida agora
+
 ### 160. Em operação previdenciária enriquecida, “telefone” sozinho não basta; campanha precisa saber quem é o contato de abordagem
 **Problema:** Depois da importação da base enriquecida, o lead já mostrava o melhor número de abordagem e os familiares detectados, mas a campanha ainda não tinha estrutura para distinguir se o disparo deveria ir para titular, cônjuge, filho ou irmão
 **Causa:** O modelo legado de `leads` e `campanhas` guardava apenas números, sem um tipo operacional do contato escolhido
