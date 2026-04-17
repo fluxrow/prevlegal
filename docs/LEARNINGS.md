@@ -20,6 +20,24 @@ Mestra: [[MASTER_PREV_LEGAL]]
 - [[Sessoes/2026-03-18-prevlegal-admin-roi-obsidian]]
 - [[Sessoes/2026-03-18-sessoes-17-18-marco-prevlegal-completo]]
 
+### 182. Minuta multi-tenant precisa nascer como template por escritório, não como HTML solto dentro da tela do lead
+**Problema:** O go-live do escritório Pagliuca / Lessnau exigia preparar contrato com dados do cliente preenchidos, mas o produto não tinha onde guardar uma minuta padrão por tenant
+**Causa:** O PrevLegal já tinha fluxo de contratos financeiros, porém não existia estrutura específica para minuta jurídica parametrizável por escritório
+**Correção:** Criar `contract_templates` com `tenant_id`, `tipo`, `corpo_html`, `placeholders_definidos` e gestão própria na dashboard
+**Regra pratica:** Quando um fluxo jurídico depende de documento padrão do escritório, o template precisa ser entidade de domínio do tenant. Guardar HTML ad hoc no front só empurra o problema para depois
+
+### 183. Geração de PDF em Vercel fica mais segura com `puppeteer-core` + `@sparticuz/chromium`
+**Problema:** O motor de minuta precisava gerar PDF no backend sem depender de Chrome do host
+**Causa:** Em serverless, `puppeteer` completo costuma ser pesado e frágil; além disso, o runtime precisa de binário compatível com o ambiente do deploy
+**Correção:** Adotar `puppeteer-core` com `@sparticuz/chromium`, gerando o PDF a partir do HTML renderizado do template
+**Regra pratica:** Para PDF serverless no ecossistema Vercel, comece com `puppeteer-core` + Chromium empacotado. É o caminho MVP mais previsível antes de sofisticar
+
+### 184. Minuta preparada precisa deixar rastro duplo: documento e evento de timeline
+**Problema:** Gerar o PDF sem registrar contexto operacional deixaria o arquivo solto e dificultaria auditoria do atendimento
+**Causa:** O documento por si só não conta quando foi preparado, por quem e em qual etapa do fluxo
+**Correção:** Ao preparar a minuta, salvar o PDF no storage, registrar em `lead_documentos` e criar evento em `portal_timeline_events`
+**Regra pratica:** Em operação jurídica assistida, artefato sem timeline vira anexo órfão. Documento e evento precisam nascer juntos
+
 ### 165. Automação por janela horária precisa usar o relógio operacional do produto, não o relógio do servidor
 **Problema:** O lead respondia a campanha, a mensagem entrava na thread, mas o agente não continuava a conversa
 **Causa:** `/api/agente/responder` comparava `janela_inicio/janela_fim` com `new Date().toTimeString()`, o que usa a hora local do host e bloqueava o agente com `403 Fora do horário de atendimento` mesmo durante o horário comercial do escritório

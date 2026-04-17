@@ -48,6 +48,17 @@
 - `/api/agente/responder` agora aplica coalescência de mensagens rápidas, proteção anti-flood por lead e registra `agent.flood_detected` em `audit_logs`
 - `conversas` agora suporta `resumo_operacional`, permitindo memória curta persistida para conversas longas do agente
 - o auto-responder interno passou a respeitar respostas `202 retryable` da rota do agente, aguardando silêncio antes de tentar novamente
+- o produto ganhou o motor MVP de minuta/contrato por tenant:
+  - tabela `contract_templates`
+  - storage `contratos-leads`
+  - endpoint para preparar minuta e gerar PDF por lead
+  - gestão de templates na dashboard
+  - botão `Preparar minuta` no detalhe do lead
+  - seed inicial gracioso para o tenant Pagliuca / Lessnau
+- a geração da minuta agora registra simultaneamente:
+  - documento em `lead_documentos`
+  - evento operacional em `portal_timeline_events`
+- o pipeline de PDF foi implementado com `puppeteer-core` + `@sparticuz/chromium`, compatível com Vercel
 
 ## Arquivos ou áreas afetadas
 
@@ -131,12 +142,15 @@
   - o modal do card do Kanban agora também consegue recuperar histórico antigo do lead por telefone quando a conversa não estava perfeitamente ligada ao `lead_id`
   - o modal do Kanban agora cobre também `telefone_enriquecido` e contatos estruturados, reduzindo falsos vazios em leads de teste ou históricos legados
 - pendente:
-  - implementar o motor MVP de minuta/contrato para o tenant Pagliuca
+  - validar em produção a geração real do PDF da minuta do tenant Pagliuca
+  - plugar o texto jurídico final do contrato da Pagliuca / Lessnau
   - validar o fluxo completo de `planejamento_previdenciario` até proposta, contrato e assinatura
   - desenhar fallback multi-provider do auto-responder para não depender de um único saldo/provedor
   - transformar isolamento por tenant/perfil/flag em fundação real de produto
   - liberar a Ana hoje via allowlist controlada de containment para onboarding do novo tenant de planejamento
 - risco residual:
+  - confirmar compatibilidade da geração de PDF no runtime de produção da Vercel
+  - revisar tamanho e qualidade do HTML dos templates reais para não quebrar renderização
   - confirmar o payload `fromMe` real da Z-API no uso diário para garantir que a heurística de `counterpartyPhone` cobre todos os casos
   - aplicar o patch manual de contatos estruturados no banco operacional antes do reteste da campanha `filhos`
   - retestar no runtime a exclusão da lista `Seleção personalizada` e, em seguida, reimportar a base enriquecida para validar `filho/irmão`
@@ -150,6 +164,8 @@
 
 - iniciar a bateria de testes do playbook de `planejamento_previdenciario`, validando:
 - cadastrar o escritório da Ana já com cobrança negociada manual no admin
+  - abrir a tela `Configurações > Templates` e cadastrar/ajustar o contrato real da Pagliuca / Lessnau
+  - testar `Preparar minuta` em um lead real do tenant Pagliuca
   - copy inicial mais consultiva
   - resposta do agente sem inventar análise individual
   - condução natural para diagnóstico
@@ -160,4 +176,4 @@
 
 - commit: pendente
 - deploy: pendente
-- nota de sessão: `2026-04-17-ana-agent-hardening-and-planning-knowledge-injection`
+- nota de sessão: `2026-04-17-contract-template-engine-mvp`

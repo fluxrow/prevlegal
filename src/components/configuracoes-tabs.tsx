@@ -4,14 +4,15 @@ import { useSearchParams, useRouter } from "next/navigation";
 import GestaoUsuarios from "@/components/gestao-usuarios";
 import OnboardingResetSection from "@/components/onboarding-reset-section";
 import AgentesConfig from "@/components/agentes-config";
-import { Users, Settings, Bot } from "lucide-react";
+import { Users, Settings, Bot, FileText } from "lucide-react";
 
-type Tab = "usuarios" | "agentes" | "geral";
+type Tab = "usuarios" | "agentes" | "geral" | "templates";
 
 const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
   { id: "usuarios", label: "Usuários", icon: <Users size={14} /> },
   { id: "agentes", label: "Agentes", icon: <Bot size={14} /> },
   { id: "geral", label: "Geral", icon: <Settings size={14} /> },
+  { id: "templates", label: "Templates", icon: <FileText size={14} /> },
 ];
 
 export default function ConfiguracoesTabs() {
@@ -20,6 +21,10 @@ export default function ConfiguracoesTabs() {
   const abaAtiva = (searchParams.get("tab") as Tab) || "usuarios";
 
   function setAba(tab: Tab) {
+    if (tab === "templates") {
+      router.push('/configuracoes/templates-contrato');
+      return;
+    }
     router.replace(`/configuracoes?tab=${tab}`, { scroll: false });
   }
 

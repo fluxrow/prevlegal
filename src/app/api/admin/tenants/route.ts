@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { verificarAdminAuth, verificarAdminReauthRecente } from '@/lib/admin-auth'
 import { createClient } from '@supabase/supabase-js'
+import { seedDefaultPlanningContractTemplate } from '@/lib/contract-template-seeds'
 
 function slugify(value: string) {
   return value
@@ -135,5 +136,17 @@ export async function POST(request: Request) {
     .single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  try {
+    await seedDefaultPlanningContractTemplate(adminSupabase, {
+      id: data.id,
+      slug: data.slug,
+      nome: data.nome,
+      responsavel_email: data.responsavel_email,
+    })
+  } catch (seedError) {
+    console.warn('[contract-template-seed] não foi possível semear template inicial', seedError)
+  }
+
   return NextResponse.json(data)
 }

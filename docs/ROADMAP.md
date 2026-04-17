@@ -4,6 +4,39 @@ Contexto: [[SESSION_HISTORY_MASTER]]
 Mestra: [[MASTER_PREV_LEGAL]]
 > Última atualização: 10/04/2026
 
+## Atualizacao Contratos / motor MVP de minuta por tenant entrou no produto — 17/04/2026
+
+- para sustentar o go-live do escritório Pagliuca / Lessnau, o produto ganhou a primeira camada real de geração de minuta por tenant
+- entregas desta frente:
+  - nova tabela `contract_templates` com escopo por tenant, tipo de contrato, corpo HTML, placeholders definidos e ativação/desativação
+  - bucket `contratos-leads` no storage para guardar PDFs gerados por lead
+  - endpoint `POST /api/leads/[id]/preparar-minuta` para:
+    - buscar lead + tenant
+    - substituir placeholders
+    - gerar PDF a partir de HTML
+    - salvar o arquivo no storage
+    - registrar documento e evento na timeline do lead
+  - endpoint `/api/contract-templates` para listar, criar, editar e remover templates do tenant
+  - tela `Configurações > Templates` para gestão operacional de minutas
+  - botão `Preparar minuta` no detalhe do lead com:
+    - seleção de template
+    - preview dos dados preenchidos
+    - geração de PDF
+    - marcação de "pronto para envio"
+  - seed inicial gracioso para o tenant Pagliuca / Lessnau, com template-base de honorários para planejamento previdenciário
+- decisões de produto:
+  - o envio automático da minuta pelo agente ainda não entra nesta fase; o operador humano continua decidindo o momento de envio
+  - o motor de PDF foi implementado de forma compatível com Vercel (`puppeteer-core` + `@sparticuz/chromium`)
+  - a estrutura de placeholders já nasce tenant-aware, para permitir expansão posterior sem reabrir o schema
+- impacto operacional:
+  - o agente Ana passa a ter um caminho concreto para handoff em pré-fechamento
+  - o escritório consegue preparar minuta com dados do cliente sem depender de fluxo totalmente manual fora da plataforma
+  - o produto avança de CRM + inbox para operação jurídica assistida por IA com fechamento mais próximo do contrato real
+- próximo passo natural:
+  - plugar o template jurídico final da Pagliuca / Lessnau
+  - validar geração em produção com PDF real
+  - depois decidir se o envio da minuta vira ação assistida do agente ou continua manual por mais um ciclo
+
 ## Atualizacao Agente Ana / planejamento previdenciário ganhou base técnica injetável, memória curta e proteção anti-flood — 17/04/2026
 
 - com o contrato da Pagliuca / Lessnau fechado e go-live até quarta, o playbook de `planejamento_previdenciario` deixou de ser apenas experimental e passou a exigir endurecimento real de operação

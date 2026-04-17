@@ -14,7 +14,7 @@
   - campanhas por tipo de contato (`titular`, `conjuge`, `filho`, `irmao`)
   - lead agora pode carregar contatos familiares estruturados (`conjuge`, `filho`, `irmao`) e o dispatch por tipo de contato passa a mirar esses campos
 - maior risco atual:
-  - o motor de minuta / contrato do tenant Pagliuca ainda não existe; sem ele, o fluxo de planejamento não chega ao pré-fechamento prometido em contrato
+  - validar em produção a geração de minuta/PDF do tenant Pagliuca e plugar o template jurídico final antes do go-live de quarta
 
 ## O que está funcionando
 
@@ -23,6 +23,7 @@
 - separação de conversas por usuário / carteira
 - Google Calendar operacional
 - criação de lead manual sem CPF
+- motor MVP de templates de contrato por tenant com geração de PDF, storage e registro na timeline do lead
 
 ## O que está quebrado ou incompleto
 
@@ -38,6 +39,10 @@
 - a base de conhecimento de planejamento já pode ser injetada pelo runtime, mas os arquivos ainda precisam ser entregues em `docs/agent-knowledge/planejamento-previdenciario/`
 - o anti-flood/coalescência do agente Ana já foi implementado, mas ainda precisa de reteste em produção com lead mandando múltiplas mensagens rápidas
 - a memória operacional curta das conversas foi estruturada em `conversas.resumo_operacional`, mas ainda precisa de validação em fluxo longo
+- o motor de minuta MVP já existe, mas ainda precisa:
+  - receber o texto jurídico final da Pagliuca / Lessnau
+  - ser validado em produção com geração real de PDF
+  - confirmar permissões e UX final do operador no detalhe do lead
 - o reteste do disparo por `filho` / familiares ainda precisa ser confirmado em produção após a migração para campos estruturados no lead
 - o Kanban agora precisa ser validado em runtime com o selo visual do tipo de contato (`Titular`, `Cônjuge`, `Filho`, `Irmão`) para garantir leitura operacional rápida
 - outbound de campanha e `iniciar conversa` agora promovem lead `new` para `contacted`; falta só o reteste visual para confirmar a ida automática ao box `Contatados`
@@ -65,7 +70,7 @@
 ## Próximos 3 blocos
 
 1. estruturar isolamento e rollout por tenant/perfil para produção paga
-2. implementar o motor MVP de minuta/contrato para o tenant Pagliuca
+2. validar o motor MVP de minuta/contrato do tenant Pagliuca em produção
 3. validar o playbook de `planejamento_previdenciario` até diagnóstico, proposta, contrato e preparação de assinatura
 4. consolidar cobrança negociada por tenant no admin sem depender só da tabela pública da LP
 5. liberar a Ana via allowlist controlada (`TENANT_CONTAINMENT_ALLOWED_EMAILS`) sem abrir o rollout multi-tenant para todos

@@ -7,6 +7,7 @@ import CalculadoraPrev from '@/components/calculadora-prev'
 import GeradorDocumentosIA from '@/components/gerador-documentos-ia'
 import PortalLead from '@/components/portal-lead'
 import ContratoLead from '@/components/contrato-lead'
+import PrepararMinutaLead from '@/components/preparar-minuta-lead'
 import LeadDetalheOnboardingTour from '@/components/lead-detalhe-onboarding-tour'
 import IniciarConversaModal from '@/components/iniciar-conversa-modal'
 import EditarLeadModal from '@/components/editar-lead-modal'
@@ -1048,6 +1049,18 @@ export default function LeadDetailPage() {
       </div>
 
       <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '14px', padding: '24px', marginBottom: '20px' }}>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '18px' }}>
+          <PrepararMinutaLead
+            lead={{
+              id,
+              nome: lead.nome,
+              cpf: lead.cpf,
+              telefone: lead.telefone,
+              email: lead.email,
+              nb: lead.nb,
+            }}
+          />
+        </div>
         <ContratoLead leadId={id} />
       </div>
 
