@@ -78,7 +78,9 @@ export async function POST(request: NextRequest) {
     }
 
     const { data: leads, error: fetchError } = await adminClient
-      .from('leads').select('id, cpf, nome, tem_whatsapp').in('id', leadIds).is('tem_whatsapp', null)
+      .from('leads')
+      .select('id, telefone, nome, tem_whatsapp')
+      .in('id', leadIds)
     if (fetchError) return NextResponse.json({ error: 'Erro ao buscar leads' }, { status: 500 })
     if (!leads || leads.length === 0) {
       return NextResponse.json({ success: true, stats: { verificados: 0, com_whatsapp: 0, sem_whatsapp: 0 } })
@@ -87,7 +89,7 @@ export async function POST(request: NextRequest) {
     for (let i = 0; i < leads.length; i += 10) {
       const batch = leads.slice(i, i + 10)
       await Promise.all(batch.map(async (lead: any) => {
-        const phone = normalizePhone(lead.cpf || '')
+        const phone = normalizePhone(lead.telefone || '')
         if (!phone) {
           await adminClient.from('leads').update({ tem_whatsapp: false, whatsapp_verificado_em: new Date().toISOString() }).eq('id', lead.id)
           semWhatsapp++; return

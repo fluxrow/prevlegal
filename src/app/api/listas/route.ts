@@ -62,6 +62,9 @@ export async function GET(request: Request) {
           com_whatsapp: comWhatsapp ?? lista.total_com_whatsapp ?? lista.com_whatsapp ?? 0,
           sem_whatsapp: semWhatsapp ?? lista.total_sem_whatsapp ?? lista.sem_whatsapp ?? 0,
           nao_verificado: naoVerificado ?? lista.total_nao_verificado ?? lista.nao_verificado ?? 0,
+          conjuge_com_celular: await buildLeadCountQuery().not('conjuge_celular', 'is', null).then((result) => result.count ?? 0),
+          filho_com_celular: await buildLeadCountQuery().not('filho_celular', 'is', null).then((result) => result.count ?? 0),
+          irmao_com_celular: await buildLeadCountQuery().not('irmao_celular', 'is', null).then((result) => result.count ?? 0),
           is_sistema: lista.nome === LISTA_MANUAL_NOME && lista.fornecedor === LISTA_MANUAL_FORNECEDOR,
         }
       })

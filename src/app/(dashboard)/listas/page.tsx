@@ -12,6 +12,9 @@ interface Lista {
   com_whatsapp: number
   sem_whatsapp: number
   nao_verificado: number
+  conjuge_com_celular?: number
+  filho_com_celular?: number
+  irmao_com_celular?: number
   created_at: string
 }
 
@@ -242,6 +245,33 @@ export default function ListasPage() {
                   </span>
                 </div>
               </div>
+              <div style={{
+                display: 'flex',
+                gap: '10px',
+                flexWrap: 'wrap',
+                marginTop: '-2px',
+                marginBottom: total > 0 ? '14px' : 0,
+              }}>
+                {[
+                  { label: 'Cônjuges com celular', value: lista.conjuge_com_celular || 0 },
+                  { label: 'Filhos com celular', value: lista.filho_com_celular || 0 },
+                  { label: 'Irmãos com celular', value: lista.irmao_com_celular || 0 },
+                ].map((item) => (
+                  <span
+                    key={item.label}
+                    style={{
+                      fontSize: '11px',
+                      color: 'var(--text-muted)',
+                      background: 'var(--bg-card)',
+                      border: '1px solid var(--border)',
+                      borderRadius: '999px',
+                      padding: '4px 10px',
+                    }}
+                  >
+                    {item.label}: <strong style={{ color: 'var(--text-secondary)' }}>{item.value}</strong>
+                  </span>
+                ))}
+              </div>
               {total > 0 && (
                 <div style={{ height: '6px', borderRadius: '99px', background: 'var(--bg-hover)', overflow: 'hidden', display: 'flex' }}>
                   <div style={{ width: pct(lista.com_whatsapp, total) + '%', background: '#22c55e', transition: 'width 0.4s' }} />
@@ -258,7 +288,7 @@ export default function ListasPage() {
                 }}>
                   {statResult.error
                     ? '❌ ' + statResult.error
-                    : '✅ ' + statResult.stats?.verificados + ' verificados · ' + statResult.stats?.com_whatsapp + ' com WhatsApp · ' + statResult.stats?.sem_whatsapp + ' sem WhatsApp'
+                    : '✅ ' + statResult.stats?.verificados + ' avaliados · ' + statResult.stats?.com_whatsapp + ' com WhatsApp · ' + statResult.stats?.sem_whatsapp + ' sem WhatsApp'
                   }
                 </div>
               )}

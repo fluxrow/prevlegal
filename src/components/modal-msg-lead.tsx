@@ -30,6 +30,8 @@ interface MsgPortal {
 interface Conversa {
   id: string
   telefone: string
+  lead_id?: string | null
+  leads?: { id?: string | null } | null
 }
 
 export default function ModalMsgLead({ lead, onClose }: Props) {
@@ -61,7 +63,8 @@ export default function ModalMsgLead({ lead, onClose }: Props) {
       const conversas = await conversasRes.json() as Conversa[]
       if (!ativo) return
 
-      const conversa = (conversas || []).find(c => samePhone(c.telefone || '', lead.telefone))
+      const conversa = (conversas || []).find(c => c.lead_id === lead.id || c.leads?.id === lead.id)
+        || (conversas || []).find(c => samePhone(c.telefone || '', lead.telefone))
       if (!conversa) {
         setConversaId(null)
         setMsgsWpp([])

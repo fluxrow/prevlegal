@@ -38,6 +38,10 @@
 - o reteste do disparo por `filho` / familiares ainda precisa ser confirmado em produção após a migração para campos estruturados no lead
 - o Kanban agora precisa ser validado em runtime com o selo visual do tipo de contato (`Titular`, `Cônjuge`, `Filho`, `Irmão`) para garantir leitura operacional rápida
 - outbound de campanha e `iniciar conversa` agora promovem lead `new` para `contacted`; falta só o reteste visual para confirmar a ida automática ao box `Contatados`
+- a aba de listas agora precisa ser validada com visão mais real do que a planilha trouxe:
+  - contagem de `cônjuges`, `filhos` e `irmãos` com celular
+  - checagem de WhatsApp usando o telefone operacional do lead, não o CPF
+  - modal do card do Kanban abrindo a conversa pelo `lead_id` quando existir
 - o produto ainda não tem camada formal de flags/versionamento por tenant para proteger escritórios pagantes de evoluções novas
 - o admin ainda estava acoplado demais aos preços da LP; para contratos negociados, `plano` deve continuar sendo pacote operacional e a cobrança precisa viver em campo próprio do tenant
 - quando o auto-responder falhar por horário, timeout ou provedor, a conversa deve sair do silêncio e cair para humano com notificação explícita
@@ -61,6 +65,7 @@
 4. liberar a Ana via allowlist controlada (`TENANT_CONTAINMENT_ALLOWED_EMAILS`) sem abrir o rollout multi-tenant para todos
 5. retestar exclusão de lista + reimportação da base enriquecida depois do cleanup automático de campanhas não ativas
 6. confirmar no runtime que campanhas de `filho` usam apenas `Celular do filho`, nunca `Telefone do filho`
+7. confirmar na aba de listas se `Verificar WhatsApp` retorna números reais depois da troca de `cpf` para `telefone`
 
 ## Para retomar sem atrito
 

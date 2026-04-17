@@ -36,6 +36,9 @@
 - quando o lead confirma que a Dra. Jessica pode assumir o atendimento, o runtime do agente agora move a conversa de `agente` para `aguardando_cliente`
 - a exclusão de lista agora apaga também campanhas `rascunho` / `encerrada` vinculadas e seus `disparos`, bloqueando apenas quando ainda existir campanha `ativa` ou `pausada`
 - o disparo de campanha agora foi endurecido para usar apenas contatos com cara de `CELULAR/WHATSAPP`; telefones fixos permanecem como dado de cadastro, não como fallback automático de envio
+- a aba de listas agora passou a expor contagem operacional de contatos familiares com celular (`cônjuge`, `filho`, `irmão`) para dar visão real do que a planilha trouxe, sem confundir isso com verificação formal de WhatsApp
+- a rota `Verificar WhatsApp` foi corrigida para checar o `telefone` operacional do lead em vez de usar `cpf` como se fosse número
+- o ícone de conversa do card do Kanban agora tenta abrir a thread pelo `lead_id` antes de cair em heurística por telefone, evitando o falso "Nenhuma conversa encontrada" em leads que já têm histórico
 
 ## Arquivos ou áreas afetadas
 
@@ -49,10 +52,14 @@
 - `src/app/api/leads/[id]/route.ts`
 - `src/app/api/leads/route.ts`
 - `src/app/api/listas/[id]/route.ts`
+- `src/app/api/listas/route.ts`
 - `src/app/api/campanhas/[id]/disparar/route.ts`
+- `src/app/api/whatsapp/verificar/route.ts`
 - `src/app/api/webhooks/zapi/route.ts`
 - `src/components/lead-drawer.tsx`
 - `src/components/editar-lead-modal.tsx`
+- `src/components/modal-msg-lead.tsx`
+- `src/app/(dashboard)/listas/page.tsx`
 - `src/app/(dashboard)/leads/[id]/page.tsx`
 - `src/lib/types.ts`
 - `supabase/migrations/051_lead_structured_related_contacts.sql`
@@ -89,6 +96,7 @@
 - `npm run build` passou após a correção da exclusão de lista presa por campanhas antigas
 - `npm run build` passou após endurecer a regra de dispatch para usar somente contatos móveis/WhatsApp
 - `npm run build` passou após adicionar selo visual do tipo de contato no card do Kanban e promover outbound de `new` para `contacted`
+- `npm run build` passou após corrigir a verificação de WhatsApp para usar `telefone` do lead, expor contagem de contatos familiares com celular na aba de listas e resolver o modal de conversa pelo `lead_id`
 
 ## Estado após a última entrega
 
@@ -103,6 +111,9 @@
   - quando campanha ou envio individual sai para um lead ainda `Novo`, o lead é promovido automaticamente para `Contatados`
   - handoff confirmado para a Dra. Jessica agora troca a conversa para `aguardando_cliente`, alinhando o fluxo com o box correto da inbox
   - listas vazias ou de teste não ficam mais bloqueadas por campanhas não ativas; a exclusão limpa a campanha associada antes de remover a lista
+  - a aba de listas agora mostra também quantos `cônjuges`, `filhos` e `irmãos` vieram com celular preenchido na importação
+  - o botão `Verificar WhatsApp` voltou a avaliar o número operacional do lead, e não mais um campo incorreto
+  - o ícone de conversa do card do Kanban agora abre a thread existente com base no `lead_id` quando houver vínculo direto
 - pendente:
   - validar o fluxo completo de `planejamento_previdenciario` até proposta, contrato e assinatura
   - desenhar fallback multi-provider do auto-responder para não depender de um único saldo/provedor
@@ -113,6 +124,8 @@
   - aplicar o patch manual de contatos estruturados no banco operacional antes do reteste da campanha `filhos`
   - retestar no runtime a exclusão da lista `Seleção personalizada` e, em seguida, reimportar a base enriquecida para validar `filho/irmão`
   - confirmar que o selo visual do Kanban segue coerente quando o lead muda manualmente de tipo de contato em edição
+  - validar em produção se a nova contagem da aba de listas (`cônjuge/filho/irmão com celular`) bate com a planilha importada
+  - confirmar no runtime se o modal de conversa do card resolve corretamente um lead já conversado via `lead_id`
 
 ## Próximo passo certo
 
