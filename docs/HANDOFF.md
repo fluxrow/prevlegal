@@ -27,6 +27,8 @@
 - a continuidade do agente em benefícios foi endurecida para não reabrir apresentação, não repetir a abertura da campanha e não pedir interesse novamente depois de um "sim" curto do lead
 - a resposta automática do agente agora grava `twilio_sid` no próprio registro da thread para o webhook `fromMe` da Z-API não espelhar o mesmo texto como mensagem humana
 - a montagem do histórico do agente foi corrigida para usar as mensagens mais recentes da conversa, e não as mais antigas; além disso, o runtime agora injeta a última fala do lead e a intenção imediata como diretiva obrigatória da resposta
+- o runtime de `beneficios_previdenciarios` passou a carregar conhecimento operacional explícito sobre readequação do teto, evitando que o agente fale como se fosse analisar o caso do zero
+- a resposta automática do agente agora pode esperar alguns segundos antes de enviar (`AGENT_RESPONSE_DELAY_MS`, default 4500ms), para não parecer instantânea demais no WhatsApp
 
 ## Arquivos ou áreas afetadas
 
@@ -61,6 +63,7 @@
 - o comportamento recente de "fora do horário cai para humano sem mensagem visível" foi coberto com resposta automática ao lead + gravação na thread
 - a continuidade do agente ainda estava "andando em círculo" em benefícios depois de respostas curtas como "Tenho sim", e a resposta automática do agente ainda podia ser espelhada pela Z-API como mensagem humana porque faltava reconciliar `twilio_sid`
 - a continuidade estranha do agente tinha uma causa-raiz adicional: o histórico consultava as 10 mensagens mais antigas do lead, então a IA podia responder para uma saudação velha em vez da última fala atual
+- o fluxo de benefícios ainda precisava parar de usar linguagem de "análise" ou "descoberta" quando a lista já veio previamente mapeada para readequação do teto
 - a próxima validação relevante saiu de benefícios e passou para planejamento: precisamos confirmar em runtime se o agente conduz com consistência até proposta/contrato sem soar telemarketing nem responder com certezas indevidas
 - a próxima camada estrutural deixou de ser só copy/runtime: agora precisamos criar estratégia canônica de isolamento, versionamento e rollout para não quebrar tenants ativos
 - `npm run build` passou após a introdução da cobrança negociada por tenant no admin

@@ -17,6 +17,7 @@ const anthropic = new Anthropic({
 })
 
 const APP_TIMEZONE = process.env.APP_TIMEZONE || 'America/Sao_Paulo'
+const AGENT_RESPONSE_DELAY_MS = Math.max(0, Number(process.env.AGENT_RESPONSE_DELAY_MS || 4500))
 
 // Prompt padrão do sistema caso o escritório não tenha configurado um personalizado
 const PROMPT_PADRAO = `Você é uma consultora virtual de atendimento previdenciário.
@@ -140,12 +141,30 @@ function buildImmediateResponseDirective({
       '- Não comece com "Oi, tudo bem" nem com agradecimento social se o lead não abriu uma conversa social agora.',
       '- Explique em poucas linhas o cenário já identificado e avance um passo concreto da conversa.',
       '- Depois da explicação, faça no máximo uma pergunta útil de continuidade.',
+      '- Não diga que agora vai analisar para descobrir se existe direito. Neste playbook, o cenário já foi previamente identificado e o seu papel é informar com clareza e conduzir para o próximo passo.',
     ].join('\n')
   }
 
   return [
     ...shared,
     '- Em benefícios previdenciários, mantenha a continuidade do contexto já identificado e avance a conversa com naturalidade.',
+  ].join('\n')
+}
+
+function buildBenefitsOperationalKnowledge() {
+  return [
+    'CONHECIMENTO OPERACIONAL — READEQUAÇÃO DO TETO:',
+    '- Neste playbook, o lead já foi previamente mapeado para uma possibilidade de revisão ou readequação do teto do benefício.',
+    '- O objetivo da conversa não é descobrir do zero se existe um problema no benefício.',
+    '- O objetivo é informar o lead com clareza, responder dúvidas iniciais de forma segura e encaminhar a continuidade com a Dra. Jessica.',
+    '- Explique em linguagem simples que existe uma possibilidade já identificada de ajuste do benefício ligada à limitação do teto previdenciário na concessão.',
+    '- Se o lead pedir explicação, você pode dizer em poucas linhas que se trata de um cenário em que benefícios concedidos em determinados períodos ficaram limitados ao teto da época, e depois as mudanças constitucionais abriram espaço para readequação.',
+    '- Você pode mencionar que o tema já possui entendimento consolidado pelos tribunais superiores, sem despejar números de recurso, valores ou juridiquês excessivo logo de cara.',
+    '- Não fale em cifras, retroativos ou valores estimados na explicação inicial.',
+    '- Não transforme a conversa em aula técnica longa. Quebre a explicação em blocos curtos e naturais.',
+    '- Se o lead confirmar interesse, o próximo passo principal é marcar ou encaminhar a conversa com a Dra. Jessica para aprofundamento.',
+    '- O agente deve ajudar com dúvidas prévias, mas sem fingir parecer jurídico individual.',
+    '- Nunca diga que vai analisar para descobrir se há direito. Diga que a equipe já identificou uma possibilidade e que a Dra. Jessica aprofunda os detalhes na continuidade.',
   ].join('\n')
 }
 
@@ -508,6 +527,12 @@ export async function POST(request: NextRequest) {
         operationProfile: config.agente_perfil_operacao || agenteRow?.perfil_operacao || null,
       })}`,
     )
+    if (normalizeOperationProfile(config.agente_perfil_operacao || agenteRow?.perfil_operacao || null) === 'beneficios_previdenciarios') {
+      partes.push(`\n${buildBenefitsOperationalKnowledge()}`)
+      partes.push(
+        '\nESTILO DE RESPOSTA PARA BENEFÍCIOS:\n- Responda em blocos curtos, como conversa normal de WhatsApp.\n- Evite textão técnico.\n- Não recomece a conversa.\n- Não use emojis.\n- Quando o lead já aceitou ouvir mais, explique e conduza para o próximo passo com a Dra. Jessica.',
+      )
+    }
 
     const systemPrompt = partes.join('\n')
       .replace('{nome}', lead?.nome || 'Beneficiário')
@@ -581,6 +606,10 @@ export async function POST(request: NextRequest) {
 
     // 8. Se resposta automática ativa, enviar via Twilio
     if (config.agente_resposta_automatica && mensagem.telefone_remetente) {
+      if (AGENT_RESPONSE_DELAY_MS > 0) {
+        await new Promise((resolve) => setTimeout(resolve, AGENT_RESPONSE_DELAY_MS))
+      }
+
       const result = await sendWhatsAppMessage({
         tenantId,
         to: mensagem.telefone_remetente,

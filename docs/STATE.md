@@ -42,6 +42,11 @@
 - a continuidade do agente em benefícios ainda precisava de endurecimento para não reabrir apresentação nem pedir interesse de novo depois de um retorno positivo curto do lead
 - a resposta automática do agente precisava reconciliar `twilio_sid` no mesmo registro para a Z-API não espelhar o mesmo texto depois como mensagem humana
 - o runtime do agente ainda precisava ser retestado após a correção da montagem de histórico, que antes buscava as mensagens mais antigas da conversa em vez das mais recentes e podia fazer a IA responder para uma saudação velha em vez da fala atual do lead
+- em `beneficios_previdenciarios`, o agente ainda precisava ser refinado para:
+  - parar de falar em "análise do caso" quando a base já veio previamente mapeada
+  - explicar a readequação do teto em blocos curtos e humanos
+  - conduzir para continuidade com a Dra. Jessica em vez de reabrir triagem
+  - responder com um pequeno atraso operacional para não parecer instantâneo demais
 
 ## Próximos 3 blocos
 
