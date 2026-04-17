@@ -41,6 +41,13 @@
 - o ícone de conversa do card do Kanban agora tenta abrir a thread pelo `lead_id` antes de cair em heurística por telefone, evitando o falso "Nenhuma conversa encontrada" em leads que já têm histórico
 - o modal do card do Kanban foi endurecido para consultar primeiro `/api/leads/[id]` e usar a `conversa` já vinculada ao lead; a lista geral de conversas agora fica apenas como fallback
 - o payload de `/api/leads/[id]` agora também devolve o histórico de WhatsApp resolvido pelo próprio lead (`lead_id` + telefone), para o modal do Kanban não depender da visibilidade da inbox humana
+- a resolução do histórico do lead foi ampliada para considerar `telefone_enriquecido`, contatos estruturados (`conjuge`, `filho`, `irmao`) e formatos `whatsapp:+55...`, além de priorizar `conversa_id` quando a thread já existir
+- o profile `Captação de Planejamento Previdenciário` foi endurecido para `titular-only`, com fluxo de qualificação mais rico e escalada por etapa do processo
+- o runtime do agente agora pode injetar automaticamente a base técnica em `docs/agent-knowledge/planejamento-previdenciario/` quando o tenant estiver em `planejamento_previdenciario`
+- a leitura dessa base ganhou cache por assinatura de `mtime`, com fallback gracioso se o diretório ainda estiver vazio
+- `/api/agente/responder` agora aplica coalescência de mensagens rápidas, proteção anti-flood por lead e registra `agent.flood_detected` em `audit_logs`
+- `conversas` agora suporta `resumo_operacional`, permitindo memória curta persistida para conversas longas do agente
+- o auto-responder interno passou a respeitar respostas `202 retryable` da rota do agente, aguardando silêncio antes de tentar novamente
 
 ## Arquivos ou áreas afetadas
 
@@ -67,10 +74,13 @@
 - `supabase/migrations/051_lead_structured_related_contacts.sql`
 - `supabase/manual/2026-04-17_add_structured_related_contacts.sql`
 - `src/lib/agent-autoresponder.ts`
+- `src/lib/agent-knowledge.ts`
 - `src/lib/supabase/middleware.ts`
 - `src/app/api/webhooks/twilio/route.ts`
 - `src/app/api/webhooks/zapi/route.ts`
 - `src/app/api/agente/responder/route.ts`
+- `supabase/migrations/052_conversation_agent_memory.sql`
+- `supabase/manual/2026-04-17_add_conversation_agent_memory.sql`
 - `docs/STATE.md`
 - `docs/HANDOFF.md`
 - `docs/ROADMAP.md`
@@ -99,6 +109,8 @@
 - `npm run build` passou após endurecer a regra de dispatch para usar somente contatos móveis/WhatsApp
 - `npm run build` passou após adicionar selo visual do tipo de contato no card do Kanban e promover outbound de `new` para `contacted`
 - `npm run build` passou após corrigir a verificação de WhatsApp para usar `telefone` do lead, expor contagem de contatos familiares com celular na aba de listas e resolver o modal de conversa pelo `lead_id`
+- `npm run build` passou após ampliar a resolução de histórico do modal do Kanban para múltiplos telefones do lead e formatos de WhatsApp
+- `npm run build` passou após endurecer o playbook Ana com knowledge injection, anti-flood, coalescência e memória curta operacional
 
 ## Estado após a última entrega
 
@@ -117,7 +129,9 @@
   - o botão `Verificar WhatsApp` voltou a avaliar o número operacional do lead, e não mais um campo incorreto
   - o ícone de conversa do card do Kanban agora abre a thread existente com base no `lead_id` quando houver vínculo direto
   - o modal do card do Kanban agora também consegue recuperar histórico antigo do lead por telefone quando a conversa não estava perfeitamente ligada ao `lead_id`
+  - o modal do Kanban agora cobre também `telefone_enriquecido` e contatos estruturados, reduzindo falsos vazios em leads de teste ou históricos legados
 - pendente:
+  - implementar o motor MVP de minuta/contrato para o tenant Pagliuca
   - validar o fluxo completo de `planejamento_previdenciario` até proposta, contrato e assinatura
   - desenhar fallback multi-provider do auto-responder para não depender de um único saldo/provedor
   - transformar isolamento por tenant/perfil/flag em fundação real de produto
@@ -130,6 +144,7 @@
 - validar em produção se a nova contagem da aba de listas (`cônjuge/filho/irmão com celular`) bate com a planilha importada
   - confirmar no runtime se o modal de conversa do card resolve corretamente um lead já conversado via `lead_id`
   - confirmar no runtime se as mensagens do próprio lead voltam a aparecer no modal rápido do Kanban
+  - confirmar no runtime se o contato `Fabio Caua` passa a encontrar o histórico legado após a ampliação das variantes de telefone
 
 ## Próximo passo certo
 
@@ -143,6 +158,6 @@
 
 ## Referência rápida
 
-- commit: pendente após sync/commit desta janela
-- deploy: pendente push
-- nota de sessão: `2026-04-17-kanban-modal-lead-history-fallback`
+- commit: pendente
+- deploy: pendente
+- nota de sessão: `2026-04-17-ana-agent-hardening-and-planning-knowledge-injection`

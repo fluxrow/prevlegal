@@ -4,6 +4,38 @@ Contexto: [[SESSION_HISTORY_MASTER]]
 Mestra: [[MASTER_PREV_LEGAL]]
 > Última atualização: 10/04/2026
 
+## Atualizacao Agente Ana / planejamento previdenciário ganhou base técnica injetável, memória curta e proteção anti-flood — 17/04/2026
+
+- com o contrato da Pagliuca / Lessnau fechado e go-live até quarta, o playbook de `planejamento_previdenciario` deixou de ser apenas experimental e passou a exigir endurecimento real de operação
+- correções aplicadas nesta frente:
+  - o profile `Captação de Planejamento Previdenciário` passou a ser explicitamente `titular-only`
+  - o `fluxo_qualificacao` agora captura, de forma natural ao longo da conversa:
+    - idade
+    - regime principal (`RGPS`, `RPPS`, ambos ou exterior)
+    - tempo aproximado de contribuição
+    - horizonte de aposentadoria
+    - previdência complementar
+    - patrimônio previdenciário aproximado
+    - sensibilidade técnica do lead
+  - a escalada do agente Ana deixou de ser por “pergunta técnica difícil” e passou a ser por etapa do processo:
+    - análise individual de `CNIS` / documentos
+    - cálculo formal / projeção
+    - aceite do diagnóstico técnico pago
+    - pedido expresso para falar com humano
+    - chegada em proposta / contrato / assinatura
+  - o runtime agora injeta, quando `perfil_operacao = planejamento_previdenciario`, a base de conhecimento em `docs/agent-knowledge/planejamento-previdenciario/`
+  - a leitura dessa base ganhou cache por assinatura de `mtime`, evitando leitura de disco a cada request
+  - o runtime passou a aplicar coalescência de mensagens rápidas e proteção anti-flood por lead
+  - `conversas` agora suporta `resumo_operacional`, permitindo memória curta persistida para conversas longas
+- impacto operacional:
+  - o agente Ana deixa de parecer frágil em lead premium
+  - perguntas técnicas gerais passam a poder ser respondidas com documentação do escritório, sem depender só do prompt seedado
+  - conversas longas ficam menos sujeitas a “reinício de contexto”
+  - custo e ruído operacional caem quando o lead dispara múltiplas mensagens em sequência
+- próximo passo natural:
+  - ligar essa fundação ao motor de minuta / contrato
+  - e depois alimentar o diretório de conhecimento técnico com os 8 arquivos planejados
+
 ## Atualizacao Arquitetura de Producao / isolamento por tenant, playbook e rollout controlado — 16/04/2026
 
 - com o PrevLegal entrando em fase de pagantes, ficou inadequado continuar tratando mudanças de playbook como comportamento global da produção

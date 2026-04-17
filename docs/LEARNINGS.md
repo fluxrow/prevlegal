@@ -26,6 +26,30 @@ Mestra: [[MASTER_PREV_LEGAL]]
 **Correção:** Calcular a janela do agente com `America/Sao_Paulo` como fuso operacional padrão
 **Regra pratica:** Toda automação dependente de horário no PrevLegal deve comparar contra o relógio operacional do produto, nunca contra a hora crua do servidor
 
+### 178. Em agente de planejamento premium, pergunta técnica difícil não deve disparar handoff automático
+**Problema:** O playbook inicial do Ana ainda tratava complexidade técnica como gatilho de escalada, o que enfraquecia justamente o diferencial do escritório de planejamento previdenciário
+**Causa:** O profile original de planejamento foi escrito com foco em triagem consultiva segura, não em condução quase completa do fluxo até pré-fechamento
+**Correção:** Reescrever `gatilhos_escalada` para disparar handoff por etapa do processo, e não por dificuldade da pergunta: análise individual de documentos/CNIS, cálculo formal, aceite do diagnóstico pago, pedido explícito de humano ou momento de proposta/contrato/assinatura
+**Regra pratica:** Em playbook premium, dificuldade técnica geral é trabalho do agente; handoff deve acontecer quando a conversa cruza o limite operacional da etapa
+
+### 179. Base de conhecimento técnica precisa entrar no runtime por perfil operacional, não como prompt global
+**Problema:** O agente Ana precisava ficar muito mais forte tecnicamente, mas injetar esse conhecimento de forma global ameaçaria custo, foco e comportamento da Jessica
+**Causa:** O runtime anterior só usava `prompt_base` + blocos fixos; não existia distinção entre conhecimento técnico denso de planejamento e conhecimento operacional de benefícios
+**Correção:** Criar loader dedicado para `docs/agent-knowledge/planejamento-previdenciario/*.md`, com cache por assinatura de `mtime` e injeção condicional apenas quando `perfil_operacao = planejamento_previdenciario`
+**Regra pratica:** Conhecimento longo deve ser plugado de forma contextual por playbook. O que fortalece um agente premium pode só atrapalhar outro fluxo mais curto e operacional
+
+### 180. Anti-flood de agente precisa agrupar mensagens antes de chamar o modelo, não só ignorar excesso
+**Problema:** Sem proteção, leads que mandam várias mensagens em sequência podem gerar chamadas redundantes, respostas sobrepostas e custo desnecessário
+**Causa:** O auto-responder era acionado a cada inbound e o runtime respondia imediatamente à última mensagem disponível
+**Correção:** Introduzir coalescência de sequência rápida e janela anti-flood no runtime: se vierem várias mensagens próximas, o sistema espera um pequeno silêncio, reprocessa a última e só responde uma vez; se houver flood em 60 segundos, registra log estruturado
+**Regra pratica:** Em WhatsApp, “muitas mensagens” quase sempre representam um mesmo turno humano fragmentado. O sistema deve juntar antes de responder para parecer mais natural e gastar menos
+
+### 181. Memória curta persistida da conversa é melhor que ampliar indefinidamente o histórico bruto
+**Problema:** Conversas longas de agente premium começam a dar sinais de reinício, custo maior e menor precisão quando o modelo precisa reler muitos turnos brutos
+**Causa:** O runtime dependia apenas do recorte recente de mensagens, sem guardar um resumo cumulativo do caso
+**Correção:** Adicionar `conversas.resumo_operacional`, `resumo_operacional_at` e `resumo_operacional_mensagens`, e refrescar esse resumo a cada lote de mensagens para reidratar o contexto nas próximas chamadas
+**Regra pratica:** Para agente operacional de longo ciclo, histórico bruto recente + resumo persistido é mais estável e barato do que tentar carregar tudo toda vez
+
 ### 173. Campanha por familiar não pode depender só de `telefone_enriquecido`
 **Problema:** O disparo por `filho` / `irmao` foi corrigido inicialmente usando o contato alternativo genérico do lead, mas o cadastro do lead não mostrava esses familiares como dados explícitos, o que deixava a operação dependente de inferência em vez de estrutura confiável
 **Causa:** O importador enriquecido capturava cônjuge, filho e irmão, porém guardava esses dados principalmente em `anotacao` e em um slot genérico (`telefone_enriquecido`), sem campos específicos no lead

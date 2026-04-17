@@ -4,6 +4,7 @@ import Anthropic from '@anthropic-ai/sdk'
 import { getConfiguracaoAtual } from '@/lib/configuracoes'
 import { normalizeOperationProfile } from '@/lib/operation-profile'
 import { sendWhatsAppMessage } from '@/lib/whatsapp-provider'
+import { getPlanningKnowledgeBlock } from '@/lib/agent-knowledge'
 
 function createAdminSupabase() {
   return createClient(
@@ -18,6 +19,26 @@ const anthropic = new Anthropic({
 
 const APP_TIMEZONE = process.env.APP_TIMEZONE || 'America/Sao_Paulo'
 const AGENT_RESPONSE_DELAY_MS = Math.max(0, Number(process.env.AGENT_RESPONSE_DELAY_MS || 4500))
+const AGENT_COALESCE_MESSAGE_GAP_MS = 10000
+const AGENT_COALESCE_WAIT_MS = 15000
+const AGENT_FLOOD_WINDOW_MS = 60000
+const AGENT_FLOOD_LIMIT = 5
+const AGENT_FLOOD_SILENCE_MS = 30000
+const AGENT_SUMMARY_BATCH_SIZE = 10
+const KNOWLEDGE_WARNING_LOGGED = new Set<string>()
+
+type HistoricoEntry = { role: 'user' | 'assistant'; content: string }
+
+type InboundMessageRow = {
+  id: string
+  mensagem: string | null
+  telefone_remetente: string | null
+  telefone_destinatario: string | null
+  respondido_por_agente: boolean | null
+  respondido_manualmente: boolean | null
+  resposta_agente: string | null
+  created_at: string
+}
 
 // Prompt padrão do sistema caso o escritório não tenha configurado um personalizado
 const PROMPT_PADRAO = `Você é uma consultora virtual de atendimento previdenciário.
@@ -185,8 +206,9 @@ function buildImmediateResponseDirective({
     return [
       ...shared,
       '- Em planejamento previdenciário, responda como uma consultora técnica e segura, sem telemarketing e sem inventar análise individual.',
+      '- Você atende apenas o titular do planejamento. Se perceber que está falando com terceiro, peça de forma cordial que o próprio titular siga a conversa.',
       '- Se o lead pedir explicação, explique o conceito pedido em linguagem simples e continue para o próximo passo da esteira.',
-      '- O handoff humano acontece na etapa de contrato/assinatura, não no meio da conversa por simples complexidade.',
+      '- O handoff humano acontece por etapa de processo: análise individual de CNIS/documentos, cálculo formal/projeção, aceite do diagnóstico técnico pago, pedido expresso para falar com advogado ou momento de contrato/assinatura.',
     ].join('\n')
   }
 
@@ -264,11 +286,13 @@ function buildAgentContinuitySection({
     normalizedProfile === 'planejamento_previdenciario'
       ? [
           '- No playbook de planejamento, a conversa pode avançar por agentes até proposta, contrato e preparação de assinatura antes do handoff humano.',
+          '- Você atende apenas o titular do planejamento. Não conduza conversa com familiar, cuidador ou terceiro em nome do lead.',
           '- Trate o planejamento previdenciário como tema técnico e consultivo, não como curiosidade genérica nem como venda agressiva.',
           '- Se o lead já estiver engajado, continue exatamente do estágio em que a conversa está: diagnóstico, esclarecimento, proposta, preparação contratual ou assinatura.',
-          '- Use conhecimento geral de planejamento previdenciário brasileiro para explicar conceitos como CNIS, histórico contributivo, formas de contribuição ao INSS, regras de transição e organização previdenciária de longo prazo, sempre em linguagem simples.',
+          '- Use conhecimento geral e a base técnica injetada para explicar conceitos como CNIS, RGPS, RPPS, histórico contributivo, formas de contribuição ao INSS, previdência complementar, regras de transição, abono permanência e organização previdenciária de longo prazo, sempre em linguagem clara.',
           '- Nunca invente conclusão individual, estratégia ideal, data de aposentadoria, ganho financeiro, economia tributária ou resposta técnica definitiva sem análise do caso.',
-          '- Quando a pergunta exigir validação específica, análise documental, dúvida jurídica, tributária, societária, contábil ou contratual, reconheça isso com clareza e encaminhe para o humano responsável.',
+          '- Pergunta técnica difícil, por si só, não é motivo para escalar. Responda em nível geral com precisão e profundidade compatíveis com o perfil premium do lead.',
+          '- Escale quando o lead pedir análise individual do CNIS ou documentos, cálculo formal/projeção, aceitar diagnóstico técnico pago, pedir para falar com advogado ou quando a conversa chegar à etapa de proposta/contrato/assinatura.',
           '- Depois que o lead demonstrar interesse real, conduza com naturalidade para diagnóstico, proposta, próximo compromisso ou preparação contratual, sem parecer telemarketing.',
         ].join('\n')
       : [
@@ -333,6 +357,167 @@ function isAnthropicCreditError(error: unknown) {
   )
 }
 
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+function getCreatedAtMs(value: string | null | undefined) {
+  const parsed = value ? new Date(value).getTime() : NaN
+  return Number.isFinite(parsed) ? parsed : 0
+}
+
+function getRapidInboundSequenceCount(rowsDesc: InboundMessageRow[]) {
+  if (!rowsDesc.length) return 0
+
+  let count = 1
+  for (let index = 0; index < rowsDesc.length - 1; index += 1) {
+    const currentMs = getCreatedAtMs(rowsDesc[index]?.created_at)
+    const nextMs = getCreatedAtMs(rowsDesc[index + 1]?.created_at)
+    if (!currentMs || !nextMs) break
+    if (currentMs - nextMs > AGENT_COALESCE_MESSAGE_GAP_MS) break
+    count += 1
+  }
+
+  return count
+}
+
+function buildCurrentLeadTurn(historico: HistoricoEntry[]) {
+  const chunks: string[] = []
+  for (let index = historico.length - 1; index >= 0; index -= 1) {
+    const entry = historico[index]
+    if (entry.role !== 'user') break
+    chunks.unshift(entry.content.trim())
+  }
+  return chunks.filter(Boolean).join('\n')
+}
+
+function buildConversationTranscript(rows: InboundMessageRow[], leadPhone: string) {
+  const transcript: string[] = []
+
+  for (const row of rows) {
+    const outboundToLead =
+      Boolean(leadPhone) &&
+      normalizeComparablePhone(row.telefone_destinatario) === leadPhone &&
+      normalizeComparablePhone(row.telefone_remetente) !== leadPhone
+
+    const inboundText = String(row.mensagem || '').trim()
+    const outboundText = String(row.resposta_agente || (outboundToLead ? row.mensagem || '' : '')).trim()
+
+    if (outboundToLead && outboundText) {
+      transcript.push(`AGENTE: ${outboundText}`)
+      continue
+    }
+
+    if (inboundText) {
+      transcript.push(`LEAD: ${inboundText}`)
+    }
+
+    if (row.respondido_por_agente && row.resposta_agente && !outboundToLead) {
+      transcript.push(`AGENTE: ${String(row.resposta_agente).trim()}`)
+    }
+  }
+
+  return transcript.join('\n')
+}
+
+async function insertStructuredAgentLog({
+  supabase,
+  entidadeId,
+  acao,
+  dadosNovos,
+}: {
+  supabase: ReturnType<typeof createAdminSupabase>
+  entidadeId: string | null
+  acao: string
+  dadosNovos: Record<string, unknown>
+}) {
+  try {
+    await supabase.from('audit_logs').insert({
+      acao,
+      entidade: 'conversa',
+      entidade_id: entidadeId,
+      dados_novos: dadosNovos,
+    })
+  } catch (error) {
+    console.warn('[agente] Falha ao registrar log estruturado:', error)
+  }
+}
+
+async function maybeRefreshOperationalSummary({
+  supabase,
+  anthropicClient,
+  conversaId,
+  currentSummary,
+  summarizedMessageCount,
+  leadName,
+  rows,
+}: {
+  supabase: ReturnType<typeof createAdminSupabase>
+  anthropicClient: Anthropic
+  conversaId: string | null
+  currentSummary: string | null | undefined
+  summarizedMessageCount: number | null | undefined
+  leadName: string
+  rows: InboundMessageRow[]
+}) {
+  if (!conversaId) return
+
+  const totalMessages = rows.length
+  const previousCount = Number(summarizedMessageCount || 0)
+
+  if (totalMessages < AGENT_SUMMARY_BATCH_SIZE) return
+  if (totalMessages - previousCount < AGENT_SUMMARY_BATCH_SIZE) return
+
+  const leadPhone = normalizeComparablePhone(rows.at(-1)?.telefone_remetente || '')
+  const transcript = buildConversationTranscript(rows.slice(-40), leadPhone)
+  if (!transcript.trim()) return
+
+  try {
+    const response = await anthropicClient.messages.create({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 260,
+      system: [
+        'Você resume conversas operacionais de CRM em português do Brasil.',
+        'Crie um resumo curto, objetivo e cumulativo para que outro agente continue a conversa sem parecer que reiniciou.',
+        'Inclua: perfil do lead, objetivo declarado, fatos confirmados, dúvidas técnicas abertas, estágio comercial atual, próximos passos e qualquer compromisso assumido.',
+        'Não use markdown, bullets nem emojis.',
+        'Se houver resumo anterior, trate-o como contexto e atualize-o com o histórico recente.',
+      ].join('\n'),
+      messages: [
+        {
+          role: 'user',
+          content: [
+            currentSummary?.trim() ? `RESUMO ANTERIOR:\n${currentSummary.trim()}` : '',
+            `LEAD: ${leadName}`,
+            'HISTÓRICO RECENTE:',
+            transcript,
+            'Produza o novo resumo operacional cumulativo.',
+          ]
+            .filter(Boolean)
+            .join('\n\n'),
+        },
+      ],
+    })
+
+    const summaryText = stripEmojis(
+      response.content[0]?.type === 'text' ? response.content[0].text : '',
+    )
+
+    if (!summaryText) return
+
+    await supabase
+      .from('conversas')
+      .update({
+        resumo_operacional: summaryText,
+        resumo_operacional_at: new Date().toISOString(),
+        resumo_operacional_mensagens: totalMessages,
+      })
+      .eq('id', conversaId)
+  } catch (error) {
+    console.warn('[agente] Falha ao atualizar resumo operacional:', error)
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const supabase = createAdminSupabase()
@@ -352,6 +537,7 @@ export async function POST(request: NextRequest) {
         conversa_id,
         telefone_remetente,
         telefone_destinatario,
+        created_at,
         lead_id,
         leads (
           nome, nb, banco, valor_rma, ganho_potencial, status, campanha_id, tenant_id
@@ -490,6 +676,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Agente não está ativo' }, { status: 403 })
     }
 
+    const { data: conversaAtual } = mensagem.conversa_id
+      ? await supabase
+          .from('conversas')
+          .select('id, status, resumo_operacional, resumo_operacional_mensagens')
+          .eq('id', mensagem.conversa_id)
+          .maybeSingle()
+      : { data: null }
+
     // 3. Verificar janela de horário
     if (config.agente_horario_inicio && config.agente_horario_fim) {
       const { hourMinute, isWeekend } = getOperationalClock()
@@ -515,65 +709,131 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // 4. Buscar histórico da conversa (últimas 10 mensagens do lead)
-    const historico: { role: 'user' | 'assistant'; content: string }[] = []
+    // 4. Buscar histórico real da conversa e aplicar debounce/coalescência
+    const historyScopeColumn = mensagem.conversa_id ? 'conversa_id' : 'lead_id'
+    const historyScopeValue = mensagem.conversa_id || mensagem.lead_id
+    const historico: HistoricoEntry[] = []
 
-    if (mensagem.lead_id) {
-      const { data: inbounds } = await supabase
+    let inbounds: InboundMessageRow[] = []
+
+    if (historyScopeValue) {
+      const { data } = await supabase
         .from('mensagens_inbound')
-        .select('mensagem, telefone_remetente, telefone_destinatario, respondido_por_agente, respondido_manualmente, resposta_agente, created_at')
-        .eq('lead_id', mensagem.lead_id)
-        .neq('id', mensagem_id)
+        .select('id, mensagem, telefone_remetente, telefone_destinatario, respondido_por_agente, respondido_manualmente, resposta_agente, created_at')
+        .eq(historyScopeColumn, historyScopeValue)
         .order('created_at', { ascending: false })
-        .limit(10)
+        .limit(40)
 
-      const leadPhone = normalizeComparablePhone(mensagem.telefone_remetente)
-
-      ;[...(inbounds || [])].reverse().forEach(msg => {
-        const outboundToLead =
-          Boolean(leadPhone) &&
-          normalizeComparablePhone(msg.telefone_destinatario) === leadPhone &&
-          normalizeComparablePhone(msg.telefone_remetente) !== leadPhone
-
-        if (outboundToLead) {
-          const outboundText = (msg.resposta_agente || msg.mensagem || '').trim()
-          if (outboundText) {
-            historico.push({ role: 'assistant', content: outboundText })
-          }
-          return
-        }
-
-        const inboundText = (msg.mensagem || '').trim()
-        if (inboundText) {
-          historico.push({ role: 'user', content: inboundText })
-        }
-
-        if (msg.respondido_por_agente && msg.resposta_agente) {
-          historico.push({ role: 'assistant', content: msg.resposta_agente })
-        }
-      })
+      inbounds = (data || []) as InboundMessageRow[]
     }
 
-    // Adicionar a mensagem atual ao histórico
-    historico.push({ role: 'user', content: mensagem.mensagem })
+    const latestInbound = inbounds[0]
+    if (latestInbound?.id && latestInbound.id !== mensagem_id) {
+      return NextResponse.json(
+        {
+          queued: false,
+          reason: 'stale_message',
+        },
+        { status: 202 },
+      )
+    }
 
-    const latestLeadMessage = String(mensagem.mensagem || '').trim()
+    const nowMs = Date.now()
+    const latestInboundMs = getCreatedAtMs(latestInbound?.created_at || mensagem.created_at)
+    const latestInboundAgeMs = latestInboundMs ? Math.max(0, nowMs - latestInboundMs) : 0
+    const recentInbounds = inbounds.filter((row) => nowMs - getCreatedAtMs(row.created_at) <= AGENT_FLOOD_WINDOW_MS)
+    const rapidSequenceCount = getRapidInboundSequenceCount(inbounds)
+
+    if (recentInbounds.length > AGENT_FLOOD_LIMIT) {
+      await insertStructuredAgentLog({
+        supabase,
+        entidadeId: mensagem.conversa_id || null,
+        acao: 'agent.flood_detected',
+        dadosNovos: {
+          mensagem_id,
+          conversa_id: mensagem.conversa_id || null,
+          lead_id: mensagem.lead_id || null,
+          total_mensagens_60s: recentInbounds.length,
+          janela_ms: AGENT_FLOOD_WINDOW_MS,
+          silencio_necessario_ms: AGENT_FLOOD_SILENCE_MS,
+        },
+      })
+
+      if (latestInboundAgeMs < AGENT_FLOOD_SILENCE_MS) {
+        return NextResponse.json(
+          {
+            queued: true,
+            retryable: true,
+            reason: 'waiting_for_quiet_window',
+            retry_after_ms: AGENT_FLOOD_SILENCE_MS - latestInboundAgeMs,
+          },
+          { status: 202 },
+        )
+      }
+    }
+
+    if (rapidSequenceCount >= 3 && latestInboundAgeMs < AGENT_COALESCE_WAIT_MS) {
+      return NextResponse.json(
+        {
+          queued: true,
+          retryable: true,
+          reason: 'coalescing_recent_messages',
+          retry_after_ms: AGENT_COALESCE_WAIT_MS - latestInboundAgeMs,
+          rapid_sequence_count: rapidSequenceCount,
+        },
+        { status: 202 },
+      )
+    }
+
+    const leadPhone = normalizeComparablePhone(mensagem.telefone_remetente)
+
+    ;[...inbounds].reverse().forEach((msg) => {
+      const outboundToLead =
+        Boolean(leadPhone) &&
+        normalizeComparablePhone(msg.telefone_destinatario) === leadPhone &&
+        normalizeComparablePhone(msg.telefone_remetente) !== leadPhone
+
+      if (outboundToLead) {
+        const outboundText = String(msg.resposta_agente || msg.mensagem || '').trim()
+        if (outboundText) {
+          historico.push({ role: 'assistant', content: outboundText })
+        }
+        return
+      }
+
+      const inboundText = String(msg.mensagem || '').trim()
+      if (inboundText) {
+        historico.push({ role: 'user', content: inboundText })
+      }
+
+      if (msg.respondido_por_agente && msg.resposta_agente && !outboundToLead) {
+        historico.push({ role: 'assistant', content: String(msg.resposta_agente).trim() })
+      }
+    })
+
+    const latestLeadMessage = buildCurrentLeadTurn(historico) || String(mensagem.mensagem || '').trim()
     const latestLeadIntent = classifyLatestLeadTurn(latestLeadMessage)
 
     // 5. Montar system prompt com dados do lead
     const promptBase = config.agente_prompt_sistema || PROMPT_PADRAO
     const partes = [promptBase]
+    const normalizedOperationProfile = normalizeOperationProfile(
+      config.agente_perfil_operacao || agenteRow?.perfil_operacao || null,
+    )
     if (config.agente_fluxo_qualificacao) partes.push(`\nFLUXO DE QUALIFICAÇÃO:\n${config.agente_fluxo_qualificacao}`)
     if (config.agente_exemplos_dialogo) partes.push(`\nEXEMPLOS DE DIÁLOGO:\n${config.agente_exemplos_dialogo}`)
     if (config.agente_gatilhos_escalada) partes.push(`\nGATILHOS DE ESCALADA — quando ocorrerem, encerre e informe que a equipe jurídica responsável continuará o atendimento:\n${config.agente_gatilhos_escalada}`)
     if (config.agente_frases_proibidas) partes.push(`\nFRASES ABSOLUTAMENTE PROIBIDAS:\n${config.agente_frases_proibidas}`)
     if (config.agente_objeccoes) partes.push(`\nCOMO LIDAR COM OBJEÇÕES:\n${config.agente_objeccoes}`)
     if (config.agente_fallback) partes.push(`\nFALLBACK — quando não entender a mensagem, responda: "${config.agente_fallback}"`)
+    if (conversaAtual?.resumo_operacional?.trim()) {
+      partes.push(`\nRESUMO OPERACIONAL DA CONVERSA:\n${conversaAtual.resumo_operacional.trim()}`)
+    }
     partes.push(
       `\n${buildAgentContinuitySection({
         leadName: lead?.nome,
         currentAgentType: config.agente_tipo || agenteRow?.tipo || null,
-        operationProfile: config.agente_perfil_operacao || agenteRow?.perfil_operacao || null,
+        operationProfile: normalizedOperationProfile,
         activeAgentTypes,
         hasHistory: historico.length > 1,
       })}`,
@@ -582,10 +842,26 @@ export async function POST(request: NextRequest) {
       `\n${buildImmediateResponseDirective({
         latestLeadMessage,
         latestLeadIntent,
-        operationProfile: config.agente_perfil_operacao || agenteRow?.perfil_operacao || null,
+        operationProfile: normalizedOperationProfile,
       })}`,
     )
-    if (normalizeOperationProfile(config.agente_perfil_operacao || agenteRow?.perfil_operacao || null) === 'beneficios_previdenciarios') {
+    if (normalizedOperationProfile === 'planejamento_previdenciario') {
+      const planningKnowledge = await getPlanningKnowledgeBlock()
+      if (planningKnowledge.warning && !KNOWLEDGE_WARNING_LOGGED.has(planningKnowledge.warning)) {
+        console.warn('[agente] ', planningKnowledge.warning)
+        KNOWLEDGE_WARNING_LOGGED.add(planningKnowledge.warning)
+      }
+      if (planningKnowledge.content) {
+        partes.push(
+          [
+            '\nBASE DE CONHECIMENTO TÉCNICO — PLANEJAMENTO PREVIDENCIÁRIO:',
+            planningKnowledge.content,
+            'Use esta base para responder com profundidade técnica. Cite conceitos com precisão. Quando o lead fizer pergunta técnica específica, responda com base nesta documentação. Se a pergunta exigir análise individual de documentos do lead, escale para o consultor humano.',
+          ].join('\n'),
+        )
+      }
+    }
+    if (normalizedOperationProfile === 'beneficios_previdenciarios') {
       partes.push(`\n${buildBenefitsOperationalKnowledge()}`)
       partes.push(
         '\nESTILO DE RESPOSTA PARA BENEFÍCIOS:\n- Responda em blocos curtos, como conversa normal de WhatsApp.\n- Evite textão técnico.\n- Não recomece a conversa.\n- Não use emojis.\n- Quando o lead já aceitou ouvir mais, explique e conduza para o próximo passo com a Dra. Jessica.',
@@ -669,6 +945,16 @@ export async function POST(request: NextRequest) {
       })
       .eq('id', mensagem_id)
 
+    const rowsForSummary = inbounds.map((row) =>
+      row.id === mensagem_id
+        ? {
+            ...row,
+            respondido_por_agente: true,
+            resposta_agente: respostaTexto,
+          }
+        : row,
+    )
+
     if (shouldMoveToAwaitingCustomer && mensagem.conversa_id) {
       await supabase
         .from('conversas')
@@ -702,6 +988,16 @@ export async function POST(request: NextRequest) {
           .eq('id', mensagem_id)
       }
     }
+
+    await maybeRefreshOperationalSummary({
+      supabase,
+      anthropicClient: anthropic,
+      conversaId: mensagem.conversa_id || null,
+      currentSummary: conversaAtual?.resumo_operacional || null,
+      summarizedMessageCount: conversaAtual?.resumo_operacional_mensagens || 0,
+      leadName: lead?.nome || 'Lead sem nome',
+      rows: rowsForSummary,
+    })
 
     return NextResponse.json({
       success: true,

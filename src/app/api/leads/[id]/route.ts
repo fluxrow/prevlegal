@@ -17,18 +17,47 @@ function buildPhoneVariants(value: unknown) {
   if (digits) {
     variants.add(digits)
     variants.add(`+${digits}`)
+    variants.add(`whatsapp:${digits}`)
+    variants.add(`whatsapp:+${digits}`)
 
     if (digits.startsWith('55') && digits.length > 2) {
       const withoutCountry = digits.slice(2)
       variants.add(withoutCountry)
       variants.add(`+${withoutCountry}`)
+      variants.add(`whatsapp:${withoutCountry}`)
+      variants.add(`whatsapp:+${withoutCountry}`)
     } else {
       variants.add(`55${digits}`)
       variants.add(`+55${digits}`)
+      variants.add(`whatsapp:55${digits}`)
+      variants.add(`whatsapp:+55${digits}`)
     }
   }
 
   return Array.from(variants).filter(Boolean)
+}
+
+function buildLeadPhoneVariants(lead: Record<string, unknown>) {
+  const phones = [
+    lead['telefone'],
+    lead['telefone_enriquecido'],
+    lead['conjuge_celular'],
+    lead['conjuge_telefone'],
+    lead['filho_celular'],
+    lead['filho_telefone'],
+    lead['irmao_celular'],
+    lead['irmao_telefone'],
+  ]
+
+  const variants = new Set<string>()
+
+  for (const phone of phones) {
+    for (const variant of buildPhoneVariants(phone)) {
+      variants.add(variant)
+    }
+  }
+
+  return Array.from(variants)
 }
 
 function normalizeTrimmed(value: unknown) {
@@ -88,7 +117,7 @@ export async function GET(
   if (leadRes.error) return NextResponse.json({ error: leadRes.error.message }, { status: 404 })
 
   const lead = leadRes.data
-  const phoneVariants = buildPhoneVariants(lead.telefone)
+  const phoneVariants = buildLeadPhoneVariants(lead)
 
   let conversa = await supabase
     .from('conversas')
@@ -111,6 +140,9 @@ export async function GET(
   }
 
   const messageClauses = [`lead_id.eq.${id}`]
+  if (conversa.data?.id) {
+    messageClauses.push(`conversa_id.eq.${conversa.data.id}`)
+  }
   for (const phone of phoneVariants) {
     messageClauses.push(`telefone_remetente.eq.${phone}`)
     messageClauses.push(`telefone_destinatario.eq.${phone}`)
