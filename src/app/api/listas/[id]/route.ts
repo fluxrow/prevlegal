@@ -7,6 +7,7 @@ import { contextHasPermission, getTenantContext } from '@/lib/tenant-context'
 
 const LISTA_MANUAL_NOME = 'Cadastro manual'
 const LISTA_MANUAL_FORNECEDOR = 'sistema'
+const CAMPANHA_STATUSES_BLOQUEANTES = ['ativa', 'pausada'] as const
 
 function createAdmin() {
   return createAdminClient(
@@ -40,6 +41,53 @@ export async function DELETE(
 
   if (lista.nome === LISTA_MANUAL_NOME && lista.fornecedor === LISTA_MANUAL_FORNECEDOR) {
     return NextResponse.json({ error: 'A lista técnica de cadastro manual não pode ser excluída por esta tela' }, { status: 409 })
+  }
+
+  const { data: campanhasReferenciando, error: campanhasError } = await adminSupabase
+    .from('campanhas')
+    .select('id, nome, status')
+    .eq('lista_id', id)
+    .eq('tenant_id', context.tenantId)
+
+  if (campanhasError) return NextResponse.json({ error: campanhasError.message }, { status: 500 })
+
+  const campanhasBloqueantes = (campanhasReferenciando ?? []).filter((campanha) =>
+    CAMPANHA_STATUSES_BLOQUEANTES.includes(campanha.status as (typeof CAMPANHA_STATUSES_BLOQUEANTES)[number])
+  )
+
+  if (campanhasBloqueantes.length > 0) {
+    const resumo = campanhasBloqueantes
+      .slice(0, 3)
+      .map((campanha) => campanha.nome || 'Campanha sem nome')
+      .join(', ')
+
+    return NextResponse.json(
+      {
+        error: `Esta lista ainda está vinculada a campanha(s) ativa(s) ou pausada(s): ${resumo}. Encerre ou exclua essas campanhas antes de remover a lista.`,
+      },
+      { status: 409 }
+    )
+  }
+
+  const campanhasParaApagar = campanhasReferenciando ?? []
+
+  if (campanhasParaApagar.length > 0) {
+    const campanhaIds = campanhasParaApagar.map((campanha) => campanha.id)
+
+    const { error: disparosDeleteError } = await adminSupabase
+      .from('disparos')
+      .delete()
+      .in('campanha_id', campanhaIds)
+
+    if (disparosDeleteError) return NextResponse.json({ error: disparosDeleteError.message }, { status: 500 })
+
+    const { error: campanhasDeleteError } = await adminSupabase
+      .from('campanhas')
+      .delete()
+      .in('id', campanhaIds)
+      .eq('tenant_id', context.tenantId)
+
+    if (campanhasDeleteError) return NextResponse.json({ error: campanhasDeleteError.message }, { status: 500 })
   }
 
   const { error: leadsError } = await adminSupabase

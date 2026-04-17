@@ -49,7 +49,7 @@
   - explicar a readequação do teto em blocos curtos e humanos
   - conduzir para continuidade com a Dra. Jessica em vez de reabrir triagem
   - responder com um pequeno atraso operacional para não parecer instantâneo demais
-- quando o lead confirmar que a Dra. Jessica pode assumir o caso, a conversa deve sair de `agente` e entrar em `aguardando_cliente`, para a thread ficar na fila operacional correta até o contato humano
+- listas de teste ainda podiam ficar presas por campanhas `rascunho` ou `encerrada`, impedindo limpeza operacional antes de reimportação
 
 ## Próximos 3 blocos
 
@@ -57,6 +57,7 @@
 2. validar o playbook de `planejamento_previdenciario` até diagnóstico, proposta, contrato e preparação de assinatura
 3. consolidar cobrança negociada por tenant no admin sem depender só da tabela pública da LP
 4. liberar a Ana via allowlist controlada (`TENANT_CONTAINMENT_ALLOWED_EMAILS`) sem abrir o rollout multi-tenant para todos
+5. retestar exclusão de lista + reimportação da base enriquecida depois do cleanup automático de campanhas não ativas
 
 ## Para retomar sem atrito
 

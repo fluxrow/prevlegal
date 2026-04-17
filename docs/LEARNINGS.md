@@ -38,6 +38,15 @@ Mestra: [[MASTER_PREV_LEGAL]]
 **Correção:** Detectar a etapa de confirmação do handoff em `beneficios_previdenciarios` e, quando o lead confirma que a Dra. Jessica pode seguir no mesmo número, mover a conversa para `aguardando_cliente`
 **Regra pratica:** Se o agente já entregou a conversa para o humano, a inbox precisa mostrar isso imediatamente. Caso contrário, a thread fica no box errado e a fila perde valor operacional
 
+### 175. Excluir lista precisa considerar campanhas vinculadas antes de tentar apagar o registro
+**Problema:** Ao tentar excluir uma lista de teste, o produto retornava erro de constraint porque ainda existiam campanhas apontando para `listas.id`, mesmo quando a lista já estava vazia
+**Causa:** A rota de exclusão removia `leads` e depois tentava apagar `listas`, mas `campanhas.lista_id` continua `NOT NULL` com `ON DELETE RESTRICT`, então qualquer campanha antiga travava o processo
+**Correção:** Na exclusão de lista, consultar campanhas vinculadas e:
+- bloquear se houver campanha `ativa` ou `pausada`
+- apagar primeiro `disparos` e `campanhas` quando elas estiverem em `rascunho` ou `encerrada`
+- só então remover `leads` e `listas`
+**Regra pratica:** Lista operacional não vive sozinha: se campanhas ainda referenciam aquele conjunto, a exclusão precisa limpar ou bloquear conscientemente. Deixar o banco “surpreender” o operador com FK é UX ruim de backoffice
+
 ### 169. Depois que existem tenants pagantes, evolução de playbook precisa ser isolada por tenant e rollout, não lançada como comportamento global
 **Problema:** `beneficios_previdenciarios` e `planejamento_previdenciario` passaram a evoluir em paralelo, mas qualquer bug novo ainda poderia atingir escritórios já ativos porque o produto não tinha uma camada formal de isolamento/versionamento para essas frentes
 **Causa:** O PrevLegal vinha sendo tratado como um único comportamento-base em produção, mesmo depois de entrar na fase de clientes pagantes e playbooks operacionais distintos

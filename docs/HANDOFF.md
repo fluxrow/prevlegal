@@ -34,6 +34,7 @@
 - o disparo de campanha por `conjuge`, `filho` e `irmao` agora usa esses campos estruturados em vez de depender só de `telefone_enriquecido`
 - os webhooks `Z-API` e `Twilio` passaram a reconhecer respostas vindas desses números estruturados
 - quando o lead confirma que a Dra. Jessica pode assumir o atendimento, o runtime do agente agora move a conversa de `agente` para `aguardando_cliente`
+- a exclusão de lista agora apaga também campanhas `rascunho` / `encerrada` vinculadas e seus `disparos`, bloqueando apenas quando ainda existir campanha `ativa` ou `pausada`
 
 ## Arquivos ou áreas afetadas
 
@@ -46,6 +47,7 @@
 - `src/app/api/campanhas/[id]/disparar/route.ts`
 - `src/app/api/leads/[id]/route.ts`
 - `src/app/api/leads/route.ts`
+- `src/app/api/listas/[id]/route.ts`
 - `src/app/api/webhooks/zapi/route.ts`
 - `src/components/lead-drawer.tsx`
 - `src/components/editar-lead-modal.tsx`
@@ -82,6 +84,7 @@
 - `npm run build` passou após a correção do histórico recente + diretiva de resposta à última fala do lead
 - `npm run build` passou após a migração de contatos familiares para campos estruturados do lead
 - `npm run build` passou após a automação que joga a conversa para `aguardando_cliente` quando o lead confirma a passagem para a Dra. Jessica
+- `npm run build` passou após a correção da exclusão de lista presa por campanhas antigas
 
 ## Estado após a última entrega
 
@@ -93,6 +96,7 @@
   - runtime do agente endurecido para continuidade mais natural em benefícios e reconciliação do `fromMe` automático
   - disparo de campanha por tipo de contato familiar agora pode usar campos estruturados do lead (`conjuge`, `filho`, `irmao`) em vez de depender de anotação ou alternativo genérico
   - handoff confirmado para a Dra. Jessica agora troca a conversa para `aguardando_cliente`, alinhando o fluxo com o box correto da inbox
+  - listas vazias ou de teste não ficam mais bloqueadas por campanhas não ativas; a exclusão limpa a campanha associada antes de remover a lista
 - pendente:
   - validar o fluxo completo de `planejamento_previdenciario` até proposta, contrato e assinatura
   - desenhar fallback multi-provider do auto-responder para não depender de um único saldo/provedor
@@ -101,6 +105,7 @@
 - risco residual:
   - confirmar o payload `fromMe` real da Z-API no uso diário para garantir que a heurística de `counterpartyPhone` cobre todos os casos
   - aplicar o patch manual de contatos estruturados no banco operacional antes do reteste da campanha `filhos`
+  - retestar no runtime a exclusão da lista `Seleção personalizada` e, em seguida, reimportar a base enriquecida para validar `filho/irmão`
 
 ## Próximo passo certo
 
@@ -116,4 +121,4 @@
 
 - commit: pendente após sync/commit desta janela
 - deploy: pendente push
-- nota de sessão: `2026-04-17-structured-family-contacts-for-safe-campaign-dispatch`
+- nota de sessão: `2026-04-17-delete-list-cleans-non-active-campaigns`

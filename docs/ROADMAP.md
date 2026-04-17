@@ -95,6 +95,25 @@ Mestra: [[MASTER_PREV_LEGAL]]
   - a fila `Aguardando` passa a representar de verdade os casos prontos para retorno da equipe
   - o fluxo da Jessica fica mais próximo do atendimento real esperado para go-live
 
+## Atualizacao Listas / exclusão agora limpa campanhas não ativas vinculadas — 17/04/2026
+
+- durante a preparação para reimportar a base enriquecida com contatos estruturados, a exclusão de uma lista de teste passou a falhar com:
+  - `update or delete on table "listas" violates foreign key constraint "campanhas_lista_id_fkey" on table "campanhas"`
+- causa identificada:
+  - `campanhas.lista_id` é `NOT NULL` e usa `ON DELETE RESTRICT`
+  - a rota de exclusão da lista removia `leads` e tentava apagar `listas`, mas ignorava campanhas antigas ainda apontando para aquela lista
+- correção aplicada:
+  - a exclusão de lista agora consulta campanhas vinculadas
+  - se existir campanha `ativa` ou `pausada`, a exclusão é bloqueada com mensagem operacional clara
+  - se as campanhas vinculadas estiverem em `rascunho` ou `encerrada`, o sistema apaga primeiro:
+    - `disparos`
+    - `campanhas`
+  - e só depois remove `leads` e `listas`
+- impacto operacional:
+  - listas de teste ou órfãs deixam de travar a limpeza do tenant
+  - o operador consegue reimportar a base corrigida sem precisar fazer SQL manual
+  - campanhas ativas continuam protegidas contra exclusão acidental por efeito colateral da lista
+
 ## Atualizacao Agente / continuidade de benefícios endurecida e resposta automática reconciliada com webhook `fromMe` — 17/04/2026
 
 - durante o uso real da operação da Jessica, ficou evidente que o agente ainda cometia dois erros de percepção:
