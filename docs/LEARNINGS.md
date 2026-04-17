@@ -47,6 +47,12 @@ Mestra: [[MASTER_PREV_LEGAL]]
 - só então remover `leads` e `listas`
 **Regra pratica:** Lista operacional não vive sozinha: se campanhas ainda referenciam aquele conjunto, a exclusão precisa limpar ou bloquear conscientemente. Deixar o banco “surpreender” o operador com FK é UX ruim de backoffice
 
+### 176. Para disparo de campanha, telefone fixo deve ser cadastro, não fallback de envio
+**Problema:** Depois de estruturar cônjuge, filho e irmão no lead, ainda restava uma ambiguidade operacional: o dispatch podia cair em `telefone` fixo quando não encontrava `celular`
+**Causa:** O runtime de campanhas ainda aceitava fallback para `telefone` em contatos familiares e tratava algumas origens `TELEFONE*` como se fossem WhatsApp-capable
+**Correção:** Endurecer o dispatch para usar apenas contatos com origem `CELULAR/WHATSAPP/MOBILE`; `telefone` e `*_telefone` permanecem no cadastro como referência, mas não entram mais como fallback automático de envio
+**Regra pratica:** Em operação de WhatsApp, fixo é contexto e cadastro. O número de disparo precisa ser móvel/WhatsApp explícito, senão o sistema parece “inteligente”, mas toma decisão errada no momento mais sensível
+
 ### 169. Depois que existem tenants pagantes, evolução de playbook precisa ser isolada por tenant e rollout, não lançada como comportamento global
 **Problema:** `beneficios_previdenciarios` e `planejamento_previdenciario` passaram a evoluir em paralelo, mas qualquer bug novo ainda poderia atingir escritórios já ativos porque o produto não tinha uma camada formal de isolamento/versionamento para essas frentes
 **Causa:** O PrevLegal vinha sendo tratado como um único comportamento-base em produção, mesmo depois de entrar na fase de clientes pagantes e playbooks operacionais distintos

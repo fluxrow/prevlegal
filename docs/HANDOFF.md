@@ -35,6 +35,7 @@
 - os webhooks `Z-API` e `Twilio` passaram a reconhecer respostas vindas desses números estruturados
 - quando o lead confirma que a Dra. Jessica pode assumir o atendimento, o runtime do agente agora move a conversa de `agente` para `aguardando_cliente`
 - a exclusão de lista agora apaga também campanhas `rascunho` / `encerrada` vinculadas e seus `disparos`, bloqueando apenas quando ainda existir campanha `ativa` ou `pausada`
+- o disparo de campanha agora foi endurecido para usar apenas contatos com cara de `CELULAR/WHATSAPP`; telefones fixos permanecem como dado de cadastro, não como fallback automático de envio
 
 ## Arquivos ou áreas afetadas
 
@@ -48,6 +49,7 @@
 - `src/app/api/leads/[id]/route.ts`
 - `src/app/api/leads/route.ts`
 - `src/app/api/listas/[id]/route.ts`
+- `src/app/api/campanhas/[id]/disparar/route.ts`
 - `src/app/api/webhooks/zapi/route.ts`
 - `src/components/lead-drawer.tsx`
 - `src/components/editar-lead-modal.tsx`
@@ -85,6 +87,7 @@
 - `npm run build` passou após a migração de contatos familiares para campos estruturados do lead
 - `npm run build` passou após a automação que joga a conversa para `aguardando_cliente` quando o lead confirma a passagem para a Dra. Jessica
 - `npm run build` passou após a correção da exclusão de lista presa por campanhas antigas
+- `npm run build` passou após endurecer a regra de dispatch para usar somente contatos móveis/WhatsApp
 
 ## Estado após a última entrega
 

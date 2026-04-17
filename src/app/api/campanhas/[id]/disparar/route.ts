@@ -69,7 +69,7 @@ function chooseRelatedPhone(
   telefone: string | null | undefined,
 ) {
   return {
-    phone: celular || telefone || null,
+    phone: celular || null,
     verified: Boolean(celular),
   };
 }
@@ -130,7 +130,7 @@ function resolveCampaignContactForLead(
       source: lead.contato_alternativo_origem || null,
       verified: sourceLooksWhatsAppCapable(lead.contato_alternativo_origem),
     },
-  ].filter((candidate) => Boolean(candidate.phone));
+  ].filter((candidate) => Boolean(candidate.phone) && candidate.verified);
 
   if (!normalizedTarget) {
     return candidates[0] || null;
