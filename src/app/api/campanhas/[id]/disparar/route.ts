@@ -49,19 +49,56 @@ function buildMessage(template: string, lead: any): string {
     );
 }
 
-function matchesCampaignContactTarget(
-  lead: { contato_abordagem_tipo?: string | null },
+function normalizeContactType(value: string | null | undefined) {
+  const normalized = String(value || "").trim().toLowerCase();
+  return normalized || "titular";
+}
+
+function sourceLooksWhatsAppCapable(source: string | null | undefined) {
+  const normalized = String(source || "").trim().toUpperCase();
+  if (!normalized) return false;
+  return (
+    normalized.includes("WHATSAPP") ||
+    normalized.includes("CELULAR") ||
+    normalized.includes("MOBILE")
+  );
+}
+
+function resolveCampaignContactForLead(
+  lead: {
+    telefone?: string | null;
+    telefone_enriquecido?: string | null;
+    tem_whatsapp?: boolean | null;
+    contato_abordagem_tipo?: string | null;
+    contato_abordagem_origem?: string | null;
+    contato_alternativo_tipo?: string | null;
+    contato_alternativo_origem?: string | null;
+  },
   targetType?: string | null,
 ) {
-  const normalizedTarget = String(targetType || '').trim().toLowerCase()
-  if (!normalizedTarget) return true
+  const normalizedTarget = String(targetType || "").trim().toLowerCase();
+  const candidates = [
+    {
+      phone: lead.telefone || null,
+      type: normalizeContactType(lead.contato_abordagem_tipo),
+      source: lead.contato_abordagem_origem || null,
+      verified:
+        lead.tem_whatsapp === true ||
+        sourceLooksWhatsAppCapable(lead.contato_abordagem_origem),
+    },
+    {
+      phone: lead.telefone_enriquecido || null,
+      type: normalizeContactType(lead.contato_alternativo_tipo),
+      source: lead.contato_alternativo_origem || null,
+      verified: sourceLooksWhatsAppCapable(lead.contato_alternativo_origem),
+    },
+  ].filter((candidate) => Boolean(candidate.phone));
 
-  const normalizedLeadType = String(lead.contato_abordagem_tipo || '').trim().toLowerCase()
-  if (normalizedTarget === 'titular') {
-    return !normalizedLeadType || normalizedLeadType === 'titular'
+  if (!normalizedTarget) {
+    return candidates[0] || null;
   }
 
-  return normalizedLeadType === normalizedTarget
+  return candidates.find((candidate) => candidate.type === normalizedTarget) || null;
 }
 
 async function ensureConversationForCampaignLead(
@@ -183,7 +220,7 @@ export async function POST(
 
     let query = adminClient
       .from("leads")
-      .select("id, nome, nb, cpf, telefone, banco, valor_rma, ganho_potencial, tem_whatsapp, contato_abordagem_tipo")
+      .select("id, nome, nb, cpf, telefone, telefone_enriquecido, banco, valor_rma, ganho_potencial, tem_whatsapp, contato_abordagem_tipo, contato_abordagem_origem, contato_alternativo_tipo, contato_alternativo_origem")
       .eq("lgpd_optout", false);
     query = applyTenantFilter(query, context.tenantId);
 
@@ -207,13 +244,28 @@ export async function POST(
       });
     }
 
-    // Filtrar leads: apenas com WhatsApp verificado se configurado
-    const leads = leadsDaLista.filter(
-      (l: any) =>
-        l &&
-        (!campanha.apenas_verificados || l.tem_whatsapp === true) &&
-        matchesCampaignContactTarget(l, campanha.contato_alvo_tipo),
-    );
+    // Resolver o contato operacional correto por tipo de alvo da campanha.
+    const leads = leadsDaLista
+      .map((lead: any) => {
+        const resolvedContact = resolveCampaignContactForLead(
+          lead,
+          campanha.contato_alvo_tipo,
+        );
+
+        return resolvedContact
+          ? {
+              ...lead,
+              _targetPhone: resolvedContact.phone,
+              _targetType: resolvedContact.type,
+              _targetVerified: resolvedContact.verified,
+            }
+          : null;
+      })
+      .filter(
+        (lead: any) =>
+          lead &&
+          (!campanha.apenas_verificados || lead._targetVerified === true),
+      );
 
     const channel = await resolveWhatsAppChannel(
       context.tenantId,
@@ -248,7 +300,7 @@ export async function POST(
       if (status?.status === "pausada" || status?.status === "encerrada") break;
 
       const lead = leadsParaEnviar[i];
-      const phone = normalizePhone(lead.telefone || "");
+      const phone = normalizePhone(lead._targetPhone || "");
       const mensagem = buildMessage(campanha.mensagem_template, lead);
 
       if (!phone) {

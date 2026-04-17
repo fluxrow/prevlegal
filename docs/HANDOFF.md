@@ -29,6 +29,7 @@
 - a montagem do histórico do agente foi corrigida para usar as mensagens mais recentes da conversa, e não as mais antigas; além disso, o runtime agora injeta a última fala do lead e a intenção imediata como diretiva obrigatória da resposta
 - o runtime de `beneficios_previdenciarios` passou a carregar conhecimento operacional explícito sobre readequação do teto, evitando que o agente fale como se fosse analisar o caso do zero
 - a resposta automática do agente agora pode esperar alguns segundos antes de enviar (`AGENT_RESPONSE_DELAY_MS`, default 4500ms), para não parecer instantânea demais no WhatsApp
+- o disparo de campanha por tipo de contato agora resolve o telefone operacional certo do lead, usando `telefone_enriquecido` quando o alvo (`filho`, `conjuge`, `irmao`) estiver no contato alternativo
 
 ## Arquivos ou áreas afetadas
 
@@ -68,6 +69,7 @@
 - a próxima camada estrutural deixou de ser só copy/runtime: agora precisamos criar estratégia canônica de isolamento, versionamento e rollout para não quebrar tenants ativos
 - `npm run build` passou após a introdução da cobrança negociada por tenant no admin
 - `npm run build` passou após a correção do histórico recente + diretiva de resposta à última fala do lead
+- `npm run build` passou após a correção do dispatch por tipo de contato/familiar
 
 ## Estado após a última entrega
 
@@ -77,6 +79,7 @@
   - fallback fora do horário validado em produção com mensagem visível ao lead e thread coerente
   - admin pronto para registrar tenant com valor mensal contratado diferente da LP, sem sobrecarregar `plano`
   - runtime do agente endurecido para continuidade mais natural em benefícios e reconciliação do `fromMe` automático
+  - disparo de campanha por tipo de contato deixou de depender só do `telefone` principal e agora pode usar o contato alternativo importado como alvo operacional
 - pendente:
   - validar o fluxo completo de `planejamento_previdenciario` até proposta, contrato e assinatura
   - desenhar fallback multi-provider do auto-responder para não depender de um único saldo/provedor

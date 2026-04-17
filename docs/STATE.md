@@ -12,6 +12,7 @@
   - Z-API outbound e inbound
   - campanhas por lista e contatos específicos
   - campanhas por tipo de contato (`titular`, `conjuge`, `filho`, `irmao`)
+  - dispatch de campanha agora resolve o telefone operacional por alvo, inclusive quando `filho`, `conjuge` ou `irmao` estiverem no contato alternativo do lead
 - maior risco atual:
   - reteste completo de campanha + resposta + continuação do agente ainda precisa ser confirmado em produção depois do ajuste da estratégia de continuidade para benefícios previdenciários e do fallback explícito quando o auto-responder falhar
 
@@ -34,6 +35,7 @@
 - agente do WhatsApp não deve usar emojis; a remoção agora é aplicada também no runtime, não só por prompt
 - a continuidade do agente em benefícios precisa assumir que a base já veio mapeada para revisão/readequação; em planejamento, a esteira deve poder ir até proposta/contrato antes do handoff humano
 - o playbook de planejamento previdenciário ainda precisa de validação em runtime com copy mais consultiva, mais conhecimento técnico geral do cenário brasileiro e limite explícito para não inventar análise individual
+- o reteste do disparo por `filho` / familiares ainda precisa ser confirmado em produção após o ajuste que passou a usar `telefone_enriquecido` quando o alvo da campanha estiver no contato alternativo
 - o produto ainda não tem camada formal de flags/versionamento por tenant para proteger escritórios pagantes de evoluções novas
 - o admin ainda estava acoplado demais aos preços da LP; para contratos negociados, `plano` deve continuar sendo pacote operacional e a cobrança precisa viver em campo próprio do tenant
 - quando o auto-responder falhar por horário, timeout ou provedor, a conversa deve sair do silêncio e cair para humano com notificação explícita
