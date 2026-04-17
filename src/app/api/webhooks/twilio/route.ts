@@ -164,7 +164,7 @@ export async function POST(request: NextRequest) {
   let leadQuery = supabase
     .from('leads')
     .select('id, nome, status, campanha_id, tenant_id')
-    .or(`telefone.eq.${telefone10ou11},telefone_enriquecido.eq.${telefone10ou11},telefone.eq.${telefoneNormalizado},telefone_enriquecido.eq.${telefoneNormalizado}`)
+    .or(`telefone.eq.${telefone10ou11},telefone_enriquecido.eq.${telefone10ou11},conjuge_celular.eq.${telefone10ou11},conjuge_telefone.eq.${telefone10ou11},filho_celular.eq.${telefone10ou11},filho_telefone.eq.${telefone10ou11},irmao_celular.eq.${telefone10ou11},irmao_telefone.eq.${telefone10ou11},telefone.eq.${telefoneNormalizado},telefone_enriquecido.eq.${telefoneNormalizado},conjuge_celular.eq.${telefoneNormalizado},conjuge_telefone.eq.${telefoneNormalizado},filho_celular.eq.${telefoneNormalizado},filho_telefone.eq.${telefoneNormalizado},irmao_celular.eq.${telefoneNormalizado},irmao_telefone.eq.${telefoneNormalizado}`)
     .limit(2)
 
   if (routing.tenantId) {

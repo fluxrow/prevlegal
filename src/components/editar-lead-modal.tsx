@@ -10,6 +10,15 @@ type EditableLead = {
   cpf?: string | null
   telefone?: string | null
   telefone_enriquecido?: string | null
+  conjuge_nome?: string | null
+  conjuge_celular?: string | null
+  conjuge_telefone?: string | null
+  filho_nome?: string | null
+  filho_celular?: string | null
+  filho_telefone?: string | null
+  irmao_nome?: string | null
+  irmao_celular?: string | null
+  irmao_telefone?: string | null
   contato_abordagem_tipo?: string | null
   contato_abordagem_origem?: string | null
   contato_alternativo_tipo?: string | null
@@ -68,6 +77,15 @@ function buildInitialForm(lead: EditableLead) {
     nome: lead.nome || '',
     telefone: toText(lead.telefone),
     telefone_enriquecido: toText(lead.telefone_enriquecido),
+    conjuge_nome: toText(lead.conjuge_nome),
+    conjuge_celular: toText(lead.conjuge_celular),
+    conjuge_telefone: toText(lead.conjuge_telefone),
+    filho_nome: toText(lead.filho_nome),
+    filho_celular: toText(lead.filho_celular),
+    filho_telefone: toText(lead.filho_telefone),
+    irmao_nome: toText(lead.irmao_nome),
+    irmao_celular: toText(lead.irmao_celular),
+    irmao_telefone: toText(lead.irmao_telefone),
     contato_abordagem_tipo: toText(lead.contato_abordagem_tipo),
     contato_abordagem_origem: toText(lead.contato_abordagem_origem),
     contato_alternativo_tipo: toText(lead.contato_alternativo_tipo),
@@ -271,6 +289,18 @@ export default function EditarLeadModal({
             <Field label="Email" value={form.email} onChange={(value) => setForm((prev) => ({ ...prev, email: value }))} type="email" />
             <Field label="CPF" value={form.cpf} onChange={(value) => setForm((prev) => ({ ...prev, cpf: value }))} />
             <Field label="NB" value={form.nb} onChange={(value) => setForm((prev) => ({ ...prev, nb: value }))} />
+          </Section>
+
+          <Section title="Contatos relacionados estruturados">
+            <Field label="Nome do cônjuge" value={form.conjuge_nome} onChange={(value) => setForm((prev) => ({ ...prev, conjuge_nome: value }))} />
+            <Field label="Celular do cônjuge" value={form.conjuge_celular} onChange={(value) => setForm((prev) => ({ ...prev, conjuge_celular: value }))} />
+            <Field label="Telefone do cônjuge" value={form.conjuge_telefone} onChange={(value) => setForm((prev) => ({ ...prev, conjuge_telefone: value }))} />
+            <Field label="Nome do filho" value={form.filho_nome} onChange={(value) => setForm((prev) => ({ ...prev, filho_nome: value }))} />
+            <Field label="Celular do filho" value={form.filho_celular} onChange={(value) => setForm((prev) => ({ ...prev, filho_celular: value }))} />
+            <Field label="Telefone do filho" value={form.filho_telefone} onChange={(value) => setForm((prev) => ({ ...prev, filho_telefone: value }))} />
+            <Field label="Nome do irmão" value={form.irmao_nome} onChange={(value) => setForm((prev) => ({ ...prev, irmao_nome: value }))} />
+            <Field label="Celular do irmão" value={form.irmao_celular} onChange={(value) => setForm((prev) => ({ ...prev, irmao_celular: value }))} />
+            <Field label="Telefone do irmão" value={form.irmao_telefone} onChange={(value) => setForm((prev) => ({ ...prev, irmao_telefone: value }))} />
           </Section>
 
           <Section title="Contexto de abordagem">

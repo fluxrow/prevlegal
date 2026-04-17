@@ -58,6 +58,15 @@ export interface Lead {
     cpf?: string | null
     telefone?: string
     telefone_enriquecido?: string | null
+    conjuge_nome?: string | null
+    conjuge_celular?: string | null
+    conjuge_telefone?: string | null
+    filho_nome?: string | null
+    filho_celular?: string | null
+    filho_telefone?: string | null
+    irmao_nome?: string | null
+    irmao_celular?: string | null
+    irmao_telefone?: string | null
     contato_abordagem_tipo?: 'titular' | 'conjuge' | 'filho' | 'irmao' | 'outro' | null
     contato_abordagem_origem?: string | null
     contato_alternativo_tipo?: 'titular' | 'conjuge' | 'filho' | 'irmao' | 'outro' | null

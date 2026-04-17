@@ -336,6 +336,12 @@ type LeadPhoneCandidate = {
   tenant_id: string | null
   telefone?: string | null
   telefone_enriquecido?: string | null
+  conjuge_celular?: string | null
+  conjuge_telefone?: string | null
+  filho_celular?: string | null
+  filho_telefone?: string | null
+  irmao_celular?: string | null
+  irmao_telefone?: string | null
 }
 
 type ConversationPhoneCandidate = {
@@ -355,11 +361,11 @@ async function findLeadByNormalizedPhone(
   const phoneVariants = getNormalizedPhoneVariants(from)
   const matches = new Map<string, LeadPhoneCandidate>()
 
-  for (const column of ['telefone', 'telefone_enriquecido'] as const) {
+  for (const column of ['telefone', 'telefone_enriquecido', 'conjuge_celular', 'conjuge_telefone', 'filho_celular', 'filho_telefone', 'irmao_celular', 'irmao_telefone'] as const) {
     for (const pattern of searchPatterns) {
       const { data } = await supabase
         .from('leads')
-        .select('id, nome, status, campanha_id, tenant_id, telefone, telefone_enriquecido')
+        .select('id, nome, status, campanha_id, tenant_id, telefone, telefone_enriquecido, conjuge_celular, conjuge_telefone, filho_celular, filho_telefone, irmao_celular, irmao_telefone')
         .eq('tenant_id', tenantId)
         .like(column, `%${pattern}%`)
         .limit(25)
@@ -374,6 +380,12 @@ async function findLeadByNormalizedPhone(
     const candidateVariants = [
       ...getNormalizedPhoneVariants(candidate.telefone || ''),
       ...getNormalizedPhoneVariants(candidate.telefone_enriquecido || ''),
+      ...getNormalizedPhoneVariants(candidate.conjuge_celular || ''),
+      ...getNormalizedPhoneVariants(candidate.conjuge_telefone || ''),
+      ...getNormalizedPhoneVariants(candidate.filho_celular || ''),
+      ...getNormalizedPhoneVariants(candidate.filho_telefone || ''),
+      ...getNormalizedPhoneVariants(candidate.irmao_celular || ''),
+      ...getNormalizedPhoneVariants(candidate.irmao_telefone || ''),
     ]
 
     return candidateVariants.some((variant) => phoneVariants.includes(variant))

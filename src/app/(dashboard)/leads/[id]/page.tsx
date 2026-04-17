@@ -21,6 +21,15 @@ interface Lead {
   cpf: string | null
   telefone: string | null
   telefone_enriquecido?: string | null
+  conjuge_nome?: string | null
+  conjuge_celular?: string | null
+  conjuge_telefone?: string | null
+  filho_nome?: string | null
+  filho_celular?: string | null
+  filho_telefone?: string | null
+  irmao_nome?: string | null
+  irmao_celular?: string | null
+  irmao_telefone?: string | null
   contato_abordagem_tipo?: string | null
   contato_abordagem_origem?: string | null
   contato_alternativo_tipo?: string | null
@@ -236,6 +245,18 @@ export default function LeadDetailPage() {
     fetchDocumentos()
     fetchInterno()
   }, [id])
+
+  const hasStructuredRelatedContacts = Boolean(
+    lead?.conjuge_nome ||
+    lead?.conjuge_celular ||
+    lead?.conjuge_telefone ||
+    lead?.filho_nome ||
+    lead?.filho_celular ||
+    lead?.filho_telefone ||
+    lead?.irmao_nome ||
+    lead?.irmao_celular ||
+    lead?.irmao_telefone
+  )
 
   async function fetchDocumentos() {
     const res = await fetch(`/api/leads/${id}/documentos`)
@@ -507,8 +528,17 @@ export default function LeadDetailPage() {
           <Field label="Contato alternativo" value={lead.telefone_enriquecido} />
           <Field label="Tipo do contato alternativo" value={getContactTargetLabel(lead.contato_alternativo_tipo)} />
           <Field label="Origem do contato alternativo" value={lead.contato_alternativo_origem} />
+          <Field label="Cônjuge" value={lead.conjuge_nome} />
+          <Field label="Celular do cônjuge" value={lead.conjuge_celular} />
+          <Field label="Telefone do cônjuge" value={lead.conjuge_telefone} />
+          <Field label="Filho" value={lead.filho_nome} />
+          <Field label="Celular do filho" value={lead.filho_celular} />
+          <Field label="Telefone do filho" value={lead.filho_telefone} />
+          <Field label="Irmão" value={lead.irmao_nome} />
+          <Field label="Celular do irmão" value={lead.irmao_celular} />
+          <Field label="Telefone do irmão" value={lead.irmao_telefone} />
           <Field label="E-mail" value={lead.email} />
-          {(lead.telefone_enriquecido || lead.anotacao) && (
+          {(lead.telefone_enriquecido || lead.anotacao || hasStructuredRelatedContacts) && (
             <div style={{ gridColumn: '1 / -1' }}>
               <p style={{ fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'DM Sans, sans-serif', margin: '0 0 6px' }}>Contatos relacionados e contexto operacional</p>
               <div style={{ padding: '12px 14px', borderRadius: '10px', border: '1px solid var(--border)', background: 'var(--bg-card)', color: lead.anotacao ? 'var(--text-secondary)' : 'var(--text-muted)', fontSize: '13px', lineHeight: 1.55, whiteSpace: 'pre-wrap' }}>
@@ -518,7 +548,7 @@ export default function LeadDetailPage() {
           )}
         </Section>
 
-        {(lead.telefone_enriquecido || lead.anotacao) && (
+        {(lead.telefone_enriquecido || lead.anotacao || hasStructuredRelatedContacts) && (
           <Section icon={<Users size={14} />} title="Enriquecimento e Abordagem">
             <Field label="Lead enriquecido" value={lead.enriquecido ? 'Sim' : '—'} />
             <div style={{ gridColumn: '1 / -1' }}>

@@ -29,7 +29,10 @@
 - a montagem do histórico do agente foi corrigida para usar as mensagens mais recentes da conversa, e não as mais antigas; além disso, o runtime agora injeta a última fala do lead e a intenção imediata como diretiva obrigatória da resposta
 - o runtime de `beneficios_previdenciarios` passou a carregar conhecimento operacional explícito sobre readequação do teto, evitando que o agente fale como se fosse analisar o caso do zero
 - a resposta automática do agente agora pode esperar alguns segundos antes de enviar (`AGENT_RESPONSE_DELAY_MS`, default 4500ms), para não parecer instantânea demais no WhatsApp
-- o disparo de campanha por tipo de contato agora resolve o telefone operacional certo do lead, usando `telefone_enriquecido` quando o alvo (`filho`, `conjuge`, `irmao`) estiver no contato alternativo
+- o modelo do lead passou a ter campos estruturados para `conjuge`, `filho` e `irmao` (nome/celular/telefone)
+- o importador enriquecido agora preenche esses campos explicitamente
+- o disparo de campanha por `conjuge`, `filho` e `irmao` agora usa esses campos estruturados em vez de depender só de `telefone_enriquecido`
+- os webhooks `Z-API` e `Twilio` passaram a reconhecer respostas vindas desses números estruturados
 
 ## Arquivos ou áreas afetadas
 
@@ -40,8 +43,15 @@
 - `supabase/migrations/050_tenant_custom_billing.sql`
 - `supabase/manual/2026-04-17_add_tenant_custom_billing.sql`
 - `src/app/api/campanhas/[id]/disparar/route.ts`
+- `src/app/api/leads/[id]/route.ts`
 - `src/app/api/leads/route.ts`
 - `src/app/api/webhooks/zapi/route.ts`
+- `src/components/lead-drawer.tsx`
+- `src/components/editar-lead-modal.tsx`
+- `src/app/(dashboard)/leads/[id]/page.tsx`
+- `src/lib/types.ts`
+- `supabase/migrations/051_lead_structured_related_contacts.sql`
+- `supabase/manual/2026-04-17_add_structured_related_contacts.sql`
 - `src/lib/agent-autoresponder.ts`
 - `src/lib/supabase/middleware.ts`
 - `src/app/api/webhooks/twilio/route.ts`
@@ -69,7 +79,7 @@
 - a próxima camada estrutural deixou de ser só copy/runtime: agora precisamos criar estratégia canônica de isolamento, versionamento e rollout para não quebrar tenants ativos
 - `npm run build` passou após a introdução da cobrança negociada por tenant no admin
 - `npm run build` passou após a correção do histórico recente + diretiva de resposta à última fala do lead
-- `npm run build` passou após a correção do dispatch por tipo de contato/familiar
+- `npm run build` passou após a migração de contatos familiares para campos estruturados do lead
 
 ## Estado após a última entrega
 
@@ -79,7 +89,7 @@
   - fallback fora do horário validado em produção com mensagem visível ao lead e thread coerente
   - admin pronto para registrar tenant com valor mensal contratado diferente da LP, sem sobrecarregar `plano`
   - runtime do agente endurecido para continuidade mais natural em benefícios e reconciliação do `fromMe` automático
-  - disparo de campanha por tipo de contato deixou de depender só do `telefone` principal e agora pode usar o contato alternativo importado como alvo operacional
+  - disparo de campanha por tipo de contato familiar agora pode usar campos estruturados do lead (`conjuge`, `filho`, `irmao`) em vez de depender de anotação ou alternativo genérico
 - pendente:
   - validar o fluxo completo de `planejamento_previdenciario` até proposta, contrato e assinatura
   - desenhar fallback multi-provider do auto-responder para não depender de um único saldo/provedor
@@ -87,6 +97,7 @@
   - liberar a Ana hoje via allowlist controlada de containment para onboarding do novo tenant de planejamento
 - risco residual:
   - confirmar o payload `fromMe` real da Z-API no uso diário para garantir que a heurística de `counterpartyPhone` cobre todos os casos
+  - aplicar o patch manual de contatos estruturados no banco operacional antes do reteste da campanha `filhos`
 
 ## Próximo passo certo
 
@@ -102,4 +113,4 @@
 
 - commit: pendente após sync/commit desta janela
 - deploy: pendente push
-- nota de sessão: `2026-04-17-agent-last-turn-prioritization-and-ana-containment-release`
+- nota de sessão: `2026-04-17-structured-family-contacts-for-safe-campaign-dispatch`

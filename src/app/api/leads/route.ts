@@ -41,7 +41,7 @@ export async function GET(request: Request) {
 
   let query = adminSupabase
     .from('leads')
-    .select('id, nome, telefone, status, banco, tenant_id, responsavel_id, lgpd_optout, updated_at')
+    .select('id, nome, telefone, conjuge_celular, filho_celular, irmao_celular, status, banco, tenant_id, responsavel_id, lgpd_optout, updated_at')
     .eq('tenant_id', context.tenantId)
     .order('updated_at', { ascending: false })
     .limit(fetchLimit)
@@ -74,7 +74,7 @@ export async function GET(request: Request) {
       if (!tokens.normalized && !tokens.digits) return true
 
       return anyFieldMatchesSearch(
-        [lead.nome, lead.banco, lead.telefone],
+        [lead.nome, lead.banco, lead.telefone, lead.conjuge_celular, lead.filho_celular, lead.irmao_celular],
         tokens,
       )
     })

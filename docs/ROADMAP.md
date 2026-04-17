@@ -56,6 +56,30 @@ Mestra: [[MASTER_PREV_LEGAL]]
   - `mensagens_inbound` passa a ser a trilha operacional unificada da thread humana/IA
   - essa separação é intencional, mas agora as duas trilhas ficam reconciliadas no runtime
 
+## Atualizacao Leads + Campanhas / contatos familiares passaram a ser estruturados no lead e não só anotados em texto — 17/04/2026
+
+- durante o ajuste final do disparo por `filho` / `irmao`, ficou claro que a solução anterior ainda estava "esperta demais" para o modelo de dados real do produto
+- problema observado:
+  - o importador já enxergava números de cônjuge, filho e irmão
+  - mas o lead ainda guardava isso principalmente em `anotacao` e, no máximo, em um `telefone_enriquecido` genérico
+  - o disparo por familiar acabava dependendo de inferência operacional em vez de campos explícitos visíveis para o operador
+- correção aplicada:
+  - `leads` passam a suportar campos estruturados para:
+    - `conjuge_nome`, `conjuge_celular`, `conjuge_telefone`
+    - `filho_nome`, `filho_celular`, `filho_telefone`
+    - `irmao_nome`, `irmao_celular`, `irmao_telefone`
+  - o importador enriquecido passa a preencher esses campos diretamente
+  - o cadastro detalhado do lead e a edição manual passam a mostrar esses dados de forma explícita
+  - o disparo de campanha por `conjuge`, `filho` ou `irmao` passa a usar esses campos estruturados, em vez de depender só de `telefone_enriquecido`
+  - os webhooks `Z-API` e `Twilio` passam a reconhecer respostas vindas desses números estruturados, vinculando ao lead correto
+- impacto operacional:
+  - o operador passa a enxergar com clareza para quem o sistema vai disparar
+  - a campanha familiar deixa de depender de um "alternativo genérico"
+  - o produto ganha um caminho mais seguro para go-live em operações com contatos de familiares
+- decisão de produto:
+  - `telefone_enriquecido` continua existindo para compatibilidade e contexto
+  - mas campanhas por familiar devem preferir sempre os campos estruturados do lead
+
 ## Atualizacao Agente / continuidade de benefícios endurecida e resposta automática reconciliada com webhook `fromMe` — 17/04/2026
 
 - durante o uso real da operação da Jessica, ficou evidente que o agente ainda cometia dois erros de percepção:

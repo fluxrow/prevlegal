@@ -64,10 +64,26 @@ function sourceLooksWhatsAppCapable(source: string | null | undefined) {
   );
 }
 
+function chooseRelatedPhone(
+  celular: string | null | undefined,
+  telefone: string | null | undefined,
+) {
+  return {
+    phone: celular || telefone || null,
+    verified: Boolean(celular),
+  };
+}
+
 function resolveCampaignContactForLead(
   lead: {
     telefone?: string | null;
     telefone_enriquecido?: string | null;
+    conjuge_celular?: string | null;
+    conjuge_telefone?: string | null;
+    filho_celular?: string | null;
+    filho_telefone?: string | null;
+    irmao_celular?: string | null;
+    irmao_telefone?: string | null;
     tem_whatsapp?: boolean | null;
     contato_abordagem_tipo?: string | null;
     contato_abordagem_origem?: string | null;
@@ -77,6 +93,28 @@ function resolveCampaignContactForLead(
   targetType?: string | null,
 ) {
   const normalizedTarget = String(targetType || "").trim().toLowerCase();
+
+  if (normalizedTarget === "conjuge") {
+    const resolved = chooseRelatedPhone(lead.conjuge_celular, lead.conjuge_telefone);
+    return resolved.phone
+      ? { phone: resolved.phone, type: "conjuge", source: "structured_related_contact", verified: resolved.verified }
+      : null;
+  }
+
+  if (normalizedTarget === "filho") {
+    const resolved = chooseRelatedPhone(lead.filho_celular, lead.filho_telefone);
+    return resolved.phone
+      ? { phone: resolved.phone, type: "filho", source: "structured_related_contact", verified: resolved.verified }
+      : null;
+  }
+
+  if (normalizedTarget === "irmao") {
+    const resolved = chooseRelatedPhone(lead.irmao_celular, lead.irmao_telefone);
+    return resolved.phone
+      ? { phone: resolved.phone, type: "irmao", source: "structured_related_contact", verified: resolved.verified }
+      : null;
+  }
+
   const candidates = [
     {
       phone: lead.telefone || null,
@@ -220,7 +258,7 @@ export async function POST(
 
     let query = adminClient
       .from("leads")
-      .select("id, nome, nb, cpf, telefone, telefone_enriquecido, banco, valor_rma, ganho_potencial, tem_whatsapp, contato_abordagem_tipo, contato_abordagem_origem, contato_alternativo_tipo, contato_alternativo_origem")
+      .select("id, nome, nb, cpf, telefone, telefone_enriquecido, conjuge_celular, conjuge_telefone, filho_celular, filho_telefone, irmao_celular, irmao_telefone, banco, valor_rma, ganho_potencial, tem_whatsapp, contato_abordagem_tipo, contato_abordagem_origem, contato_alternativo_tipo, contato_alternativo_origem")
       .eq("lgpd_optout", false);
     query = applyTenantFilter(query, context.tenantId);
 

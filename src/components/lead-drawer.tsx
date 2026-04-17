@@ -19,6 +19,15 @@ type Lead = {
   cpf: string | null
   telefone: string | null
   telefone_enriquecido?: string | null
+  conjuge_nome?: string | null
+  conjuge_celular?: string | null
+  conjuge_telefone?: string | null
+  filho_nome?: string | null
+  filho_celular?: string | null
+  filho_telefone?: string | null
+  irmao_nome?: string | null
+  irmao_celular?: string | null
+  irmao_telefone?: string | null
   contato_abordagem_tipo?: string | null
   contato_abordagem_origem?: string | null
   contato_alternativo_tipo?: string | null
@@ -166,6 +175,17 @@ export default function LeadDrawer({
   const statusAtual = STATUS_OPTIONS.find(s => s.id === lead?.status)
   const inboxHref = buildInboxHref({ conversaId, telefone: lead?.telefone })
   const whatsappHref = buildWhatsAppHref(lead?.telefone)
+  const hasStructuredRelatedContacts = Boolean(
+    lead?.conjuge_nome ||
+    lead?.conjuge_celular ||
+    lead?.conjuge_telefone ||
+    lead?.filho_nome ||
+    lead?.filho_celular ||
+    lead?.filho_telefone ||
+    lead?.irmao_nome ||
+    lead?.irmao_celular ||
+    lead?.irmao_telefone
+  )
   if (!leadId) return null
 
   return (
@@ -311,11 +331,20 @@ export default function LeadDrawer({
                 <Row label="Contato alternativo" value={lead.telefone_enriquecido} />
                 <Row label="Tipo do contato alternativo" value={getContactTargetLabel(lead.contato_alternativo_tipo)} />
                 <Row label="Origem do contato alternativo" value={lead.contato_alternativo_origem} />
+                <Row label="Cônjuge" value={lead.conjuge_nome} />
+                <Row label="Celular do cônjuge" value={lead.conjuge_celular} />
+                <Row label="Telefone do cônjuge" value={lead.conjuge_telefone} />
+                <Row label="Filho" value={lead.filho_nome} />
+                <Row label="Celular do filho" value={lead.filho_celular} />
+                <Row label="Telefone do filho" value={lead.filho_telefone} />
+                <Row label="Irmão" value={lead.irmao_nome} />
+                <Row label="Celular do irmão" value={lead.irmao_celular} />
+                <Row label="Telefone do irmão" value={lead.irmao_telefone} />
                 <Row label="Nascimento" value={fmtDate(lead.data_nascimento)} />
                 <Row label="Idade" value={calcIdade(lead.data_nascimento)} />
                 <Row label="Sexo" value={lead.sexo} />
                 <Row label="Categoria" value={lead.categoria_profissional} />
-                {(lead.telefone_enriquecido || lead.anotacao) && (
+                {(lead.telefone_enriquecido || lead.anotacao || hasStructuredRelatedContacts) && (
                   <div style={{ gridColumn: '1 / -1' }}>
                     <div style={{ marginBottom: '6px', fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700 }}>
                       Contatos relacionados e contexto operacional
@@ -326,7 +355,7 @@ export default function LeadDrawer({
                   </div>
                 )}
               </Section>
-              {(lead.telefone_enriquecido || lead.anotacao) && (
+              {(lead.telefone_enriquecido || lead.anotacao || hasStructuredRelatedContacts) && (
                 <Section title="Enriquecimento e Abordagem" icon={AlertCircle}>
                   <Row label="Lead enriquecido" value={lead.enriquecido ? 'Sim' : '—'} />
                   <div style={{ padding: '10px 12px', background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '12px', color: lead.anotacao ? 'var(--text-secondary)' : 'var(--text-muted)', lineHeight: 1.5 }}>

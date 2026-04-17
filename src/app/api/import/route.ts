@@ -127,6 +127,18 @@ type PrioritizedContact = {
     alternateTipo: ContactTargetType
 }
 
+type StructuredRelatedContacts = {
+    conjuge_nome: string | null
+    conjuge_celular: string | null
+    conjuge_telefone: string | null
+    filho_nome: string | null
+    filho_celular: string | null
+    filho_telefone: string | null
+    irmao_nome: string | null
+    irmao_celular: string | null
+    irmao_telefone: string | null
+}
+
 function pickPrioritizedContact(row: unknown[], lookup: HeaderLookup): PrioritizedContact {
     const directWhatsAppFlag = [
         getCellByHeaderAliases(row, lookup, ['CELULAR_WHATSAPP_1', 'CELULAR WHATSAPP 1']),
@@ -270,39 +282,50 @@ function emptyPrioritizedContact(): PrioritizedContact {
     }
 }
 
-function collectRelatedContacts(row: unknown[], lookup: HeaderLookup) {
-    const relatedCandidates = [
+function collectStructuredRelatedContacts(row: unknown[], lookup: HeaderLookup): StructuredRelatedContacts {
+    return {
+        conjuge_nome: truncate(getCellByHeaderAliases(row, lookup, ['CONJUGE_NOME', 'CONJUGE NOME']) ? String(getCellByHeaderAliases(row, lookup, ['CONJUGE_NOME', 'CONJUGE NOME'])) : null, 120),
+        conjuge_celular: parsePhone(getCellByHeaderAliases(row, lookup, ['CONJUGE_CELULAR_1', 'CONJUGE CELULAR 1'])),
+        conjuge_telefone: parsePhone(getCellByHeaderAliases(row, lookup, ['CONJUGE_TELEFONE_1', 'CONJUGE TELEFONE 1'])),
+        filho_nome: truncate(getCellByHeaderAliases(row, lookup, ['FILHO_1_NOME', 'FILHO 1 NOME']) ? String(getCellByHeaderAliases(row, lookup, ['FILHO_1_NOME', 'FILHO 1 NOME'])) : null, 120),
+        filho_celular: parsePhone(getCellByHeaderAliases(row, lookup, ['FILHO_1_CELULAR_1', 'FILHO 1 CELULAR 1'])),
+        filho_telefone: parsePhone(getCellByHeaderAliases(row, lookup, ['FILHO_1_TELEFONE_1', 'FILHO 1 TELEFONE 1'])),
+        irmao_nome: truncate(getCellByHeaderAliases(row, lookup, ['IRMAO_1_NOME', 'IRMAO 1 NOME']) ? String(getCellByHeaderAliases(row, lookup, ['IRMAO_1_NOME', 'IRMAO 1 NOME'])) : null, 120),
+        irmao_celular: parsePhone(getCellByHeaderAliases(row, lookup, ['IRMAO_1_CELULAR_1', 'IRMAO 1 CELULAR 1'])),
+        irmao_telefone: parsePhone(getCellByHeaderAliases(row, lookup, ['IRMAO_1_TELEFONE_1', 'IRMAO 1 TELEFONE 1'])),
+    }
+}
+
+function buildRelatedContactsSummary(contacts: StructuredRelatedContacts) {
+    const entries = [
         {
             label: 'Cônjuge',
-            nome: getCellByHeaderAliases(row, lookup, ['CONJUGE_NOME', 'CONJUGE NOME']),
-            celular: getCellByHeaderAliases(row, lookup, ['CONJUGE_CELULAR_1', 'CONJUGE CELULAR 1']),
-            telefone: getCellByHeaderAliases(row, lookup, ['CONJUGE_TELEFONE_1', 'CONJUGE TELEFONE 1']),
+            nome: contacts.conjuge_nome,
+            celular: contacts.conjuge_celular,
+            telefone: contacts.conjuge_telefone,
         },
         {
             label: 'Filho',
-            nome: getCellByHeaderAliases(row, lookup, ['FILHO_1_NOME', 'FILHO 1 NOME']),
-            celular: getCellByHeaderAliases(row, lookup, ['FILHO_1_CELULAR_1', 'FILHO 1 CELULAR 1']),
-            telefone: getCellByHeaderAliases(row, lookup, ['FILHO_1_TELEFONE_1', 'FILHO 1 TELEFONE 1']),
+            nome: contacts.filho_nome,
+            celular: contacts.filho_celular,
+            telefone: contacts.filho_telefone,
         },
         {
             label: 'Irmão',
-            nome: getCellByHeaderAliases(row, lookup, ['IRMAO_1_NOME', 'IRMAO 1 NOME']),
-            celular: getCellByHeaderAliases(row, lookup, ['IRMAO_1_CELULAR_1', 'IRMAO 1 CELULAR 1']),
-            telefone: getCellByHeaderAliases(row, lookup, ['IRMAO_1_TELEFONE_1', 'IRMAO 1 TELEFONE 1']),
+            nome: contacts.irmao_nome,
+            celular: contacts.irmao_celular,
+            telefone: contacts.irmao_telefone,
         },
     ]
 
-    return relatedCandidates
+    return entries
         .map((candidate) => {
-            const celular = parsePhone(candidate.celular)
-            const telefone = parsePhone(candidate.telefone)
-            const nome = truncate(candidate.nome ? String(candidate.nome) : null, 120)
             const parts = [
-                celular ? `celular ${celular}` : null,
-                telefone ? `telefone ${telefone}` : null,
+                candidate.celular ? `celular ${candidate.celular}` : null,
+                candidate.telefone ? `telefone ${candidate.telefone}` : null,
             ].filter(Boolean)
             if (parts.length === 0) return null
-            return `${candidate.label}: ${nome || 'sem nome'} (${parts.join(' · ')})`
+            return `${candidate.label}: ${candidate.nome || 'sem nome'} (${parts.join(' · ')})`
         })
         .filter(Boolean) as string[]
 }
@@ -486,7 +509,20 @@ export async function POST(request: NextRequest) {
             : pickLegacyContact(row, detectedSchema)
         const telefone = prioritizedContact.telefone
         const categoriaProfissional = truncate(detectedSchema.mode === 'header_mapping' ? String(getMappedCell(row, detectedSchema, 'categoria_profissional') || '') : null, 255)
-        const relatedContacts = detectedSchema.mode === 'header_mapping' ? collectRelatedContacts(row, headerLookup) : []
+        const structuredRelatedContacts = detectedSchema.mode === 'header_mapping'
+            ? collectStructuredRelatedContacts(row, headerLookup)
+            : {
+                conjuge_nome: null,
+                conjuge_celular: null,
+                conjuge_telefone: null,
+                filho_nome: null,
+                filho_celular: null,
+                filho_telefone: null,
+                irmao_nome: null,
+                irmao_celular: null,
+                irmao_telefone: null,
+            }
+        const relatedContacts = buildRelatedContactsSummary(structuredRelatedContacts)
         const contatoEnriquecido = buildEnrichedAlternateContact(prioritizedContact)
         const anotacoesImportacao = buildApproachContext({ prioritizedContact, relatedContacts })
 
@@ -501,6 +537,15 @@ export async function POST(request: NextRequest) {
             cpf: cpf ? cpf.slice(0, 14) : null,
             telefone,
             telefone_enriquecido: contatoEnriquecido,
+            conjuge_nome: structuredRelatedContacts.conjuge_nome,
+            conjuge_celular: structuredRelatedContacts.conjuge_celular,
+            conjuge_telefone: structuredRelatedContacts.conjuge_telefone,
+            filho_nome: structuredRelatedContacts.filho_nome,
+            filho_celular: structuredRelatedContacts.filho_celular,
+            filho_telefone: structuredRelatedContacts.filho_telefone,
+            irmao_nome: structuredRelatedContacts.irmao_nome,
+            irmao_celular: structuredRelatedContacts.irmao_celular,
+            irmao_telefone: structuredRelatedContacts.irmao_telefone,
             contato_abordagem_tipo: prioritizedContact.tipo,
             contato_abordagem_origem: truncate(prioritizedContact.source, 80),
             contato_alternativo_tipo: contatoEnriquecido ? prioritizedContact.alternateTipo : null,

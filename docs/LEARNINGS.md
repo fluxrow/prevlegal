@@ -26,6 +26,12 @@ Mestra: [[MASTER_PREV_LEGAL]]
 **Correção:** Calcular a janela do agente com `America/Sao_Paulo` como fuso operacional padrão
 **Regra pratica:** Toda automação dependente de horário no PrevLegal deve comparar contra o relógio operacional do produto, nunca contra a hora crua do servidor
 
+### 173. Campanha por familiar não pode depender só de `telefone_enriquecido`
+**Problema:** O disparo por `filho` / `irmao` foi corrigido inicialmente usando o contato alternativo genérico do lead, mas o cadastro do lead não mostrava esses familiares como dados explícitos, o que deixava a operação dependente de inferência em vez de estrutura confiável
+**Causa:** O importador enriquecido capturava cônjuge, filho e irmão, porém guardava esses dados principalmente em `anotacao` e em um slot genérico (`telefone_enriquecido`), sem campos específicos no lead
+**Correção:** Criar campos estruturados em `leads` para nome/celular/telefone de `conjuge`, `filho` e `irmao`, preencher isso na importação, exibir na UI do lead e fazer o disparo e o lookup de webhook usarem esses campos
+**Regra pratica:** Quando um fluxo operacional depende de um tipo específico de contato, esse dado precisa existir como estrutura explícita no modelo. Contexto textual e campos genéricos ajudam, mas não devem ser a base do disparo em produção
+
 ### 169. Depois que existem tenants pagantes, evolução de playbook precisa ser isolada por tenant e rollout, não lançada como comportamento global
 **Problema:** `beneficios_previdenciarios` e `planejamento_previdenciario` passaram a evoluir em paralelo, mas qualquer bug novo ainda poderia atingir escritórios já ativos porque o produto não tinha uma camada formal de isolamento/versionamento para essas frentes
 **Causa:** O PrevLegal vinha sendo tratado como um único comportamento-base em produção, mesmo depois de entrar na fase de clientes pagantes e playbooks operacionais distintos
