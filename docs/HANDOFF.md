@@ -39,6 +39,7 @@
 - a aba de listas agora passou a expor contagem operacional de contatos familiares com celular (`cônjuge`, `filho`, `irmão`) para dar visão real do que a planilha trouxe, sem confundir isso com verificação formal de WhatsApp
 - a rota `Verificar WhatsApp` foi corrigida para checar o `telefone` operacional do lead em vez de usar `cpf` como se fosse número
 - o ícone de conversa do card do Kanban agora tenta abrir a thread pelo `lead_id` antes de cair em heurística por telefone, evitando o falso "Nenhuma conversa encontrada" em leads que já têm histórico
+- o modal do card do Kanban foi endurecido para consultar primeiro `/api/leads/[id]` e usar a `conversa` já vinculada ao lead; a lista geral de conversas agora fica apenas como fallback
 
 ## Arquivos ou áreas afetadas
 
@@ -124,7 +125,7 @@
   - aplicar o patch manual de contatos estruturados no banco operacional antes do reteste da campanha `filhos`
   - retestar no runtime a exclusão da lista `Seleção personalizada` e, em seguida, reimportar a base enriquecida para validar `filho/irmão`
   - confirmar que o selo visual do Kanban segue coerente quando o lead muda manualmente de tipo de contato em edição
-  - validar em produção se a nova contagem da aba de listas (`cônjuge/filho/irmão com celular`) bate com a planilha importada
+- validar em produção se a nova contagem da aba de listas (`cônjuge/filho/irmão com celular`) bate com a planilha importada
   - confirmar no runtime se o modal de conversa do card resolve corretamente um lead já conversado via `lead_id`
 
 ## Próximo passo certo

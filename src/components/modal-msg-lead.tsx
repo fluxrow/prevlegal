@@ -34,6 +34,13 @@ interface Conversa {
   leads?: { id?: string | null } | null
 }
 
+interface LeadComConversaResponse {
+  conversa?: {
+    id: string
+    status?: string | null
+  } | null
+}
+
 export default function ModalMsgLead({ lead, onClose }: Props) {
   const [aba, setAba] = useState<'whatsapp' | 'portal'>('whatsapp')
   const [msgsWpp, setMsgsWpp] = useState<MsgWpp[]>([])
@@ -49,11 +56,20 @@ export default function ModalMsgLead({ lead, onClose }: Props) {
     let ativo = true
 
     async function carregarWhatsApp() {
-      if (!lead.telefone) {
-        if (ativo) {
-          setConversaId(null)
-          setMsgsWpp([])
-        }
+      const leadRes = await fetch(`/api/leads/${lead.id}`)
+      if (!leadRes.ok) return
+
+      const leadPayload = await leadRes.json() as LeadComConversaResponse
+      if (!ativo) return
+
+      if (leadPayload?.conversa?.id) {
+        setConversaId(leadPayload.conversa.id)
+
+        const mensagensRes = await fetch(`/api/conversas/${leadPayload.conversa.id}`)
+        if (!mensagensRes.ok) return
+
+        const mensagens = await mensagensRes.json()
+        if (ativo) setMsgsWpp(mensagens || [])
         return
       }
 
@@ -63,17 +79,23 @@ export default function ModalMsgLead({ lead, onClose }: Props) {
       const conversas = await conversasRes.json() as Conversa[]
       if (!ativo) return
 
-      const conversa = (conversas || []).find(c => c.lead_id === lead.id || c.leads?.id === lead.id)
-        || (conversas || []).find(c => samePhone(c.telefone || '', lead.telefone))
-      if (!conversa) {
+      if (!lead.telefone) {
         setConversaId(null)
         setMsgsWpp([])
         return
       }
 
-      setConversaId(conversa.id)
+      const conversaFallback = (conversas || []).find(c => c.lead_id === lead.id || c.leads?.id === lead.id)
+        || (conversas || []).find(c => samePhone(c.telefone || '', lead.telefone))
+      if (!conversaFallback) {
+        setConversaId(null)
+        setMsgsWpp([])
+        return
+      }
 
-      const mensagensRes = await fetch(`/api/conversas/${conversa.id}`)
+      setConversaId(conversaFallback.id)
+
+      const mensagensRes = await fetch(`/api/conversas/${conversaFallback.id}`)
       if (!mensagensRes.ok) return
 
       const mensagens = await mensagensRes.json()
