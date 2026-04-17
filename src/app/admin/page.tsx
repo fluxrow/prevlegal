@@ -20,6 +20,8 @@ interface Tenant {
   oab_estado: string
   oab_numero: string
   plano: string
+  cobranca_tipo: string
+  valor_mensal_contratado: number | null
   status: string
   notas: string
   twilio_account_sid?: string | null
@@ -48,6 +50,8 @@ const FORM0 = {
   responsavel_nome: '', responsavel_email: '', responsavel_telefone: '',
   oab_estado: '', oab_numero: '',
   twilio_account_sid: '', twilio_auth_token: '', twilio_whatsapp_number: '',
+  cobranca_tipo: 'lp_publica',
+  valor_mensal_contratado: '',
   plano: 'profissional', status: 'trial', notas: '',
   trial_expira_em: '',
 }
@@ -64,9 +68,9 @@ const labelStyle: React.CSSProperties = {
   textTransform: 'uppercase', letterSpacing: '0.04em',
 }
 
-function FormField({ label, value, onChange, type = 'text', options, col }: {
+function FormField({ label, value, onChange, type = 'text', options, col, placeholder }: {
   label: string; value: string; onChange: (v: string) => void
-  type?: string; options?: { value: string; label: string }[]; col?: string
+  type?: string; options?: { value: string; label: string }[]; col?: string; placeholder?: string
 }) {
   return (
     <div style={{ gridColumn: col }}>
@@ -76,7 +80,7 @@ function FormField({ label, value, onChange, type = 'text', options, col }: {
           {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
         </select>
       ) : (
-        <input type={type} value={value} onChange={e => onChange(e.target.value)} style={inputStyle} />
+        <input type={type} value={value} onChange={e => onChange(e.target.value)} style={inputStyle} placeholder={placeholder} />
       )}
     </div>
   )
@@ -86,6 +90,23 @@ function diasRestantes(data: string | null): number | null {
   if (!data) return null
   const diff = new Date(data).getTime() - Date.now()
   return Math.ceil(diff / (1000 * 60 * 60 * 24))
+}
+
+function fmtMonthly(value: number) {
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(value)
+}
+
+function resolveTenantMonthlyValue(tenant: Pick<Tenant, 'plano' | 'valor_mensal_contratado'>) {
+  if (typeof tenant.valor_mensal_contratado === 'number' && Number.isFinite(tenant.valor_mensal_contratado)) {
+    return tenant.valor_mensal_contratado
+  }
+
+  return PLANO[tenant.plano]?.mrr || 0
 }
 
 export default function AdminPage() {
@@ -321,6 +342,8 @@ export default function AdminPage() {
       twilio_account_sid: t.twilio_account_sid || '',
       twilio_auth_token: t.twilio_auth_token || '',
       twilio_whatsapp_number: t.twilio_whatsapp_number || '',
+      cobranca_tipo: t.cobranca_tipo || 'lp_publica',
+      valor_mensal_contratado: typeof t.valor_mensal_contratado === 'number' ? String(t.valor_mensal_contratado).replace('.', ',') : '',
       plano: t.plano, status: t.status, notas: t.notas || '',
       trial_expira_em: t.trial_expira_em ? t.trial_expira_em.split('T')[0] : '',
     })
@@ -363,7 +386,7 @@ export default function AdminPage() {
 
   const mrr = tenants
     .filter(t => t.status === 'ativo')
-    .reduce((acc, t) => acc + (PLANO[t.plano]?.mrr || 0), 0)
+    .reduce((acc, t) => acc + resolveTenantMonthlyValue(t), 0)
 
   const trialsAlerta = tenants.filter(t => {
     if (t.status !== 'trial') return false
@@ -476,7 +499,7 @@ export default function AdminPage() {
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ borderBottom: '1px solid #1f2937' }}>
-                {['Escritório', 'Responsável / OAB', 'Plano', 'Status', 'Trial / Cadastro', 'Ações'].map(h => (
+                {['Escritório', 'Responsável / OAB', 'Plano / Cobrança', 'Status', 'Trial / Cadastro', 'Ações'].map(h => (
                   <th key={h} style={{ padding: '11px 16px', textAlign: 'left', fontSize: '10px', fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{h}</th>
                 ))}
               </tr>
@@ -522,7 +545,9 @@ export default function AdminPage() {
                         {p.label}
                       </span>
                       <p style={{ fontSize: '11px', color: '#4b5563', margin: '5px 0 0' }}>
-                        R$ {p.mrr.toLocaleString('pt-BR')}/mês
+                        {t.cobranca_tipo === 'negociado_manual' && typeof t.valor_mensal_contratado === 'number'
+                          ? `Negociado · ${fmtMonthly(t.valor_mensal_contratado)}/mês`
+                          : `${fmtMonthly(p.mrr)}/mês`}
                       </p>
                     </td>
                     <td style={{ padding: '14px 16px' }}>
@@ -624,6 +649,16 @@ export default function AdminPage() {
                 { value: 'profissional', label: 'Profissional — R$ 3.497/mês' },
                 { value: 'enterprise', label: 'Enterprise — R$ 5.000+/mês' },
               ]} />
+              <FormField label="Cobrança" value={form.cobranca_tipo} onChange={setField('cobranca_tipo')} options={[
+                { value: 'lp_publica', label: 'Preço padrão da LP' },
+                { value: 'negociado_manual', label: 'Valor negociado manualmente' },
+              ]} />
+              <FormField
+                label="Valor mensal contratado (R$)"
+                value={form.valor_mensal_contratado}
+                onChange={setField('valor_mensal_contratado')}
+                placeholder="Ex.: 3100,00"
+              />
               <FormField label="Status" value={form.status} onChange={setField('status')} options={[
                 { value: 'trial', label: 'Trial' },
                 { value: 'ativo', label: 'Ativo' },

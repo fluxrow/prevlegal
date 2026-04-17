@@ -12,6 +12,26 @@ function slugify(value: string) {
     .replace(/-{2,}/g, '-')
 }
 
+function normalizeBillingType(value: unknown) {
+  return String(value || '').trim() === 'negociado_manual' ? 'negociado_manual' : 'lp_publica'
+}
+
+function parseMoneyInput(value: unknown) {
+  const raw = String(value ?? '').trim()
+  if (!raw) return null
+
+  const cleaned = raw.replace(/[^\d,.-]/g, '')
+  if (!cleaned) return null
+
+  const normalized = cleaned.includes(',') && cleaned.includes('.')
+    ? cleaned.replace(/\./g, '').replace(',', '.')
+    : cleaned.replace(',', '.')
+
+  const parsed = Number(normalized)
+  if (!Number.isFinite(parsed)) return null
+  return Math.round(parsed * 100) / 100
+}
+
 async function buildUniqueSlug(
   adminSupabase: any,
   baseValue: string,
@@ -63,6 +83,8 @@ export async function PATCH(
   const responsavelEmail = String(body.responsavel_email || '').trim().toLowerCase()
   const rawSlug = String(body.slug || '').trim()
   const slug = await buildUniqueSlug(adminSupabase, rawSlug || nome || current.slug, id)
+  const cobrancaTipo = normalizeBillingType(body.cobranca_tipo)
+  const valorMensalContratado = parseMoneyInput(body.valor_mensal_contratado)
 
   const { data, error } = await adminSupabase
     .from('tenants')
@@ -77,6 +99,8 @@ export async function PATCH(
       oab_estado: String(body.oab_estado || '').trim().toUpperCase() || null,
       oab_numero: String(body.oab_numero || '').trim() || null,
       notas: String(body.notas || '').trim() || null,
+      cobranca_tipo: cobrancaTipo,
+      valor_mensal_contratado: valorMensalContratado,
       trial_expira_em: body.trial_expira_em || null,
       twilio_account_sid: String(body.twilio_account_sid || '').trim() || null,
       twilio_auth_token: String(body.twilio_auth_token || '').trim() || null,

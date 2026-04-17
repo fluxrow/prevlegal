@@ -50,6 +50,8 @@ interface Tenant {
   responsavel_email: string
   responsavel_telefone: string
   plano: string
+  cobranca_tipo: string
+  valor_mensal_contratado: number | null
   status: string
   trial_expira_em: string | null
   created_at: string
@@ -125,11 +127,11 @@ const STATUS: Record<string, { label: string; color: string }> = {
   cancelado: { label: 'Cancelado', color: '#6b7280' },
 }
 
-const PLANO: Record<string, { label: string; color: string }> = {
-  entrada: { label: 'Entrada', color: '#6b7280' },
-  profissional: { label: 'Profissional', color: '#4f7aff' },
-  enterprise: { label: 'Enterprise', color: '#7c3aed' },
-  basico: { label: 'Básico', color: '#6b7280' },
+const PLANO: Record<string, { label: string; color: string; mrr: number }> = {
+  entrada: { label: 'Entrada', color: '#6b7280', mrr: 1997 },
+  profissional: { label: 'Profissional', color: '#4f7aff', mrr: 3497 },
+  enterprise: { label: 'Enterprise', color: '#7c3aed', mrr: 5000 },
+  basico: { label: 'Básico', color: '#6b7280', mrr: 1997 },
 }
 
 const RISCO_OPERACIONAL: Record<string, { label: string; color: string; bg: string }> = {
@@ -166,6 +168,14 @@ function fmt(v: number) {
     currency: 'BRL',
     maximumFractionDigits: 0,
   }).format(v)
+}
+
+function resolveTenantMonthlyValue(tenant: Pick<Tenant, 'plano' | 'valor_mensal_contratado'>) {
+  if (typeof tenant.valor_mensal_contratado === 'number' && Number.isFinite(tenant.valor_mensal_contratado)) {
+    return tenant.valor_mensal_contratado
+  }
+
+  return PLANO[tenant.plano]?.mrr || 0
 }
 
 function KpiCard({ label, value, color, icon }: { label: string; value: string | number; color: string; icon: React.ReactNode }) {
@@ -537,6 +547,7 @@ export default function TenantDetailPage() {
   const { tenant, metricas, ultimasConversas, ultimosCampanhas } = data
   const status = STATUS[tenant.status] || STATUS.trial
   const plano = PLANO[tenant.plano] || PLANO.profissional
+  const valorMensal = resolveTenantMonthlyValue(tenant)
   const riscoOperacional = RISCO_OPERACIONAL[metricas.riscoOperacional] || RISCO_OPERACIONAL.medio
   const plataformaUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://app.prevlegal.com.br'
 
@@ -568,7 +579,7 @@ export default function TenantDetailPage() {
       </div>
 
       <div style={{ padding: '28px', maxWidth: '1300px', margin: '0 auto' }}>
-        <div style={{ background: '#111827', border: '1px solid #1f2937', borderRadius: '14px', padding: '20px 24px', marginBottom: '24px', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '20px' }}>
+        <div style={{ background: '#111827', border: '1px solid #1f2937', borderRadius: '14px', padding: '20px 24px', marginBottom: '24px', display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '20px' }}>
           <div>
             <p style={{ fontSize: '10px', fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '4px' }}>Responsável</p>
             <p style={{ fontSize: '14px', fontWeight: '600', color: '#fff', margin: '0 0 2px' }}>{tenant.responsavel_nome || '—'}</p>
@@ -585,6 +596,13 @@ export default function TenantDetailPage() {
           <div>
             <p style={{ fontSize: '10px', fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '4px' }}>Slug</p>
             <p style={{ fontSize: '13px', color: '#6b7280', margin: 0, fontFamily: 'monospace' }}>{tenant.slug}</p>
+          </div>
+          <div>
+            <p style={{ fontSize: '10px', fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '4px' }}>Cobrança mensal</p>
+            <p style={{ fontSize: '14px', color: '#d1d5db', margin: '0 0 2px' }}>{fmt(valorMensal)}</p>
+            <p style={{ fontSize: '11px', color: '#6b7280', margin: 0 }}>
+              {tenant.cobranca_tipo === 'negociado_manual' ? 'Negociado manualmente' : `Tabela do plano ${plano.label}`}
+            </p>
           </div>
           {tenant.notas && (
             <div style={{ gridColumn: '1 / -1' }}>

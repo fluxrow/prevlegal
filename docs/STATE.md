@@ -35,6 +35,7 @@
 - a continuidade do agente em benefícios precisa assumir que a base já veio mapeada para revisão/readequação; em planejamento, a esteira deve poder ir até proposta/contrato antes do handoff humano
 - o playbook de planejamento previdenciário ainda precisa de validação em runtime com copy mais consultiva, mais conhecimento técnico geral do cenário brasileiro e limite explícito para não inventar análise individual
 - o produto ainda não tem camada formal de flags/versionamento por tenant para proteger escritórios pagantes de evoluções novas
+- o admin ainda estava acoplado demais aos preços da LP; para contratos negociados, `plano` deve continuar sendo pacote operacional e a cobrança precisa viver em campo próprio do tenant
 - quando o auto-responder falhar por horário, timeout ou provedor, a conversa deve sair do silêncio e cair para humano com notificação explícita
 - quando o lead responder fora do horário, o sistema deve enviar mensagem automática de retorno com a janela de atendimento e registrar essa saída na própria thread
 - mensagens de campanha enviadas por Z-API não devem duplicar na inbox por causa do espelhamento `fromMe`
@@ -43,7 +44,7 @@
 
 1. estruturar isolamento e rollout por tenant/perfil para produção paga
 2. validar o playbook de `planejamento_previdenciario` até diagnóstico, proposta, contrato e preparação de assinatura
-3. criar memória curta nativa por tenant e por conversa para os agentes
+3. consolidar cobrança negociada por tenant no admin sem depender só da tabela pública da LP
 
 ## Para retomar sem atrito
 

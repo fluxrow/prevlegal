@@ -23,9 +23,16 @@
 - quando o auto-responder falhar por horário, timeout ou erro interno, os webhooks agora devolvem a conversa para humano e geram notificação explícita
 - o auto-responder agora devolve payload estruturado quando falha por fora do horário, permitindo mensagem automática ao lead com a janela configurada
 - o espelhamento `fromMe` da Z-API agora deduplica mensagens já registradas pela campanha para evitar outbound duplicado na thread
+- admin agora separa pacote operacional (`plano`) de cobrança negociada do tenant (`cobranca_tipo` + `valor_mensal_contratado`)
 
 ## Arquivos ou áreas afetadas
 
+- `src/app/admin/page.tsx`
+- `src/app/admin/[id]/page.tsx`
+- `src/app/api/admin/tenants/route.ts`
+- `src/app/api/admin/tenants/[id]/route.ts`
+- `supabase/migrations/050_tenant_custom_billing.sql`
+- `supabase/manual/2026-04-17_add_tenant_custom_billing.sql`
 - `src/app/api/campanhas/[id]/disparar/route.ts`
 - `src/app/api/leads/route.ts`
 - `src/app/api/webhooks/zapi/route.ts`
@@ -49,6 +56,7 @@
 - o comportamento recente de "fora do horário cai para humano sem mensagem visível" foi coberto com resposta automática ao lead + gravação na thread
 - a próxima validação relevante saiu de benefícios e passou para planejamento: precisamos confirmar em runtime se o agente conduz com consistência até proposta/contrato sem soar telemarketing nem responder com certezas indevidas
 - a próxima camada estrutural deixou de ser só copy/runtime: agora precisamos criar estratégia canônica de isolamento, versionamento e rollout para não quebrar tenants ativos
+- `npm run build` passou após a introdução da cobrança negociada por tenant no admin
 
 ## Estado após a última entrega
 
@@ -56,7 +64,9 @@
   - correção estrutural aplicada no código para campanha, auto-responder e espelhamento `fromMe`
   - memória curta nativa do projeto criada
   - fallback fora do horário validado em produção com mensagem visível ao lead e thread coerente
+  - admin pronto para registrar tenant com valor mensal contratado diferente da LP, sem sobrecarregar `plano`
 - pendente:
+  - aplicar no banco de produção o patch `2026-04-17_add_tenant_custom_billing.sql`
   - validar o fluxo completo de `planejamento_previdenciario` até proposta, contrato e assinatura
   - desenhar fallback multi-provider do auto-responder para não depender de um único saldo/provedor
   - transformar isolamento por tenant/perfil/flag em fundação real de produto
@@ -66,6 +76,7 @@
 ## Próximo passo certo
 
 - iniciar a bateria de testes do playbook de `planejamento_previdenciario`, validando:
+- cadastrar o escritório da Ana já com cobrança negociada manual no admin
   - copy inicial mais consultiva
   - resposta do agente sem inventar análise individual
   - condução natural para diagnóstico
@@ -76,4 +87,4 @@
 
 - commit: pendente após sync/commit desta janela
 - deploy: pendente push
-- nota de sessão: `2026-04-16-campaign-autoresponder-fromme-fix`
+- nota de sessão: `2026-04-17-tenant-custom-billing-admin`
