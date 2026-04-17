@@ -636,9 +636,19 @@ export default function AdminPage() {
               <FormField label="Email *" value={form.responsavel_email} onChange={setField('responsavel_email')} type="email" col="1 / -1" />
               <FormField label="OAB Estado" value={form.oab_estado} onChange={setField('oab_estado')} />
               <FormField label="OAB Número" value={form.oab_numero} onChange={setField('oab_numero')} />
+              {!editId && (
+                <div style={{ gridColumn: '1 / -1', padding: '10px 12px', borderRadius: '10px', background: 'rgba(79,122,255,0.08)', border: '1px solid rgba(79,122,255,0.18)' }}>
+                  <p style={{ margin: 0, fontSize: '12px', color: '#9bb5ff', lineHeight: '1.5' }}>
+                    O cadastro inicial cria o escritório. Depois de salvar, você pode abrir o tenant e configurar o canal principal em `Canais WhatsApp`, incluindo `Z-API` e múltiplos números.
+                  </p>
+                </div>
+              )}
               <div style={{ gridColumn: '1 / -1', borderTop: '1px solid #1f2937', paddingTop: '14px', marginTop: '4px' }}>
                 <p style={{ fontSize: '11px', fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '12px' }}>
-                  Twilio (opcional — usa credenciais globais se vazio)
+                  Twilio legado (opcional — usa credenciais globais se vazio)
+                </p>
+                <p style={{ fontSize: '12px', color: '#6b7280', margin: '0 0 12px', lineHeight: '1.5' }}>
+                  Este bloco é apenas para configuração rápida de `Twilio`. `Z-API` e operação multi-canal ficam disponíveis logo após criar o escritório, na tela de detalhes do tenant.
                 </p>
               </div>
               <FormField label="Account SID" value={form.twilio_account_sid} onChange={setField('twilio_account_sid')} col="1 / -1" />
