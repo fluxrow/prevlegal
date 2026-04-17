@@ -80,6 +80,21 @@ Mestra: [[MASTER_PREV_LEGAL]]
   - `telefone_enriquecido` continua existindo para compatibilidade e contexto
   - mas campanhas por familiar devem preferir sempre os campos estruturados do lead
 
+## Atualizacao Inbox + Agente / confirmação de handoff para Dra. Jessica agora sai do modo agente e entra em aguardando — 17/04/2026
+
+- durante o refino final do fluxo de benefícios, o agente já conseguia explicar o cenário e confirmar que a Dra. Jessica continuaria o atendimento
+- problema observado:
+  - mesmo depois de o lead confirmar que a Dra. Jessica podia assumir, a conversa continuava em `agente`
+  - isso deixava a thread no box errado da inbox e escondia o momento operacional em que a equipe humana deveria agir
+- correção aplicada:
+  - o runtime de `/api/agente/responder` agora detecta a etapa de confirmação do handoff em `beneficios_previdenciarios`
+  - quando a última mensagem do lead for uma confirmação curta e a mensagem anterior do agente já estiver na etapa “Dra. Jessica vai entrar em contato / pode ser neste número?”, a conversa passa automaticamente para `aguardando_cliente`
+  - o status muda sem criar estado novo e aproveita a própria lógica de inbox já existente, inclusive a reabertura automática para `humano` se o lead voltar a responder depois
+- impacto operacional:
+  - o agente deixa de “segurar” uma conversa que já foi entregue ao humano
+  - a fila `Aguardando` passa a representar de verdade os casos prontos para retorno da equipe
+  - o fluxo da Jessica fica mais próximo do atendimento real esperado para go-live
+
 ## Atualizacao Agente / continuidade de benefícios endurecida e resposta automática reconciliada com webhook `fromMe` — 17/04/2026
 
 - durante o uso real da operação da Jessica, ficou evidente que o agente ainda cometia dois erros de percepção:

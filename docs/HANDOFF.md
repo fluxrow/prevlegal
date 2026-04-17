@@ -33,6 +33,7 @@
 - o importador enriquecido agora preenche esses campos explicitamente
 - o disparo de campanha por `conjuge`, `filho` e `irmao` agora usa esses campos estruturados em vez de depender só de `telefone_enriquecido`
 - os webhooks `Z-API` e `Twilio` passaram a reconhecer respostas vindas desses números estruturados
+- quando o lead confirma que a Dra. Jessica pode assumir o atendimento, o runtime do agente agora move a conversa de `agente` para `aguardando_cliente`
 
 ## Arquivos ou áreas afetadas
 
@@ -80,6 +81,7 @@
 - `npm run build` passou após a introdução da cobrança negociada por tenant no admin
 - `npm run build` passou após a correção do histórico recente + diretiva de resposta à última fala do lead
 - `npm run build` passou após a migração de contatos familiares para campos estruturados do lead
+- `npm run build` passou após a automação que joga a conversa para `aguardando_cliente` quando o lead confirma a passagem para a Dra. Jessica
 
 ## Estado após a última entrega
 
@@ -90,6 +92,7 @@
   - admin pronto para registrar tenant com valor mensal contratado diferente da LP, sem sobrecarregar `plano`
   - runtime do agente endurecido para continuidade mais natural em benefícios e reconciliação do `fromMe` automático
   - disparo de campanha por tipo de contato familiar agora pode usar campos estruturados do lead (`conjuge`, `filho`, `irmao`) em vez de depender de anotação ou alternativo genérico
+  - handoff confirmado para a Dra. Jessica agora troca a conversa para `aguardando_cliente`, alinhando o fluxo com o box correto da inbox
 - pendente:
   - validar o fluxo completo de `planejamento_previdenciario` até proposta, contrato e assinatura
   - desenhar fallback multi-provider do auto-responder para não depender de um único saldo/provedor

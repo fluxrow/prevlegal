@@ -102,6 +102,64 @@ function classifyLatestLeadTurn(message: string) {
   return 'mensagem_livre'
 }
 
+function normalizeIntentText(message: string | null | undefined) {
+  return String(message || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+}
+
+function shouldMoveBenefitsConversationToAwaitingCustomer({
+  operationProfile,
+  latestLeadIntent,
+  latestLeadMessage,
+  historico,
+}: {
+  operationProfile?: string | null
+  latestLeadIntent: string
+  latestLeadMessage: string
+  historico: Array<{ role: 'user' | 'assistant'; content: string }>
+}) {
+  if (normalizeOperationProfile(operationProfile || 'beneficios_previdenciarios') !== 'beneficios_previdenciarios') {
+    return false
+  }
+
+  if (!['confirmacao_curta', 'interesse_explicito'].includes(latestLeadIntent)) {
+    return false
+  }
+
+  const normalizedLatest = normalizeIntentText(latestLeadMessage)
+  const confirmsYes =
+    /^(sim|s|isso|isso mesmo|pode ser|pode ser sim|neste numero|nesse numero|pode seguir|claro|ok|okay|pode)$/.test(normalizedLatest) ||
+    normalizedLatest.includes('mesmo numero') ||
+    normalizedLatest.includes('neste numero') ||
+    normalizedLatest.includes('nesse numero')
+
+  if (!confirmsYes) {
+    return false
+  }
+
+  const previousAssistant = [...historico]
+    .reverse()
+    .find((entry) => entry.role === 'assistant')
+
+  const normalizedAssistant = normalizeIntentText(previousAssistant?.content || '')
+
+  return (
+    normalizedAssistant.includes('dra. jessica') &&
+    (
+      normalizedAssistant.includes('entrar em contato') ||
+      normalizedAssistant.includes('dar continuidade') ||
+      normalizedAssistant.includes('pode ser neste mesmo numero') ||
+      normalizedAssistant.includes('pode ser neste mesmo número') ||
+      normalizedAssistant.includes('neste mesmo numero do whatsapp') ||
+      normalizedAssistant.includes('neste mesmo número do whatsapp') ||
+      normalizedAssistant.includes('posso passar o seu contato')
+    )
+  )
+}
+
 function buildImmediateResponseDirective({
   latestLeadMessage,
   latestLeadIntent,
@@ -592,6 +650,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Resposta vazia do modelo' }, { status: 500 })
     }
 
+    const shouldMoveToAwaitingCustomer = shouldMoveBenefitsConversationToAwaitingCustomer({
+      operationProfile: config.agente_perfil_operacao || agenteRow?.perfil_operacao || null,
+      latestLeadIntent,
+      latestLeadMessage,
+      historico,
+    })
+
     // 7. Marcar mensagem como respondida + rastrear agente (Fase D)
     await supabase
       .from('mensagens_inbound')
@@ -603,6 +668,16 @@ export async function POST(request: NextRequest) {
         agente_respondente_id: agenteRow?.id ?? null,
       })
       .eq('id', mensagem_id)
+
+    if (shouldMoveToAwaitingCustomer && mensagem.conversa_id) {
+      await supabase
+        .from('conversas')
+        .update({
+          status: 'aguardando_cliente',
+          nao_lidas: 0,
+        })
+        .eq('id', mensagem.conversa_id)
+    }
 
     // 8. Se resposta automática ativa, enviar via Twilio
     if (config.agente_resposta_automatica && mensagem.telefone_remetente) {

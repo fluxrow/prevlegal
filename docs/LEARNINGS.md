@@ -32,6 +32,12 @@ Mestra: [[MASTER_PREV_LEGAL]]
 **Correção:** Criar campos estruturados em `leads` para nome/celular/telefone de `conjuge`, `filho` e `irmao`, preencher isso na importação, exibir na UI do lead e fazer o disparo e o lookup de webhook usarem esses campos
 **Regra pratica:** Quando um fluxo operacional depende de um tipo específico de contato, esse dado precisa existir como estrutura explícita no modelo. Contexto textual e campos genéricos ajudam, mas não devem ser a base do disparo em produção
 
+### 174. Quando o agente conclui o handoff para o humano, a conversa precisa sair do box de agente
+**Problema:** No fluxo da Jessica, o agente já explicava a readequação e confirmava que a Dra. Jessica continuaria o atendimento, mas a conversa permanecia em `agente`
+**Causa:** O runtime tratava a resposta final do agente apenas como mais uma continuidade da automação, sem refletir na `conversas.status` que o próximo responsável operacional agora era o humano
+**Correção:** Detectar a etapa de confirmação do handoff em `beneficios_previdenciarios` e, quando o lead confirma que a Dra. Jessica pode seguir no mesmo número, mover a conversa para `aguardando_cliente`
+**Regra pratica:** Se o agente já entregou a conversa para o humano, a inbox precisa mostrar isso imediatamente. Caso contrário, a thread fica no box errado e a fila perde valor operacional
+
 ### 169. Depois que existem tenants pagantes, evolução de playbook precisa ser isolada por tenant e rollout, não lançada como comportamento global
 **Problema:** `beneficios_previdenciarios` e `planejamento_previdenciario` passaram a evoluir em paralelo, mas qualquer bug novo ainda poderia atingir escritórios já ativos porque o produto não tinha uma camada formal de isolamento/versionamento para essas frentes
 **Causa:** O PrevLegal vinha sendo tratado como um único comportamento-base em produção, mesmo depois de entrar na fase de clientes pagantes e playbooks operacionais distintos
