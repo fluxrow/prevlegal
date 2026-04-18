@@ -9,6 +9,7 @@ Mestra: [[MASTER_PREV_LEGAL]]
 - [x] Logging bruto de tokens do agente (pré-go-live)
 - [ ] Dashboard de custos por tenant (P1 pós-go-live)
 - [ ] Rate limiting por tenant baseado em budget (P2)
+- [ ] Auditoria e correção das policies RLS pós-migration 039 (`usuarios.id` vs `auth_id`) — P2 pós-piloto
 
 ## Atualizacao Contratos / motor MVP de minuta por tenant entrou no produto — 17/04/2026
 

@@ -55,7 +55,33 @@ Mestra: [[MASTER_PREV_LEGAL]]
 - Plugado no route `agente/responder` em padrão fire-and-forget
 - Migration `054_agent_llm_usage.sql` criada
 - Patch manual pronto em `supabase/manual/` para aplicação em produção
+- Migration `054_agent_llm_usage` aplicada em produção em 2026-04-18 13:19:55 -03 no projeto `lrqvvxmgimjlghpwavdb`
 - Dashboard de visualização fica como P1 pós-go-live
+
+## Atualização 2026-04-18 — Bug latente nas policies RLS pós-migration 039
+
+Durante investigação da policy da migration 054, foi descoberto que várias migrations posteriores (040, 042, 053 e a 054 original) usam:
+
+`usuarios.id = auth.uid()`
+
+Mas a convenção real do projeto, confirmada em:
+- `supabase/migrations/005_usuarios_rls.sql`
+- `src/lib/current-usuario.ts`
+
+é:
+
+`usuarios.auth_id = auth.uid()`
+
+Confirmação em produção (projeto `lrqvvxmgimjlghpwavdb`) em 2026-04-18:
+- `usuarios.id = auth_id`: 0 de 2 registros
+- `usuarios.id <> auth_id`: 2 de 2 registros
+
+Impacto prático:
+- Policies nas tabelas `agentes`, `event_triggers` e outras que usam a convenção errada provavelmente retornam resultado vazio para qualquer usuário autenticado
+- Rotas que acessam essas tabelas via client autenticado (não service role) estariam retornando listas vazias
+- Rotas que usam service role no backend contornam o RLS e funcionam normalmente, mascarando o bug
+
+Decisão: NÃO corrigir agora (pré-go-live). Corrigir após estabilização do piloto, com auditoria completa das policies afetadas e teste de regressão.
 
 ### 182. Minuta multi-tenant precisa nascer como template por escritório, não como HTML solto dentro da tela do lead
 **Problema:** O go-live do escritório Pagliuca / Lessnau exigia preparar contrato com dados do cliente preenchidos, mas o produto não tinha onde guardar uma minuta padrão por tenant

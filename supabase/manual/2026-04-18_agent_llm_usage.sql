@@ -27,6 +27,10 @@ CREATE INDEX IF NOT EXISTS idx_agent_llm_usage_lead
 ALTER TABLE public.agent_llm_usage ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "agent_llm_usage_tenant_select" ON public.agent_llm_usage
-  FOR SELECT USING (tenant_id IN (
-    SELECT tenant_id FROM public.usuarios WHERE user_id = auth.uid()
-  ));
+  FOR SELECT USING (
+    tenant_id IN (
+      SELECT tenant_id
+      FROM public.usuarios
+      WHERE auth_id = auth.uid()
+    )
+  );
