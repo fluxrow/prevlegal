@@ -5,6 +5,7 @@ import { getConfiguracaoAtual } from '@/lib/configuracoes'
 import { normalizeOperationProfile } from '@/lib/operation-profile'
 import { sendWhatsAppMessage } from '@/lib/whatsapp-provider'
 import { getPlanningKnowledgeBlock } from '@/lib/agent-knowledge'
+import { logLlmUsage } from '@/lib/agent-llm-logger'
 
 function createAdminSupabase() {
   return createClient(
@@ -877,19 +878,56 @@ export async function POST(request: NextRequest) {
 
     // 6. Chamar Claude
     let response
+    const modelName = config.agente_modelo || 'claude-sonnet-4-20250514'
+    const maxTokens =
+      config.agente_max_tokens ||
+      (normalizedOperationProfile === 'planejamento_previdenciario'
+        ? 1200
+        : 500)
+    const llmStartedAt = Date.now()
 
     try {
       response = await anthropic.messages.create({
-        model: config.agente_modelo || 'claude-sonnet-4-20250514',
-        max_tokens:
-          config.agente_max_tokens ||
-          (normalizedOperationProfile === 'planejamento_previdenciario'
-            ? 1200
-            : 500),
+        model: modelName,
+        max_tokens: maxTokens,
         system: systemPrompt,
         messages: historico,
       })
+
+      if (tenantId) {
+        const usage = (response as any)?.usage || {}
+        logLlmUsage({
+          tenantId,
+          conversaId: mensagem.conversa_id || null,
+          leadId: mensagem.lead_id || null,
+          agenteId: agenteRow?.id || null,
+          perfilOperacao: normalizedOperationProfile,
+          modelo: modelName,
+          inputTokens: usage.input_tokens ?? 0,
+          outputTokens: usage.output_tokens ?? 0,
+          cacheCreationInputTokens: usage.cache_creation_input_tokens ?? 0,
+          cacheReadInputTokens: usage.cache_read_input_tokens ?? 0,
+          latenciaMs: Date.now() - llmStartedAt,
+          sucesso: true,
+        }).catch((e) => console.warn('[agent-llm-log] falhou:', e))
+      }
     } catch (modelError: any) {
+      if (tenantId) {
+        logLlmUsage({
+          tenantId,
+          conversaId: mensagem.conversa_id || null,
+          leadId: mensagem.lead_id || null,
+          agenteId: agenteRow?.id || null,
+          perfilOperacao: normalizedOperationProfile,
+          modelo: modelName,
+          inputTokens: 0,
+          outputTokens: 0,
+          latenciaMs: Date.now() - llmStartedAt,
+          sucesso: false,
+          erroDescricao: modelError?.message || 'Erro desconhecido na chamada ao modelo',
+        }).catch((e) => console.warn('[agent-llm-log] falhou:', e))
+      }
+
       if (isAnthropicCreditError(modelError)) {
         if (mensagem.conversa_id) {
           await supabase

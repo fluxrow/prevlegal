@@ -4,6 +4,12 @@ Contexto: [[SESSION_HISTORY_MASTER]]
 Mestra: [[MASTER_PREV_LEGAL]]
 > Última atualização: 10/04/2026
 
+## Atualizacao Observabilidade / logging bruto de tokens do agente entrou no pre-go-live — 18/04/2026
+
+- [x] Logging bruto de tokens do agente (pré-go-live)
+- [ ] Dashboard de custos por tenant (P1 pós-go-live)
+- [ ] Rate limiting por tenant baseado em budget (P2)
+
 ## Atualizacao Contratos / motor MVP de minuta por tenant entrou no produto — 17/04/2026
 
 - para sustentar o go-live do escritório Pagliuca / Lessnau, o produto ganhou a primeira camada real de geração de minuta por tenant

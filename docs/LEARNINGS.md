@@ -48,6 +48,15 @@ Mestra: [[MASTER_PREV_LEGAL]]
   - Arquitetos, psicólogos, contadores
   - Carreiras estaduais (PM, BM, servidor estadual/municipal)
 
+## Atualização 2026-04-18 — Logging de uso LLM do agente
+
+- Nova tabela `public.agent_llm_usage` registra cada chamada da Claude API
+- Helper em `src/lib/agent-llm-logger.ts` calcula custo automaticamente
+- Plugado no route `agente/responder` em padrão fire-and-forget
+- Migration `054_agent_llm_usage.sql` criada
+- Patch manual pronto em `supabase/manual/` para aplicação em produção
+- Dashboard de visualização fica como P1 pós-go-live
+
 ### 182. Minuta multi-tenant precisa nascer como template por escritório, não como HTML solto dentro da tela do lead
 **Problema:** O go-live do escritório Pagliuca / Lessnau exigia preparar contrato com dados do cliente preenchidos, mas o produto não tinha onde guardar uma minuta padrão por tenant
 **Causa:** O PrevLegal já tinha fluxo de contratos financeiros, porém não existia estrutura específica para minuta jurídica parametrizável por escritório
