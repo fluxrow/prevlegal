@@ -649,7 +649,7 @@ export async function POST(request: NextRequest) {
     const { data: globalConfig } = await getConfiguracaoAtual(
       supabase,
       tenantId,
-      'agente_ativo, agente_nome, agente_prompt_sistema, agente_modelo, agente_max_tokens, agente_resposta_automatica, agente_horario_inicio, agente_horario_fim, agente_apenas_dias_uteis, agente_fluxo_qualificacao, agente_exemplos_dialogo, agente_gatilhos_escalada, agente_frases_proibidas, agente_objeccoes, agente_fallback',
+      'agente_ativo, agente_nome, agente_prompt_sistema, agente_modelo, agente_max_tokens, agente_resposta_automatica, agente_horario_inicio, agente_horario_fim, agente_apenas_dias_uteis, agente_fluxo_qualificacao, agente_exemplos_dialogo, agente_gatilhos_escalada, agente_frases_proibidas, agente_objeccoes, agente_fallback, agente_perfil_operacao',
     )
 
     // Monta config unificada (agente resolvido tem prioridade sobre config global)
@@ -819,7 +819,7 @@ export async function POST(request: NextRequest) {
     const promptBase = config.agente_prompt_sistema || PROMPT_PADRAO
     const partes = [promptBase]
     const normalizedOperationProfile = normalizeOperationProfile(
-      config.agente_perfil_operacao || agenteRow?.perfil_operacao || null,
+      config.agente_perfil_operacao || agenteRow?.perfil_operacao || 'beneficios_previdenciarios',
     )
     if (config.agente_fluxo_qualificacao) partes.push(`\nFLUXO DE QUALIFICAÇÃO:\n${config.agente_fluxo_qualificacao}`)
     if (config.agente_exemplos_dialogo) partes.push(`\nEXEMPLOS DE DIÁLOGO:\n${config.agente_exemplos_dialogo}`)
@@ -870,11 +870,12 @@ export async function POST(request: NextRequest) {
     }
 
     const systemPrompt = partes.join('\n')
-      .replace('{nome}', lead?.nome || 'Beneficiário')
-      .replace('{nb}', lead?.nb || 'N/A')
-      .replace('{banco}', lead?.banco || 'N/A')
-      .replace('{valor}', lead?.valor_rma ? `${Number(lead.valor_rma).toFixed(2)}` : 'N/A')
-      .replace('{ganho}', lead?.ganho_potencial ? `${Number(lead.ganho_potencial).toFixed(2)}` : 'N/A')
+      .replace(/\{nome\}/g, lead?.nome || 'Beneficiário')
+      .replace(/\{nb\}/g, lead?.nb || 'N/A')
+      .replace(/\{banco\}/g, lead?.banco || 'N/A')
+      .replace(/\{valor\}/g, lead?.valor_rma ? `${Number(lead.valor_rma).toFixed(2)}` : 'N/A')
+      .replace(/\{ganho\}/g, lead?.ganho_potencial ? `${Number(lead.ganho_potencial).toFixed(2)}` : 'N/A')
+      .replace(/\{nome_publico\}/g, config.agente_nome || 'Assistente')
 
     // 6. Chamar Claude
     let response
@@ -961,7 +962,15 @@ export async function POST(request: NextRequest) {
       throw modelError
     }
 
-    const respostaTextoBruta = response.content[0].type === 'text' ? response.content[0].text : ''
+    const respostaTextoBruta = response.content[0]?.type === 'text' ? response.content[0].text : ''
+    if (!respostaTextoBruta) {
+      console.warn('[agente] Resposta do modelo sem conteúdo textual útil', {
+        mensagem_id,
+        tenantId,
+        leadId: mensagem.lead_id || null,
+        stop_reason: (response as any)?.stop_reason || null,
+      })
+    }
     const respostaTexto = stripEmojis(respostaTextoBruta)
 
     if (!respostaTexto) {

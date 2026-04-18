@@ -126,7 +126,9 @@ async function buildSystemPrompt(): Promise<string> {
     console.warn('[smoke-test] Aviso do loader:', planningKnowledge.warning)
   }
 
-  return partes.join('\n')
+  return partes
+    .join('\n')
+    .replace(/\{nome_publico\}/g, 'Bianca')
 }
 
 async function runTest(

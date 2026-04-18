@@ -11,6 +11,37 @@ Mestra: [[MASTER_PREV_LEGAL]]
 - [ ] Rate limiting por tenant baseado em budget (P2)
 - [ ] Auditoria e correção das policies RLS pós-migration 039 (`usuarios.id` vs `auth_id`) — P2 pós-piloto
 
+## Débito técnico pós-piloto (origem: ultrareview pré-go-live)
+
+Bugs identificados no ultrareview de 18/04 que foram conscientemente adiados para pós-piloto, com justificativa:
+
+- [ ] C2: Fire-and-forget do `logLlmUsage` pode perder dados em serverless
+  - Solução: migrar para `waitUntil()` da Vercel ou queue dedicada
+  - Prioridade: P1 se volume crescer; P2 no piloto
+- [ ] H1: Race condition no cache de knowledge
+  - Solução: pending-promise pattern no loader
+  - Prioridade: P2
+- [ ] M1: Novo Supabase client por chamada do logger
+  - Solução: singleton do client em módulo
+  - Prioridade: P2
+- [ ] M2: Sem validação de tamanho do prompt pré-Anthropic
+  - Solução: contador de tokens + guard com fallback para conversa resumida
+  - Prioridade: P2
+- [ ] M4: Smoke test divergente da montagem de produção
+  - Solução: extrair `buildSystemPrompt` real e reutilizar no smoke test
+  - Prioridade: P2
+- [ ] M5: `error.message` da Anthropic exposto no HTTP response
+  - Solução: normalizar mensagens de erro por categoria
+  - Prioridade: P1 quando tiver ingress público
+- [ ] M6: `Promise.all` no `readFile` dos `.md` de knowledge
+  - Solução: `Promise.allSettled` + warning por arquivo
+  - Prioridade: P2
+- [ ] M7: PII do lead no prompt enviado à Anthropic
+  - Solução: habilitar zero retention no contrato Anthropic + revisão de DPO do escritório
+  - Prioridade: P1 (decisão de produto/LGPD)
+- [ ] L1-L7: melhorias de tipagem, observabilidade e hygiene
+  - Prioridade: P3
+
 ## Atualizacao Contratos / motor MVP de minuta por tenant entrou no produto — 17/04/2026
 
 - para sustentar o go-live do escritório Pagliuca / Lessnau, o produto ganhou a primeira camada real de geração de minuta por tenant
