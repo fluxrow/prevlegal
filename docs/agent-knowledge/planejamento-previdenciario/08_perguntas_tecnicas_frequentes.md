@@ -275,3 +275,352 @@ Regra absoluta: **nunca afirmar valor específico, regra específica ou recomend
 **Detalhe:** A estratégia de ter vínculos simultâneos faz sentido para quem está abaixo do teto em cada vínculo individualmente — somando, atinge o teto e maximiza o benefício futuro.
 
 **Conexão:** "Se você tem vínculos simultâneos ou renda mista, análise identifica se a estrutura atual está otimizada ou se há ajuste que aumenta o benefício futuro sem custo significativo."
+
+---
+
+## PARTE 4 — PREVIDÊNCIA COMPLEMENTAR (PGBL, VGBL, FUNDOS)
+
+### 26. "PGBL ou VGBL — qual é melhor?"
+
+**Resposta direta:** Depende do seu perfil tributário. **Regra prática:**
+
+- **PGBL**: se você faz **declaração completa** do IR E contribui para INSS/RPPS. Dedução de até 12% da renda bruta tributável. No resgate, IR incide sobre **todo o saldo**.
+- **VGBL**: se você faz declaração simplificada, não contribui ao INSS/RPPS, ou já atingiu o limite de 12% em PGBL. Sem dedução no aporte. No resgate, IR incide apenas sobre os **rendimentos**.
+
+**Estratégia comum para alta renda:** PGBL até o limite de 12% da renda tributável + VGBL complementar para aportes acima disso.
+
+**Conexão:** "A escolha ótima no seu caso depende da sua estrutura tributária — faixa de IR, tipo de declaração, outras deduções. Análise específica define a estratégia."
+
+### 27. "Qual a vantagem da tabela regressiva?"
+
+**Resposta direta:** Na tabela regressiva, a alíquota de IR no resgate diminui quanto mais tempo o aporte ficou aplicado:
+
+- Até 2 anos: 35%
+- 2-4 anos: 30%
+- 4-6 anos: 25%
+- 6-8 anos: 20%
+- 8-10 anos: 15%
+- Mais de 10 anos: **10%**
+
+**Detalhe:** Para quem vai resgatar em horizonte longo (10+ anos), 10% é a menor alíquota do mercado entre investimentos com vantagem fiscal. Muito inferior à alíquota máxima da tabela progressiva (27,5%).
+
+**Ressalva:** Tabela regressiva é **irrevogável**. Escolheu, não muda. Se você for resgatar antes de 10 anos e em valores pequenos (que cairiam em faixa isenta da progressiva), a progressiva pode ser melhor.
+
+**Conexão:** "Escolha entre progressiva e regressiva é decisão estratégica de longo prazo. Planejamento considera horizonte, valor esperado de resgate e estrutura tributária para recomendar."
+
+### 28. "Posso mudar de PGBL para VGBL?"
+
+**Resposta direta:** Diretamente **não**. PGBL e VGBL são produtos distintos com tratamentos tributários diferentes. Mas você pode:
+
+- **Resgatar** o PGBL (com tributação) e aplicar em VGBL
+- **Portar** saldo entre produtos do mesmo tipo (PGBL para PGBL, VGBL para VGBL) **sem tributação**
+
+**Ressalva:** Resgate de PGBL em tabela regressiva antes de 10 anos tem alíquota alta. Fazer "migração" via resgate precoce raramente compensa.
+
+**Conexão:** "Se você tem PGBL hoje e está em dúvida sobre a estrutura certa, análise verifica se portabilidade interna resolve ou se mudança de produto é viável."
+
+### 29. "Vale a pena PGBL do banco?"
+
+**Resposta direta:** PGBL de grande banco de varejo **frequentemente tem taxas altas** (carregamento de 2-5% + administração de 2-4% ao ano) que corroem a rentabilidade de longo prazo.
+
+**Detalhe:** Existem alternativas com taxas muito menores — corretoras independentes, bancos digitais especializados, seguradoras de private. Para patrimônio de R$ 100k+, a diferença de taxas pode representar 20-30% menor saldo final em 20 anos.
+
+**Ressalva:** Alguns PGBLs de banco são decentes, especialmente em planos empresariais com negociação coletiva. Análise depende do produto específico.
+
+**Conexão:** "Auditoria de PGBL existente é parte comum do planejamento. Frequentemente identifica que portabilidade para produto melhor representa ganho patrimonial significativo sem custo imediato."
+
+### 30. "Como funciona o FUNPRESP do Judiciário?"
+
+**Resposta direta:** FUNPRESP-Jud é a previdência complementar dos servidores do Judiciário Federal e MPU. Obrigatória para quem ingressou após outubro/2013, para a parcela de remuneração acima do teto do RGPS.
+
+**Detalhe:**
+- Contribuição servidor: 7,5%, 8%, 8,25% ou 8,5% sobre a parcela acima do teto
+- Contribuição União (matching): **idêntica** à do servidor
+- Plano de Contribuição Definida — saldo acumulado depende da contribuição e da rentabilidade
+- Perfis de investimento com migração permitida
+
+**Conexão:** "Para magistrado/servidor MPU pós-2013, a escolha do percentual e do perfil de investimento é uma das decisões previdenciárias com maior impacto patrimonial ao longo da carreira. Planejamento dimensiona."
+
+### 31. "Meu patrão oferece fundo de pensão. Devo aderir?"
+
+**Resposta direta:** **Quase sempre sim**, especialmente se houver matching (contribuição da empresa junto à sua). Não aderir ao matching máximo é literalmente abrir mão de salário diferido pago pela empresa.
+
+**Exemplo:** Empresa oferece matching de 100% até 7% do salário. Você que ganha R$ 15k/mês e contribui com 3% (R$ 450), perde R$ 600/mês de matching que a empresa pagaria se você contribuísse com 7% (R$ 1.050). Em 30 anos: R$ 216k sem rendimentos — com rendimentos compostos, pode passar de R$ 700k.
+
+**Ressalva:** Avaliar se o fundo fechado da empresa tem taxas razoáveis e perfil de investimento adequado. Alguns fundos antigos são menos competitivos.
+
+**Conexão:** "Dimensionar adesão ótima a fundo corporativo é decisão rápida de fazer e com alto impacto. Parte do planejamento para executivo."
+
+### 32. "VGBL é bom para sucessão?"
+
+**Resposta direta:** **Sim, é instrumento relevante de planejamento sucessório**, com algumas vantagens:
+
+1. **Não entra em inventário** — beneficiários recebem direto, em até 30 dias
+2. **Sem custos de inventário** (que podem chegar a 10-15% do patrimônio)
+3. **ITCMD não incide em alguns estados** (tema controvertido — consultar local)
+4. **Confidencialidade** — indicação de beneficiários não consta em registro público
+5. **Flexibilidade** na indicação de beneficiários (respeitada a legítima)
+
+**Ressalva:** Em alguns estados (SP, RJ, MG) há discussão judicial sobre incidência de ITCMD. Jurisprudência varia.
+
+**Conexão:** "Para patrimônio relevante, VGBL geralmente integra a estratégia sucessória — junto com holding, testamento, doação com usufruto. Planejamento integrado considera todas as camadas."
+
+---
+
+## PARTE 5 — CENÁRIOS PROFISSIONAIS ESPECÍFICOS
+
+### 33. "Empresário deve pagar pró-labore alto?"
+
+**Resposta direta:** Para quem pensa em aposentadoria pública relevante: **geralmente sim**. Pró-labore no teto do INSS garante contribuição máxima e aposentadoria potencial no teto. Custo: R$ 897/mês (11%) de contribuição do sócio + 20% patronal que a empresa paga sobre o pró-labore.
+
+**Detalhe:** Tentação clássica é pró-labore mínimo (1 SM) para economizar tributo. Economia imediata, mas:
+- Aposentadoria do INSS mínima (salário mínimo)
+- Auxílio-doença mínimo
+- Salário-maternidade mínimo
+- Pensão por morte mínima para dependentes
+
+**Análise comparativa em 30 anos:**
+- Pró-labore mínimo: aposentadoria ~R$ 1.500
+- Pró-labore no teto: aposentadoria ~R$ 8.000+
+- Diferença em 20 anos de aposentadoria recebida: ~R$ 1,5 milhão
+
+**Conexão:** "Valor ótimo de pró-labore no seu caso depende de idade, outras fontes de renda, patrimônio e objetivos. Planejamento projeta cenários e recomenda."
+
+### 34. "Médico autônomo deve abrir PJ?"
+
+**Resposta direta:** Depende de volume de receita, estrutura tributária e objetivos previdenciários. Vantagens típicas de PJ:
+
+- Tributação efetiva menor (Simples Nacional ou Lucro Presumido)
+- Possibilidade de distribuição de lucros isenta
+- Estrutura para sucessão e proteção patrimonial
+
+**Ressalvas para previdência:**
+- Distribuição de lucros **não gera** contribuição previdenciária
+- Pró-labore mínimo reduz contribuição e reduz aposentadoria futura
+- Carnê leão (autônomo) garante contribuição no teto automaticamente sobre o que se ganha até o teto
+
+**Conexão:** "Para médico autônomo pesando abertura de PJ, análise integrada considera impacto tributário + impacto previdenciário. Frequentemente a conclusão certa é abrir PJ **e** estruturar pró-labore estratégico."
+
+### 35. "Advogado autônomo pode usar a caixa de assistência da OAB?"
+
+**Resposta direta:** Caixas de assistência (CAA) de OAB estaduais oferecem, em alguns estados, **previdência complementar** para advogados. Exemplos: CAASP (SP), CAARJ (RJ), CAADF (DF).
+
+**Detalhe:** São previdências **complementares** ao INSS — não substitutas. Estruturadas como fundos fechados ou produtos de seguradora. Condições variam por estado.
+
+**Ressalva:** Antes de aderir, vale comparar taxas e rentabilidade histórica com alternativas de mercado (PGBL/VGBL independente). Em alguns casos, CAA é competitiva; em outros, produto de mercado é melhor.
+
+**Conexão:** "Planejamento para advogado frequentemente compara essas opções e dimensiona a estrutura ótima — CAA, INSS, PGBL, patrimônio próprio."
+
+### 36. "Executivo com stock options: como planejar previdência?"
+
+**Resposta direta:** Stock options e RSUs **não geram** contribuição previdenciária (em regra) — não integram o salário de contribuição. Portanto, não aumentam o benefício futuro do INSS.
+
+**Detalhe:** Para executivo com grande parte da remuneração em equity, a aposentadoria do INSS fica proporcionalmente pequena — é essencial estruturar:
+
+1. **Fundo de pensão corporativo** no percentual máximo de matching
+2. **PGBL pessoal** com dedução fiscal
+3. **VGBL** para aportes acima do limite de PGBL
+4. **Patrimônio próprio** gerador de renda (resultado do exercício das stock options)
+5. **Planejamento sucessório** integrado
+
+**Conexão:** "Para executivo com equity, o planejamento previdenciário se confunde com planejamento patrimonial. As decisões de quando exercer opções, quanto reinvestir em previdência e quanto em patrimônio próprio são integradas."
+
+### 37. "Servidor pode acumular dois cargos públicos?"
+
+**Resposta direta:** **Sim, em casos específicos previstos na Constituição** (art. 37, XVI):
+
+- Dois cargos de professor
+- Um cargo de professor com outro técnico ou científico
+- Dois cargos ou empregos privativos de profissionais de saúde com profissões regulamentadas
+
+**Detalhe:** Em acúmulo legal, cada cargo gera direito à aposentadoria própria, com regras específicas. Servidor pode se aposentar em ambos, com requisitos próprios para cada.
+
+**Ressalva:** Fora das hipóteses permitidas constitucionalmente, acúmulo é ilegal e pode gerar devolução de valores.
+
+**Conexão:** "Planejamento para servidor com dois cargos analisa cada vínculo separadamente e dimensiona momento ótimo de aposentar em cada um."
+
+### 38. "Tempo de bolsa CNPq/CAPES conta para aposentadoria?"
+
+**Resposta direta:** **Em regra, não.** Bolsas de mestrado, doutorado, pós-doc e produtividade **não são salário** e **não geram contribuição** previdenciária compulsória.
+
+**Detalhe:** Bolsista pode contribuir **facultativamente** durante o período de bolsa — contribuindo sobre o valor da bolsa ou sobre outro valor que ele declare. Muitos pesquisadores não fazem isso e descobrem tardiamente as lacunas no CNIS.
+
+**Ressalva:** Há jurisprudência favorável ao reconhecimento de tempo de bolsa como tempo de contribuição em alguns casos (bolsistas DTI, bolsistas com vínculo funcional), mas é tema em disputa judicial. Análise específica é necessária.
+
+**Conexão:** "Professor universitário com histórico de bolsa frequentemente tem essas lacunas. Planejamento identifica o que é recuperável via contribuição retroativa ou via reconhecimento judicial."
+
+### 39. "Profissional autônomo que não contribuiu por anos: o que fazer?"
+
+**Resposta direta:** Três caminhos possíveis, a avaliar caso a caso:
+
+1. **Recolher em atraso**: pagar retroativamente com multa e juros. Viabilidade econômica depende do valor e do impacto no benefício.
+2. **Começar a contribuir agora**: se você é jovem, geralmente é mais eficiente do que atraso. Se está próximo da aposentadoria, pode não dar tempo.
+3. **Reconhecimento judicial**: se houver documentação de atividade no período, pode ser reconhecido como tempo de contribuição via ação.
+
+**Ressalva:** Cada período tem regras específicas de recolhimento em atraso. Alguns períodos muito antigos podem ter limitações.
+
+**Conexão:** "Análise identifica qual caminho é viável e vantajoso no seu caso. Frequentemente a conclusão é combinada — recolher alguns períodos e deixar outros, priorizando o que dá mais retorno atuarial."
+
+### 40. "Militar pode acumular com cargo civil?"
+
+**Resposta direta:** **Pode, em casos específicos.** Constituição permite acumulação quando o militar está **na reserva remunerada ou reformado** e exerce cargo civil compatível com os casos de acúmulo permitidos (art. 37, XVI da CF) ou cargo em comissão.
+
+**Detalhe:** Militar da ativa **não pode** exercer cargo civil permanente. Após passagem para reserva, pode exercer cargo/emprego público ou privado, com cumulação de proventos.
+
+**Conexão:** "Para militar planejando reserva, a decisão inclui análise de segunda carreira civil compatível — pode aumentar muito a renda total pós-reserva."
+
+---
+
+## PARTE 6 — SITUAÇÕES ESPECÍFICAS E DÚVIDAS FREQUENTES
+
+### 41. "Pensão por morte: meu cônjuge recebe integral?"
+
+**Resposta direta:** **Depende das regras pós-EC 103/2019**. A nova estrutura:
+
+- **Cota familiar:** 50% do benefício do falecido
+- **Cota por dependente:** +10% por dependente (máximo 100%)
+
+**Exemplo:** Falecido recebia R$ 5.000. Deixa viúva + 2 filhos dependentes = 3 dependentes. Pensão = 50% + (3 × 10%) = 80% de R$ 5.000 = **R$ 4.000** para divisão entre os 3.
+
+**Duração da pensão do cônjuge:**
+- Casamento/união com mais de 2 anos + óbito não acidental
+- Depende da idade do cônjuge no óbito:
+  - Menos de 21 anos: pensão por 3 anos
+  - 21-26 anos: 6 anos
+  - 27-29 anos: 10 anos
+  - 30-40 anos: 15 anos
+  - 41-43 anos: 20 anos
+  - 44+ anos: **vitalícia**
+
+**Ressalva:** Morte acidental ou por acidente de trabalho tem regras especiais (não aplica tabela etária para cônjuge).
+
+**Conexão:** "Para casais em que há grande diferença de idade, ou para cônjuge jovem de segurado com renda alta, análise específica dimensiona cobertura e identifica se é caso de complementar com seguro/VGBL."
+
+### 42. "Posso acumular aposentadoria com pensão por morte?"
+
+**Resposta direta:** **Sim, mas com limitações pós-EC 103/2019.** Cônjuge que recebe pensão e tem aposentadoria própria precisa escolher:
+
+- Recebe o benefício de **maior valor integralmente**
+- E recebe **apenas parte** do outro, conforme faixas:
+  - Até 1 SM: 80%
+  - 1-2 SM: 60%
+  - 2-3 SM: 40%
+  - 3-4 SM: 20%
+  - Acima de 4 SM: 0% do excedente
+
+**Exemplo:** Aposentadoria R$ 4.000 + pensão R$ 6.000 (valores cheios). Pensão é maior — recebe integral. Da aposentadoria, recebe apenas parte conforme tabela.
+
+**Ressalva:** Cálculo complexo, feito em faixas de salário mínimo. Análise individual é necessária.
+
+**Conexão:** "Para viúvos com aposentadoria própria, análise do que é recebido efetivamente — e de estratégia para maximizar total — é parte do planejamento. Às vezes vale renunciar a um dos benefícios."
+
+### 43. "BPC/LOAS é aposentadoria?"
+
+**Resposta direta:** **Não.** BPC (Benefício de Prestação Continuada) da LOAS é **assistência social**, não previdência. É pago a idosos de 65+ anos ou pessoas com deficiência de baixa renda (até 1/4 de SM per capita familiar), **sem necessidade de contribuição prévia**.
+
+**Detalhe:**
+- Valor: 1 salário mínimo
+- Não dá direito a 13º salário
+- Não gera pensão por morte
+- Revisto a cada 2 anos
+
+**Conexão:** "BPC é rede de proteção social, não aposentadoria. Para planejamento de lead com renda, não é o foco — mas para cuidadores/familiares pode ser relevante saber."
+
+### 44. "Devo migrar de PGBL para previdência fechada do meu empregador?"
+
+**Resposta direta:** Geralmente **não vale migrar** o saldo de PGBL existente — você perderia vantagens fiscais e o saldo não migra sem tributação. O que vale é:
+
+- **Aderir ao fundo da empresa** com aportes novos (especialmente pelo matching)
+- **Manter o PGBL** existente e portar saldos entre produtos do mesmo tipo se for mudar de administrador
+
+**Detalhe:** Portabilidade entre PGBLs (ou entre VGBLs) não gera tributação. Mas migrar PGBL para fundo fechado equivale a resgate + nova aplicação, com tributação no resgate.
+
+**Conexão:** "Estratégia típica: manter PGBL existente + aderir ao fundo fechado com aportes novos. Análise individual valida se essa é a melhor combinação no seu caso."
+
+### 45. "Qual a diferença entre paridade e integralidade?"
+
+**Resposta direta:** Dois conceitos distintos, aplicáveis a servidores que ingressaram antes de 2003:
+
+- **Integralidade**: aposentadoria é calculada com base no **último vencimento** do servidor (não na média). Ganha na aposentadoria o que ganhava na ativa.
+- **Paridade**: aposentado tem **os mesmos reajustes** dos servidores da ativa. Quando aumenta salário dos ativos, aumenta proporcionalmente o provento do aposentado.
+
+**Detalhe:** A EC 41/2003 acabou com integralidade e paridade para quem ingressou após sua promulgação (exceto em regras de transição específicas, como a EC 47/2005).
+
+**Ressalva:** Servidor antigo (pré-2003) que cumpriu regra da EC 41 ou EC 47 mantém direito.
+
+**Conexão:** "Para servidor antigo, decisão de quando aposentar considera cuidadosamente se a regra aplicável garante paridade/integralidade — são as regras mais vantajosas do sistema. Planejamento específico é fundamental."
+
+### 46. "Aposentadoria por incapacidade: como funciona?"
+
+**Resposta direta:** Concedida para segurado considerado **incapaz de forma permanente** para qualquer atividade laborativa, após perícia médica do INSS.
+
+**Detalhe:**
+- Antes chamada de "aposentadoria por invalidez"
+- Carência: 12 contribuições (dispensada em acidente, doenças graves listadas, acidente de trabalho)
+- Valor: 60% da média + 2% por ano que exceder 20 anos (h) ou 15 anos (m)
+- **Exceção**: quando decorre de acidente de trabalho, doença profissional ou doença grave, valor é **100% da média**
+
+**Ressalva:** EC 103/2019 endureceu o valor para situações que não decorram de acidente/doença grave — passou de 100% da média (regra antiga) para 60% + 2%. Muito debate jurídico sobre constitucionalidade.
+
+**Conexão:** "Para quem enfrenta problema de saúde com risco de incapacidade, planejamento considera cobertura complementar (seguro de invalidez, VGBL) para mitigar o redutor da aposentadoria por incapacidade."
+
+### 47. "Auxílio-doença e aposentadoria: qual a relação?"
+
+**Resposta direta:** São benefícios distintos:
+
+- **Auxílio-doença (incapacidade temporária)**: pago enquanto durar a incapacidade temporária. Carência de 12 contribuições (com exceções). Valor: 91% do salário-de-benefício até o teto.
+- **Aposentadoria por incapacidade permanente**: quando a perícia conclui que a incapacidade é definitiva. Converte o auxílio-doença em aposentadoria.
+
+**Detalhe:** Perícias periódicas do INSS avaliam manutenção da incapacidade. Cessação do auxílio-doença exige capacidade recuperada; conversão em aposentadoria exige incapacidade permanente.
+
+**Conexão:** "Para quem está em benefício por incapacidade, planejamento pode estruturar transição para aposentadoria programada (quando cumprir requisitos) e/ou análise da aposentadoria por incapacidade como destino definitivo."
+
+### 48. "Revisão da vida toda: ainda existe?"
+
+**Resposta direta:** **Situação em aberto, com reviravolta recente.** Revisão da vida toda permitia que aposentados pedissem recálculo considerando **todas** as contribuições (inclusive anteriores a julho/1994), em vez da regra padrão do PBC pós-julho/1994.
+
+**Detalhe:** STF reconheceu a tese em 2022 (Tema 1.102). Mas em 2024 o Supremo **mudou o entendimento** e julgou inconstitucional a revisão, derrubando a tese anteriormente reconhecida. A situação segue em discussão, com pedidos judiciais sobre efeitos da decisão.
+
+**Ressalva:** Para aposentados que já tinham ação em andamento, há discussão sobre modulação. Análise jurídica é indispensável — o tema evoluiu rápido e varia caso a caso.
+
+**Conexão:** "Se você é aposentado com muitas contribuições anteriores a 1994, análise verifica se há fundamento para revisão na situação atual. Tema técnico que exige advogado especialista."
+
+### 49. "Minha empresa foi à falência: perco direitos previdenciários?"
+
+**Resposta direta:** **Não perde.** Contribuições que a empresa deveria ter feito e não fez não prejudicam o trabalhador — o INSS cobra diretamente a empresa e considera o tempo como contribuído para o empregado.
+
+**Detalhe:** Período com vínculo registrado em carteira, mesmo que a empresa não tenha repassado contribuições ao INSS, conta integralmente para o trabalhador. Responsabilidade pelo repasse é do empregador.
+
+**Ressalva:** Salários devidos e não pagos podem gerar discussão trabalhista, mas o **tempo de contribuição previdenciário** é preservado com base no vínculo formalizado.
+
+**Conexão:** "Para quem passou por empresas que fecharam, análise verifica se tudo foi corretamente computado no CNIS. Frequentemente há lacunas reparáveis."
+
+### 50. "Quanto tempo demora para receber aposentadoria após o pedido?"
+
+**Resposta direta:** **Oficialmente 45 dias úteis** (Lei 8.213/91, art. 41-A, §5º). Na prática:
+
+- **Aposentadorias simples (idade + tempo claro)**: 30-60 dias
+- **Aposentadoria por tempo de contribuição com análise de CNIS complexo**: 3-6 meses
+- **Aposentadoria com reconhecimento de tempo especial**: 6-12 meses
+- **Aposentadoria com exigência de retificação**: indeterminado (meses a anos)
+- **Aposentadoria indeferida administrativamente**: processo judicial de 2-4 anos
+
+**Detalhe:** INSS pode exigir documentação complementar, fazer perícias, questionar períodos. Cada exigência adia o benefício.
+
+**Conexão:** "Planejamento prévio ao pedido reduz drasticamente o tempo de análise — documentação organizada, CNIS auditado e estratégia definida antecipadamente evitam exigências e indeferimentos que seriam o principal motivo de atraso."
+
+---
+
+## Princípio de uso final para o agente
+
+Este documento **não é roteiro rígido** — é repertório. O agente deve:
+
+1. **Identificar** a pergunta específica do lead
+2. **Responder** com o nível de profundidade adequado ao momento da conversa (resumo direto se o lead quer resposta rápida; detalhe se o lead quer entender melhor)
+3. **Nunca afirmar** valor ou cenário específico do caso individual
+4. **Sempre conectar** à proposta de análise individualizada — "no seu caso, a precisão exige análise do CNIS + cenário completo"
+5. **Escalar** para advogado humano quando a pergunta exigir análise técnica profunda, documentação específica ou decisão irrevogável
+
+A base desse documento combinada com os 7 documentos anteriores dá ao agente **profundidade suficiente** para sustentar conversa consultiva com lead premium — médicos, juízes, executivos, servidores, empresários — sem parecer robô de qualificação e sem ultrapassar o limite do que um agente deve afirmar.
+
+O advogado humano continua sendo o **decisor técnico final** — o agente prepara o terreno, qualifica o cenário e traz o lead até a etapa de pré-fechamento com contexto rico e relação estabelecida.
