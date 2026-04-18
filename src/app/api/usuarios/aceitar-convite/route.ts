@@ -1,5 +1,6 @@
 import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
+import { sanitizeInvitePermissions } from '@/lib/permissions'
 
 function createAdminSupabase() {
   return createAdminClient(
@@ -33,6 +34,7 @@ export async function POST(request: Request) {
   if (!convite.tenant_id) return NextResponse.json({ error: 'Convite sem tenant configurado' }, { status: 409 })
 
   const email = convite.email.toLowerCase()
+  const convitePermissions = sanitizeInvitePermissions(convite.permissions)
 
   const { data: authUsersPage, error: authUsersError } = await adminSupabase.auth.admin.listUsers({
     page: 1,
@@ -115,6 +117,7 @@ export async function POST(request: Request) {
     ativo: true,
     convidado_por: convite.convidado_por,
     convidado_em: new Date().toISOString(),
+    ...(convitePermissions ? { permissions: convitePermissions } : {}),
   }
 
   const { data: usuarioCriadoNoTrigger } = await adminSupabase

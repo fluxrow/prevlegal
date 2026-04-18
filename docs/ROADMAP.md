@@ -11,6 +11,16 @@ Mestra: [[MASTER_PREV_LEGAL]]
 - [ ] Rate limiting por tenant baseado em budget (P2)
 - [ ] Auditoria e correção das policies RLS pós-migration 039 (`usuarios.id` vs `auth_id`) — P2 pós-piloto
 
+## Débito técnico consciente (documentado pré-go-live)
+
+- [ ] Reforço de isolamento de carteira via RLS (P1 pós-piloto)
+  - Contexto: isolamento de leads/conversas/mensagens por `responsavel_id` hoje funciona via filtro backend + service role. RLS das tabelas `leads`, `conversas`, `mensagens_inbound` e `mensagens_outbound` está ampla e não garante isolamento sozinha.
+  - Risco atual: baixo durante o piloto (2 advogados, 1 tenant, todo acesso via rotas backend validadas).
+  - Risco futuro: cresce se houver cliente autenticado direto no Supabase (ex: app mobile nativo) ou se alguma rota for exposta sem filtro adequado.
+  - Solução: auditoria de policies RLS seguindo convenção `auth_id = auth.uid()` (mesma do bug latente já documentado).
+  - Testes obrigatórios antes de aplicar: todas as rotas que leem essas tabelas via client autenticado precisam continuar funcionando.
+  - Prioridade: P1 após estabilização do piloto (semana 3-4).
+
 ## Débito técnico pós-piloto (origem: ultrareview pré-go-live)
 
 Bugs identificados no ultrareview de 18/04 que foram conscientemente adiados para pós-piloto, com justificativa:

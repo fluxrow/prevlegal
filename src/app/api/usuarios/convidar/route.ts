@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 import { getUsuarioLogado, hasPermission } from '@/lib/auth-role'
+import { isMissingPermissionsColumnError, sanitizeInvitePermissions } from '@/lib/permissions'
 
 function createAdminSupabase() {
   return createAdminClient(
@@ -20,11 +21,12 @@ export async function POST(request: Request) {
 
   const supabase = await createClient()
   const adminSupabase = createAdminSupabase()
-  const { email, role } = await request.json()
+  const { email, role, permissions } = await request.json()
 
   if (!email || !role) return NextResponse.json({ error: 'Email e role são obrigatórios' }, { status: 400 })
 
   const normalizedEmail = String(email).trim().toLowerCase()
+  const sanitizedPermissions = sanitizeInvitePermissions(permissions)
 
   // Verifica se já existe usuário com esse email
   const { data: existente } = await supabase
@@ -49,11 +51,26 @@ export async function POST(request: Request) {
 
   if (authUserExistente) return NextResponse.json({ error: EMAIL_EM_USO_MESSAGE }, { status: 409 })
 
+  const invitePayload = {
+    email: normalizedEmail,
+    role,
+    convidado_por: usuario.id,
+    tenant_id: usuario.tenant_id,
+    ...(sanitizedPermissions ? { permissions: sanitizedPermissions } : {}),
+  }
+
   const { data, error } = await supabase
     .from('convites')
-    .insert({ email: normalizedEmail, role, convidado_por: usuario.id, tenant_id: usuario.tenant_id })
+    .insert(invitePayload)
     .select()
     .single()
+
+  if (error && sanitizedPermissions && isMissingPermissionsColumnError(error)) {
+    return NextResponse.json(
+      { error: 'O banco ainda não suporta permissões customizadas em convites. Aplique a migration antes de usar esse recurso.' },
+      { status: 409 },
+    )
+  }
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 

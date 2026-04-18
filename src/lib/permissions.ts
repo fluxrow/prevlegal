@@ -12,6 +12,17 @@ export type PermissionKey =
 
 export type PermissionMap = Record<PermissionKey, boolean>
 
+export const PERMISSION_KEYS = [
+  'usuarios_manage',
+  'agentes_manage',
+  'automacoes_manage',
+  'financeiro_manage',
+  'listas_manage',
+  'agendamentos_assign',
+  'inbox_humana_manage',
+  'configuracoes_manage',
+] as const satisfies readonly PermissionKey[]
+
 export const DEFAULT_PERMISSIONS_BY_ROLE: Record<Role, PermissionMap> = {
   admin: {
     usuarios_manage: true,
@@ -60,6 +71,37 @@ export function hasPermission(
   permission: PermissionKey,
 ) {
   return resolvePermissions(source.role, source.permissions)[permission]
+}
+
+/**
+ * Sanitiza overrides opcionais de permissões vindos do fluxo de convite.
+ *
+ * Regras:
+ * - `null`, `undefined` e objeto vazio retornam `null`
+ * - valores não-objeto são ignorados e retornam `null`
+ * - apenas chaves conhecidas em `PERMISSION_KEYS` são consideradas
+ * - apenas booleanos (`true` / `false`) são aceitos
+ * - se nada válido for encontrado, retorna `null`
+ *
+ * Observação: o objeto retornado contém somente as chaves explicitamente
+ * definidas no convite. As permissões restantes continuam sendo derivadas
+ * do papel (`role`) no momento de uso.
+ */
+export function sanitizeInvitePermissions(
+  input: unknown,
+): PermissionMap | null {
+  if (!input || typeof input !== 'object' || Array.isArray(input)) return null
+
+  const sanitized: Partial<PermissionMap> = {}
+
+  for (const key of PERMISSION_KEYS) {
+    const value = (input as Record<string, unknown>)[key]
+    if (typeof value === 'boolean') {
+      sanitized[key] = value
+    }
+  }
+
+  return Object.keys(sanitized).length > 0 ? (sanitized as PermissionMap) : null
 }
 
 export function isMissingColumnError(error: unknown, columns: string[]) {

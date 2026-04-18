@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { UserPlus, Copy, Check, Shield, Eye, Edit3, Crown, ToggleLeft, ToggleRight, X, Mail } from 'lucide-react'
+import { UserPlus, Copy, Check, Shield, Eye, Edit3, Crown, ToggleLeft, ToggleRight, X, Mail, ChevronDown, ChevronUp } from 'lucide-react'
 import { DEFAULT_PERMISSIONS_BY_ROLE, resolvePermissions, type PermissionKey, type PermissionMap, type Role } from '@/lib/permissions'
 
 interface Usuario {
@@ -14,16 +14,24 @@ interface Convite {
   id: string; email: string; role: string; created_at: string; expires_at: string
 }
 
+type InvitePermissionState = 'default' | 'allow' | 'deny'
+
 const PERMISSION_INFO: Array<{ key: PermissionKey; label: string; descricao: string }> = [
-  { key: 'usuarios_manage', label: 'Usuários', descricao: 'Convidar pessoas, trocar roles e editar permissões.' },
-  { key: 'agentes_manage', label: 'Agentes IA', descricao: 'Criar, editar e semear agentes do escritório.' },
-  { key: 'automacoes_manage', label: 'Automações', descricao: 'Editar gatilhos, réguas e seeds operacionais.' },
-  { key: 'financeiro_manage', label: 'Financeiro', descricao: 'Acessar contratos, parcelas e visão financeira.' },
-  { key: 'listas_manage', label: 'Listas', descricao: 'Gerenciar exclusão e manutenção de listas importadas.' },
-  { key: 'agendamentos_assign', label: 'Reatribuir agenda', descricao: 'Mover agendamentos entre responsáveis.' },
-  { key: 'inbox_humana_manage', label: 'Inbox humana', descricao: 'Assumir, responder, pausar e resolver conversas humanas.' },
-  { key: 'configuracoes_manage', label: 'Configurações', descricao: 'Administrar áreas sensíveis de configuração do escritório.' },
+  { key: 'usuarios_manage', label: 'Gestão de usuários', descricao: 'Convidar pessoas, trocar roles e editar permissões.' },
+  { key: 'agentes_manage', label: 'Gestão de agentes', descricao: 'Criar, editar e semear agentes do escritório.' },
+  { key: 'automacoes_manage', label: 'Gestão de automações', descricao: 'Editar gatilhos, réguas e seeds operacionais.' },
+  { key: 'financeiro_manage', label: 'Acesso ao financeiro', descricao: 'Acessar contratos, parcelas e visão financeira.' },
+  { key: 'listas_manage', label: 'Gestão de listas', descricao: 'Gerenciar exclusão e manutenção de listas importadas.' },
+  { key: 'agendamentos_assign', label: 'Atribuir agendamentos', descricao: 'Mover agendamentos entre responsáveis.' },
+  { key: 'inbox_humana_manage', label: 'Gestão da inbox humana', descricao: 'Assumir, responder, pausar e resolver conversas humanas.' },
+  { key: 'configuracoes_manage', label: 'Configurações do sistema', descricao: 'Administrar áreas sensíveis de configuração do escritório.' },
 ]
+
+function createInvitePermissionDraft(): Record<PermissionKey, InvitePermissionState> {
+  return Object.fromEntries(
+    PERMISSION_INFO.map((permission) => [permission.key, 'default']),
+  ) as Record<PermissionKey, InvitePermissionState>
+}
 
 const ROLE_INFO: Record<string, { label: string; cor: string; icon: React.ReactNode; descricao: string }> = {
   admin:        { label: 'Admin',        cor: '#f5c842', icon: <Crown size={12} />,  descricao: 'Acesso total — configurações, usuários, todas as funções' },
@@ -39,6 +47,8 @@ export default function GestaoUsuarios() {
   const [showConvidar, setShowConvidar] = useState(false)
   const [emailConvite, setEmailConvite] = useState('')
   const [roleConvite, setRoleConvite] = useState('operador')
+  const [showAdvancedPermissions, setShowAdvancedPermissions] = useState(false)
+  const [invitePermissionDraft, setInvitePermissionDraft] = useState<Record<PermissionKey, InvitePermissionState>>(createInvitePermissionDraft)
   const [enviando, setEnviando] = useState(false)
   const [urlConvite, setUrlConvite] = useState('')
   const [copiado, setCopiado] = useState(false)
@@ -97,10 +107,20 @@ export default function GestaoUsuarios() {
   async function convidar() {
     if (!emailConvite) { setErro('Informe o email'); return }
     setEnviando(true); setErro('')
+    const permissionOverrides = Object.entries(invitePermissionDraft).reduce((acc, [key, value]) => {
+      if (value === 'allow') acc[key as PermissionKey] = true
+      if (value === 'deny') acc[key as PermissionKey] = false
+      return acc
+    }, {} as Partial<PermissionMap>)
+
     const res = await fetch('/api/usuarios/convidar', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: emailConvite, role: roleConvite }),
+      body: JSON.stringify({
+        email: emailConvite,
+        role: roleConvite,
+        ...(Object.keys(permissionOverrides).length > 0 ? { permissions: permissionOverrides } : {}),
+      }),
     })
     const json = await res.json()
     if (res.ok) { setUrlConvite(json.url); fetchData() }
@@ -124,6 +144,7 @@ export default function GestaoUsuarios() {
   }
 
   const isAdmin = resolvePermissions(meuRole, null).usuarios_manage
+  const invitePermissionOverridesCount = Object.values(invitePermissionDraft).filter((value) => value !== 'default').length
   const inp: React.CSSProperties = { width: '100%', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: '9px', padding: '9px 12px', color: 'var(--text-primary)', fontSize: '13px', fontFamily: 'DM Sans', outline: 'none', boxSizing: 'border-box' }
   const lbl: React.CSSProperties = { fontSize: '10px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: '5px' }
 
@@ -136,7 +157,7 @@ export default function GestaoUsuarios() {
           <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: 0 }}>{usuarios.length} usuário{usuarios.length !== 1 ? 's' : ''} cadastrado{usuarios.length !== 1 ? 's' : ''}</p>
         </div>
         {isAdmin && (
-          <button onClick={() => { setShowConvidar(true); setUrlConvite(''); setEmailConvite(''); setErro('') }}
+          <button onClick={() => { setShowConvidar(true); setUrlConvite(''); setEmailConvite(''); setRoleConvite('operador'); setShowAdvancedPermissions(false); setInvitePermissionDraft(createInvitePermissionDraft()); setErro('') }}
             style={{ display: 'flex', alignItems: 'center', gap: '7px', background: 'var(--accent)', border: 'none', borderRadius: '9px', padding: '9px 16px', color: '#fff', fontSize: '12px', fontWeight: '600', cursor: 'pointer', fontFamily: 'DM Sans' }}>
             <UserPlus size={13} /> Convidar usuário
           </button>
@@ -280,6 +301,85 @@ export default function GestaoUsuarios() {
                       </button>
                     ))}
                   </div>
+                </div>
+                <div style={{ marginBottom: '22px', border: '1px solid var(--border)', borderRadius: '10px', overflow: 'hidden' }}>
+                  <button
+                    onClick={() => setShowAdvancedPermissions((value) => !value)}
+                    style={{ width: '100%', background: 'var(--bg)', border: 'none', borderBottom: showAdvancedPermissions ? '1px solid var(--border)' : 'none', padding: '12px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', color: 'var(--text-primary)', fontFamily: 'DM Sans' }}
+                  >
+                    <div style={{ textAlign: 'left' }}>
+                      <p style={{ margin: '0 0 3px', fontSize: '12px', fontWeight: '700' }}>Permissões avançadas</p>
+                      <p style={{ margin: 0, fontSize: '11px', color: 'var(--text-muted)' }}>
+                        Fechado por padrão. Use somente se quiser desviar do preset do papel.
+                      </p>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: invitePermissionOverridesCount > 0 ? 'var(--accent)' : 'var(--text-muted)' }}>
+                      {invitePermissionOverridesCount > 0 && (
+                        <span style={{ fontSize: '10px', fontWeight: '700', background: 'rgba(79,122,255,0.12)', border: '1px solid rgba(79,122,255,0.18)', borderRadius: '999px', padding: '3px 8px' }}>
+                          {invitePermissionOverridesCount} ajuste{invitePermissionOverridesCount !== 1 ? 's' : ''}
+                        </span>
+                      )}
+                      {showAdvancedPermissions ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                    </div>
+                  </button>
+
+                  {showAdvancedPermissions && (
+                    <div style={{ padding: '12px 14px', background: 'var(--bg-card)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                      {PERMISSION_INFO.map((permission) => {
+                        const state = invitePermissionDraft[permission.key]
+
+                        return (
+                          <div key={permission.key} style={{ border: '1px solid var(--border)', borderRadius: '10px', padding: '12px', background: 'var(--bg)' }}>
+                            <div style={{ marginBottom: '10px' }}>
+                              <p style={{ margin: '0 0 3px', fontSize: '12px', fontWeight: '700', color: 'var(--text-primary)' }}>{permission.label}</p>
+                              <p style={{ margin: 0, fontSize: '11px', color: 'var(--text-muted)', lineHeight: 1.5 }}>{permission.descricao}</p>
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '8px' }}>
+                              {([
+                                { value: 'default', label: 'Padrão do papel' },
+                                { value: 'allow', label: 'Permitir' },
+                                { value: 'deny', label: 'Bloquear' },
+                              ] as const).map((option) => {
+                                const active = state === option.value
+                                return (
+                                  <button
+                                    key={option.value}
+                                    onClick={() => setInvitePermissionDraft((current) => ({ ...current, [permission.key]: option.value }))}
+                                    style={{
+                                      minHeight: '36px',
+                                      background: active ? 'rgba(79,122,255,0.12)' : 'var(--bg-card)',
+                                      border: `1px solid ${active ? 'rgba(79,122,255,0.24)' : 'var(--border)'}`,
+                                      borderRadius: '8px',
+                                      cursor: 'pointer',
+                                      color: active ? 'var(--accent)' : 'var(--text-secondary)',
+                                      fontSize: '11px',
+                                      fontWeight: '600',
+                                      fontFamily: 'DM Sans',
+                                      padding: '8px 10px',
+                                    }}
+                                  >
+                                    {option.label}
+                                  </button>
+                                )
+                              })}
+                            </div>
+                          </div>
+                        )
+                      })}
+
+                      <div style={{ display: 'flex', justifyContent: 'space-between', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+                        <p style={{ margin: 0, fontSize: '11px', color: 'var(--text-muted)' }}>
+                          Se tudo ficar em “Padrão do papel”, o convite segue exatamente o fluxo atual.
+                        </p>
+                        <button
+                          onClick={() => setInvitePermissionDraft(createInvitePermissionDraft())}
+                          style={{ fontSize: '11px', color: 'var(--text-secondary)', background: 'var(--bg-hover)', border: '1px solid var(--border)', borderRadius: '8px', padding: '8px 12px', cursor: 'pointer', fontFamily: 'DM Sans' }}
+                        >
+                          Restaurar padrão do papel
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
                 {erro && <p style={{ color: 'var(--red)', fontSize: '12px', marginBottom: '14px' }}>{erro}</p>}
                 <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
