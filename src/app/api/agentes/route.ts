@@ -128,7 +128,12 @@ export async function POST(request: NextRequest) {
       persona: persona || null,
       prompt_base: prompt_base || null,
       modelo: modelo || "claude-sonnet-4-20250514",
-      max_tokens: max_tokens || 500,
+      max_tokens:
+        max_tokens ||
+        (normalizeOperationProfile(perfil_operacao) ===
+        "planejamento_previdenciario"
+          ? 1200
+          : 500),
       resposta_automatica: resposta_automatica ?? false,
       janela_inicio: janela_inicio || null,
       janela_fim: janela_fim || null,

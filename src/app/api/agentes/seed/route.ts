@@ -58,7 +58,10 @@ export async function POST(request: Request) {
     persona: template.persona,
     prompt_base: template.prompt_base,
     modelo: "claude-sonnet-4-20250514",
-    max_tokens: 500,
+    max_tokens:
+      selectedProfile.operationProfile === "planejamento_previdenciario"
+        ? 1200
+        : 500,
     resposta_automatica: template.resposta_automatica,
     janela_inicio: "08:00",
     janela_fim: "18:00",

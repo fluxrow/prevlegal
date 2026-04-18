@@ -20,6 +20,34 @@ Mestra: [[MASTER_PREV_LEGAL]]
 - [[Sessoes/2026-03-18-prevlegal-admin-roi-obsidian]]
 - [[Sessoes/2026-03-18-sessoes-17-18-marco-prevlegal-completo]]
 
+## Atualização 2026-04-18 — Diretrizes de segurança operacional do agente Ana
+
+- Após smoke test com perguntas técnicas premium, identificamos 3 riscos:
+  - Agente tendia a recomendar estratégia em vez de educar
+  - Agente podia alucinar valores específicos (subsídios, tetos)
+  - Agente se sentia obrigado a sustentar conversa técnica mesmo com perfis profissionais fora do seu repertório profundo
+- Aplicamos 3 diretrizes absolutas no prompt_base:
+  1. Nunca recomendar estratégia — sempre educar e remeter ao advogado
+  2. Nunca estimar valores específicos não documentados
+  3. Postura consultiva de descoberta para perfis fora do repertório
+- Max_tokens ajustado para 1200 (apenas em planejamento_previdenciario) porque respostas técnicas de profundidade exigem mais espaço
+- Perfis atualmente no repertório profundo:
+  - Médico hospitalar e autônomo
+  - Magistrado federal
+  - Promotor/Procurador
+  - Professor universitário
+  - Executivo CLT
+  - Empresário/PJ
+  - Servidor federal de alto escalão
+  - Militar das Forças Armadas
+  - Professor de educação básica
+- Perfis que recebem postura de descoberta (expansão futura da base):
+  - Advogados especialistas
+  - Dentistas
+  - Engenheiros consultores
+  - Arquitetos, psicólogos, contadores
+  - Carreiras estaduais (PM, BM, servidor estadual/municipal)
+
 ### 182. Minuta multi-tenant precisa nascer como template por escritório, não como HTML solto dentro da tela do lead
 **Problema:** O go-live do escritório Pagliuca / Lessnau exigia preparar contrato com dados do cliente preenchidos, mas o produto não tinha onde guardar uma minuta padrão por tenant
 **Causa:** O PrevLegal já tinha fluxo de contratos financeiros, porém não existia estrutura específica para minuta jurídica parametrizável por escritório

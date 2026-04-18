@@ -881,7 +881,11 @@ export async function POST(request: NextRequest) {
     try {
       response = await anthropic.messages.create({
         model: config.agente_modelo || 'claude-sonnet-4-20250514',
-        max_tokens: config.agente_max_tokens || 500,
+        max_tokens:
+          config.agente_max_tokens ||
+          (normalizedOperationProfile === 'planejamento_previdenciario'
+            ? 1200
+            : 500),
         system: systemPrompt,
         messages: historico,
       })
