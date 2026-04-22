@@ -45,6 +45,21 @@ Mestra: [[MASTER_PREV_LEGAL]]
   - `length(corpo_html) = 7713`
 - Frente C (motor de minuta MVP) agora tem template jurídico real do Pagliuca em produção, não só a base placeholder da seed
 
+## Atualização 2026-04-22 — Templates de contrato ganharam editor visual e preview real
+
+- A tela `Configurações > Templates` deixou de depender só de `corpo_html` cru como experiência principal
+- O editor agora nasce em modo visual, para que o usuário escreva o template mais como um e-mail/documento do que como código
+- Foram adicionados:
+  - editor visual com formatação básica (`parágrafo`, `título`, `subtítulo`, `negrito`, `itálico`, `lista`)
+  - inserção de placeholders com clique direto na lista lateral
+  - visualizador ao vivo do layout final do contrato
+  - botão `Visualizar` nos templates salvos para abrir o documento renderizado
+  - modo `HTML avançado` opcional para usuários mais técnicos
+- Decisão de UX:
+  - o produto continua persistindo `corpo_html` no banco, mas a interface principal deixa de expor isso como requisito para operação normal
+- Regra prática:
+  - quando o usuário precisa editar um documento jurídico padrão, a interface deve priorizar escrita humana + preview real; HTML cru deve existir como escape hatch, não como caminho principal
+
 ## Atualização 2026-04-18 — Diretrizes de segurança operacional do agente Ana
 
 - Após smoke test com perguntas técnicas premium, identificamos 3 riscos:
