@@ -20,6 +20,31 @@ Mestra: [[MASTER_PREV_LEGAL]]
 - [[Sessoes/2026-03-18-prevlegal-admin-roi-obsidian]]
 - [[Sessoes/2026-03-18-sessoes-17-18-marco-prevlegal-completo]]
 
+## Atualização 2026-04-22 — Template real de honorários do Pagliuca cadastrado em produção
+
+- O template placeholder criado pela seed da migration `053_contract_templates` foi substituído em produção pelo contrato real de honorários de planejamento previdenciário do tenant `dbb8ae41-8d87-4305-80c0-40a8958d9688`
+- O nome confirmado para o escritório no contrato ficou `Pagliuca, Espínola e Lessnau`, substituindo a variação desatualizada com `Rodrigues` presente no documento-base
+- O `corpo_html` final passou a ter o texto jurídico completo do contrato, em HTML formatado para o motor de minuta
+- O template foi estruturado com 12 placeholders variáveis para preenchimento assistido:
+  - `cliente_nome`
+  - `cliente_estado_civil`
+  - `cliente_profissao`
+  - `cliente_cpf`
+  - `cliente_endereco`
+  - `valor_total`
+  - `valor_total_extenso`
+  - `numero_parcelas_extenso`
+  - `valor_primeira_parcela`
+  - `valor_primeira_parcela_extenso`
+  - `datas_parcelas`
+  - `data_contrato_extenso`
+- Validação pós-update confirmou:
+  - `tipo = honorarios_planejamento`
+  - `ativo = true`
+  - `jsonb_array_length(placeholders_definidos) = 12`
+  - `length(corpo_html) = 7713`
+- Frente C (motor de minuta MVP) agora tem template jurídico real do Pagliuca em produção, não só a base placeholder da seed
+
 ## Atualização 2026-04-18 — Diretrizes de segurança operacional do agente Ana
 
 - Após smoke test com perguntas técnicas premium, identificamos 3 riscos:
