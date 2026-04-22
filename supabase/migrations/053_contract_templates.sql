@@ -22,7 +22,7 @@ create policy "tenant members can view their contract templates"
   on contract_templates for select
   using (
     tenant_id in (
-      select tenant_id from usuarios where id = auth.uid()
+      select tenant_id from usuarios where auth_id = auth.uid()
     )
   );
 
@@ -30,7 +30,7 @@ create policy "tenant admins can manage their contract templates"
   on contract_templates for all
   using (
     tenant_id in (
-      select tenant_id from usuarios where id = auth.uid() and role = 'admin'
+      select tenant_id from usuarios where auth_id = auth.uid() and role = 'admin'
     )
   );
 

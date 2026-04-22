@@ -36,7 +36,7 @@ begin
       on contract_templates for select
       using (
         tenant_id in (
-          select tenant_id from usuarios where id = auth.uid()
+          select tenant_id from usuarios where auth_id = auth.uid()
         )
       );
   end if;
@@ -54,7 +54,7 @@ begin
       on contract_templates for all
       using (
         tenant_id in (
-          select tenant_id from usuarios where id = auth.uid() and role = 'admin'
+          select tenant_id from usuarios where auth_id = auth.uid() and role = 'admin'
         )
       );
   end if;

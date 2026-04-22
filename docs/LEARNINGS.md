@@ -1919,3 +1919,10 @@ Os selects ainda pediam apenas `usuarios(...)`, então o PostgREST não sabia qu
 - As rotas admin de provisioning (`link-acesso`, `recriar-acesso`, `reset-senha`) passaram a consultar containment com `tenant_id` além do email
 - O fluxo de `/auth/aceitar-convite` foi endurecido para limpar a sessão anterior e autenticar a conta recém-criada antes de redirecionar para `/dashboard`
 - Regra prática: aceite de convite não pode depender do estado prévio do navegador; o próprio fluxo precisa terminar com a sessão correta do usuário recém-criado
+
+## Atualização 2026-04-22 — Migration 053 aplicada em produção
+
+- Migration `053_contract_templates` aplicada em produção em `2026-04-22 13:09:28 -0300` no projeto `lrqvvxmgimjlghpwavdb`
+- Policies RLS corrigidas para usar `auth_id = auth.uid()` (convenção canônica do projeto) antes da aplicação, evitando o bug latente já documentado
+- Tabela `contract_templates` + bucket `contratos-leads` + 3 storage policies + seed inicial pro tenant Pagliuca aplicados com sucesso
+- Frente C (motor de minuta MVP) agora funcional em produção
