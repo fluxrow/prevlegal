@@ -1926,3 +1926,10 @@ Os selects ainda pediam apenas `usuarios(...)`, então o PostgREST não sabia qu
 - Policies RLS corrigidas para usar `auth_id = auth.uid()` (convenção canônica do projeto) antes da aplicação, evitando o bug latente já documentado
 - Tabela `contract_templates` + bucket `contratos-leads` + 3 storage policies + seed inicial pro tenant Pagliuca aplicados com sucesso
 - Frente C (motor de minuta MVP) agora funcional em produção
+
+## Atualização 2026-04-22 — Fluxrow também liberado no containment
+
+- O containment temporário pré-go-live passou a liberar explicitamente os tenants `fluxrow` e `pagliuca-espinola-e-lessnau`
+- O bloqueio que atingiu o login `fbcfarias@icloud.com` não era ambiguidade multi-tenant real no código atual; o usuário da Fluxrow seguia no tenant `5d1d30b7-8b64-4f87-9cdb-562d1693e824`, que ainda não estava na allowlist
+- No tenant Pagliuca existe um cadastro separado para `Cauã Farias` com email `fbcfarias@icliud.com`, ou seja, hoje os dois escritórios ainda estão operando com contas distintas
+- Regra prática: enquanto não existir seletor formal de escritório, não tratar "mesmo profissional em dois escritórios" como mesma identidade lógica sem resolver antes o modelo de memberships por tenant
