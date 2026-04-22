@@ -2,6 +2,10 @@ const DEFAULT_ALLOWED_EMAILS = [
   'jessica@alexandrini.adv.br',
 ]
 
+const DEFAULT_ALLOWED_TENANT_IDS = [
+  'dbb8ae41-8d87-4305-80c0-40a8958d9688',
+]
+
 export function getContainmentAllowedEmails() {
   const raw = process.env.TENANT_CONTAINMENT_ALLOWED_EMAILS?.trim()
   if (!raw) return DEFAULT_ALLOWED_EMAILS
@@ -12,7 +16,25 @@ export function getContainmentAllowedEmails() {
     .filter(Boolean)
 }
 
-export function isAllowedByTenantContainment(email?: string | null) {
+export function getContainmentAllowedTenantIds() {
+  const raw = process.env.TENANT_CONTAINMENT_ALLOWED_TENANT_IDS?.trim()
+  if (!raw) return DEFAULT_ALLOWED_TENANT_IDS
+
+  return raw
+    .split(',')
+    .map((tenantId) => tenantId.trim())
+    .filter(Boolean)
+}
+
+export function isAllowedByTenantContainment(email?: string | null, tenantId?: string | null) {
+  const normalizedTenantId = typeof tenantId === 'string' ? tenantId.trim() : ''
+  if (normalizedTenantId) {
+    const allowedTenantIds = getContainmentAllowedTenantIds()
+    if (allowedTenantIds.includes(normalizedTenantId)) {
+      return true
+    }
+  }
+
   if (!email) return true
 
   const normalizedEmail = email.trim().toLowerCase()
@@ -20,8 +42,19 @@ export function isAllowedByTenantContainment(email?: string | null) {
   return allowedEmails.includes(normalizedEmail)
 }
 
-export function isBlockedByTenantContainment(email?: string | null) {
-  return !isAllowedByTenantContainment(email)
+export function isBlockedByTenantContainment(email?: string | null, tenantId?: string | null) {
+  return !isAllowedByTenantContainment(email, tenantId)
+}
+
+export async function getAuthenticatedTenantIdForContainment(supabase: any, authUserId: string) {
+  const { data: usuarioAtual, error } = await supabase
+    .from('usuarios')
+    .select('tenant_id')
+    .eq('auth_id', authUserId)
+    .maybeSingle()
+
+  if (error) return null
+  return usuarioAtual?.tenant_id || null
 }
 
 export async function canProvisionOutsideContainment(adminSupabase: any, tenantId?: string) {

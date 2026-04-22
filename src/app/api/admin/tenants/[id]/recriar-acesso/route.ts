@@ -51,7 +51,7 @@ export async function POST(
 
   const canBootstrapPrimeiroTenant = await canProvisionOutsideContainment(adminSupabase, id)
 
-  if (!isAllowedByTenantContainment(email) && !canBootstrapPrimeiroTenant) {
+  if (!isAllowedByTenantContainment(email, id) && !canBootstrapPrimeiroTenant) {
     return NextResponse.json({
       error: 'Rollout multi-escritorio temporariamente pausado enquanto o isolamento de dados e corrigido.',
     }, { status: 423 })

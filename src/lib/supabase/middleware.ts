@@ -8,7 +8,11 @@ import {
   getTimestampNow,
   isTimestampExpired,
 } from "@/lib/session-config";
-import { canBypassContainmentForBootstrap, isBlockedByTenantContainment } from "@/lib/tenant-containment";
+import {
+  canBypassContainmentForBootstrap,
+  getAuthenticatedTenantIdForContainment,
+  isBlockedByTenantContainment,
+} from "@/lib/tenant-containment";
 
 function isInternalAgentResponderRequest(request: NextRequest) {
   if (request.nextUrl.pathname !== '/api/agente/responder') return false
@@ -127,11 +131,13 @@ export async function updateSession(request: NextRequest) {
   }
 
   if (user && !isPublic) {
-    const bootstrapBypass = isBlockedByTenantContainment(user.email)
+    const currentTenantId = await getAuthenticatedTenantIdForContainment(supabase, user.id)
+    const blockedByContainment = isBlockedByTenantContainment(user.email, currentTenantId)
+    const bootstrapBypass = blockedByContainment
       ? await canBypassContainmentForBootstrap(supabase, user.id)
       : false
 
-    if (isBlockedByTenantContainment(user.email) && !bootstrapBypass) {
+    if (blockedByContainment && !bootstrapBypass) {
       if (isApiRoute) {
         const canBypass = allowedBlockedApiPrefixes.some((prefix) => pathname.startsWith(prefix))
         if (!canBypass) {

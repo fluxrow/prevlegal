@@ -1893,3 +1893,29 @@ Os selects ainda pediam apenas `usuarios(...)`, então o PostgREST não sabia qu
 - regra prática:
   - mensagem enviada para lead novo deve refletir imediatamente em `Contatados`
   - o operador precisa enxergar no card, sem abrir o lead, se está falando com titular ou familiar
+
+## Atualização 2026-04-18 — Migration 055 aplicada + smoke test de convite
+
+- Migration `055_convites_permissions` aplicada em produção em `2026-04-18 17:37:00 -03` no projeto `lrqvvxmgimjlghpwavdb`
+- Coluna `convites.permissions` (`jsonb`) validada com `insert/delete` de teste
+- Convite real criado para `marcos-teste-golive@pagliucalessnau.adv.br` com permissões customizadas: `usuarios_manage=false`, `inbox_humana_manage=true`, `agendamentos_assign=true`
+- Aceite pendente — será feito pelo Cauã via navegador
+- Próximo passo: após aceite, validar `usuarios.permissions` persistiu corretamente e usar esse usuário para smoke test da Pendência 2 (portal)
+
+## Atualização 2026-04-22 — Cleanup smoke test + convite real Ana Terra
+
+- Cleanup do usuário de teste Marcos-teste executado com sucesso:
+  - DELETE em `public.usuarios` (id `a54acbed-6280-4d51-ab82-e9c03f5761d1`)
+  - DELETE em `public.convites` (id `7a123205-ebe1-43c1-9d0c-1e85af6fd858`)
+  - DELETE em `auth.users` (id `fb6c1380-db30-46c0-8a17-3eb2fca905e1`)
+- Convite real criado para Ana Terra Antunes Pagliuca (`anaterra@advocaciacomproposito.com.br`) como `admin` do tenant Pagliuca
+- Expiração do convite: `29/04/2026 11:06` (America/Sao_Paulo)
+- Próximo passo: Cauã envia link para Ana Terra. Após aceite, validar persistência e acesso ao sistema.
+
+## Atualização 2026-04-22 — Containment por tenant + auto-login no aceite de convite
+
+- O bloqueio de `isolamento-em-andamento` deixou de depender só de allowlist por email e passou a aceitar allowlist explícita por `tenant_id`
+- O tenant Pagliuca (`dbb8ae41-8d87-4305-80c0-40a8958d9688`) foi incluído como tenant liberado por padrão no containment controlado do pré-go-live
+- As rotas admin de provisioning (`link-acesso`, `recriar-acesso`, `reset-senha`) passaram a consultar containment com `tenant_id` além do email
+- O fluxo de `/auth/aceitar-convite` foi endurecido para limpar a sessão anterior e autenticar a conta recém-criada antes de redirecionar para `/dashboard`
+- Regra prática: aceite de convite não pode depender do estado prévio do navegador; o próprio fluxo precisa terminar com a sessão correta do usuário recém-criado

@@ -1,7 +1,8 @@
 'use client'
 import { useEffect, useState, Suspense } from 'react'
-import { useSearchParams, useRouter } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import { CheckCircle, XCircle, Loader2 } from 'lucide-react'
+import { createClient } from '@/lib/supabase/client'
 
 interface Convite {
   id: string
@@ -12,7 +13,7 @@ interface Convite {
 
 function AceitarConviteForm() {
   const searchParams = useSearchParams()
-  const router = useRouter()
+  const supabase = createClient()
   const token = searchParams.get('token')
   const [status, setStatus] = useState<'loading' | 'valido' | 'invalido' | 'obsoleto' | 'registrando' | 'sucesso' | 'erro'>('loading')
   const [convite, setConvite] = useState<Convite | null>(null)
@@ -42,7 +43,23 @@ function AceitarConviteForm() {
       body: JSON.stringify({ token, nome, senha }),
     })
     const json = await res.json()
-    if (res.ok) { setStatus('sucesso'); setTimeout(() => router.push('/dashboard'), 2500) }
+    if (res.ok) {
+      setStatus('sucesso')
+
+      await supabase.auth.signOut()
+
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: convite?.email || '',
+        password: senha,
+      })
+
+      if (signInError) {
+        setTimeout(() => window.location.assign('/login'), 2500)
+        return
+      }
+
+      setTimeout(() => window.location.assign('/dashboard'), 2500)
+    }
     else { setErro(json.error || 'Erro ao criar conta'); setStatus('valido') }
   }
 
