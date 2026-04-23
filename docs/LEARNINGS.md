@@ -45,6 +45,38 @@ Mestra: [[MASTER_PREV_LEGAL]]
   - `length(corpo_html) = 7713`
 - Frente C (motor de minuta MVP) agora tem template jurídico real do Pagliuca em produção, não só a base placeholder da seed
 
+## Atualização 2026-04-23 — Pagliuca preparado para smoke real de WhatsApp e playbook de planejamento auditado
+
+- O import de planejamento foi estabilizado para o cenário mínimo de go-live:
+  - CSV simples com `nome + telefone`
+  - suporte a cabeçalhos em inglês comuns de exportadores de WhatsApp
+  - parsing tolerante a `;`
+- A migration `034_leads_email_foundation` foi aplicada em produção, eliminando o drift de schema que ainda quebrava a persistência de `email` no import
+- O tenant Pagliuca ficou pronto para o smoke real em tudo que não depende do celular conectado:
+  - usuários ativos
+  - agente default em `planejamento_previdenciario`
+  - template real de honorários ativo
+  - lista teste importada com sucesso
+- Auditoria do playbook de planejamento:
+  - o agente já está forte em triagem, resposta técnica geral, reativação, follow-up comercial e checklist documental
+  - a extração estruturada de dados do cliente já existe e a geração de minuta já bloqueia com `422` quando faltam campos obrigatórios
+  - o maior risco remanescente pré-smoke não é de conhecimento, e sim de amarração operacional no runtime real:
+    - inbound via Z-API
+    - criação/reuso da conversa
+    - progressão até proposta / contrato
+    - extração dos dados
+    - preparação documental
+    - handoff final para humano
+- Regra prática consolidada:
+  - quando o Cauã mandar `manda o roteiro operacional`, devolver um checklist curto para:
+    - conectar Z-API
+    - validar webhook/canal
+    - disparar para lead real
+    - responder como lead
+    - testar qualificação
+    - testar extração
+    - testar geração dos PDFs
+
 ## Atualização 2026-04-22 — Templates de contrato ganharam editor visual e preview real
 
 - A tela `Configurações > Templates` deixou de depender só de `corpo_html` cru como experiência principal

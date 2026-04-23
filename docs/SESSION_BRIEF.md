@@ -45,6 +45,49 @@
   - nenhum canal em `public.whatsapp_numbers` para o tenant
   - nenhuma conversa real criada ainda
 
+## Comando rápido para a próxima sessão
+
+- Quando o Cauã mandar `manda o roteiro operacional`, devolver um checklist curto e direto para executar o smoke real do WhatsApp no tenant Pagliuca.
+- Esse roteiro deve assumir que:
+  - o import já está validado
+  - o agente default do tenant está em `planejamento_previdenciario`
+  - o próximo gargalo operacional é conectar o celular do escritório na Z-API, validar webhook/canal e testar a conversa real até documento
+
+## Auditoria operacional do agente de planejamento — estado em 2026-04-23
+
+- O playbook de `planejamento_previdenciario` já está forte em:
+  - triagem consultiva premium
+  - resposta técnica geral com base de conhecimento injetável
+  - reativação
+  - follow-up comercial até proposta / preparação contratual
+  - checklist documental
+  - extração estruturada de dados do cliente para documentos
+  - geração assistida de minuta com bloqueio `422` quando faltam campos
+- O que ainda depende de validação real amanhã:
+  - webhook Z-API efetivamente chegando no tenant Pagliuca
+  - criação/reuso de `conversa` a partir da primeira resposta do lead
+  - resposta automática do agente no canal real do escritório
+  - progressão natural da conversa até o ponto de proposta / contrato
+  - geração dos PDFs com dados suficientes vindos da conversa
+- O que continua manual por enquanto:
+  - dados comerciais do contrato (`valor_total`, parcelas, datas, etc.)
+  - envio do PDF ao lead
+  - decisão final de handoff humano para validação / assinatura
+- Cenários que devem entrar no smoke real:
+  1. lead cooperativo que responde rápido e aceita seguir
+  2. lead técnico que faz perguntas mais profundas antes de aceitar
+  3. lead com dados incompletos, forçando o fluxo de faltantes / `422`
+  4. lead que pede humano cedo
+  5. lead pronto para proposta / contrato
+- Leitura atual:
+  - o agente já tem conhecimento e tom suficientes para conduzir boa parte da esteira
+  - o maior risco remanescente não é “falta de inteligência”, e sim amarração operacional entre:
+    - inbound real do WhatsApp
+    - progressão da conversa
+    - momento de extração
+    - preparação documental
+    - passagem final para humano
+
 ## Checklist imediato para amanhã cedo
 1. Conectar o número do escritório na Z-API.
 2. Cadastrar/validar o canal em `Configurações > Agentes` / canais WhatsApp do tenant.
