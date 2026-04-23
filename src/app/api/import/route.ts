@@ -350,6 +350,16 @@ function calcScore(ganho: number | null, tipo: string): number {
     return Math.min(score, 100)
 }
 
+function isMissingLeadEmailColumnError(error: { message?: string | null; code?: string | null } | null | undefined) {
+    const message = String(error?.message || '').toLowerCase()
+    return message.includes('column leads.email does not exist')
+        || message.includes("could not find the 'email' column of 'leads' in the schema cache")
+}
+
+function stripEmailFromLeadBatch<T extends Record<string, unknown>>(batch: T[]) {
+    return batch.map(({ email: _email, ...lead }) => lead)
+}
+
 async function resolveImportOperationProfile(
     adminSupabase: any,
     tenantId: string,
@@ -635,25 +645,50 @@ export async function POST(request: NextRequest) {
     let duplicatasNoBanco = 0
     const errosInsercao: string[] = []
     const batchSize = 50
+    let emailPersistSkipped = false
 
     for (let i = 0; i < leads.length; i += batchSize) {
         const batch = leads.slice(i, i + batchSize)
-        const { data, error } = await adminSupabase
+        let batchToInsert: Record<string, unknown>[] = batch
+        let { data, error } = await adminSupabase
             .from('leads')
-            .upsert(batch, { onConflict: 'nb', ignoreDuplicates: true })
+            .upsert(batchToInsert, { onConflict: 'nb', ignoreDuplicates: true })
             .select('id')
+
+        if (error && isMissingLeadEmailColumnError(error)) {
+            emailPersistSkipped = true
+            batchToInsert = stripEmailFromLeadBatch(batch)
+            const retry = await adminSupabase
+                .from('leads')
+                .upsert(batchToInsert, { onConflict: 'nb', ignoreDuplicates: true })
+                .select('id')
+            data = retry.data
+            error = retry.error
+        }
 
         if (!error && data) {
             inseridos += data.length
-            duplicatasNoBanco += batch.length - data.length
+            duplicatasNoBanco += batchToInsert.length - data.length
             continue
         }
 
         for (const lead of batch) {
-            const { data: itemData, error: itemError } = await adminSupabase
+            let singleLead: Record<string, unknown> = lead
+            let { data: itemData, error: itemError } = await adminSupabase
                 .from('leads')
-                .upsert([lead], { onConflict: 'nb', ignoreDuplicates: true })
+                .upsert([singleLead], { onConflict: 'nb', ignoreDuplicates: true })
                 .select('id')
+
+            if (itemError && isMissingLeadEmailColumnError(itemError)) {
+                emailPersistSkipped = true
+                singleLead = stripEmailFromLeadBatch([lead])[0]
+                const retry = await adminSupabase
+                    .from('leads')
+                    .upsert([singleLead], { onConflict: 'nb', ignoreDuplicates: true })
+                    .select('id')
+                itemData = retry.data
+                itemError = retry.error
+            }
 
             if (itemError) {
                 if (errosInsercao.length < 5) {
@@ -666,6 +701,10 @@ export async function POST(request: NextRequest) {
             inseridos += insertedCount
             duplicatasNoBanco += 1 - insertedCount
         }
+    }
+
+    if (emailPersistSkipped) {
+        schemaWarnings.push('Este ambiente ainda não tem a coluna leads.email aplicada. A importação seguiu normalmente, mas os e-mails da planilha foram ignorados neste upload.')
     }
 
     if (inseridos === 0) {
