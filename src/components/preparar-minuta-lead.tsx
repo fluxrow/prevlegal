@@ -32,6 +32,8 @@ export default function PrepararMinutaLead({ lead }: Props) {
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [previewValues, setPreviewValues] = useState<Record<string, string>>({})
+  const [missingFields, setMissingFields] = useState<string[]>([])
+  const [manualValues, setManualValues] = useState<Record<string, string>>({})
   const [generated, setGenerated] = useState<{ pdf_url: string } | null>(null)
   const [markingReady, setMarkingReady] = useState(false)
 
@@ -57,6 +59,8 @@ export default function PrepararMinutaLead({ lead }: Props) {
   useEffect(() => {
     if (!open || !templateId) {
       setPreviewValues({})
+      setMissingFields([])
+      setManualValues({})
       return
     }
 
@@ -68,6 +72,7 @@ export default function PrepararMinutaLead({ lead }: Props) {
           throw new Error(json?.error || 'Não foi possível montar o preview')
         }
         setPreviewValues(json.preview?.values || {})
+        setMissingFields(json.preview?.missing_fields || [])
       })
       .catch((error) => {
         toast.error(error instanceof Error ? error.message : 'Não foi possível montar o preview')
@@ -90,17 +95,22 @@ export default function PrepararMinutaLead({ lead }: Props) {
     const res = await fetch(`/api/leads/${lead.id}/preparar-minuta`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ template_id: templateId }),
+      body: JSON.stringify({ template_id: templateId, manual_values: manualValues }),
     })
     const json = await res.json()
     setSaving(false)
 
     if (!res.ok) {
+      if (res.status === 422) {
+        setMissingFields(json?.missing_fields || [])
+        setPreviewValues(json?.preview_values || previewValues)
+      }
       toast.error(json?.error || 'Não foi possível gerar a minuta')
       return
     }
 
     setGenerated({ pdf_url: json.pdf_url })
+    setMissingFields([])
     toast.success('Minuta gerada em PDF.')
   }
 
@@ -200,6 +210,8 @@ export default function PrepararMinutaLead({ lead }: Props) {
                   onChange={(e) => {
                     setTemplateId(e.target.value)
                     setGenerated(null)
+                    setManualValues({})
+                    setMissingFields([])
                   }}
                   style={{
                     width: '100%',
@@ -264,13 +276,49 @@ export default function PrepararMinutaLead({ lead }: Props) {
                 ) : (
                   <div style={{ display: 'grid', gap: '10px' }}>
                     {(selectedTemplate?.placeholders_definidos || []).map((placeholder) => (
-                      <div key={placeholder.key} style={{ border: '1px solid var(--border)', borderRadius: '10px', padding: '10px 12px', background: 'var(--bg)' }}>
+                      <div
+                        key={placeholder.key}
+                        style={{
+                          border: '1px solid var(--border)',
+                          borderRadius: '10px',
+                          padding: '10px 12px',
+                          background: missingFields.includes(placeholder.key) ? 'rgba(245, 158, 11, 0.08)' : 'var(--bg)',
+                        }}
+                      >
                         <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-primary)', fontWeight: 700 }}>
                           {placeholder.label}
                         </p>
-                        <p style={{ margin: '4px 0 0', fontSize: '12px', color: 'var(--text-muted)' }}>
-                          {previewValues[placeholder.key] || 'Será preenchido automaticamente no momento da geração.'}
-                        </p>
+                        {missingFields.includes(placeholder.key) ? (
+                          <>
+                            <p style={{ margin: '4px 0 8px', fontSize: '12px', color: '#f59e0b' }}>
+                              Campo faltante para gerar o documento. {placeholder.description}
+                            </p>
+                            <input
+                              value={manualValues[placeholder.key] ?? previewValues[placeholder.key] ?? ''}
+                              onChange={(event) =>
+                                setManualValues((current) => ({
+                                  ...current,
+                                  [placeholder.key]: event.target.value,
+                                }))
+                              }
+                              style={{
+                                width: '100%',
+                                background: '#fff',
+                                border: '1px solid var(--border)',
+                                borderRadius: '8px',
+                                padding: '10px 12px',
+                                color: 'var(--text-primary)',
+                                fontSize: '13px',
+                                boxSizing: 'border-box',
+                              }}
+                              placeholder={placeholder.description}
+                            />
+                          </>
+                        ) : (
+                          <p style={{ margin: '4px 0 0', fontSize: '12px', color: 'var(--text-muted)' }}>
+                            {manualValues[placeholder.key] || previewValues[placeholder.key] || 'Será preenchido automaticamente no momento da geração.'}
+                          </p>
+                        )}
                       </div>
                     ))}
                   </div>

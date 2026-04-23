@@ -1973,3 +1973,13 @@ Os selects ainda pediam apenas `usuarios(...)`, então o PostgREST não sabia qu
 - O bloqueio que atingiu o login `fbcfarias@icloud.com` não era ambiguidade multi-tenant real no código atual; o usuário da Fluxrow seguia no tenant `5d1d30b7-8b64-4f87-9cdb-562d1693e824`, que ainda não estava na allowlist
 - No tenant Pagliuca existe um cadastro separado para `Cauã Farias` com email `fbcfarias@icliud.com`, ou seja, hoje os dois escritórios ainda estão operando com contas distintas
 - Regra prática: enquanto não existir seletor formal de escritório, não tratar "mesmo profissional em dois escritórios" como mesma identidade lógica sem resolver antes o modelo de memberships por tenant
+
+## Atualização 2026-04-23 — Planejamento: import mínimo + extração estruturada + placeholders reais
+
+- O importador passou a aceitar, apenas para tenants com `perfil_operacao = planejamento_previdenciario`, um schema mínimo de planilha com `nome + telefone`, gerando `NB` sintético quando necessário
+- O import de benefícios manteve o comportamento anterior: sem `NB/CPF` a planilha continua rejeitada fora do perfil de planejamento
+- Quando a planilha trouxer `email`, o valor passa a ser persistido em `leads.email` em vez de ser descartado com warning desatualizado
+- A preparação de minuta ganhou uma etapa explícita de extração estruturada de dados do cliente via Claude Sonnet, logando custo em `agent_llm_usage` com `perfil_operacao = extracao_dados_cliente`
+- Se faltarem campos obrigatórios para o template, o backend agora responde `422` com `missing_fields`, e a UI abre preenchimento manual em vez de gerar PDF com campos vazios
+- `contract-templates.ts` foi alinhado com o template real do Pagliuca, incluindo placeholders documentais (`cliente_nacionalidade`, `cliente_rg`, `cliente_endereco_rua`, `cliente_endereco_numero`, `cliente_bairro`, `cliente_cidade`, `cliente_cep`) e placeholders comerciais que seguem como entrada manual no fluxo atual
+- Regra prática: template de contrato em produção e builder de placeholders no código precisam evoluir juntos; se um avançar sem o outro, a minuta pode sair silenciosamente incompleta

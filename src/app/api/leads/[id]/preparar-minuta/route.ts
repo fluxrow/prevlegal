@@ -4,10 +4,13 @@ import { createClient } from '@/lib/supabase/server'
 import { generatePdfFromHtml } from '@/lib/contract-pdf'
 import {
   buildContractTemplateData,
+  extractPlaceholdersFromBody,
+  getMissingTemplateFields,
   renderContractTemplate,
   type ContractTemplatePreviewLead,
   type ContractTemplatePreviewTenant,
 } from '@/lib/contract-templates'
+import { extractClientDataFromConversation } from '@/lib/extract-client-data'
 import { canAccessLeadId, contextHasPermission, getTenantContext } from '@/lib/tenant-context'
 
 export const runtime = 'nodejs'
@@ -78,6 +81,45 @@ async function loadTemplate(
   return data
 }
 
+async function loadConversationId(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  leadId: string,
+  tenantId: string,
+) {
+  const { data } = await supabase
+    .from('conversas')
+    .select('id')
+    .eq('lead_id', leadId)
+    .eq('tenant_id', tenantId)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  return data?.id || null
+}
+
+function getRequiredTemplatePlaceholders(template: {
+  corpo_html: string
+  placeholders_definidos?: Array<{ key: string }>
+}) {
+  const fromBody = extractPlaceholdersFromBody(template.corpo_html || '')
+  if (fromBody.length > 0) return fromBody
+  return Array.isArray(template.placeholders_definidos)
+    ? template.placeholders_definidos.map((item) => item.key)
+    : []
+}
+
+function normalizeManualValues(input: unknown) {
+  if (!input || typeof input !== 'object' || Array.isArray(input)) return {}
+
+  return Object.fromEntries(
+    Object.entries(input as Record<string, unknown>).map(([key, value]) => [
+      key,
+      typeof value === 'string' ? value.trim() : '',
+    ]),
+  )
+}
+
 async function createSignedContractUrl(
   supabase: Awaited<ReturnType<typeof createClient>>,
   storagePath: string,
@@ -134,12 +176,20 @@ export async function GET(
   if (!templateId) return NextResponse.json({ error: 'template_id é obrigatório' }, { status: 400 })
 
   try {
-    const [{ lead, tenant }, template] = await Promise.all([
+    const [{ lead, tenant }, template, conversaId] = await Promise.all([
       loadLeadAndTenant(supabase, id, context.tenantId),
       loadTemplate(supabase, templateId, context.tenantId),
+      loadConversationId(supabase, id, context.tenantId),
     ])
 
-    const placeholderValues = buildContractTemplateData(lead, tenant)
+    const extracted = await extractClientDataFromConversation({
+      tenantId: context.tenantId,
+      leadId: id,
+      conversaId,
+    })
+    const placeholderValues = buildContractTemplateData(lead, tenant, extracted.data)
+    const requiredPlaceholders = getRequiredTemplatePlaceholders(template)
+    const missingFields = getMissingTemplateFields(requiredPlaceholders, placeholderValues)
     const renderedHtml = renderContractTemplate(template.corpo_html, placeholderValues)
 
     return NextResponse.json({
@@ -147,6 +197,8 @@ export async function GET(
       preview: {
         values: placeholderValues,
         rendered_html: renderedHtml,
+        missing_fields: missingFields,
+        required_placeholders: requiredPlaceholders,
       },
     })
   } catch (error) {
@@ -170,18 +222,36 @@ export async function POST(
 
   const body = await request.json()
   const templateId = String(body.template_id || '').trim()
+  const manualValues = normalizeManualValues(body.manual_values)
 
   if (!templateId) {
     return NextResponse.json({ error: 'template_id é obrigatório' }, { status: 400 })
   }
 
   try {
-    const [{ lead, tenant }, template] = await Promise.all([
+    const [{ lead, tenant }, template, conversaId] = await Promise.all([
       loadLeadAndTenant(supabase, id, context.tenantId),
       loadTemplate(supabase, templateId, context.tenantId),
+      loadConversationId(supabase, id, context.tenantId),
     ])
 
-    const placeholderValues = buildContractTemplateData(lead, tenant)
+    const extracted = await extractClientDataFromConversation({
+      tenantId: context.tenantId,
+      leadId: id,
+      conversaId,
+    })
+    const placeholderValues = buildContractTemplateData(lead, tenant, extracted.data, manualValues)
+    const requiredPlaceholders = getRequiredTemplatePlaceholders(template)
+    const missingFields = getMissingTemplateFields(requiredPlaceholders, placeholderValues)
+
+    if (missingFields.length > 0) {
+      return NextResponse.json({
+        error: 'Não foi possível extrair todos os dados da conversa. Preencha manualmente os campos faltantes antes de gerar o documento.',
+        missing_fields: missingFields,
+        preview_values: placeholderValues,
+      }, { status: 422 })
+    }
+
     const renderedHtml = renderContractTemplate(template.corpo_html, placeholderValues)
     const pdfBuffer = await generatePdfFromHtml(renderedHtml)
 

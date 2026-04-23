@@ -31,7 +31,7 @@ function roundUsd(value: number) {
   return Math.round(value * 1_000_000) / 1_000_000
 }
 
-function calculateUsageCostUsd(params: {
+export function calculateUsageCostUsd(params: {
   modelo: string
   inputTokens: number
   outputTokens: number
