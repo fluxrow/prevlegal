@@ -57,6 +57,7 @@ export interface Lead {
     nome: string
     cpf?: string | null
     telefone?: string
+    email?: string | null
     telefone_enriquecido?: string | null
     conjuge_nome?: string | null
     conjuge_celular?: string | null

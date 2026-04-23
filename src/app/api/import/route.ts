@@ -8,6 +8,7 @@ import * as XLSX from 'xlsx'
 import { getTenantContext } from '@/lib/tenant-context'
 import { detectImportSchema, getMappedCell } from '@/lib/import-schema'
 import { inferContactTargetType, type ContactTargetType } from '@/lib/contact-target'
+import { normalizeOperationProfile } from '@/lib/operation-profile'
 
 // Mapeamento das colunas da planilha NOMES_RJ_BNG.xlsx
 // Baseado na análise real da planilha (índice base 0)
@@ -106,10 +107,15 @@ function getCellByHeaderAliases(row: unknown[], lookup: HeaderLookup, aliases: s
     return null
 }
 
-function buildSyntheticNb(cpf: string, nome: string | null, dataNascimento: string | null) {
+function buildSyntheticNb(
+    cpf: string,
+    nome: string | null,
+    dataNascimento: string | null,
+    telefone: string | null = null,
+) {
     if (cpf) return `CPF-${cpf}`.slice(0, 20)
     const digest = createHash('sha1')
-        .update(`${nome || ''}|${dataNascimento || ''}`)
+        .update(`${nome || ''}|${dataNascimento || ''}|${telefone || ''}`)
         .digest('hex')
         .slice(0, 16)
         .toUpperCase()
@@ -154,6 +160,7 @@ function pickPrioritizedContact(row: unknown[], lookup: HeaderLookup): Prioritiz
     ]
 
     const directPhoneCandidates = [
+        { source: 'TELEFONE', value: getCellByHeaderAliases(row, lookup, ['TELEFONE', 'CONTATO', 'FONE', 'TELEFONE WHATSAPP']), direct: true, whatsapp: directWhatsAppFlag },
         { source: 'TELEFONE1', value: getCellByHeaderAliases(row, lookup, ['TELEFONE1', 'TELEFONE 1']), direct: true, whatsapp: directWhatsAppFlag },
         { source: 'TELEFONE2', value: getCellByHeaderAliases(row, lookup, ['TELEFONE2', 'TELEFONE 2']), direct: true, whatsapp: directWhatsAppFlag },
     ]
@@ -343,6 +350,22 @@ function calcScore(ganho: number | null, tipo: string): number {
     return Math.min(score, 100)
 }
 
+async function resolveImportOperationProfile(
+    adminSupabase: any,
+    tenantId: string,
+) {
+    const { data: defaultAgent } = await adminSupabase
+        .from('agentes')
+        .select('perfil_operacao')
+        .eq('tenant_id', tenantId)
+        .eq('ativo', true)
+        .eq('is_default', true)
+        .maybeSingle()
+
+    const perfilOperacao = (defaultAgent as { perfil_operacao?: string | null } | null)?.perfil_operacao
+    return normalizeOperationProfile(perfilOperacao || null)
+}
+
 export async function POST(request: NextRequest) {
     const supabase = await createClient()
     const context = await getTenantContext(supabase)
@@ -428,7 +451,11 @@ export async function POST(request: NextRequest) {
     const workbook = XLSX.read(buffer, { type: 'array' })
     const sheet = workbook.Sheets[workbook.SheetNames[0]]
     const rows: unknown[][] = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: null })
-    const detectedSchema = detectImportSchema(rows)
+    const importOperationProfile = await resolveImportOperationProfile(adminSupabase, context.tenantId)
+    const allowsPlanningSchema = importOperationProfile === 'planejamento_previdenciario'
+    const detectedSchema = detectImportSchema(rows, {
+        allowNomeTelefone: allowsPlanningSchema,
+    })
     const rowsToProcess = detectedSchema.mode === 'header_mapping' && detectedSchema.headerRowIndex !== null
         ? rows.slice(detectedSchema.headerRowIndex + 1)
         : rows
@@ -440,14 +467,28 @@ export async function POST(request: NextRequest) {
     if (detectedSchema.mode === 'header_mapping') {
         if (detectedSchema.coreStrategy === 'cpf_nome' && !('nb' in detectedSchema.fieldMap)) {
             schemaWarnings.push('Layout enriquecido detectado por CPF + nome. O importador vai gerar um identificador técnico por lead e escolher automaticamente o melhor contato de abordagem.')
+        } else if (detectedSchema.coreStrategy === 'nome_telefone') {
+            schemaWarnings.push('Layout mínimo de planejamento detectado por nome + telefone. O importador vai gerar um identificador técnico por lead.')
         } else {
             schemaWarnings.push(`Layout detectado por cabeçalhos (${detectedSchema.detectedFields.length} campo(s) mapeado(s)).`)
         }
         if ('email' in detectedSchema.fieldMap) {
-            schemaWarnings.push('Campo de e-mail detectado na planilha, mas ainda não persistido no schema operacional atual de leads. A importação segue normalmente sem gravar e-mail.')
+            schemaWarnings.push('Campo de e-mail detectado na planilha e será persistido quando houver valor válido.')
         }
     } else {
         schemaWarnings.push('Layout legado por posição fixa detectado. Para novos fornecedores, prefira planilhas com cabeçalhos.')
+    }
+
+    if (
+        allowsPlanningSchema &&
+        detectedSchema.mode === 'legacy_fixed' &&
+        detectedSchema.detectedFields.length > 0 &&
+        ('nome' in detectedSchema.fieldMap || 'telefone' in detectedSchema.fieldMap) &&
+        detectedSchema.coreStrategy === 'none'
+    ) {
+        return NextResponse.json({
+            error: 'Para planejamento previdenciário, a planilha precisa ter ao menos as colunas nome + telefone.',
+        }, { status: 422 })
     }
 
     // Criar lista no banco
@@ -488,10 +529,18 @@ export async function POST(request: NextRequest) {
         const dataNascimento = detectedSchema.mode === 'header_mapping'
             ? parseDate(getCellByHeaderAliases(row, headerLookup, ['DATANASC', 'DATA NASC', 'DATA DE NASCIMENTO']))
             : null
-        const syntheticNb = buildSyntheticNb(cpf, nome, dataNascimento)
+        const prioritizedContact = detectedSchema.mode === 'header_mapping'
+            ? pickPrioritizedContact(row, headerLookup)
+            : pickLegacyContact(row, detectedSchema)
+        const telefone = prioritizedContact.telefone
+        const syntheticNb = buildSyntheticNb(cpf, nome, dataNascimento, telefone)
         const effectiveNb = nb || syntheticNb
+        const email = detectedSchema.mode === 'header_mapping'
+            ? parseEmail(getMappedCell(row, detectedSchema, 'email'))
+            : null
 
-        if (!effectiveNb || !nome) continue
+        const requiresNomeTelefone = detectedSchema.coreStrategy === 'nome_telefone'
+        if (!effectiveNb || !nome || (requiresNomeTelefone && !telefone)) continue
 
         // Deduplicação na planilha
         if (nbsVistas.has(effectiveNb)) { totalDuplicados++; continue }
@@ -504,10 +553,6 @@ export async function POST(request: NextRequest) {
         const ganho = parseGanho(detectedSchema.mode === 'header_mapping' ? getMappedCell(row, detectedSchema, 'ganho_potencial') : row[COL.GANHO])
         const tipoRaw = detectedSchema.mode === 'header_mapping' ? getMappedCell(row, detectedSchema, 'tipo_beneficio') : row[COL.TIPO]
         const tipo = tipoRaw ? String(tipoRaw).trim() : ''
-        const prioritizedContact = detectedSchema.mode === 'header_mapping'
-            ? pickPrioritizedContact(row, headerLookup)
-            : pickLegacyContact(row, detectedSchema)
-        const telefone = prioritizedContact.telefone
         const categoriaProfissional = truncate(detectedSchema.mode === 'header_mapping' ? String(getMappedCell(row, detectedSchema, 'categoria_profissional') || '') : null, 255)
         const structuredRelatedContacts = detectedSchema.mode === 'header_mapping'
             ? collectStructuredRelatedContacts(row, headerLookup)
@@ -536,6 +581,7 @@ export async function POST(request: NextRequest) {
             nome: truncate(nome, 255),
             cpf: cpf ? cpf.slice(0, 14) : null,
             telefone,
+            email,
             telefone_enriquecido: contatoEnriquecido,
             conjuge_nome: structuredRelatedContacts.conjuge_nome,
             conjuge_celular: structuredRelatedContacts.conjuge_celular,
@@ -625,7 +671,11 @@ export async function POST(request: NextRequest) {
     if (inseridos === 0) {
         await adminSupabase.from('listas').delete().eq('id', lista.id)
         return NextResponse.json({
-            error: errosInsercao[0] || 'Nenhum lead valido foi inserido. Verifique a planilha e tente novamente.',
+            error:
+                errosInsercao[0] ||
+                (allowsPlanningSchema
+                    ? 'Nenhum lead válido foi inserido. Para planejamento previdenciário, a planilha precisa conter pelo menos nome + telefone em cada linha.'
+                    : 'Nenhum lead valido foi inserido. Verifique a planilha e tente novamente.'),
             details: errosInsercao,
         }, { status: 422 })
     }
@@ -646,6 +696,7 @@ export async function POST(request: NextRequest) {
         lista_id: lista.id,
         stats: {
             total_registros: rowsToProcess.length,
+            perfil_operacao_detectado: importOperationProfile,
             modo_detectado: detectedSchema.mode,
             cabecalho_detectado_linha: detectedSchema.headerRowIndex,
             campos_detectados: detectedSchema.detectedFields,
