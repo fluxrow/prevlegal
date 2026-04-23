@@ -1983,3 +1983,21 @@ Os selects ainda pediam apenas `usuarios(...)`, então o PostgREST não sabia qu
 - Se faltarem campos obrigatórios para o template, o backend agora responde `422` com `missing_fields`, e a UI abre preenchimento manual em vez de gerar PDF com campos vazios
 - `contract-templates.ts` foi alinhado com o template real do Pagliuca, incluindo placeholders documentais (`cliente_nacionalidade`, `cliente_rg`, `cliente_endereco_rua`, `cliente_endereco_numero`, `cliente_bairro`, `cliente_cidade`, `cliente_cep`) e placeholders comerciais que seguem como entrada manual no fluxo atual
 - Regra prática: template de contrato em produção e builder de placeholders no código precisam evoluir juntos; se um avançar sem o outro, a minuta pode sair silenciosamente incompleta
+
+## Atualização 2026-04-23 — Import do Pagliuca estabilizado para CSV simples e ambiente preparado para o smoke de amanhã
+
+- A migration `034_leads_email_foundation` foi aplicada em produção às `2026-04-23 13:39:57 -0300`, criando `public.leads.email` e o índice `idx_leads_email_trgm`
+- O hotfix temporário que tolerava ambiente sem `leads.email` continua seguro, mas o schema agora já está alinhado com o código
+- O importador de planejamento foi ajustado para CSVs simples exportadas por ferramentas de WhatsApp com:
+  - separador `;`
+  - cabeçalhos em inglês (`Saved Name`, `Public Name`, `Phone Number`, `Formatted Phone Number`)
+  - linhas promocionais/lixo (`Purchase Premium`, link de pricing) ignoradas
+- A lista `LISTA TESTE CME` do tenant Pagliuca foi importada com `9` leads válidos usando schema mínimo `nome + telefone`
+- O tenant Pagliuca está consistente para o go-live operacional:
+  - `4` usuários ativos
+  - agente default ativo com `perfil_operacao = planejamento_previdenciario`
+  - template real `honorarios_planejamento` ativo
+- Estado ainda pendente para o smoke real do agente:
+  - `0` canais em `whatsapp_numbers` para o tenant Pagliuca
+  - `0` conversas reais até o momento
+- Regra prática: antes do primeiro smoke real, confirmar conexão do número do escritório na `Z-API` e no PrevLegal; sem isso o restante do fluxo do agente não entra em runtime

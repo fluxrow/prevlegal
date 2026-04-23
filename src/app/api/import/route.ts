@@ -50,6 +50,20 @@ function parseEmail(val: unknown): string | null {
     return normalized || null
 }
 
+function getRowsFromUploadedFile(file: File, buffer: ArrayBuffer) {
+    const isCsv = file.name.toLowerCase().endsWith('.csv')
+    if (isCsv) {
+        const text = Buffer.from(buffer).toString('utf8')
+        const workbook = XLSX.read(text, { type: 'string', FS: ';' })
+        const sheet = workbook.Sheets[workbook.SheetNames[0]]
+        return XLSX.utils.sheet_to_json(sheet, { header: 1, defval: null }) as unknown[][]
+    }
+
+    const workbook = XLSX.read(buffer, { type: 'array' })
+    const sheet = workbook.Sheets[workbook.SheetNames[0]]
+    return XLSX.utils.sheet_to_json(sheet, { header: 1, defval: null }) as unknown[][]
+}
+
 function normalizeDelimitedRows(rows: unknown[][]) {
     const shouldSplitSemicolonRows = rows.length > 0 && rows.every((row) => {
         if (row.length !== 1) return false
@@ -502,9 +516,7 @@ export async function POST(request: NextRequest) {
 
     // Ler o arquivo XLSX
     const buffer = await file.arrayBuffer()
-    const workbook = XLSX.read(buffer, { type: 'array' })
-    const sheet = workbook.Sheets[workbook.SheetNames[0]]
-    const rawRows: unknown[][] = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: null })
+    const rawRows = getRowsFromUploadedFile(file, buffer)
     const rows = normalizeDelimitedRows(rawRows)
     const importOperationProfile = await resolveImportOperationProfile(adminSupabase, context.tenantId)
     const allowsPlanningSchema = importOperationProfile === 'planejamento_previdenciario'

@@ -32,6 +32,29 @@
   - inbox humana ponta a ponta
   - portal em tenant real
 
+## Atualização 2026-04-23 — Estado do Pagliuca antes do smoke real com WhatsApp
+
+- Import de planejamento já está operacional para CSV simples (`nome + telefone`) no tenant Pagliuca
+- A lista teste `LISTA TESTE CME` entrou com `9` leads válidos
+- A coluna `public.leads.email` já foi aplicada em produção (`034_leads_email_foundation`)
+- O tenant Pagliuca está com:
+  - `4` usuários ativos
+  - agente default ativo (`triagem`) com `perfil_operacao = planejamento_previdenciario`
+  - template real de `honorarios_planejamento` ativo
+- O que ainda bloqueia o smoke ponta a ponta do agente:
+  - nenhum canal em `public.whatsapp_numbers` para o tenant
+  - nenhuma conversa real criada ainda
+
+## Checklist imediato para amanhã cedo
+1. Conectar o número do escritório na Z-API.
+2. Cadastrar/validar o canal em `Configurações > Agentes` / canais WhatsApp do tenant.
+3. Disparar mensagem para um lead da lista teste.
+4. Responder como lead e confirmar:
+   - criação da conversa
+   - resposta automática do agente
+   - progressão da qualificação
+5. Testar extração estruturada e geração dos PDFs.
+
 ## Arquitetura de Roteamento (Fase D & E)
 Prioridade no responder mantém Fase D.
 Gatilho automático: a mudança de status do lead na API `PATCH` chama o *Orquestrador*, varrendo `event_triggers` e rodando followups (podendo cancelar os velhos).
