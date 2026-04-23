@@ -31,9 +31,9 @@ export type ImportSchemaOptions = {
 
 const HEADER_ALIASES: Record<ImportCanonicalField, string[]> = {
   nb: ['nb', 'numero beneficio', 'n beneficio', 'beneficio', 'numero do beneficio'],
-  nome: ['nome', 'nome completo', 'cliente', 'segurado', 'beneficiario'],
+  nome: ['nome', 'nome completo', 'cliente', 'segurado', 'beneficiario', 'saved name', 'public name', 'contact name'],
   cpf: ['cpf', 'documento', 'cpf cliente', 'cpf do cliente'],
-  telefone: ['telefone', 'celular', 'whatsapp', 'fone', 'contato', 'telefone whatsapp'],
+  telefone: ['telefone', 'celular', 'whatsapp', 'fone', 'contato', 'telefone whatsapp', 'phone number', 'formatted phone number', 'mobile number'],
   email: ['email', 'e-mail', 'mail'],
   aps: ['aps', 'agencia', 'agencia aps'],
   banco: ['banco', 'instituicao financeira', 'instituicao'],

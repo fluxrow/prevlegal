@@ -50,6 +50,22 @@ function parseEmail(val: unknown): string | null {
     return normalized || null
 }
 
+function normalizeDelimitedRows(rows: unknown[][]) {
+    const shouldSplitSemicolonRows = rows.length > 0 && rows.every((row) => {
+        if (row.length !== 1) return false
+        const value = String(row[0] || '')
+        return value.includes(';')
+    })
+
+    if (!shouldSplitSemicolonRows) return rows
+
+    return rows.map((row) =>
+        String(row[0] || '')
+            .split(';')
+            .map((cell) => cell.trim())
+    )
+}
+
 function parseDate(val: unknown): string | null {
     if (!val) return null
     // Excel date serial number
@@ -256,6 +272,15 @@ function buildApproachContext({
     return truncate(notes.join('\n\n'), 1000)
 }
 
+function looksLikePremiumUpsellRow(row: unknown[]) {
+    const values = row.map((cell) => String(cell || '').trim().toLowerCase())
+    return values.some((value) =>
+        value.includes('purchase premium')
+        || value.includes('access all')
+        || value.includes('wa-contact-extractor.com/pricing')
+    )
+}
+
 function buildEnrichedAlternateContact(prioritizedContact: PrioritizedContact) {
     if (prioritizedContact.alternativo) return prioritizedContact.alternativo
 
@@ -460,7 +485,8 @@ export async function POST(request: NextRequest) {
     const buffer = await file.arrayBuffer()
     const workbook = XLSX.read(buffer, { type: 'array' })
     const sheet = workbook.Sheets[workbook.SheetNames[0]]
-    const rows: unknown[][] = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: null })
+    const rawRows: unknown[][] = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: null })
+    const rows = normalizeDelimitedRows(rawRows)
     const importOperationProfile = await resolveImportOperationProfile(adminSupabase, context.tenantId)
     const allowsPlanningSchema = importOperationProfile === 'planejamento_previdenciario'
     const detectedSchema = detectImportSchema(rows, {
@@ -528,6 +554,8 @@ export async function POST(request: NextRequest) {
     const nbsVistas = new Set<string>()
 
     for (const row of rowsToProcess) {
+        if (looksLikePremiumUpsellRow(row)) continue
+
         const nbRaw = detectedSchema.mode === 'header_mapping' ? getMappedCell(row, detectedSchema, 'nb') : row[COL.NB]
         const nomeRaw = detectedSchema.mode === 'header_mapping' ? getMappedCell(row, detectedSchema, 'nome') : row[COL.NOME]
         const statusRaw = detectedSchema.mode === 'header_mapping' ? getMappedCell(row, detectedSchema, 'status') : row[COL.STATUS]
@@ -548,9 +576,13 @@ export async function POST(request: NextRequest) {
         const email = detectedSchema.mode === 'header_mapping'
             ? parseEmail(getMappedCell(row, detectedSchema, 'email'))
             : null
+        const publicNameFallback = detectedSchema.mode === 'header_mapping'
+            ? truncate(String(getCellByHeaderAliases(row, headerLookup, ['PUBLIC NAME']) || ''), 255)
+            : null
+        const effectiveNome = nome || publicNameFallback
 
         const requiresNomeTelefone = detectedSchema.coreStrategy === 'nome_telefone'
-        if (!effectiveNb || !nome || (requiresNomeTelefone && !telefone)) continue
+        if (!effectiveNb || !effectiveNome || (requiresNomeTelefone && !telefone)) continue
 
         // Deduplicação na planilha
         if (nbsVistas.has(effectiveNb)) { totalDuplicados++; continue }
@@ -588,7 +620,7 @@ export async function POST(request: NextRequest) {
             lista_id: lista.id,
             responsavel_id: context.usuarioId,
             nb: truncate(effectiveNb, 20),
-            nome: truncate(nome, 255),
+            nome: truncate(effectiveNome, 255),
             cpf: cpf ? cpf.slice(0, 14) : null,
             telefone,
             email,
