@@ -314,6 +314,25 @@ function emptyPrioritizedContact(): PrioritizedContact {
     }
 }
 
+function applyDetectedTelefoneFallback(
+    prioritizedContact: PrioritizedContact,
+    row: unknown[],
+    schema: ReturnType<typeof detectImportSchema>,
+): PrioritizedContact {
+    if (prioritizedContact.telefone) return prioritizedContact
+
+    const fallbackTelefone = parsePhone(getMappedCell(row, schema, 'telefone'))
+    if (!fallbackTelefone) return prioritizedContact
+
+    return {
+        ...prioritizedContact,
+        telefone: fallbackTelefone,
+        source: prioritizedContact.source || 'telefone_detectado',
+        tipo: prioritizedContact.tipo || 'titular',
+        direct: true,
+    }
+}
+
 function collectStructuredRelatedContacts(row: unknown[], lookup: HeaderLookup): StructuredRelatedContacts {
     return {
         conjuge_nome: truncate(getCellByHeaderAliases(row, lookup, ['CONJUGE_NOME', 'CONJUGE NOME']) ? String(getCellByHeaderAliases(row, lookup, ['CONJUGE_NOME', 'CONJUGE NOME'])) : null, 120),
@@ -567,9 +586,12 @@ export async function POST(request: NextRequest) {
         const dataNascimento = detectedSchema.mode === 'header_mapping'
             ? parseDate(getCellByHeaderAliases(row, headerLookup, ['DATANASC', 'DATA NASC', 'DATA DE NASCIMENTO']))
             : null
-        const prioritizedContact = detectedSchema.mode === 'header_mapping'
+        const prioritizedContactBase = detectedSchema.mode === 'header_mapping'
             ? pickPrioritizedContact(row, headerLookup)
             : pickLegacyContact(row, detectedSchema)
+        const prioritizedContact = detectedSchema.mode === 'header_mapping'
+            ? applyDetectedTelefoneFallback(prioritizedContactBase, row, detectedSchema)
+            : prioritizedContactBase
         const telefone = prioritizedContact.telefone
         const syntheticNb = buildSyntheticNb(cpf, nome, dataNascimento, telefone)
         const effectiveNb = nb || syntheticNb
