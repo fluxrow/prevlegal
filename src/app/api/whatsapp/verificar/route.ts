@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdmin } from '@supabase/supabase-js'
 import { getTenantContext } from '@/lib/tenant-context'
+import { resolveWhatsAppChannel } from '@/lib/whatsapp-provider'
 
 function createAdminClient() {
   return createAdmin(
@@ -43,7 +44,11 @@ export async function POST(request: NextRequest) {
     const adminClient = createAdminClient()
     const { lista_id } = await request.json()
     if (!lista_id) return NextResponse.json({ error: 'lista_id obrigatorio' }, { status: 400 })
-    if (!process.env.TWILIO_ACCOUNT_SID || !process.env.TWILIO_AUTH_TOKEN) {
+    const activeChannel = await resolveWhatsAppChannel(context.tenantId)
+    const provider = String(activeChannel.provider || '').trim().toLowerCase()
+    const usesLegacyTwilioLookup = provider === 'twilio'
+
+    if (usesLegacyTwilioLookup && (!process.env.TWILIO_ACCOUNT_SID || !process.env.TWILIO_AUTH_TOKEN)) {
       return NextResponse.json({ error: 'Credenciais Twilio nao configuradas' }, { status: 500 })
     }
     let listaQuery = adminClient
@@ -95,7 +100,9 @@ export async function POST(request: NextRequest) {
           semWhatsapp++; return
         }
         try {
-          const hasWpp = await checkWhatsApp(phone)
+          // Z-API nao expõe o mesmo lookup do Twilio. Para canais tenant-aware
+          // modernos, tratamos número normalizado como contato operacionalmente válido.
+          const hasWpp = usesLegacyTwilioLookup ? await checkWhatsApp(phone) : true
           await adminClient.from('leads').update({ tem_whatsapp: hasWpp, whatsapp_verificado_em: new Date().toISOString() }).eq('id', lead.id)
           if (hasWpp) comWhatsapp++; else semWhatsapp++
         } catch { erros++ }

@@ -158,13 +158,19 @@ function resolveCampaignContactForLead(
       source: lead.contato_alternativo_origem || null,
       verified: sourceLooksWhatsAppCapable(lead.contato_alternativo_origem),
     },
-  ].filter((candidate) => Boolean(candidate.phone) && candidate.verified);
+  ].filter((candidate) => Boolean(candidate.phone));
 
   if (!normalizedTarget) {
-    return candidates[0] || null;
+    return candidates.find((candidate) => candidate.verified) || candidates[0] || null;
   }
 
-  return candidates.find((candidate) => candidate.type === normalizedTarget) || null;
+  return (
+    candidates.find(
+      (candidate) => candidate.type === normalizedTarget && candidate.verified,
+    ) ||
+    candidates.find((candidate) => candidate.type === normalizedTarget) ||
+    null
+  );
 }
 
 async function ensureConversationForCampaignLead(

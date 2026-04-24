@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { Megaphone, Plus, Zap, CheckCircle2, XCircle, X } from "lucide-react";
+import { Megaphone, Plus, Zap, CheckCircle2, XCircle, X, Trash2 } from "lucide-react";
 import CampanhasOnboardingTour from "@/components/campanhas-onboarding-tour";
 import { buildCampaignMessageTemplate } from "@/lib/campaign-message-templates";
 import { CONTACT_TARGET_OPTIONS } from "@/lib/contact-target";
@@ -170,6 +170,7 @@ export default function CampanhasPage() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [disparando, setDisparando] = useState<string | null>(null);
+  const [deletando, setDeletando] = useState<string | null>(null);
   const [templateFoiEditado, setTemplateFoiEditado] = useState(false);
   const [leadSearch, setLeadSearch] = useState("");
   const [leadOptions, setLeadOptions] = useState<LeadOption[]>([]);
@@ -385,6 +386,28 @@ export default function CampanhasPage() {
       });
     } finally {
       setSavingConfig(false);
+    }
+  }
+
+  async function apagarCampanha(id: string) {
+    if (!window.confirm("Apagar esta campanha? Essa ação não pode ser desfeita.")) {
+      return;
+    }
+
+    setDeletando(id);
+    try {
+      const res = await fetch(`/api/campanhas/${id}`, {
+        method: "DELETE",
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        showToast("error", data.error || "Não foi possível apagar a campanha");
+        return;
+      }
+      showToast("success", "Campanha apagada com sucesso");
+      await fetchAll();
+    } finally {
+      setDeletando(null);
     }
   }
 
@@ -1252,6 +1275,7 @@ export default function CampanhasPage() {
               const st = STATUS_LABEL[c.status] || STATUS_LABEL.rascunho;
               const pctEnv = pct(c.total_enviados, c.total_leads);
               const isDisparando = disparando === c.id;
+              const isDeletando = deletando === c.id;
               return (
                 <div
                   key={c.id}
@@ -1310,32 +1334,56 @@ export default function CampanhasPage() {
                         em {new Date(c.created_at).toLocaleDateString("pt-BR")}
                       </span>
                     </div>
-                    {["rascunho", "pausada"].includes(c.status) && (
-                      <button
-                        onClick={() => setConfirmDisparo(c.id)}
-                        disabled={isDisparando}
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "6px",
-                          padding: "8px 16px",
-                          borderRadius: "8px",
-                          background: isDisparando
-                            ? "var(--bg-hover)"
-                            : "#22c55e20",
-                          color: isDisparando ? "var(--text-muted)" : "#22c55e",
-                          border:
-                            "1px solid " +
-                            (isDisparando ? "var(--border)" : "#22c55e40"),
-                          fontSize: "12px",
-                          fontWeight: "500",
-                          cursor: isDisparando ? "not-allowed" : "pointer",
-                        }}
-                      >
-                        <Zap size={13} />
-                        {isDisparando ? "Disparando..." : "Disparar agora"}
-                      </button>
-                    )}
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                      {["rascunho", "pausada"].includes(c.status) && (
+                        <button
+                          onClick={() => setConfirmDisparo(c.id)}
+                          disabled={isDisparando || isDeletando}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "6px",
+                            padding: "8px 16px",
+                            borderRadius: "8px",
+                            background: isDisparando
+                              ? "var(--bg-hover)"
+                              : "#22c55e20",
+                            color: isDisparando ? "var(--text-muted)" : "#22c55e",
+                            border:
+                              "1px solid " +
+                              (isDisparando ? "var(--border)" : "#22c55e40"),
+                            fontSize: "12px",
+                            fontWeight: "500",
+                            cursor: isDisparando ? "not-allowed" : "pointer",
+                          }}
+                        >
+                          <Zap size={13} />
+                          {isDisparando ? "Disparando..." : "Disparar agora"}
+                        </button>
+                      )}
+                      {c.status !== "ativa" && (
+                        <button
+                          onClick={() => apagarCampanha(c.id)}
+                          disabled={isDeletando || isDisparando}
+                          title="Apagar campanha"
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            width: "36px",
+                            height: "36px",
+                            borderRadius: "8px",
+                            background: "rgba(239,68,68,0.08)",
+                            color: "#ef4444",
+                            border: "1px solid rgba(239,68,68,0.2)",
+                            cursor: isDeletando ? "not-allowed" : "pointer",
+                            opacity: isDeletando ? 0.65 : 1,
+                          }}
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      )}
+                    </div>
                   </div>
 
                   <div
@@ -1509,6 +1557,24 @@ export default function CampanhasPage() {
               )}
             </div>
 
+            {whatsAppNumbers.length > 0 && (
+              <div
+                style={{
+                  marginBottom: "20px",
+                  padding: "10px 12px",
+                  borderRadius: "10px",
+                  background: "rgba(79,122,255,0.08)",
+                  border: "1px solid rgba(79,122,255,0.18)",
+                  color: "var(--text-secondary)",
+                  fontSize: "12px",
+                  lineHeight: 1.5,
+                }}
+              >
+                O disparo operacional deste escritório está usando o canal ativo acima.
+                Os campos abaixo são apenas fallback legado de Twilio e não controlam o canal Z-API.
+              </div>
+            )}
+
             <div style={{ marginBottom: "20px" }}>
               <span
                 style={{
@@ -1526,9 +1592,9 @@ export default function CampanhasPage() {
                       : "#f5c842",
                 }}
               >
-                  {configDisparo.twilio_modo === "producao"
-                    ? "🟢 Produção"
-                    : "🟡 Sandbox/legado"}
+                {configDisparo.twilio_modo === "producao"
+                  ? "🟢 Fallback legado em produção"
+                  : "🟡 Fallback legado sandbox"}
                 </span>
               </div>
 
@@ -1542,7 +1608,7 @@ export default function CampanhasPage() {
                   fontFamily: "DM Sans, sans-serif",
                 }}
               >
-                Número de origem legado
+                Número de origem legado (Twilio fallback)
               </label>
               <input
                 type="text"
@@ -1578,7 +1644,7 @@ export default function CampanhasPage() {
                   fontFamily: "DM Sans, sans-serif",
                 }}
               >
-                Modo de operação legado
+                Modo de operação legado (Twilio fallback)
               </label>
               <select
                 value={configDisparo.twilio_modo}
