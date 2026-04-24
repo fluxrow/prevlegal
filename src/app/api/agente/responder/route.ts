@@ -186,10 +186,12 @@ function buildImmediateResponseDirective({
   latestLeadMessage,
   latestLeadIntent,
   operationProfile,
+  isFirstReplyAfterCampaign,
 }: {
   latestLeadMessage: string
   latestLeadIntent: string
   operationProfile?: string | null
+  isFirstReplyAfterCampaign: boolean
 }) {
   const normalizedProfile = normalizeOperationProfile(operationProfile || 'beneficios_previdenciarios')
 
@@ -209,6 +211,14 @@ function buildImmediateResponseDirective({
       '- Em planejamento previdenciário, responda como uma consultora técnica e segura, sem telemarketing e sem inventar análise individual.',
       '- Você atende apenas o titular do planejamento. Se perceber que está falando com terceiro, peça de forma cordial que o próprio titular siga a conversa.',
       '- Se o lead pedir explicação, explique o conceito pedido em linguagem simples e continue para o próximo passo da esteira.',
+      ...(isFirstReplyAfterCampaign
+        ? [
+            '- Este é o primeiro retorno do lead após a abordagem ativa do escritório.',
+            '- Não diga que o lead já tinha interesse anterior, que já demonstrou interesse antes, nem que o histórico mostra intenção antiga, a menos que isso esteja literalmente escrito em mensagens anteriores do próprio lead.',
+            '- Se a resposta do lead for só uma saudação curta, primeiro retome com naturalidade o motivo do contato em 2 ou 3 frases consultivas e só depois faça uma pergunta diagnóstica curta.',
+            '- Nessa retomada inicial, fale do assunto antes de perguntar: explique brevemente por que planejamento previdenciário pode ser relevante para profissionais com carreira consolidada e convide o lead a dizer se quer entender seu cenário com mais clareza.',
+          ]
+        : []),
       '- O handoff humano acontece por etapa de processo: análise individual de CNIS/documentos, cálculo formal/projeção, aceite do diagnóstico técnico pago, pedido expresso para falar com advogado ou momento de contrato/assinatura.',
     ].join('\n')
   }
@@ -255,12 +265,14 @@ function buildAgentContinuitySection({
   operationProfile,
   activeAgentTypes,
   hasHistory,
+  isFirstReplyAfterCampaign,
 }: {
   leadName?: string | null
   currentAgentType?: string | null
   operationProfile?: string | null
   activeAgentTypes: string[]
   hasHistory: boolean
+  isFirstReplyAfterCampaign: boolean
 }) {
   const normalizedProfile = normalizeOperationProfile(operationProfile || 'beneficios_previdenciarios')
   const normalizedType = String(currentAgentType || 'triagem').trim().toLowerCase()
@@ -279,7 +291,9 @@ function buildAgentContinuitySection({
         : `Você está na etapa de triagem e não há agentes posteriores ativos no momento. Seu papel é aquecer ${leadRef}, explicar o essencial em linguagem simples e deixar a conversa pronta para a advogada responsável assumir sem perda de contexto.`
       : `Você está na etapa ${normalizedType}. Continue a conversa como parte do mesmo atendimento, assumindo que ${leadRef} já ouviu a explicação inicial e que o histórico registra o que foi falado ou combinado.`
 
-  const continuityHint = hasHistory
+  const continuityHint = isFirstReplyAfterCampaign
+    ? `Este é o primeiro retorno do lead depois da abordagem ativa da campanha. Continue a conversa como sequência direta desse primeiro toque, sem fingir que já houve uma conversa longa anterior ou interesse previamente confirmado por ${leadRef}.`
+    : hasHistory
     ? `Já existe histórico anterior. Nunca recomece a conversa do zero, nunca repita apresentação inicial desnecessária e sempre responda como alguém que sabe o que já foi alinhado com ${leadRef}.`
     : `Se esta for a primeira resposta efetiva da esteira, apresente o assunto com delicadeza, objetividade e sem despejar informação demais de uma vez.`
 
@@ -814,6 +828,12 @@ export async function POST(request: NextRequest) {
 
     const latestLeadMessage = buildCurrentLeadTurn(historico) || String(mensagem.mensagem || '').trim()
     const latestLeadIntent = classifyLatestLeadTurn(latestLeadMessage)
+    const userTurns = historico.filter((entry) => entry.role === 'user').length
+    const assistantTurns = historico.filter((entry) => entry.role === 'assistant').length
+    const isFirstReplyAfterCampaign =
+      Boolean(campanha_id) &&
+      userTurns <= 1 &&
+      assistantTurns <= 1
 
     // 5. Montar system prompt com dados do lead
     const promptBase = config.agente_prompt_sistema || PROMPT_PADRAO
@@ -837,6 +857,7 @@ export async function POST(request: NextRequest) {
         operationProfile: normalizedOperationProfile,
         activeAgentTypes,
         hasHistory: historico.length > 1,
+        isFirstReplyAfterCampaign,
       })}`,
     )
     partes.push(
@@ -844,6 +865,7 @@ export async function POST(request: NextRequest) {
         latestLeadMessage,
         latestLeadIntent,
         operationProfile: normalizedOperationProfile,
+        isFirstReplyAfterCampaign,
       })}`,
     )
     if (normalizedOperationProfile === 'planejamento_previdenciario') {

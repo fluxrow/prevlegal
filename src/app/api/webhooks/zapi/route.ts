@@ -105,6 +105,43 @@ function applyTenantFilter(query: any, tenantId: string | null) {
   return tenantId ? query.eq('tenant_id', tenantId) : query.is('tenant_id', null)
 }
 
+async function hasRecentDuplicateMessage({
+  supabase,
+  tenantId,
+  channelId,
+  from,
+  to,
+  body,
+  withinMs = 45000,
+}: {
+  supabase: ReturnType<typeof createAdminSupabase>
+  tenantId: string | null
+  channelId: string
+  from: string
+  to: string | null
+  body: string
+  withinMs?: number
+}) {
+  let query = supabase
+    .from('mensagens_inbound')
+    .select('id')
+    .eq('whatsapp_number_id', channelId)
+    .eq('telefone_remetente', from)
+    .eq('mensagem', body)
+    .gte('created_at', new Date(Date.now() - withinMs).toISOString())
+    .order('created_at', { ascending: false })
+    .limit(1)
+
+  query = applyTenantFilter(query, tenantId)
+
+  if (to) {
+    query = query.eq('telefone_destinatario', to)
+  }
+
+  const { data } = await query.maybeSingle()
+  return Boolean(data?.id)
+}
+
 async function registerAgentAutoresponderFailure({
   supabase,
   tenantId,
@@ -614,6 +651,19 @@ async function handleChannelOriginatedMessage({
     }
   }
 
+  const duplicateByBody = await hasRecentDuplicateMessage({
+    supabase,
+    tenantId: routing.tenantId,
+    channelId: routing.channelId,
+    from: parties.channelPhone || routing.from || '',
+    to: parties.counterpartyPhone,
+    body,
+  })
+
+  if (duplicateByBody) {
+    return NextResponse.json({ ok: true, duplicate: true, mirrored: true })
+  }
+
   let lead = null as Awaited<ReturnType<typeof ensureLeadForInbound>> | null
   let tenantId = routing.tenantId
 
@@ -820,6 +870,19 @@ async function handleReceiveEvent(request: NextRequest, event: string) {
     if (duplicate) {
       return NextResponse.json({ ok: true, duplicate: true })
     }
+  }
+
+  const duplicateByBody = await hasRecentDuplicateMessage({
+    supabase,
+    tenantId: routing.tenantId,
+    channelId: routing.channelId,
+    from,
+    to: to || routing.from,
+    body,
+  })
+
+  if (duplicateByBody) {
+    return NextResponse.json({ ok: true, duplicate: true })
   }
 
   let lead = null as Awaited<ReturnType<typeof ensureLeadForInbound>> | null
