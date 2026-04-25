@@ -31,6 +31,11 @@ Mestra: [[MASTER_PREV_LEGAL]]
     - playbooks dos agentes
     - integrações e webhooks
     - padrões de rollout e troubleshooting
+- [x] Expandir a segunda camada do livro operacional
+  - documentos e minuta
+  - campanhas e follow-up
+  - portal do cliente
+  - financeiro e contratos
 
 ## Débito técnico consciente (documentado pré-go-live)
 

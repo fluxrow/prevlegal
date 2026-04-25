@@ -12,6 +12,15 @@ Use esta nota como ponto de entrada para qualquer retomada de contexto do PrevLe
 
 - [[MASTER]] — visão do produto, posicionamento, stack, cliente piloto e regras de negócio
 - [[OPERATIONAL_BOOK]] — camada canônica de execução do produto
+- [[OPERATIONAL_BOOK_GO_LIVE]] — rotina canônica de smoke e go-live
+- [[OPERATIONAL_BOOK_CHANNELS]] — canais, Z-API, webhooks e disparo
+- [[OPERATIONAL_BOOK_AGENTS]] — playbooks e regras de continuidade do agente
+- [[OPERATIONAL_BOOK_DOCUMENTS]] — minuta, parsing documental e placeholders
+- [[OPERATIONAL_BOOK_CAMPAIGNS]] — disparo, follow-up e thread operacional
+- [[OPERATIONAL_BOOK_PORTAL]] — portal do cliente, timeline e mensagens
+- [[OPERATIONAL_BOOK_FINANCE]] — contratos, parcelas e leitura financeira
+- [[OPERATIONAL_BOOK_MULTITENANT]] — isolamento e tenants
+- [[OPERATIONAL_BOOK_TROUBLESHOOTING]] — diagnóstico rápido dos problemas mais comuns
 - [[ROADMAP]] — fases concluídas, próximas fases e prioridades
 - [[LEARNINGS]] — erros, padrões, decisões e regras permanentes
 - [[SESSION_BRIEF]] — resumo curto da fase atual e do próximo passo

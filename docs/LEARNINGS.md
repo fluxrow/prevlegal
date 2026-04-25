@@ -2082,3 +2082,17 @@ Os selects ainda pediam apenas `usuarios(...)`, então o PostgREST não sabia qu
 - Regra prática:
   - fora do horário, o lead pode receber uma mensagem de espera
   - ao abrir a próxima janela útil, o agente continua automaticamente a conversa
+
+## Atualização 2026-04-25 — Segunda camada do livro operacional expandida
+
+- a camada canônica foi ampliada para cobrir os fluxos que mais importam no dia a dia operacional
+- novos guias criados:
+  - `OPERATIONAL_BOOK_DOCUMENTS.md`
+  - `OPERATIONAL_BOOK_CAMPAIGNS.md`
+  - `OPERATIONAL_BOOK_PORTAL.md`
+  - `OPERATIONAL_BOOK_FINANCE.md`
+- direção consolidada:
+  - documentos e minuta devem bloquear placeholders obrigatórios vazios
+  - campanhas e follow-up precisam manter campanha como trilha comercial e conversa como trilha operacional
+  - portal deve mostrar só o que ajuda o cliente, sem vazar ruído interno
+  - financeiro deve ser lido como camada de conversão e carteira, não só de cobrança

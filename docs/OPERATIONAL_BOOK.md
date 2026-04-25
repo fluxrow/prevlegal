@@ -27,6 +27,10 @@ Quando a sessão for de execução, operação, go-live, rollout ou troubleshoot
 - [[OPERATIONAL_BOOK_GO_LIVE]] — rotina de go-live e smoke real
 - [[OPERATIONAL_BOOK_CHANNELS]] — Z-API, canais, webhook e campanhas
 - [[OPERATIONAL_BOOK_AGENTS]] — playbooks, agentes e regras de continuidade
+- [[OPERATIONAL_BOOK_DOCUMENTS]] — minuta, contratos PDF e parsing documental
+- [[OPERATIONAL_BOOK_CAMPAIGNS]] — disparo, follow-up e retomada da thread
+- [[OPERATIONAL_BOOK_PORTAL]] — portal do cliente, timeline e documentos compartilhados
+- [[OPERATIONAL_BOOK_FINANCE]] — contratos, parcelas e leitura da carteira
 - [[OPERATIONAL_BOOK_MULTITENANT]] — isolamento, tenants, convites e acessos
 - [[OPERATIONAL_BOOK_TROUBLESHOOTING]] — diagnóstico rápido dos problemas mais comuns
 
