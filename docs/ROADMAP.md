@@ -19,6 +19,10 @@ Mestra: [[MASTER_PREV_LEGAL]]
   - Objetivo: reduzir custo de retomada de contexto, melhorar handoff e preservar decisões importantes fora da busca linear
   - Regra: não indexar PII de lead, documentos reais, segredos ou dumps de produção
 - [ ] Criar uma camada de documentação canônica / “livro operacional” acima do `LEARNINGS` cronológico (P1 pós-smoke)
+- [x] Criar primeira camada de documentação canônica / “livro operacional” acima do `LEARNINGS`
+  - `OPERATIONAL_BOOK.md`
+  - guias de go-live, canais, agentes, multi-tenant e troubleshooting
+  - `LEARNINGS` continua como memória bruta; o livro passa a ser a síntese executável
   - Objetivo: transformar o histórico acumulado em guias enxutos de “o que fazer / como fazer / por que fazer”
   - Regra: `LEARNINGS` continua como memória bruta; a nova camada vira síntese reutilizável e menos verborrágica
   - Escopos iniciais:

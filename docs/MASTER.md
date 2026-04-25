@@ -10,6 +10,7 @@ Mestra: [[MASTER_PREV_LEGAL]]
 ## Navegação
 
 - [[INDEX]]
+- [[OPERATIONAL_BOOK]]
 - [[ROADMAP]]
 - [[LEARNINGS]]
 - [[SESSION_BRIEF]]
@@ -36,6 +37,10 @@ Mestra: [[MASTER_PREV_LEGAL]]
 **Domínio próprio adquirido:** `prevlegal.com.br`
 
 ## Estado operacional atual
+
+- o projeto agora passa a manter duas camadas formais de memória:
+  - memória bruta e histórica em `LEARNINGS`
+  - memória canônica de execução em `OPERATIONAL_BOOK`
 
 - o core do produto já está funcional
 - o maior risco atual não é falta de feature principal

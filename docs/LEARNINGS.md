@@ -45,6 +45,23 @@ Mestra: [[MASTER_PREV_LEGAL]]
   - `length(corpo_html) = 7713`
 - Frente C (motor de minuta MVP) agora tem template jurídico real do Pagliuca em produção, não só a base placeholder da seed
 
+## Atualização 2026-04-25 — Livro operacional canônico entrou acima do histórico bruto
+
+- O projeto passou a separar explicitamente duas camadas de memória:
+  - `LEARNINGS` como memória bruta, cronológica e técnica
+  - `OPERATIONAL_BOOK` como camada canônica de execução
+- O objetivo dessa camada nova é evitar que o time precise reler toda a novela de tentativa/erro para operar o produto
+- Primeira estrutura criada:
+  - `OPERATIONAL_BOOK.md`
+  - `OPERATIONAL_BOOK_GO_LIVE.md`
+  - `OPERATIONAL_BOOK_CHANNELS.md`
+  - `OPERATIONAL_BOOK_AGENTS.md`
+  - `OPERATIONAL_BOOK_MULTITENANT.md`
+  - `OPERATIONAL_BOOK_TROUBLESHOOTING.md`
+- Regra prática:
+  - usar `OPERATIONAL_BOOK` como entrada para execução
+  - usar `LEARNINGS` para rastrear contexto, causa e histórico
+
 ## Atualização 2026-04-23 — Pagliuca preparado para smoke real de WhatsApp e playbook de planejamento auditado
 
 - O import de planejamento foi estabilizado para o cenário mínimo de go-live:

@@ -11,6 +11,7 @@ Use esta nota como ponto de entrada para qualquer retomada de contexto do PrevLe
 ## Notas Principais
 
 - [[MASTER]] — visão do produto, posicionamento, stack, cliente piloto e regras de negócio
+- [[OPERATIONAL_BOOK]] — camada canônica de execução do produto
 - [[ROADMAP]] — fases concluídas, próximas fases e prioridades
 - [[LEARNINGS]] — erros, padrões, decisões e regras permanentes
 - [[SESSION_BRIEF]] — resumo curto da fase atual e do próximo passo
@@ -32,9 +33,10 @@ Use esta nota como ponto de entrada para qualquer retomada de contexto do PrevLe
 
 1. [[SESSION_BRIEF]]
 2. [[CODEX_HANDOFF]]
-3. [[ROADMAP]]
-4. [[LEARNINGS]]
-5. [[MASTER]]
+3. [[OPERATIONAL_BOOK]]
+4. [[ROADMAP]]
+5. [[LEARNINGS]]
+6. [[MASTER]]
 
 ## Regra de Documentacao
 
