@@ -2479,3 +2479,8 @@ Status atual em 18/03/2026:
   - campanhas para leads manuais deixam de morrer com `0 enviados`
   - o agente consegue continuar a conversa depois da resposta do lead
   - a thread mostra tanto o que foi enviado pelo sistema quanto o que foi enviado diretamente do celular do escritório
+
+- [x] Retomada automática do agente após resposta fora do horário
+  - Mensagem fora da janela não derruba a conversa para `humano`
+  - Novo worker `/api/agente/worker` reprocessa pendências a cada 5 minutos
+  - Válido para Z-API e Twilio

@@ -1,6 +1,10 @@
 {
   "crons": [
     {
+      "path": "/api/agente/worker",
+      "schedule": "*/5 * * * *"
+    },
+    {
       "path": "/api/followup/worker",
       "schedule": "0 0 * * *"
     }

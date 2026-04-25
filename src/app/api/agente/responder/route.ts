@@ -706,21 +706,23 @@ export async function POST(request: NextRequest) {
       if (config.agente_apenas_dias_uteis && isWeekend) {
         return NextResponse.json({
           error: 'Fora do horário de atendimento (fim de semana)',
+          queued: true,
           reason: 'outside_hours',
           horario_inicio: config.agente_horario_inicio,
           horario_fim: config.agente_horario_fim,
           dias_uteis_only: Boolean(config.agente_apenas_dias_uteis),
-        }, { status: 403 })
+        }, { status: 202 })
       }
 
       if (hourMinute < config.agente_horario_inicio || hourMinute > config.agente_horario_fim) {
         return NextResponse.json({
           error: 'Fora do horário de atendimento',
+          queued: true,
           reason: 'outside_hours',
           horario_inicio: config.agente_horario_inicio,
           horario_fim: config.agente_horario_fim,
           dias_uteis_only: Boolean(config.agente_apenas_dias_uteis),
-        }, { status: 403 })
+        }, { status: 202 })
       }
     }
 
@@ -742,7 +744,10 @@ export async function POST(request: NextRequest) {
       inbounds = (data || []) as InboundMessageRow[]
     }
 
-    const latestInbound = inbounds[0]
+    const pendingInboundRows = inbounds.filter(
+      (row) => !row.respondido_por_agente && !row.respondido_manualmente,
+    )
+    const latestInbound = pendingInboundRows[0] || inbounds[0]
     if (latestInbound?.id && latestInbound.id !== mensagem_id) {
       return NextResponse.json(
         {
@@ -756,8 +761,10 @@ export async function POST(request: NextRequest) {
     const nowMs = Date.now()
     const latestInboundMs = getCreatedAtMs(latestInbound?.created_at || mensagem.created_at)
     const latestInboundAgeMs = latestInboundMs ? Math.max(0, nowMs - latestInboundMs) : 0
-    const recentInbounds = inbounds.filter((row) => nowMs - getCreatedAtMs(row.created_at) <= AGENT_FLOOD_WINDOW_MS)
-    const rapidSequenceCount = getRapidInboundSequenceCount(inbounds)
+    const recentInbounds = pendingInboundRows.filter(
+      (row) => nowMs - getCreatedAtMs(row.created_at) <= AGENT_FLOOD_WINDOW_MS,
+    )
+    const rapidSequenceCount = getRapidInboundSequenceCount(pendingInboundRows)
 
     if (recentInbounds.length > AGENT_FLOOD_LIMIT) {
       await insertStructuredAgentLog({

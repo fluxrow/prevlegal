@@ -208,7 +208,7 @@ async function registerAgentAutoresponderFailure({
     await supabase
       .from('conversas')
       .update({
-        status: 'humano',
+        status: outsideHours ? 'agente' : 'humano',
         ...(noticeBody
           ? {
               ultima_mensagem: noticeBody,
@@ -222,13 +222,13 @@ async function registerAgentAutoresponderFailure({
   if (!tenantId) return
 
   const titulo = outsideHours
-    ? `Agente fora do horário — ${leadName}`
+    ? `Agente fora do horário — retorno agendado — ${leadName}`
     : timeout
       ? `Agente não respondeu a tempo — ${leadName}`
       : `Agente indisponível — ${leadName}`
 
   const descricao = outsideHours
-    ? 'O lead respondeu fora da janela configurada do agente. A conversa foi devolvida para atendimento humano.'
+    ? 'O lead respondeu fora da janela configurada do agente. A conversa permanece com o agente e será retomada automaticamente no próximo horário útil.'
     : timeout
       ? 'O agente demorou além do limite interno para responder. A conversa foi devolvida para atendimento humano.'
       : `O agente não conseguiu continuar a conversa automaticamente. Motivo: ${result.error}`
@@ -243,7 +243,7 @@ async function registerAgentAutoresponderFailure({
       : '/caixa-de-entrada',
     whatsapp_number_id: null,
     metadata: {
-      motivo: outsideHours ? 'agent_outside_hours' : timeout ? 'agent_timeout' : 'agent_autoresponder_failed',
+      motivo: outsideHours ? 'agent_outside_hours_queued' : timeout ? 'agent_timeout' : 'agent_autoresponder_failed',
       conversa_id: conversaId,
       telefone: from,
       erro: result.error,

@@ -2052,3 +2052,16 @@ Os selects ainda pediam apenas `usuarios(...)`, então o PostgREST não sabia qu
   - `0` canais em `whatsapp_numbers` para o tenant Pagliuca
   - `0` conversas reais até o momento
 - Regra prática: antes do primeiro smoke real, confirmar conexão do número do escritório na `Z-API` e no PrevLegal; sem isso o restante do fluxo do agente não entra em runtime
+
+## Atualização 2026-04-25 — Fora do horário não deve devolver planejamento para humano
+
+- Quando o lead responde fora da janela do agente, o playbook de planejamento não deve perder a conversa para a fila humana por isso só.
+- O comportamento correto é: enviar aviso de fora do horário, manter a conversa em `agente` e retomar automaticamente no próximo horário útil.
+- Correção aplicada:
+  - `/api/agente/responder` passa a tratar `outside_hours` como estado `queued`, não como erro fatal
+  - webhooks `Z-API` e `Twilio` deixam de mover a conversa para `humano` nesse caso
+  - novo worker `/api/agente/worker` reprocessa mensagens pendentes de agente e o `vercel.json` agenda esse retry a cada 5 minutos
+  - o critério de última mensagem pendente foi endurecido para ignorar outbound do próprio sistema, evitando que o aviso de fora do horário bloqueie a retomada
+- Regra prática:
+  - fora do horário, o lead pode receber uma mensagem de espera
+  - ao abrir a próxima janela útil, o agente continua automaticamente a conversa
