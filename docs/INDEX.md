@@ -19,6 +19,9 @@ Use esta nota como ponto de entrada para qualquer retomada de contexto do PrevLe
 - [[OPERATIONAL_BOOK_CAMPAIGNS]] — disparo, follow-up e thread operacional
 - [[OPERATIONAL_BOOK_PORTAL]] — portal do cliente, timeline e mensagens
 - [[OPERATIONAL_BOOK_FINANCE]] — contratos, parcelas e leitura financeira
+- [[OPERATIONAL_BOOK_INBOX]] — inbox humana, pendências e colaboração interna
+- [[OPERATIONAL_BOOK_SCHEDULING]] — agenda e evolução do lead por agendamento
+- [[OPERATIONAL_BOOK_ADMIN]] — saúde do tenant e provisioning operacional
 - [[OPERATIONAL_BOOK_MULTITENANT]] — isolamento e tenants
 - [[OPERATIONAL_BOOK_TROUBLESHOOTING]] — diagnóstico rápido dos problemas mais comuns
 - [[ROADMAP]] — fases concluídas, próximas fases e prioridades

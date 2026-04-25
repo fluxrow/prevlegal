@@ -36,6 +36,10 @@ Mestra: [[MASTER_PREV_LEGAL]]
   - campanhas e follow-up
   - portal do cliente
   - financeiro e contratos
+- [x] Expandir a terceira camada do livro operacional
+  - inbox humana e colaboração interna
+  - agendamentos
+  - admin e saúde dos tenants
 
 ## Débito técnico consciente (documentado pré-go-live)
 

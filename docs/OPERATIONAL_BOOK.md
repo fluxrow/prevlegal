@@ -31,6 +31,9 @@ Quando a sessão for de execução, operação, go-live, rollout ou troubleshoot
 - [[OPERATIONAL_BOOK_CAMPAIGNS]] — disparo, follow-up e retomada da thread
 - [[OPERATIONAL_BOOK_PORTAL]] — portal do cliente, timeline e documentos compartilhados
 - [[OPERATIONAL_BOOK_FINANCE]] — contratos, parcelas e leitura da carteira
+- [[OPERATIONAL_BOOK_INBOX]] — inbox humana, handoff e colaboração interna
+- [[OPERATIONAL_BOOK_SCHEDULING]] — agendamentos, agenda e ownership por usuário
+- [[OPERATIONAL_BOOK_ADMIN]] — visão de tenant, risco operacional e provisioning
 - [[OPERATIONAL_BOOK_MULTITENANT]] — isolamento, tenants, convites e acessos
 - [[OPERATIONAL_BOOK_TROUBLESHOOTING]] — diagnóstico rápido dos problemas mais comuns
 

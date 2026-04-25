@@ -2096,3 +2096,16 @@ Os selects ainda pediam apenas `usuarios(...)`, então o PostgREST não sabia qu
   - campanhas e follow-up precisam manter campanha como trilha comercial e conversa como trilha operacional
   - portal deve mostrar só o que ajuda o cliente, sem vazar ruído interno
   - financeiro deve ser lido como camada de conversão e carteira, não só de cobrança
+
+## Atualização 2026-04-25 — Terceira camada do livro operacional expandida
+
+- a camada canônica foi ampliada novamente para cobrir a operação humana do produto
+- novos guias criados:
+  - `OPERATIONAL_BOOK_INBOX.md`
+  - `OPERATIONAL_BOOK_SCHEDULING.md`
+  - `OPERATIONAL_BOOK_ADMIN.md`
+- direção consolidada:
+  - inbox humana precisa continuar pessoal por padrão, com visibilidade baseada em `responsavel_id` e `assumido_por`
+  - colaboração interna por lead deve usar thread, tasks e handoff reais, não coordenação implícita
+  - agendamento deve funcionar como transição operacional do lead, com agenda por usuário como comportamento correto
+  - admin deve distinguir tenant criado, tenant configurado e tenant realmente operando
