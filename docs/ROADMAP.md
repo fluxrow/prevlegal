@@ -7,9 +7,26 @@ Mestra: [[MASTER_PREV_LEGAL]]
 ## Atualizacao Observabilidade / logging bruto de tokens do agente entrou no pre-go-live — 18/04/2026
 
 - [x] Logging bruto de tokens do agente (pré-go-live)
+- [x] Reset operacional de lead de teste para smoke recorrente
+  - Endpoint `POST /api/leads/[id]/reset-teste`
+  - Botão `Resetar lead de teste` no detalhe do lead
+  - Limpa conversa, mensagens, notificações, follow-up, rastro de campanha e colaboração interna sem apagar o cadastro base do lead
 - [ ] Dashboard de custos por tenant (P1 pós-go-live)
 - [ ] Rate limiting por tenant baseado em budget (P2)
 - [ ] Auditoria e correção das policies RLS pós-migration 039 (`usuarios.id` vs `auth_id`) — P2 pós-piloto
+- [ ] Piloto de memória semântica / grafo local para docs operacionais do PrevLegal e memória compartilhada da Fluxrow (P1 pós-smoke)
+  - Escopo inicial: `docs/`, `LEARNINGS`, `SESSION_BRIEF`, handoffs e notas operacionais do vault
+  - Objetivo: reduzir custo de retomada de contexto, melhorar handoff e preservar decisões importantes fora da busca linear
+  - Regra: não indexar PII de lead, documentos reais, segredos ou dumps de produção
+- [ ] Criar uma camada de documentação canônica / “livro operacional” acima do `LEARNINGS` cronológico (P1 pós-smoke)
+  - Objetivo: transformar o histórico acumulado em guias enxutos de “o que fazer / como fazer / por que fazer”
+  - Regra: `LEARNINGS` continua como memória bruta; a nova camada vira síntese reutilizável e menos verborrágica
+  - Escopos iniciais:
+    - go-live operacional
+    - arquitetura multi-tenant
+    - playbooks dos agentes
+    - integrações e webhooks
+    - padrões de rollout e troubleshooting
 
 ## Débito técnico consciente (documentado pré-go-live)
 

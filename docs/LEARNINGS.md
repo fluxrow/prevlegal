@@ -77,6 +77,25 @@ Mestra: [[MASTER_PREV_LEGAL]]
     - testar extração
     - testar geração dos PDFs
 
+## Atualização 2026-04-25 — Número de teste reutilizável exige reset operacional do lead, não cadastro novo
+
+- Para smoke recorrente no WhatsApp, manter o mesmo número de teste é viável e desejável
+- O problema não é só a conversa do celular: o backend também acumula estado operacional que contamina o próximo teste
+- O reset correto não deve apagar o lead nem tirá-lo da lista
+- O reset correto deve limpar apenas o rastro operacional do teste anterior:
+  - `conversas`
+  - `mensagens_inbound`
+  - `notificacoes`
+  - `campanha_mensagens`
+  - `followup_runs` e `followup_events`
+  - colaboração interna do lead (`lead_threads_internas`, mensagens internas, tasks e handoffs)
+- O lead mantém nome, telefone, lista e verificação de WhatsApp
+- Implementação aplicada:
+  - endpoint `POST /api/leads/[id]/reset-teste`
+  - botão `Resetar lead de teste` no detalhe do lead
+- Regra prática:
+  - antes de um novo smoke com o mesmo número, resetar o lead no PrevLegal e limpar o chat no WhatsApp do aparelho de teste
+
 ## Atualização 2026-04-22 — Templates de contrato ganharam editor visual e preview real
 
 - A tela `Configurações > Templates` deixou de depender só de `corpo_html` cru como experiência principal

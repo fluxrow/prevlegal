@@ -211,6 +211,7 @@ export default function LeadDetailPage() {
   const [showStartConversation, setShowStartConversation] = useState(false)
   const [showEditLead, setShowEditLead] = useState(false)
   const [showNovoAgendamento, setShowNovoAgendamento] = useState(false)
+  const [resettingTestLead, setResettingTestLead] = useState(false)
   const [threadInterna, setThreadInterna] = useState<ThreadInterna | null>(null)
   const [mensagensInternas, setMensagensInternas] = useState<MensagemInterna[]>([])
   const [tasksInternas, setTasksInternas] = useState<LeadTask[]>([])
@@ -231,17 +232,18 @@ export default function LeadDetailPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  useEffect(() => {
-    async function fetchLead() {
-      const res = await fetch(`/api/leads/${id}`)
-      if (res.ok) {
-        const data = await res.json()
-        setLead(data.lead)
-        setConversaId(data.conversa?.id || null)
-        setAnotacoes(data.anotacoes || [])
-      }
-      setLoading(false)
+  async function fetchLead() {
+    const res = await fetch(`/api/leads/${id}`)
+    if (res.ok) {
+      const data = await res.json()
+      setLead(data.lead)
+      setConversaId(data.conversa?.id || null)
+      setAnotacoes(data.anotacoes || [])
     }
+    setLoading(false)
+  }
+
+  useEffect(() => {
     fetchLead()
     fetchDocumentos()
     fetchInterno()
@@ -387,6 +389,35 @@ export default function LeadDetailPage() {
     setHandoffing(false)
   }
 
+  async function handleResetTestLead() {
+    const confirmed = confirm(
+      'Resetar este lead de teste? Isso vai limpar conversa, mensagens, notificações, follow-up e rastro de campanha, mas manter nome, telefone e lista.',
+    )
+
+    if (!confirmed) return
+
+    setResettingTestLead(true)
+
+    try {
+      const res = await fetch(`/api/leads/${id}/reset-teste`, {
+        method: 'POST',
+      })
+
+      const data = await res.json().catch(() => null)
+
+      if (!res.ok) {
+        throw new Error(data?.error || 'Falha ao resetar lead de teste')
+      }
+
+      await Promise.all([fetchLead(), fetchDocumentos(), fetchInterno()])
+      alert(`Lead resetado com sucesso. Conversas apagadas: ${data?.cleanup?.conversas ?? 0}. Mensagens apagadas: ${data?.cleanup?.mensagens ?? 0}.`)
+    } catch (error: any) {
+      alert(error?.message || 'Falha ao resetar lead de teste')
+    } finally {
+      setResettingTestLead(false)
+    }
+  }
+
   if (loading) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--text-muted)', fontFamily: 'DM Sans, sans-serif' }}>
@@ -442,6 +473,20 @@ export default function LeadDetailPage() {
               }}
             >
               <Pencil size={13} /> Editar dados
+            </button>
+            <button
+              onClick={handleResetTestLead}
+              disabled={resettingTestLead}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '6px',
+                padding: '8px 14px', borderRadius: '8px',
+                background: 'rgba(255,87,87,0.1)', border: '1px solid rgba(255,87,87,0.24)',
+                color: '#ff5757', fontSize: '12px', fontWeight: '600',
+                fontFamily: 'DM Sans, sans-serif', cursor: resettingTestLead ? 'not-allowed' : 'pointer',
+                opacity: resettingTestLead ? 0.7 : 1,
+              }}
+            >
+              <Trash2 size={13} /> {resettingTestLead ? 'Resetando teste...' : 'Resetar lead de teste'}
             </button>
             <button
               onClick={() => setShowNovoAgendamento(true)}
