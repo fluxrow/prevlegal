@@ -4,17 +4,17 @@
 
 ### Realidade previdenciária típica
 
-Executivo CLT em grande empresa tem renda mensal frequentemente entre R$ 30 mil e R$ 200 mil, mas contribui ao INSS apenas sobre o teto (R$ 8.157,41 em 2026). Isso cria a **maior assimetria previdenciária do mercado**: profissional com altíssima renda e cobertura de aposentadoria pública mínima em relação ao padrão de vida.
+Executivo CLT em grande empresa costuma ter renda muito acima do teto do INSS. Isso cria uma assimetria relevante: a aposentadoria pública tende a representar só uma parte pequena do padrão de vida atual.
 
 A maioria das empresas grandes oferece **fundo de pensão fechado** (entidade fechada de previdência complementar — EFPC) ou **previdência privada empresarial** (planos coletivos de PGBL/VGBL) com matching da empresa.
 
 ### Decisões críticas
 
 **1. Aderir ao plano corporativo no percentual máximo**
-A empresa frequentemente faz matching até X% do salário. Não aderir ao máximo é abrir mão de remuneração diferida. Caso clássico: empresa oferece matching até 7% e o executivo contribui com 3% — está deixando 4% de salário na mesa todo mês.
+A empresa frequentemente faz matching até X% do salário. Quando isso existe, vale analisar com atenção se a contribuição atual está capturando esse benefício na medida adequada.
 
 **2. PGBL pessoal complementar (além do corporativo)**
-Executivos com renda alta podem deduzir até **12% da renda bruta tributável** em PGBL no IRPF. Quem ganha R$ 30 mil/mês pode aportar R$ 43.200/ano em PGBL com dedução fiscal — é um benefício tributário relevante que muito executivo não usa.
+Executivos com renda alta podem deduzir até **12% da renda bruta tributável** em PGBL no IRPF. A utilidade prática disso depende do tipo de declaração, do horizonte e da estratégia de resgate.
 
 **3. Saída antecipada e portabilidade**
 Quando o executivo sai da empresa, decide: portar o saldo da previdência fechada para PGBL pessoal, deixar parado, ou resgatar (com tributação pesada). A escolha tem impacto patrimonial alto.
@@ -37,7 +37,7 @@ Executivos que desejam sair da carreira corporativa antes dos 55-60 anos precisa
 
 ### Frase de abordagem
 
-> "O executivo de alta renda tem uma armadilha previdenciária específica: a aposentadoria do INSS vai cobrir, na melhor das hipóteses, 10-15% da sua renda atual. Para manter o padrão de vida, é preciso estruturar 3 camadas: o plano corporativo no percentual máximo, PGBL pessoal com dedução fiscal e patrimônio próprio gerador de renda. O planejamento certo dimensiona quanto cada camada precisa contribuir para chegar onde você quer. Faz sentido entender melhor?"
+> "O executivo de alta renda costuma ter uma distância grande entre renda atual e cobertura do INSS. O ponto do planejamento é estruturar as camadas complementares com critério — plano corporativo, previdência privada e patrimônio próprio — em vez de decidir isso no improviso."
 
 ---
 
@@ -45,14 +45,14 @@ Executivos que desejam sair da carreira corporativa antes dos 55-60 anos precisa
 
 ### Realidade previdenciária típica
 
-Empresário ou sócio de PJ recebe renda via **pró-labore + distribuição de lucros**. Apenas o pró-labore gera contribuição previdenciária. Distribuição de lucros não gera. Isso cria a tentação clássica de **pró-labore mínimo + lucro alto** — economiza tributo no curto prazo, mas destrói a aposentadoria.
+Empresário ou sócio de PJ recebe renda via **pró-labore + distribuição de lucros**. Apenas o pró-labore gera contribuição previdenciária. Isso costuma gerar tensão entre eficiência tributária no presente e proteção previdenciária no longo prazo.
 
-A maioria dos contadores recomenda pró-labore na faixa do salário mínimo para reduzir contribuição. O resultado é que empresário que ganha R$ 80 mil/mês de fato, contribui sobre R$ 1.500 — e se aposenta com benefício mínimo do INSS.
+É comum que a conversa contábil puxe o pró-labore para baixo. O risco é a decisão tributária ser tomada sem visão integrada de aposentadoria, cobertura por incapacidade e proteção familiar.
 
 ### Decisões críticas
 
 **1. Pró-labore estratégico**
-Definir o pró-labore como decisão **previdenciária**, não apenas tributária. O ponto de equilíbrio frequentemente é o teto do INSS — contribuição é mais alta, mas garante aposentadoria no teto.
+Definir o pró-labore como decisão **previdenciária**, não apenas tributária. Em alguns casos faz sentido subir a base de contribuição; em outros, a solução combina pró-labore, previdência complementar e patrimônio.
 
 **2. Recolhimento como contribuinte individual sobre o teto**
 Mesmo com pró-labore baixo, o sócio pode complementar com contribuição individual sobre a diferença até o teto. Exige planejamento contábil específico.
@@ -77,7 +77,7 @@ Empresário sem cobertura adequada do INSS deve considerar seguro de invalidez p
 
 ### Frase de abordagem
 
-> "A previdência do empresário tem uma decisão central que poucos contadores tratam como decisão estratégica: o valor do pró-labore. A maioria escolhe o mínimo para economizar tributo no presente, mas isso significa aposentadoria mínima do INSS lá na frente. O planejamento previdenciário do empresário define o pró-labore certo, a estratégia de complementação e a integração com sucessão da empresa. Quer entender como isso é estruturado?"
+> "A previdência do empresário costuma girar em torno de uma decisão central: como equilibrar pró-labore, eficiência tributária e proteção de longo prazo. O planejamento organiza essa conta de forma integrada, em vez de olhar só um lado dela."
 
 ---
 
@@ -97,10 +97,10 @@ Resultado: CNIS frequentemente fragmentado, períodos de carência incertos, dú
 ### Decisões críticas
 
 **1. Definir base de contribuição estratégica**
-Profissional liberal escolhe quanto contribuir. Decidir contribuir sempre sobre o teto é compromisso financeiro, mas garante benefício no teto. A decisão deve ser feita com projeção de longo prazo, não impulsivamente.
+Profissional liberal escolhe quanto contribuir. A base correta depende de renda, regularidade, horizonte, objetivo de cobertura e capacidade financeira — não de uma regra única para todos.
 
 **2. PJ vs. pessoa física**
-Para profissional liberal de alta renda, abrir PJ frequentemente é vantajoso tributariamente. Mas mexe na contribuição previdenciária — exige redesenho completo da estratégia.
+Para profissional liberal de alta renda, abrir PJ pode ser vantajoso tributariamente. Mas isso mexe na contribuição previdenciária e exige redesenho da estratégia como um todo.
 
 **3. Contribuição em atraso (recolhimento retroativo)**
 Profissional que ficou anos sem contribuir pode recolher em atraso (com multa e juros). É decisão técnica: às vezes vale a pena, às vezes não, dependendo do impacto no benefício.
@@ -121,7 +121,7 @@ Algumas categorias têm caixas previdenciárias próprias (CAARJ, CAASP — advo
 
 ### Frase de abordagem
 
-> "Profissional liberal tem uma realidade previdenciária mais complexa que a maioria — você decide quanto, quando e como contribuir, e cada decisão tem impacto direto no que vai receber. Vejo muito profissional como você que descobriu tarde que tinha lacunas no CNIS ou contribuiu menos do que deveria por anos. O planejamento mapeia onde você está hoje, projeta cenários e desenha a estratégia certa daqui pra frente. Quer entender como funciona?"
+> "Profissional liberal tem uma realidade previdenciária mais complexa que a maioria, porque decide quanto, quando e como contribuir. O planejamento entra justamente para mapear o que existe hoje, identificar lacunas e organizar os próximos passos com critério."
 
 ---
 

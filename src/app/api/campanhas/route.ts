@@ -4,20 +4,21 @@ import { createClient as createAdmin } from '@supabase/supabase-js'
 import { createClient as createServerClient } from '@/lib/supabase/server'
 import { getTenantContext } from '@/lib/tenant-context'
 import { resolveWhatsAppChannel } from '@/lib/whatsapp-provider'
+import { normalizeOperationProfile } from '@/lib/operation-profile'
 import {
   applyWarmupPolicyToThrottleSettings,
   getWhatsAppWarmupPolicy,
 } from '@/lib/whatsapp-warmup'
+
+function getErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : String(error || 'Erro desconhecido')
+}
 
 function createAdminClient() {
   return createAdmin(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   )
-}
-
-function applyTenantFilter(query: any, tenantId: string | null) {
-  return tenantId ? query.eq('tenant_id', tenantId) : query.is('tenant_id', null)
 }
 
 const LISTA_SELECAO_PERSONALIZADA_NOME = 'Seleção personalizada'
@@ -73,12 +74,12 @@ export async function GET() {
       .from('campanhas')
       .select('*, listas(nome), agentes(id, nome_interno, nome_publico)')
       .order('created_at', { ascending: false })
-    query = applyTenantFilter(query, context.tenantId)
+    query = context.tenantId ? query.eq('tenant_id', context.tenantId) : query.is('tenant_id', null)
     const { data, error } = await query
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
     return NextResponse.json({ campanhas: data || [] })
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 })
+  } catch (err: unknown) {
+    return NextResponse.json({ error: getErrorMessage(err) }, { status: 500 })
   }
 }
 
@@ -88,8 +89,16 @@ export async function POST(request: NextRequest) {
     const context = await getTenantContext(authSupabase)
     if (!context) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     if (!context.isAdmin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    if (!context.tenantId) {
+      return NextResponse.json({ error: 'Tenant não resolvido para este usuário' }, { status: 400 })
+    }
+    if (!context.usuarioId) {
+      return NextResponse.json({ error: 'Usuário atual não resolvido para este tenant' }, { status: 400 })
+    }
 
     const adminClient = createAdminClient()
+    const tenantId = context.tenantId
+    const usuarioId = context.usuarioId
     const body = await request.json()
     const {
       nome,
@@ -113,6 +122,7 @@ export async function POST(request: NextRequest) {
       typeof agente_id === 'string' && agente_id.trim()
         ? agente_id.trim()
         : null
+    let resolvedOperationProfile: string | null = null
 
     const selectedLeadIds = Array.isArray(lead_ids)
       ? lead_ids.filter((value) => typeof value === 'string' && value.trim()).map((value) => value.trim())
@@ -143,14 +153,34 @@ export async function POST(request: NextRequest) {
     if (!resolvedAgenteId) {
       const { data: defaultAgent } = await adminClient
         .from('agentes')
-        .select('id')
-        .eq('tenant_id', context.tenantId)
+        .select('id, perfil_operacao')
+        .eq('tenant_id', tenantId)
         .eq('ativo', true)
         .eq('is_default', true)
         .maybeSingle()
 
       resolvedAgenteId = defaultAgent?.id || null
+      resolvedOperationProfile = defaultAgent?.perfil_operacao || null
     }
+
+    if (resolvedAgenteId && !resolvedOperationProfile) {
+      const { data: selectedAgent, error: selectedAgentError } = await adminClient
+        .from('agentes')
+        .select('perfil_operacao')
+        .eq('tenant_id', tenantId)
+        .eq('id', resolvedAgenteId)
+        .maybeSingle()
+
+      if (selectedAgentError) {
+        return NextResponse.json({ error: selectedAgentError.message }, { status: 500 })
+      }
+
+      resolvedOperationProfile = selectedAgent?.perfil_operacao || null
+    }
+
+    const normalizedOperationProfile = normalizeOperationProfile(resolvedOperationProfile)
+    const defaultOnlyVerified =
+      normalizedOperationProfile === 'planejamento_previdenciario' ? false : true
 
     let resolvedListaId = lista_id
     let totalLeads = 0
@@ -160,7 +190,7 @@ export async function POST(request: NextRequest) {
         .from('listas')
         .select('id')
         .eq('id', lista_id)
-      listaQuery = applyTenantFilter(listaQuery, context.tenantId)
+      listaQuery = tenantId ? listaQuery.eq('tenant_id', tenantId) : listaQuery.is('tenant_id', null)
       const { data: lista } = await listaQuery.maybeSingle()
 
       if (!lista) {
@@ -172,15 +202,15 @@ export async function POST(request: NextRequest) {
         .select('id', { count: 'exact', head: true })
         .eq('lista_id', lista_id)
         .eq('lgpd_optout', false)
-      countQuery = applyTenantFilter(countQuery, context.tenantId)
+      countQuery = tenantId ? countQuery.eq('tenant_id', tenantId) : countQuery.is('tenant_id', null)
       const { count } = await countQuery
       totalLeads = count || 0
     } else {
-      resolvedListaId = await getOrCreateSelectionList(adminClient, context.tenantId, context.usuarioId)
+      resolvedListaId = await getOrCreateSelectionList(adminClient, tenantId, usuarioId)
       const { data: selectedLeads, error: selectedLeadsError } = await adminClient
         .from('leads')
         .select('id')
-        .eq('tenant_id', context.tenantId)
+        .eq('tenant_id', tenantId)
         .in('id', selectedLeadIds)
         .eq('lgpd_optout', false)
 
@@ -203,7 +233,7 @@ export async function POST(request: NextRequest) {
       const { data: selectedChannel, error: selectedChannelError } = await adminClient
         .from('whatsapp_numbers')
         .select('id, ativo, metadata')
-        .eq('tenant_id', context.tenantId)
+        .eq('tenant_id', tenantId)
         .eq('id', whatsapp_number_id.trim())
         .maybeSingle()
 
@@ -221,7 +251,7 @@ export async function POST(request: NextRequest) {
 
       channel = selectedChannel
     } else {
-      channel = await resolveWhatsAppChannel(context.tenantId)
+      channel = await resolveWhatsAppChannel(tenantId)
     }
 
     const throttleSettings = applyWarmupPolicyToThrottleSettings(
@@ -238,7 +268,7 @@ export async function POST(request: NextRequest) {
     const { data, error } = await adminClient
       .from('campanhas')
       .insert({
-        tenant_id: context.tenantId,
+        tenant_id: tenantId,
         whatsapp_number_id: channel.id,
         nome,
         lista_id: resolvedListaId,
@@ -260,7 +290,7 @@ export async function POST(request: NextRequest) {
         tamanho_lote: throttleSettings.batchSize,
         pausa_entre_lotes_s: throttleSettings.pauseBetweenBatchesS,
         limite_diario: throttleSettings.limitDaily,
-        apenas_verificados: apenas_verificados ?? true,
+        apenas_verificados: apenas_verificados ?? defaultOnlyVerified,
         agendado_para: agendado_para || null,
         agente_id: resolvedAgenteId,
         contato_alvo_tipo: normalizedContatoAlvoTipo,
@@ -277,7 +307,7 @@ export async function POST(request: NextRequest) {
           selectedLeadIds.map((leadId: string) => ({
             campanha_id: data.id,
             lead_id: leadId,
-            tenant_id: context.tenantId,
+            tenant_id: tenantId,
           })),
         )
 
@@ -288,7 +318,7 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({ campanha: data })
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 })
+  } catch (err: unknown) {
+    return NextResponse.json({ error: getErrorMessage(err) }, { status: 500 })
   }
 }

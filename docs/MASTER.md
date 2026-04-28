@@ -52,6 +52,44 @@ Mestra: [[MASTER_PREV_LEGAL]]
   - memória bruta e histórica em `LEARNINGS`
   - memória canônica de execução em `OPERATIONAL_BOOK`
 
+Estado confirmado em 27/04/2026:
+- `npm run lint` verde localmente
+- `npm run build` verde localmente
+- o modal `Novo lead` voltou a respeitar o perfil operacional padrão do tenant:
+  - `planejamento_previdenciario` agora abre cadastro com campos de contexto do planejamento
+  - `beneficios_previdenciarios` continua com a seção de benefício/NB/banco/RMA
+- no cadastro manual de `planejamento_previdenciario`, quando o telefone já existe na base do tenant, o sistema reaproveita o lead em vez de explodir com colisão de `nb`
+- o cadastro manual técnico deixou de depender semanticamente de `NB` para planejamento; o `NB` legado segue existindo só como identificador técnico interno
+- a trilha de texto com acentos ganhou reparo nos pontos mais sensíveis de hoje:
+  - import de nomes
+  - interpolação de campanhas/follow-up
+  - prompt do runtime do agente
+- o app Next deixou de puxar `supabase/functions/*` para o typecheck do runtime web; as edge functions Deno continuam fora do build do app, como deve ser
+- o smoke técnico do agente de `planejamento_previdenciario` voltou a rodar de ponta a ponta via `scripts/smoke-test-agent-ana.ts`
+- o playbook de `planejamento_previdenciario` foi endurecido no seed e no runtime para:
+  - responder em blocos curtos de WhatsApp
+  - evitar subtítulos/listas com cara de parecer
+  - reduzir números ilustrativos e recomendações prematuras
+  - usar a knowledge como apoio, não como roteiro de laudo precoce
+- a própria knowledge de `planejamento_previdenciario` também foi podada em pontos críticos:
+  - menos “regra prática” absoluta em PGBL/VGBL/FUNPRESP/matching
+  - menos exemplos com cifras e patrimônios hipotéticos
+  - mais linguagem de estrutura de análise e variáveis
+- campanhas de `planejamento_previdenciario` agora nascem com `apenas_verificados = false` por padrão na UI e no fallback da API
+- campanhas de `beneficios_previdenciarios` continuam com `apenas_verificados = true` por padrão
+- a esteira de campanhas deixou de depender de uma única requisição longa para disparos médios/grandes
+- `POST /api/campanhas/[id]/disparar` agora só inicia a campanha, processa o primeiro passo e devolve diagnóstico operacional
+- o restante do envio segue por `POST/GET /api/campanhas/worker`, pensado para rodar por cron
+- o smoke técnico confirmou runtime ativo e knowledge carregando, mas ainda expôs um risco de copy/conduta no playbook de planejamento:
+  - ainda existe resíduo de respostas numéricas demais em alguns cenários técnicos
+  - depois da poda da knowledge, `advogado` e `dentista` melhoraram bem
+  - o principal caso residual agora está em `médico PJ / pró-labore`, onde o agente ainda puxa números gerais cedo demais
+- o gargalo detectado em campanhas de `beneficios_previdenciarios` não era só copy ou lista:
+  - o disparo antigo fazia sleeps dentro da própria request
+  - com `warmup`, lote e delays, a função podia morrer após poucos envios
+  - isso explicava sintomas como campanha de `~50` contatos parar em `3-4` mensagens
+- o smoke real do tenant Pagliuca continua dependendo do canal WhatsApp conectado; build/lint verdes não substituem a validação operacional do webhook e da conversa real
+
 - o core do produto já está funcional
 - o maior risco atual não é falta de feature principal
 - o maior risco atual é de `go-live incompleto`, especialmente por:

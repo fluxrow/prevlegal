@@ -5,6 +5,10 @@
       "schedule": "*/5 * * * *"
     },
     {
+      "path": "/api/campanhas/worker",
+      "schedule": "* * * * *"
+    },
+    {
       "path": "/api/followup/worker",
       "schedule": "0 0 * * *"
     }

@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import KanbanBoard from '@/components/kanban-board'
 import LeadsOnboardingTour from '@/components/leads-onboarding-tour'
@@ -6,6 +7,7 @@ import LeadsNovoLeadButton from '@/components/leads-novo-lead-button'
 import { Users, DollarSign, TrendingUp } from 'lucide-react'
 import { getTenantContext } from '@/lib/tenant-context'
 import type { LeadStatus } from '@/lib/types'
+import { normalizeOperationProfile } from '@/lib/operation-profile'
 
 const STATUS_OPTIONS: Array<{ value: LeadStatus; label: string }> = [
   { value: 'new', label: 'Novos' },
@@ -46,7 +48,21 @@ export default async function LeadsPage({
     leadsQuery = leadsQuery.eq('status', statusFilter)
   }
 
-  const { data: leads } = await leadsQuery.order('score', { ascending: false })
+  const [
+    { data: leads },
+    { data: defaultAgent },
+  ] = await Promise.all([
+    leadsQuery.order('score', { ascending: false }),
+    supabase
+      .from('agentes')
+      .select('perfil_operacao')
+      .eq('tenant_id', context.tenantId)
+      .eq('ativo', true)
+      .eq('is_default', true)
+      .maybeSingle(),
+  ])
+
+  const operationProfile = normalizeOperationProfile(defaultAgent?.perfil_operacao || null)
 
   const total = leads?.length || 0
   const potencial = leads?.reduce((s, l) => s + (l.ganho_potencial || 0), 0) || 0
@@ -75,14 +91,14 @@ export default async function LeadsPage({
           </p>
         </div>
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-          <LeadsNovoLeadButton />
-          <a data-tour="leads-import" href="/leads/import" style={{
+          <LeadsNovoLeadButton operationProfile={operationProfile} />
+          <Link data-tour="leads-import" href="/leads/import" style={{
             display: 'flex', alignItems: 'center', gap: '6px',
             padding: '8px 16px', background: 'var(--bg-surface)',
             color: 'var(--text-secondary)', borderRadius: '8px', textDecoration: 'none',
             fontSize: '13px', fontWeight: '600', fontFamily: 'Syne, sans-serif',
             border: '1px solid var(--border)',
-          }}>+ Importar lista</a>
+          }}>+ Importar lista</Link>
         </div>
       </div>
 
@@ -102,7 +118,7 @@ export default async function LeadsPage({
           <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
             Exibindo apenas leads no recorte <strong style={{ color: 'var(--text-primary)' }}>{activeStatusLabel}</strong>.
           </div>
-          <a
+          <Link
             href="/leads"
             style={{
               color: 'var(--accent)',
@@ -112,12 +128,12 @@ export default async function LeadsPage({
             }}
           >
             Limpar filtro
-          </a>
+          </Link>
         </div>
       )}
 
       <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '20px' }}>
-        <a
+        <Link
           href="/leads"
           style={{
             padding: '6px 12px',
@@ -131,11 +147,11 @@ export default async function LeadsPage({
           }}
         >
           Todos
-        </a>
+        </Link>
         {STATUS_OPTIONS.map((option) => {
           const isActive = statusFilter === option.value
           return (
-            <a
+            <Link
               key={option.value}
               href={`/leads?status=${option.value}`}
               style={{
@@ -150,7 +166,7 @@ export default async function LeadsPage({
               }}
             >
               {option.label}
-            </a>
+            </Link>
           )
         })}
       </div>

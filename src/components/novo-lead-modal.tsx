@@ -1,8 +1,14 @@
 'use client'
 import { useState } from 'react'
-import { X, User, Phone, CreditCard, Building2, Save, UserPlus } from 'lucide-react'
+import { X, User, CreditCard, Building2, Save, UserPlus } from 'lucide-react'
+import {
+  getOperationProfileLabel,
+  OPERATION_PROFILE_OPTIONS,
+  type OperationProfile,
+} from '@/lib/operation-profile'
 
 interface Props {
+  operationProfile: OperationProfile
   onClose: () => void
   onCriado: (lead: unknown) => void
 }
@@ -34,10 +40,13 @@ function NovoLeadSection({ icon, title, children }: SectionProps) {
   )
 }
 
-export default function NovoLeadModal({ onClose, onCriado }: Props) {
+export default function NovoLeadModal({ operationProfile, onClose, onCriado }: Props) {
+  const [selectedProfile, setSelectedProfile] = useState<OperationProfile>(operationProfile)
+  const isPlanning = selectedProfile === 'planejamento_previdenciario'
   const [form, setForm] = useState({
     nome: '', cpf: '', telefone: '', nb: '',
     banco: '', valor_rma: '', ganho_potencial: '',
+    email: '', categoria_profissional: '', data_nascimento: '', anotacao: '',
     status: 'new', tem_whatsapp: true,
   })
   const [salvando, setSalvando] = useState(false)
@@ -63,7 +72,7 @@ export default function NovoLeadModal({ onClose, onCriado }: Props) {
     const res = await fetch('/api/leads', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form),
+      body: JSON.stringify({ ...form, perfil_operacao: selectedProfile }),
     })
     const json = await res.json()
     if (!res.ok) { setErro(json.error || 'Erro ao criar lead'); setSalvando(false); return }
@@ -99,7 +108,11 @@ export default function NovoLeadModal({ onClose, onCriado }: Props) {
             </div>
             <div>
               <h2 style={{ fontSize: '16px', fontWeight: '700', color: 'var(--text-primary)', fontFamily: 'Syne, sans-serif', margin: 0 }}>Novo lead</h2>
-              <p style={{ fontSize: '11px', color: 'var(--text-muted)', margin: 0 }}>Cadastro manual — cliente avulso</p>
+              <p style={{ fontSize: '11px', color: 'var(--text-muted)', margin: 0 }}>
+                {isPlanning
+                  ? 'Cadastro manual — planejamento previdenciário'
+                  : 'Cadastro manual — cliente avulso'}
+              </p>
             </div>
           </div>
           <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex', padding: '4px' }}>
@@ -109,6 +122,20 @@ export default function NovoLeadModal({ onClose, onCriado }: Props) {
 
         {/* Dados pessoais */}
         <NovoLeadSection icon={<User size={14} />} title="Dados pessoais">
+          <div style={{ gridColumn: '1 / -1' }}>
+            <label style={lbl}>Perfil do lead</label>
+            <select
+              value={selectedProfile}
+              onChange={e => setSelectedProfile(e.target.value as OperationProfile)}
+              style={inp}
+            >
+              {OPERATION_PROFILE_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {getOperationProfileLabel(option.value)}
+                </option>
+              ))}
+            </select>
+          </div>
           <div style={{ gridColumn: '1 / -1' }}>
             <label style={lbl}>Nome completo *</label>
             <input value={form.nome} onChange={e => set('nome', e.target.value)} placeholder="Maria da Silva" style={inp} />
@@ -134,28 +161,53 @@ export default function NovoLeadModal({ onClose, onCriado }: Props) {
           </div>
         </NovoLeadSection>
 
-        {/* Dados do benefício */}
-        <NovoLeadSection icon={<CreditCard size={14} />} title="Dados do benefício">
-          <div>
-            <label style={lbl}>Número do benefício (NB)</label>
-            <input value={form.nb} onChange={e => set('nb', e.target.value)} placeholder="000.000.000-0" style={inp} />
-          </div>
-          <div>
-            <label style={lbl}>Banco</label>
-            <select value={form.banco} onChange={e => set('banco', e.target.value)} style={inp}>
-              <option value="">Selecione</option>
-              {BANCOS.map(b => <option key={b} value={b}>{b}</option>)}
-            </select>
-          </div>
-          <div>
-            <label style={lbl}>Valor RMA (R$)</label>
-            <input type="number" value={form.valor_rma} onChange={e => set('valor_rma', e.target.value)} placeholder="0,00" style={inp} />
-          </div>
-          <div>
-            <label style={lbl}>Ganho potencial (R$)</label>
-            <input type="number" value={form.ganho_potencial} onChange={e => set('ganho_potencial', e.target.value)} placeholder="0,00" style={inp} />
-          </div>
-        </NovoLeadSection>
+        {isPlanning ? (
+          <NovoLeadSection icon={<CreditCard size={14} />} title="Dados do planejamento">
+            <div>
+              <label style={lbl}>E-mail</label>
+              <input value={form.email} onChange={e => set('email', e.target.value)} placeholder="cliente@exemplo.com" style={inp} />
+            </div>
+            <div>
+              <label style={lbl}>Categoria profissional</label>
+              <input value={form.categoria_profissional} onChange={e => set('categoria_profissional', e.target.value)} placeholder="Empresária, médica, servidora..." style={inp} />
+            </div>
+            <div>
+              <label style={lbl}>Data de nascimento</label>
+              <input type="date" value={form.data_nascimento} onChange={e => set('data_nascimento', e.target.value)} style={inp} />
+            </div>
+            <div style={{ gridColumn: '1 / -1' }}>
+              <label style={lbl}>Contexto inicial</label>
+              <textarea
+                value={form.anotacao}
+                onChange={e => set('anotacao', e.target.value)}
+                placeholder="Profissão, momento previdenciário, origem do contato ou observações para o advogado."
+                style={{ ...inp, minHeight: '88px', resize: 'vertical' }}
+              />
+            </div>
+          </NovoLeadSection>
+        ) : (
+          <NovoLeadSection icon={<CreditCard size={14} />} title="Dados do benefício">
+            <div>
+              <label style={lbl}>Número do benefício (NB)</label>
+              <input value={form.nb} onChange={e => set('nb', e.target.value)} placeholder="000.000.000-0" style={inp} />
+            </div>
+            <div>
+              <label style={lbl}>Banco</label>
+              <select value={form.banco} onChange={e => set('banco', e.target.value)} style={inp}>
+                <option value="">Selecione</option>
+                {BANCOS.map(b => <option key={b} value={b}>{b}</option>)}
+              </select>
+            </div>
+            <div>
+              <label style={lbl}>Valor RMA (R$)</label>
+              <input type="number" value={form.valor_rma} onChange={e => set('valor_rma', e.target.value)} placeholder="0,00" style={inp} />
+            </div>
+            <div>
+              <label style={lbl}>Ganho potencial (R$)</label>
+              <input type="number" value={form.ganho_potencial} onChange={e => set('ganho_potencial', e.target.value)} placeholder="0,00" style={inp} />
+            </div>
+          </NovoLeadSection>
+        )}
 
         {/* Status inicial */}
         <div style={{ marginBottom: '22px' }}>

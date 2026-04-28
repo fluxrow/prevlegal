@@ -6,6 +6,7 @@ import { normalizeOperationProfile } from '@/lib/operation-profile'
 import { sendWhatsAppMessage } from '@/lib/whatsapp-provider'
 import { getPlanningKnowledgeBlock } from '@/lib/agent-knowledge'
 import { logLlmUsage } from '@/lib/agent-llm-logger'
+import { repairCommonMojibake } from '@/lib/text-repair'
 
 function createAdminSupabase() {
   return createClient(
@@ -13,6 +14,8 @@ function createAdminSupabase() {
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   )
 }
+
+type ConfiguracoesSupabase = Parameters<typeof getConfiguracaoAtual>[0]
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY!,
@@ -39,6 +42,83 @@ type InboundMessageRow = {
   respondido_manualmente: boolean | null
   resposta_agente: string | null
   created_at: string
+}
+
+type LeadContextRow = {
+  nome: string | null
+  nb: string | null
+  banco: string | null
+  valor_rma: number | null
+  ganho_potencial: number | null
+  status: string | null
+  campanha_id: string | null
+  tenant_id: string | null
+}
+
+type InboundMessageWithLead = {
+  id: string
+  mensagem: string | null
+  campanha_id: string | null
+  conversa_id: string | null
+  telefone_remetente: string | null
+  telefone_destinatario: string | null
+  created_at: string
+  lead_id: string | null
+  leads: LeadContextRow | LeadContextRow[] | null
+}
+
+type AgentRow = {
+  id: string
+  ativo: boolean | null
+  nome_publico: string | null
+  prompt_base: string | null
+  modelo: string | null
+  max_tokens: number | null
+  resposta_automatica: boolean | null
+  janela_inicio: string | null
+  janela_fim: string | null
+  dias_uteis_only: boolean | null
+  fluxo_qualificacao: string | null
+  exemplos_dialogo: string | null
+  gatilhos_escalada: string | null
+  frases_proibidas: string | null
+  objeccoes: string | null
+  fallback: string | null
+  tipo: string | null
+  perfil_operacao: string | null
+}
+
+type AgentRuntimeConfig = {
+  agente_ativo: boolean | null
+  agente_nome: string | null
+  agente_prompt_sistema: string | null
+  agente_modelo: string | null
+  agente_max_tokens: number | null
+  agente_resposta_automatica: boolean | null
+  agente_horario_inicio: string | null
+  agente_horario_fim: string | null
+  agente_apenas_dias_uteis: boolean | null
+  agente_fluxo_qualificacao: string | null
+  agente_exemplos_dialogo: string | null
+  agente_gatilhos_escalada: string | null
+  agente_frases_proibidas: string | null
+  agente_objeccoes: string | null
+  agente_fallback: string | null
+  agente_tipo?: string | null
+  agente_perfil_operacao: string | null
+}
+
+type AnthropicUsage = {
+  input_tokens?: number
+  output_tokens?: number
+  cache_creation_input_tokens?: number
+  cache_read_input_tokens?: number
+}
+
+type AnthropicResponse = {
+  content?: Array<{ type: string; text?: string }>
+  usage?: AnthropicUsage
+  stop_reason?: string | null
 }
 
 // Prompt padrão do sistema caso o escritório não tenha configurado um personalizado
@@ -70,6 +150,206 @@ function stripEmojis(text: string) {
     .replace(/\uFE0F/gu, '')
     .replace(/[ \t]{2,}/g, ' ')
     .trim()
+}
+
+function normalizeComparableMessageText(value: string | null | undefined) {
+  return String(value || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^\p{L}\p{N}]+/gu, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+function normalizeAssistantLine(line: string) {
+  return line
+    .replace(/^\s*[-•*]+\s*/u, '')
+    .replace(/^\s*\d+[.)]\s*/u, '')
+    .replace(/\*{1,3}([^*]+)\*{1,3}/g, '$1')
+    .replace(/[`*_]/g, '')
+    .replace(/[–—]/g, ',')
+    .replace(/\s+,/g, ',')
+    .replace(/[ \t]{2,}/g, ' ')
+    .trim()
+}
+
+function sanitizeWhatsAppResponseText(text: string) {
+  const normalized = stripEmojis(repairCommonMojibake(text || ''))
+    .replace(/\r/g, '')
+
+  const cleanedLines = normalized
+    .split('\n')
+    .map((line) => normalizeAssistantLine(line))
+    .reduce<string[]>((acc, line) => {
+      if (!line) {
+        if (acc.at(-1) !== '') acc.push('')
+        return acc
+      }
+
+      acc.push(line)
+      return acc
+    }, [])
+
+  return cleanedLines
+    .join('\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
+}
+
+function countParagraphs(text: string) {
+  return text.split(/\n\s*\n/).filter((chunk) => chunk.trim()).length
+}
+
+function tokenizeForOverlap(text: string) {
+  return new Set(
+    normalizeComparableMessageText(text)
+      .split(' ')
+      .filter((token) => token.length >= 4),
+  )
+}
+
+function hasHighContentOverlap(current: string, previous: string) {
+  const currentTokens = tokenizeForOverlap(current)
+  const previousTokens = tokenizeForOverlap(previous)
+
+  if (currentTokens.size < 6 || previousTokens.size < 6) return false
+
+  let overlap = 0
+  for (const token of currentTokens) {
+    if (previousTokens.has(token)) overlap += 1
+  }
+
+  return overlap / currentTokens.size >= 0.45
+}
+
+function findPreviousAssistantMessage(historico: HistoricoEntry[]) {
+  for (let index = historico.length - 1; index >= 0; index -= 1) {
+    const entry = historico[index]
+    if (entry.role === 'assistant' && entry.content.trim()) {
+      return entry.content.trim()
+    }
+  }
+
+  return ''
+}
+
+function needsPlanningRewrite({
+  text,
+  previousAssistant,
+  isFirstReplyAfterCampaign,
+}: {
+  text: string
+  previousAssistant: string
+  isFirstReplyAfterCampaign: boolean
+}) {
+  const hasMarkdownArtifacts = /[*•`_]/.test(text) || /\n\s*(?:[-•]|\d+[.)])\s/u.test(text)
+  const tooLong = text.length > (isFirstReplyAfterCampaign ? 520 : 700)
+  const tooManyParagraphs = countParagraphs(text) > (isFirstReplyAfterCampaign ? 3 : 4)
+  const repeated = previousAssistant
+    ? hasHighContentOverlap(text, previousAssistant)
+    : false
+
+  return hasMarkdownArtifacts || tooLong || tooManyParagraphs || repeated
+}
+
+function findRecentDuplicateInboundMessage(
+  rowsDesc: InboundMessageRow[],
+  currentMessageId: string,
+) {
+  const rowsAsc = [...rowsDesc].reverse()
+  const currentIndex = rowsAsc.findIndex((row) => row.id === currentMessageId)
+  if (currentIndex <= 0) return null
+
+  const currentRow = rowsAsc[currentIndex]
+  const currentBody = normalizeComparableMessageText(currentRow.mensagem)
+  const currentCreatedAt = getCreatedAtMs(currentRow.created_at)
+  if (!currentBody || !currentCreatedAt) return null
+
+  for (let index = currentIndex - 1; index >= 0; index -= 1) {
+    const previousRow = rowsAsc[index]
+    const previousCreatedAt = getCreatedAtMs(previousRow.created_at)
+
+    if (!previousCreatedAt || currentCreatedAt - previousCreatedAt > 120000) {
+      break
+    }
+
+    if (
+      normalizeComparableMessageText(previousRow.mensagem) === currentBody &&
+      previousRow.respondido_por_agente &&
+      previousRow.resposta_agente?.trim()
+    ) {
+      return previousRow
+    }
+  }
+
+  return null
+}
+
+async function rewritePlanningReplyForWhatsApp({
+  anthropicClient,
+  latestLeadMessage,
+  previousAssistant,
+  draft,
+  isFirstReplyAfterCampaign,
+}: {
+  anthropicClient: Anthropic
+  latestLeadMessage: string
+  previousAssistant: string
+  draft: string
+  isFirstReplyAfterCampaign: boolean
+}) {
+  const response = await anthropicClient.messages.create({
+    model: 'claude-sonnet-4-20250514',
+    max_tokens: isFirstReplyAfterCampaign ? 190 : 240,
+    system: [
+      'Você reescreve respostas de WhatsApp de uma consultora de planejamento previdenciário.',
+      'Objetivo: soar humana, clara e natural.',
+      'Escreva em português do Brasil.',
+      'Sem markdown, sem asteriscos, sem bullets, sem listas numeradas, sem títulos, sem travessões.',
+      'Use no máximo 3 blocos curtos se for primeiro retorno após campanha, ou 4 blocos curtos nos demais casos.',
+      'Faça no máximo 1 pergunta principal.',
+      'Não repita o que a própria consultora acabou de dizer na mensagem anterior.',
+      'Não invente análise individual, não dê parecer fechado, não recomende estratégia definitiva e não cite valores específicos sem documento.',
+      'Mantenha só o essencial para avançar a conversa.',
+    ].join('\n'),
+    messages: [
+      {
+        role: 'user',
+        content: [
+          `ÚLTIMA MENSAGEM DO LEAD:\n${latestLeadMessage}`,
+          previousAssistant ? `ÚLTIMA MENSAGEM DA CONSULTORA:\n${previousAssistant}` : '',
+          `RASCUNHO A REESCREVER:\n${draft}`,
+          'Reescreva agora.',
+        ]
+          .filter(Boolean)
+          .join('\n\n'),
+      },
+    ],
+  })
+
+  return sanitizeWhatsAppResponseText(getAnthropicText(response as AnthropicResponse))
+}
+
+function getErrorMessage(error: unknown) {
+  if (error instanceof Error) return error.message
+  if (typeof error === 'object' && error !== null && 'message' in error) {
+    return String((error as { message?: unknown }).message || '')
+  }
+  return String(error || '')
+}
+
+function getAnthropicText(response: AnthropicResponse | null | undefined) {
+  const firstBlock = response?.content?.[0]
+  return firstBlock?.type === 'text' ? firstBlock.text || '' : ''
+}
+
+function getUsageSnapshot(response: AnthropicResponse | null | undefined) {
+  return response?.usage || {}
+}
+
+function getStopReason(response: AnthropicResponse | null | undefined) {
+  return response?.stop_reason || null
 }
 
 function classifyLatestLeadTurn(message: string) {
@@ -211,12 +491,20 @@ function buildImmediateResponseDirective({
       '- Em planejamento previdenciário, responda como uma consultora técnica e segura, sem telemarketing e sem inventar análise individual.',
       '- Você atende apenas o titular do planejamento. Se perceber que está falando com terceiro, peça de forma cordial que o próprio titular siga a conversa.',
       '- Se o lead pedir explicação, explique o conceito pedido em linguagem simples e continue para o próximo passo da esteira.',
+      '- Em WhatsApp, priorize clareza com brevidade. Respostas longas demais reduzem leitura e conversão.',
+      '- Em WhatsApp, evite subtítulos em markdown, listas longas e resposta com cara de parecer técnico escrito. Prefira blocos curtos de conversa.',
+      '- Em WhatsApp, nunca use asteriscos, bullets, travessões, enumeração tipo 1/2/3, nem termos com cara de relatório ou apresentação.',
+      '- Antes de responder, confira o que você mesma acabou de dizer no histórico e não repita a explicação com palavras diferentes. Se o lead trouxe pouco fato novo, reconheça brevemente e avance com uma pergunta útil.',
       ...(isFirstReplyAfterCampaign
         ? [
             '- Este é o primeiro retorno do lead após a abordagem ativa do escritório.',
             '- Não diga que o lead já tinha interesse anterior, que já demonstrou interesse antes, nem que o histórico mostra intenção antiga, a menos que isso esteja literalmente escrito em mensagens anteriores do próprio lead.',
-            '- Se a resposta do lead for só uma saudação curta, primeiro retome com naturalidade o motivo do contato em 2 ou 3 frases consultivas e só depois faça uma pergunta diagnóstica curta.',
-            '- Nessa retomada inicial, fale do assunto antes de perguntar: explique brevemente por que planejamento previdenciário pode ser relevante para profissionais com carreira consolidada e convide o lead a dizer se quer entender seu cenário com mais clareza.',
+            '- Se a resposta do lead for só uma saudação curta, primeiro retome com naturalidade o motivo do contato em no máximo 2 frases curtas e só depois faça 1 pergunta diagnóstica curta.',
+            '- Nessa retomada inicial, fale do assunto antes de perguntar, mas sem textão: explique brevemente por que planejamento previdenciário pode ser relevante e convide o lead a dizer o perfil profissional dele.',
+            '- No primeiro retorno após campanha, responda idealmente em 2 ou 3 blocos curtos de WhatsApp. Use 4 apenas se ficar realmente necessário.',
+            '- No primeiro retorno após campanha, não use lista numerada, não enumere todas as etapas do serviço e não despeje detalhes técnicos demais de uma vez.',
+            '- No primeiro retorno após campanha, priorize esta estrutura: 1 frase dizendo o que é o planejamento; 1 exemplo concreto de situação ou impacto, sem números específicos; 1 pergunta objetiva para qualificar.',
+            '- No primeiro retorno após campanha, prefira no máximo 1 pergunta principal. Só faça uma segunda pergunta se ela for curta e indispensável para entender o perfil do lead.',
           ]
         : []),
       '- O handoff humano acontece por etapa de processo: análise individual de CNIS/documentos, cálculo formal/projeção, aceite do diagnóstico técnico pago, pedido expresso para falar com advogado ou momento de contrato/assinatura.',
@@ -306,6 +594,11 @@ function buildAgentContinuitySection({
           '- Se o lead já estiver engajado, continue exatamente do estágio em que a conversa está: diagnóstico, esclarecimento, proposta, preparação contratual ou assinatura.',
           '- Use conhecimento geral e a base técnica injetada para explicar conceitos como CNIS, RGPS, RPPS, histórico contributivo, formas de contribuição ao INSS, previdência complementar, regras de transição, abono permanência e organização previdenciária de longo prazo, sempre em linguagem clara.',
           '- Nunca invente conclusão individual, estratégia ideal, data de aposentadoria, ganho financeiro, economia tributária ou resposta técnica definitiva sem análise do caso.',
+          '- Nunca estime cifra, percentual, ganho patrimonial, anos de antecipação, idade exata de aposentadoria, mix ideal de renda ou comparação numérica de cenários sem base documental individual.',
+          '- Em perguntas técnicas iniciais, explique primeiro o mecanismo e as variáveis que costumam mudar a resposta. Depois faça 1 ou 2 perguntas de descoberta antes de sugerir qualquer direção.',
+          '- Quando quiser dar exemplo, prefira exemplo situacional e qualitativo. Evite exemplo numérico ilustrativo se ele puder soar como cálculo do caso real.',
+          '- Se a pergunta do lead for comparativa ou pedir recomendação, não entregue parecer final logo de saída. Estruture a resposta em: ponto central, fatores que mudam a conclusão e próxima pergunta útil.',
+          '- Em regra, responda em até 4 blocos curtos de WhatsApp. Só ultrapasse isso se o lead pedir detalhamento técnico adicional.',
           '- Pergunta técnica difícil, por si só, não é motivo para escalar. Responda em nível geral com precisão e profundidade compatíveis com o perfil premium do lead.',
           '- Escale quando o lead pedir análise individual do CNIS ou documentos, cálculo formal/projeção, aceitar diagnóstico técnico pago, pedir para falar com advogado ou quando a conversa chegar à etapa de proposta/contrato/assinatura.',
           '- Depois que o lead demonstrar interesse real, conduza com naturalidade para diagnóstico, proposta, próximo compromisso ou preparação contratual, sem parecer telemarketing.',
@@ -364,16 +657,12 @@ function getOperationalClock() {
 }
 
 function isAnthropicCreditError(error: unknown) {
-  const message = String((error as any)?.message || '').toLowerCase()
+  const message = getErrorMessage(error).toLowerCase()
   return (
     message.includes('credit balance is too low') ||
     message.includes('purchase credits') ||
     message.includes('plans & billing')
   )
-}
-
-function sleep(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
 function getCreatedAtMs(value: string | null | undefined) {
@@ -515,7 +804,7 @@ async function maybeRefreshOperationalSummary({
     })
 
     const summaryText = stripEmojis(
-      response.content[0]?.type === 'text' ? response.content[0].text : '',
+      getAnthropicText(response as AnthropicResponse),
     )
 
     if (!summaryText) return
@@ -534,16 +823,20 @@ async function maybeRefreshOperationalSummary({
 }
 
 export async function POST(request: NextRequest) {
+  let claimedMessageId: string | null = null
+  let claimToken: string | null = null
+
   try {
     const supabase = createAdminSupabase()
     const { mensagem_id } = await request.json()
+    claimedMessageId = mensagem_id || null
 
     if (!mensagem_id) {
       return NextResponse.json({ error: 'mensagem_id obrigatório' }, { status: 400 })
     }
 
     // 1. Buscar a mensagem recebida + dados do lead
-    const { data: mensagem, error: msgError } = await supabase
+    const { data: mensagemRow, error: msgError } = await supabase
       .from('mensagens_inbound')
       .select(`
         id,
@@ -561,13 +854,17 @@ export async function POST(request: NextRequest) {
       .eq('id', mensagem_id)
       .single()
 
+    const mensagem = mensagemRow as InboundMessageWithLead | null
+
     if (msgError || !mensagem) {
       return NextResponse.json({ error: 'Mensagem não encontrada' }, { status: 404 })
     }
 
     // 2. Resolver agente — prioridade: campanha → tipo/estágio → padrão tenant → config global
-    const tenantId = (mensagem.leads as any)?.tenant_id || null
-    const lead = mensagem.leads as any
+    const lead = Array.isArray(mensagem.leads)
+      ? (mensagem.leads[0] ?? null)
+      : mensagem.leads
+    const tenantId = lead?.tenant_id || null
     let campanha_id = lead?.campanha_id || mensagem.campanha_id || null
     const leadStatus = lead?.status || null
 
@@ -593,7 +890,7 @@ export async function POST(request: NextRequest) {
       sem_resposta: 'reativacao',
     }
 
-    let agenteRow: any = null
+    let agenteRow: AgentRow | null = null
     let activeAgentTypes: string[] = []
 
     if (tenantId) {
@@ -605,8 +902,8 @@ export async function POST(request: NextRequest) {
 
       activeAgentTypes = Array.from(
         new Set(
-          (agentesAtivos || [])
-            .map((row: any) => String(row?.tipo || '').trim().toLowerCase())
+          ((agentesAtivos as Array<{ tipo: string | null }> | null) || [])
+            .map((row) => String(row?.tipo || '').trim().toLowerCase())
             .filter(Boolean),
         ),
       )
@@ -627,7 +924,7 @@ export async function POST(request: NextRequest) {
           .eq('id', campanha.agente_id)
           .eq('ativo', true)
           .maybeSingle()
-        if (agenteCampanha) agenteRow = agenteCampanha
+        if (agenteCampanha) agenteRow = agenteCampanha as AgentRow
       }
     }
 
@@ -643,7 +940,7 @@ export async function POST(request: NextRequest) {
           .eq('ativo', true)
           .limit(1)
           .maybeSingle()
-        if (agenteTipo) agenteRow = agenteTipo
+        if (agenteTipo) agenteRow = agenteTipo as AgentRow
       }
     }
 
@@ -656,18 +953,20 @@ export async function POST(request: NextRequest) {
         .eq('is_default', true)
         .eq('ativo', true)
         .maybeSingle()
-      if (agentePadrao) agenteRow = agentePadrao
+      if (agentePadrao) agenteRow = agentePadrao as AgentRow
     }
 
     // 2d. Config global da tabela configuracoes (fallback original)
-    const { data: globalConfig } = await getConfiguracaoAtual(
-      supabase,
+    const configuracoesSupabase = supabase as unknown as ConfiguracoesSupabase
+    const { data: globalConfigData } = await getConfiguracaoAtual(
+      configuracoesSupabase,
       tenantId,
       'agente_ativo, agente_nome, agente_prompt_sistema, agente_modelo, agente_max_tokens, agente_resposta_automatica, agente_horario_inicio, agente_horario_fim, agente_apenas_dias_uteis, agente_fluxo_qualificacao, agente_exemplos_dialogo, agente_gatilhos_escalada, agente_frases_proibidas, agente_objeccoes, agente_fallback, agente_perfil_operacao',
     )
+    const globalConfig = globalConfigData as AgentRuntimeConfig | null
 
     // Monta config unificada (agente resolvido tem prioridade sobre config global)
-    const config = agenteRow ? {
+    const config: AgentRuntimeConfig | null = agenteRow ? {
       agente_ativo: agenteRow.ativo,
       agente_nome: agenteRow.nome_publico,
       agente_prompt_sistema: agenteRow.prompt_base,
@@ -758,6 +1057,28 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    const duplicateInbound = findRecentDuplicateInboundMessage(inbounds, mensagem_id)
+    if (duplicateInbound?.resposta_agente?.trim()) {
+      await supabase
+        .from('mensagens_inbound')
+        .update({
+          respondido_por_agente: true,
+          resposta_agente: duplicateInbound.resposta_agente.trim(),
+          lido: true,
+          lido_em: new Date().toISOString(),
+        })
+        .eq('id', mensagem_id)
+
+      return NextResponse.json(
+        {
+          queued: false,
+          reused_previous_response: true,
+          reason: 'duplicate_inbound_message',
+        },
+        { status: 202 },
+      )
+    }
+
     const nowMs = Date.now()
     const latestInboundMs = getCreatedAtMs(latestInbound?.created_at || mensagem.created_at)
     const latestInboundAgeMs = latestInboundMs ? Math.max(0, nowMs - latestInboundMs) : 0
@@ -842,6 +1163,33 @@ export async function POST(request: NextRequest) {
       userTurns <= 1 &&
       assistantTurns <= 1
 
+    claimToken = `__agent_processing__:${Date.now()}:${Math.random().toString(36).slice(2, 10)}`
+    const { data: claimedMessage, error: claimError } = await supabase
+      .from('mensagens_inbound')
+      .update({
+        resposta_agente: claimToken,
+      })
+      .eq('id', mensagem_id)
+      .eq('respondido_por_agente', false)
+      .eq('respondido_manualmente', false)
+      .is('resposta_agente', null)
+      .select('id')
+      .maybeSingle()
+
+    if (claimError) {
+      throw claimError
+    }
+
+    if (!claimedMessage) {
+      return NextResponse.json(
+        {
+          queued: false,
+          reason: 'already_processing_or_answered',
+        },
+        { status: 202 },
+      )
+    }
+
     // 5. Montar system prompt com dados do lead
     const promptBase = config.agente_prompt_sistema || PROMPT_PADRAO
     const partes = [promptBase]
@@ -886,7 +1234,7 @@ export async function POST(request: NextRequest) {
           [
             '\nBASE DE CONHECIMENTO TÉCNICO — PLANEJAMENTO PREVIDENCIÁRIO:',
             planningKnowledge.content,
-            'Use esta base para responder com profundidade técnica. Cite conceitos com precisão. Quando o lead fizer pergunta técnica específica, responda com base nesta documentação. Se a pergunta exigir análise individual de documentos do lead, escale para o consultor humano.',
+            'Use esta base para responder com precisão técnica, mas não para transformar a conversa em relatório. Prefira extrair o princípio aplicável em linguagem simples. Se a documentação trouxer números, percentuais, idades, tetos ou exemplos ilustrativos, só use isso quando for indispensável e não soar como cálculo individual ou recomendação pronta. Se a pergunta exigir análise individual de documentos do lead, escale para o consultor humano.',
           ].join('\n'),
         )
       }
@@ -899,7 +1247,7 @@ export async function POST(request: NextRequest) {
     }
 
     const systemPrompt = partes.join('\n')
-      .replace(/\{nome\}/g, lead?.nome || 'Beneficiário')
+      .replace(/\{nome\}/g, repairCommonMojibake(lead?.nome || 'Beneficiário'))
       .replace(/\{nb\}/g, lead?.nb || 'N/A')
       .replace(/\{banco\}/g, lead?.banco || 'N/A')
       .replace(/\{valor\}/g, lead?.valor_rma ? `${Number(lead.valor_rma).toFixed(2)}` : 'N/A')
@@ -907,25 +1255,31 @@ export async function POST(request: NextRequest) {
       .replace(/\{nome_publico\}/g, config.agente_nome || 'Assistente')
 
     // 6. Chamar Claude
-    let response
+    let response: AnthropicResponse
     const modelName = config.agente_modelo || 'claude-sonnet-4-20250514'
-    const maxTokens =
+    const configuredMaxTokens =
       config.agente_max_tokens ||
       (normalizedOperationProfile === 'planejamento_previdenciario'
-        ? 1200
+        ? 420
         : 500)
+    const maxTokens =
+      normalizedOperationProfile === 'planejamento_previdenciario'
+        ? isFirstReplyAfterCampaign
+          ? Math.min(configuredMaxTokens, 220)
+          : Math.min(configuredMaxTokens, 320)
+        : configuredMaxTokens
     const llmStartedAt = Date.now()
 
     try {
-      response = await anthropic.messages.create({
+      response = (await anthropic.messages.create({
         model: modelName,
         max_tokens: maxTokens,
         system: systemPrompt,
         messages: historico,
-      })
+      })) as AnthropicResponse
 
       if (tenantId) {
-        const usage = (response as any)?.usage || {}
+        const usage = getUsageSnapshot(response)
         logLlmUsage({
           tenantId,
           conversaId: mensagem.conversa_id || null,
@@ -941,7 +1295,7 @@ export async function POST(request: NextRequest) {
           sucesso: true,
         }).catch((e) => console.warn('[agent-llm-log] falhou:', e))
       }
-    } catch (modelError: any) {
+    } catch (modelError: unknown) {
       if (tenantId) {
         logLlmUsage({
           tenantId,
@@ -954,7 +1308,7 @@ export async function POST(request: NextRequest) {
           outputTokens: 0,
           latenciaMs: Date.now() - llmStartedAt,
           sucesso: false,
-          erroDescricao: modelError?.message || 'Erro desconhecido na chamada ao modelo',
+          erroDescricao: getErrorMessage(modelError) || 'Erro desconhecido na chamada ao modelo',
         }).catch((e) => console.warn('[agent-llm-log] falhou:', e))
       }
 
@@ -991,19 +1345,45 @@ export async function POST(request: NextRequest) {
       throw modelError
     }
 
-    const respostaTextoBruta = response.content[0]?.type === 'text' ? response.content[0].text : ''
+    const respostaTextoBruta = getAnthropicText(response)
     if (!respostaTextoBruta) {
       console.warn('[agente] Resposta do modelo sem conteúdo textual útil', {
         mensagem_id,
         tenantId,
         leadId: mensagem.lead_id || null,
-        stop_reason: (response as any)?.stop_reason || null,
+        stop_reason: getStopReason(response),
       })
     }
-    const respostaTexto = stripEmojis(respostaTextoBruta)
+    const previousAssistantMessage = findPreviousAssistantMessage(historico)
+    let respostaTexto = sanitizeWhatsAppResponseText(respostaTextoBruta)
+
+    if (
+      normalizedOperationProfile === 'planejamento_previdenciario' &&
+      needsPlanningRewrite({
+        text: respostaTexto,
+        previousAssistant: previousAssistantMessage,
+        isFirstReplyAfterCampaign,
+      })
+    ) {
+      try {
+        const rewritten = await rewritePlanningReplyForWhatsApp({
+          anthropicClient: anthropic,
+          latestLeadMessage,
+          previousAssistant: previousAssistantMessage,
+          draft: respostaTexto,
+          isFirstReplyAfterCampaign,
+        })
+
+        if (rewritten) {
+          respostaTexto = rewritten
+        }
+      } catch (rewriteError) {
+        console.warn('[agente] Falha ao reescrever resposta de planejamento:', rewriteError)
+      }
+    }
 
     if (!respostaTexto) {
-      return NextResponse.json({ error: 'Resposta vazia do modelo' }, { status: 500 })
+      throw new Error('Resposta vazia do modelo')
     }
 
     const shouldMoveToAwaitingCustomer = shouldMoveBenefitsConversationToAwaitingCustomer({
@@ -1085,8 +1465,24 @@ export async function POST(request: NextRequest) {
       automatico: config.agente_resposta_automatica,
     })
 
-  } catch (error: any) {
+  } catch (error: unknown) {
+    if (claimedMessageId && claimToken) {
+      try {
+        const supabase = createAdminSupabase()
+        await supabase
+          .from('mensagens_inbound')
+          .update({
+            resposta_agente: null,
+          })
+          .eq('id', claimedMessageId)
+          .eq('resposta_agente', claimToken)
+          .eq('respondido_por_agente', false)
+      } catch (releaseError) {
+        console.warn('[agente] Falha ao liberar claim de processamento:', releaseError)
+      }
+    }
+
     console.error('Erro no agente:', error)
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 })
   }
 }

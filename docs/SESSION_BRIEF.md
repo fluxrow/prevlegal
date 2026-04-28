@@ -32,6 +32,153 @@
   - inbox humana ponta a ponta
   - portal em tenant real
 
+## Atualização 2026-04-27 — Base técnica pré-campanha ficou verde; próximo risco real está no copy do agente de planejamento
+
+- `npm run lint` e `npm run build` passaram localmente
+- o cleanup desta rodada respeitou a separação entre:
+  - `beneficios_previdenciarios`
+  - `planejamento_previdenciario`
+- pontos já isolados corretamente:
+  - campanha de `benefícios`: `{nome}` usa nome completo
+  - campanha de `planejamento`: `{nome}` continua em primeiro nome
+  - follow-up: usa primeiro nome por padrão e preserva `{nome_completo}` só quando necessário
+  - import de `planejamento`: aceita o layout mínimo `nome + telefone`
+  - knowledge densa segue entrando apenas no playbook de `planejamento`
+- smoke técnico de `planejamento` rodado via `scripts/smoke-test-agent-ana.ts`
+- resultado:
+  - runtime respondeu os `6` cenários
+  - knowledge carregou
+  - o maior risco pré-campanha agora não é quebra técnica, e sim comportamento do agente:
+    - respostas longas demais
+    - assertividade excessiva em algumas recomendações
+    - uso de números concretos cedo demais
+- leitura prática:
+  - dá para seguir com segurança estrutural maior
+  - mas antes da primeira campanha de `planejamento`, vale fazer um último endurecimento do playbook para o agente parecer consultivo premium, não “calculadora improvisada”
+
+## Atualização 2026-04-27 — Playbook de planejamento endurecido e validado de novo; ainda há resíduo em perfis fora do repertório
+
+- seed `ana_planejamento` e runtime `agente/responder` foram ajustados sem mexer em `beneficios_previdenciarios`
+- mudanças práticas em `planejamento_previdenciario`:
+  - respostas de WhatsApp mais curtas
+  - menos subtítulos e listas com cara de relatório
+  - menos espaço para números ilustrativos e parecer precoce
+  - cap de tokens mais baixo (`900` geral / `360` no primeiro retorno pós-campanha)
+  - knowledge técnica tratada como apoio de princípio, não como autorização para “laudo”
+- validação:
+  - `npm run lint` verde
+  - `npm run build` verde
+  - smoke técnico `scripts/smoke-test-agent-ana.ts` rerodado
+- leitura do smoke após a segunda passada:
+  - melhorou bem em `T1`, `T3` e `T6`
+  - ainda sobrou resíduo em `T2`, `T4` e `T5`
+  - o principal ponto residual agora é:
+    - perfis fora do repertório profundo ainda recebem contexto demais cedo
+    - exemplos numéricos da knowledge ainda puxam parte da resposta
+- leitura prática:
+  - para a primeira campanha de `planejamento`, a segurança estrutural está boa e o copy está melhor do que estava
+  - se houver mais uma passada antes de escalar volume, o melhor ROI é endurecer especificamente os casos `fora do repertório` e podar exemplos numéricos da knowledge
+
+## Atualização 2026-04-27 — Knowledge de planejamento podada e smoke rerodado
+
+- arquivos podados:
+  - `03_planejamento_por_perfil.md`
+  - `04_previdencia_complementar.md`
+  - `08_perguntas_tecnicas_frequentes.md`
+- foco da poda:
+  - menos `sempre` / `quase sempre`
+  - menos cifras, percentuais e patrimônios hipotéticos
+  - mais linguagem de variáveis e estrutura de análise
+- validação:
+  - `npm run build` verde
+  - smoke técnico `scripts/smoke-test-agent-ana.ts` verde
+- efeito observado:
+  - prompt caiu de ~`33.4k` para ~`33.0k` tokens estimados
+  - `advogado` e `dentista` melhoraram bem
+  - `magistrado` e `executivo` seguiram em linha melhor
+  - `médico PJ / pró-labore` segue como principal caso residual, ainda puxando números cedo demais
+- leitura prática:
+  - o estado para a primeira campanha de `planejamento` ficou mais seguro
+  - se fizermos mais uma passada, ela deve ser quase toda dedicada ao subtema `médico PJ / pró-labore`
+
+## Atualização 2026-04-28 — Default de verificação ajustado para campanha da Pagliuca
+
+- campanhas de `planejamento_previdenciario` agora nascem com `apenas_verificados = false` por padrão:
+  - na UI de campanhas
+  - e no fallback da API de criação
+- `beneficios_previdenciarios` continua com `apenas_verificados = true`
+- impacto prático para hoje:
+  - lista final da Pagliuca com `nome + telefone` pode seguir para disparo sem depender de verificação prévia formal
+  - linhas sem `nome` continuam fora do fluxo mínimo de import de `planejamento`
+  - para o primeiro disparo de hoje, faz sentido seguir com quem tem `nome + telefone` e tratar o restante depois
+
+## Atualização 2026-04-27 — Campanhas de benefícios tinham gargalo real de arquitetura no disparo
+
+- Investigando o teste de campanha do tenant Fluxrow em `benefícios`, encontramos um problema estrutural relevante:
+  - o disparo antigo tentava completar toda a campanha dentro da mesma request
+  - isso era incompatível com:
+    - delays entre mensagens
+    - pausa entre lotes
+    - cap de warm-up do canal
+- Efeito provável observado na prática:
+  - campanha pensada para dezenas de contatos podia morrer em `3-4` envios e parecer “instável”
+- Correção aplicada:
+  - novo helper compartilhado de campanhas em `src/lib/campaign-dispatch.ts`
+  - novo worker `api/campanhas/worker`
+  - cron adicionado em `vercel.json`
+  - `api/campanhas/[id]/disparar` agora só:
+    - inicia a campanha
+    - faz o primeiro passo
+    - devolve diagnóstico operacional
+- Diagnóstico agora expõe melhor:
+  - leads sem contato resolvido
+  - leads filtrados por `apenas_verificados`
+  - elegíveis reais
+  - cap efetivo de `warmup`
+  - tentados hoje vs disponíveis hoje
+- Leitura prática:
+  - para campanhas de `benefícios`, o gargalo principal deixou de ser só “qualidade da lista”
+
+## Atualização 2026-04-28 — Cadastro manual de planejamento ficou coerente com o funil e deixou de colidir por NB
+
+- o modal `Novo lead` agora abre com o perfil operacional padrão do tenant, mas o operador pode trocar manualmente o perfil do lead no próprio cadastro:
+  - `planejamento_previdenciario` mostra `email`, `categoria_profissional`, `data_nascimento` e `contexto inicial`
+  - `beneficios_previdenciarios` continua com `NB`, banco, `valor_rma` e `ganho_potencial`
+- na API de `POST /api/leads`, o cadastro manual de `planejamento` agora:
+  - reaproveita o lead existente quando o telefone já está na base do tenant
+  - deixa de falhar com `duplicate key value violates unique constraint "leads_nb_key"` nesses casos
+  - ainda gera identificador técnico interno quando realmente precisa criar um lead novo
+- reparo adicional:
+  - nomes com mojibake passaram a ser corrigidos nas bordas de import e outbound crítico
+- validação técnica desta rodada:
+  - `eslint` dos arquivos alterados verde
+  - `npm run build` verde
+- impacto operacional de hoje:
+  - isso não bloqueia a campanha já importada
+  - evita atrito ao complementar manualmente leads de planejamento
+  - não mexe no fluxo de `benefícios`
+
+## Atualização 2026-04-28 — Ajuste fino no runtime de planejamento para hoje
+
+- após o teste real de campanha da Pagliuca, o problema remanescente ficou claro:
+  - respostas longas demais
+  - repetição da mesma explicação com palavras diferentes
+  - presença de `*`, bullets e travessões que soam artificiais no WhatsApp
+- reforços aplicados em `api/agente/responder`:
+  - prompt imediato mais duro contra markdown/listas/repetição
+  - cap de tokens reduzido no runtime de `planejamento`
+  - sanitização final do texto antes do envio
+  - reescrita curta/humana quando a resposta vier com cara de mini parecer
+  - reaproveitamento da resposta anterior quando o inbound for duplicado em janela curta
+- validação desta rodada:
+  - `eslint` da rota verde
+  - `npm run build` verde
+  - o smoke técnico antigo continua útil para conteúdo, mas ele não passa pela mesma pós-limpeza do runtime real; para estilo final, o teste canônico agora é o WhatsApp real
+  - agora fica mais claro se a limitação veio de:
+    - pacing/warmup
+    - filtro de verificação
+    - ou timeout/arquitetura de execução
+
 ## Atualização 2026-04-23 — Estado do Pagliuca antes do smoke real com WhatsApp
 
 - Import de planejamento já está operacional para CSV simples (`nome + telefone`) no tenant Pagliuca
@@ -105,7 +252,49 @@ Gatilho automático: a mudança de status do lead na API `PATCH` chama o *Orques
 ## Próximo bloco oficial
 1. Gravar e subir o vídeo do Google OAuth comercial.
 2. Fechar as pendências residuais do smoke test final do tenant real.
-3. Só depois: Docling operacional, agenda premium extra e importador fase 2.
+3. Avaliar um piloto de memória semântica / grafo local para docs operacionais do PrevLegal e do ecossistema Fluxrow, sem incluir PII nem secrets.
+4. Só depois: Docling operacional, agenda premium extra e importador fase 2.
+
+## Pós-smoke recomendado
+
+- Se o smoke real do Pagliuca fechar bem, abrir um piloto controlado de memória semântica com foco em:
+  - `docs/`
+  - `LEARNINGS`
+  - `SESSION_BRIEF`
+  - notas operacionais relevantes do vault
+- Objetivo:
+  - melhorar handoff
+  - reduzir custo de retomada de contexto entre sessões
+  - preservar decisões arquiteturais e operacionais sem depender só de busca linear
+- Regra de segurança:
+  - não indexar automaticamente PII de lead, documentos reais, credenciais ou arquivos sensíveis de produção
+
+## Decisão de timing — Docling vs smoke real
+
+- O PrevLegal já tem foundation de Docling no código e na documentação, mas o serviço ainda não é pré-requisito para o smoke real atual do Pagliuca.
+- Leitura operacional consolidada:
+  - o smoke de hoje precisa validar:
+    - canal WhatsApp
+    - webhook
+    - conversa real
+    - resposta do agente
+    - progressão da qualificação
+    - extração estruturada
+    - geração do contrato
+  - isso não depende de parsing documental via Docling
+- Regra prática:
+  - se o teste do dia não inclui upload e parsing de documentos reais (ex: CNIS, PDF escaneado, procuração já assinada, comprovantes), Docling não deve entrar antes do smoke
+  - se o escritório decidir que o fluxo crítico imediato já inclui leitura automática de documentos enviados pelo lead, aí Docling sobe de prioridade e entra antes do rollout ampliado
+
+## Evolução desejada da documentação
+
+- Além de `LEARNINGS` cronológico, o produto precisa ganhar uma camada mais canônica e enxuta de documentação:
+  - menos diário de tentativa/erro
+  - mais “livro operacional” do que deve ser feito, por que deve ser feito e como deve ser feito
+- Direção aprovada:
+  - manter `LEARNINGS` como memória bruta e histórica
+  - criar progressivamente uma camada de síntese canônica para execução futura
+  - essa camada deve consolidar padrões reutilizáveis para produto, arquitetura, operação, integrações e go-live
 
 ## Atualização 2026-04-15 - Playbook de benefícios ficou mais aderente ao caso real da Jessica
 

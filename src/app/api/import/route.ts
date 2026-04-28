@@ -9,6 +9,7 @@ import { getTenantContext } from '@/lib/tenant-context'
 import { detectImportSchema, getMappedCell } from '@/lib/import-schema'
 import { inferContactTargetType, type ContactTargetType } from '@/lib/contact-target'
 import { normalizeOperationProfile } from '@/lib/operation-profile'
+import { normalizeHumanText } from '@/lib/text-repair'
 
 // Mapeamento das colunas da planilha NOMES_RJ_BNG.xlsx
 // Baseado na análise real da planilha (índice base 0)
@@ -204,12 +205,6 @@ function pickPrioritizedContact(row: unknown[], lookup: HeaderLookup): Prioritiz
         { source: 'IRMAO_1_TELEFONE_1', value: getCellByHeaderAliases(row, lookup, ['IRMAO_1_TELEFONE_1', 'IRMAO 1 TELEFONE 1']), direct: false, whatsapp: false },
     ]
 
-    const contactCandidates = [
-        ...explicitDirectWhatsappCandidates,
-        ...directPhoneCandidates,
-        ...relatedCandidates,
-    ]
-
     const prioritizedCandidates = [
         ...explicitDirectWhatsappCandidates,
         ...relatedCandidates,
@@ -315,19 +310,6 @@ function pickLegacyContact(row: unknown[], schema: ReturnType<typeof detectImpor
     }
 }
 
-function emptyPrioritizedContact(): PrioritizedContact {
-    return {
-        telefone: null,
-        source: null,
-        tipo: 'titular',
-        direct: true,
-        whatsapp: false,
-        alternativo: null,
-        alternateSource: null,
-        alternateTipo: 'titular',
-    }
-}
-
 function applyDetectedTelefoneFallback(
     prioritizedContact: PrioritizedContact,
     row: unknown[],
@@ -415,11 +397,29 @@ function isMissingLeadEmailColumnError(error: { message?: string | null; code?: 
 }
 
 function stripEmailFromLeadBatch<T extends Record<string, unknown>>(batch: T[]) {
-    return batch.map(({ email: _email, ...lead }) => lead)
+    return batch.map((item) => {
+        const lead = { ...item }
+        delete lead.email
+        return lead
+    })
+}
+
+type ImportOperationProfileSupabase = {
+    from: (table: string) => {
+        select: (columns: string) => {
+            eq: (column: string, value: string) => {
+                eq: (column: string, value: boolean) => {
+                    eq: (column: string, value: boolean) => {
+                        maybeSingle: () => PromiseLike<{ data: { perfil_operacao?: string | null } | null }>
+                    }
+                }
+            }
+        }
+    }
 }
 
 async function resolveImportOperationProfile(
-    adminSupabase: any,
+    adminSupabase: ImportOperationProfileSupabase,
     tenantId: string,
 ) {
     const { data: defaultAgent } = await adminSupabase
@@ -430,7 +430,7 @@ async function resolveImportOperationProfile(
         .eq('is_default', true)
         .maybeSingle()
 
-    const perfilOperacao = (defaultAgent as { perfil_operacao?: string | null } | null)?.perfil_operacao
+    const perfilOperacao = defaultAgent?.perfil_operacao
     return normalizeOperationProfile(perfilOperacao || null)
 }
 
@@ -518,7 +518,8 @@ export async function POST(request: NextRequest) {
     const buffer = await file.arrayBuffer()
     const rawRows = getRowsFromUploadedFile(file, buffer)
     const rows = normalizeDelimitedRows(rawRows)
-    const importOperationProfile = await resolveImportOperationProfile(adminSupabase, context.tenantId)
+    const importProfileSupabase = adminSupabase as unknown as ImportOperationProfileSupabase
+    const importOperationProfile = await resolveImportOperationProfile(importProfileSupabase, context.tenantId)
     const allowsPlanningSchema = importOperationProfile === 'planejamento_previdenciario'
     const detectedSchema = detectImportSchema(rows, {
         allowNomeTelefone: allowsPlanningSchema,
@@ -592,7 +593,7 @@ export async function POST(request: NextRequest) {
         const statusRaw = detectedSchema.mode === 'header_mapping' ? getMappedCell(row, detectedSchema, 'status') : row[COL.STATUS]
 
         const nb = nbRaw ? String(nbRaw).trim() : null
-        const nome = nomeRaw ? String(nomeRaw).trim() : null
+        const nome = nomeRaw ? normalizeHumanText(nomeRaw) : null
         const status = statusRaw ? String(statusRaw).trim().toLowerCase() : ''
         const cpf = parseCPF(detectedSchema.mode === 'header_mapping' ? getMappedCell(row, detectedSchema, 'cpf') : row[COL.CPF])
         const dataNascimento = detectedSchema.mode === 'header_mapping'
@@ -611,7 +612,7 @@ export async function POST(request: NextRequest) {
             ? parseEmail(getMappedCell(row, detectedSchema, 'email'))
             : null
         const publicNameFallback = detectedSchema.mode === 'header_mapping'
-            ? truncate(String(getCellByHeaderAliases(row, headerLookup, ['PUBLIC NAME']) || ''), 255)
+            ? truncate(normalizeHumanText(getCellByHeaderAliases(row, headerLookup, ['PUBLIC NAME'])), 255)
             : null
         const effectiveNome = nome || publicNameFallback
 

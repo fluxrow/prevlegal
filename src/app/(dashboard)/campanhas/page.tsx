@@ -145,6 +145,36 @@ interface WhatsAppNumber {
   purpose?: string | null;
 }
 
+function defaultOnlyVerifiedForProfile(operationProfile?: string | null) {
+  return operationProfile !== "planejamento_previdenciario";
+}
+
+type CampaignTargetMode = "lista" | "selecionados";
+
+type CampaignForm = {
+  nome: string;
+  target_mode: CampaignTargetMode;
+  lista_id: string;
+  lead_ids: string[];
+  whatsapp_number_id: string;
+  agente_id: string;
+  contato_alvo_tipo: string;
+  mensagem_template: string;
+  delay_min_ms: number;
+  delay_max_ms: number;
+  tamanho_lote: number;
+  pausa_entre_lotes_s: number;
+  limite_diario: number;
+  apenas_verificados: boolean;
+};
+
+type NumericCampaignFormKey =
+  | "delay_min_ms"
+  | "delay_max_ms"
+  | "tamanho_lote"
+  | "pausa_entre_lotes_s"
+  | "limite_diario";
+
 const STATUS_LABEL: Record<
   string,
   { label: string; color: string; bg: string }
@@ -172,13 +202,14 @@ export default function CampanhasPage() {
   const [disparando, setDisparando] = useState<string | null>(null);
   const [deletando, setDeletando] = useState<string | null>(null);
   const [templateFoiEditado, setTemplateFoiEditado] = useState(false);
+  const [apenasVerificadosFoiEditado, setApenasVerificadosFoiEditado] = useState(false);
   const [leadSearch, setLeadSearch] = useState("");
   const [leadOptions, setLeadOptions] = useState<LeadOption[]>([]);
   const [selectedLeadMap, setSelectedLeadMap] = useState<Record<string, LeadOption>>({});
   const [loadingLeadOptions, setLoadingLeadOptions] = useState(false);
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<CampaignForm>({
     nome: "",
-    target_mode: "lista" as "lista" | "selecionados",
+    target_mode: "lista",
     lista_id: "",
     lead_ids: [] as string[],
     whatsapp_number_id: "",
@@ -190,7 +221,7 @@ export default function CampanhasPage() {
     tamanho_lote: 50,
     pausa_entre_lotes_s: 30,
     limite_diario: 500,
-    apenas_verificados: true,
+    apenas_verificados: defaultOnlyVerifiedForProfile(),
   });
   const [saving, setSaving] = useState(false);
   const [configDisparo, setConfigDisparo] = useState({
@@ -308,9 +339,12 @@ export default function CampanhasPage() {
         tamanho_lote: 50,
         pausa_entre_lotes_s: 30,
         limite_diario: 500,
-        apenas_verificados: true,
+        apenas_verificados: defaultOnlyVerifiedForProfile(
+          agentePadraoEscritorio?.perfil_operacao,
+        ),
       });
       setTemplateFoiEditado(false);
+      setApenasVerificadosFoiEditado(false);
       await fetchAll();
     }
     setSaving(false);
@@ -348,7 +382,23 @@ export default function CampanhasPage() {
         ),
       }));
     }
-  }, [form.agente_id, form.contato_alvo_tipo, agentes, showForm, templateFoiEditado]);
+
+    if (!apenasVerificadosFoiEditado) {
+      setForm((prev) => ({
+        ...prev,
+        apenas_verificados: defaultOnlyVerifiedForProfile(
+          agenteSelecionado?.perfil_operacao,
+        ),
+      }));
+    }
+  }, [
+    form.agente_id,
+    form.contato_alvo_tipo,
+    agentes,
+    showForm,
+    templateFoiEditado,
+    apenasVerificadosFoiEditado,
+  ]);
 
   const channelPadrao = whatsAppNumbers.find((number) => number.is_default);
   const agentePadraoEscritorio =
@@ -1084,7 +1134,7 @@ export default function CampanhasPage() {
                   marginBottom: "16px",
                 }}
               >
-                {[
+                {([
                   {
                     key: "limite_diario",
                     label: "Máx. msgs/dia",
@@ -1109,7 +1159,12 @@ export default function CampanhasPage() {
                     suffix: "ms",
                     hint: "Tempo mínimo entre cada mensagem (anti-bloqueio)",
                   },
-                ].map(({ key, label, suffix, hint }) => (
+                ] satisfies Array<{
+                  key: NumericCampaignFormKey;
+                  label: string;
+                  suffix: string;
+                  hint: string;
+                }>).map(({ key, label, suffix, hint }) => (
                   <div key={key}>
                     <label
                       style={{
@@ -1124,7 +1179,7 @@ export default function CampanhasPage() {
                     </label>
                     <input
                       type="number"
-                      value={(form as any)[key]}
+                      value={form[key]}
                       onChange={(e) =>
                         setForm((p) => ({
                           ...p,
@@ -1148,7 +1203,8 @@ export default function CampanhasPage() {
                       {suffix}
                     </span>
                   </div>
-                ))}
+                  ),
+                )}
               </div>
 
               <div
@@ -1181,11 +1237,14 @@ export default function CampanhasPage() {
                   type="checkbox"
                   id="apenas_verificados"
                   checked={form.apenas_verificados}
-                  onChange={(e) =>
-                    setForm((p) => ({
-                      ...p,
-                      apenas_verificados: e.target.checked,
-                    }))
+                    onChange={(e) =>
+                    {
+                      setApenasVerificadosFoiEditado(true);
+                      setForm((p) => ({
+                        ...p,
+                        apenas_verificados: e.target.checked,
+                      }))
+                    }
                   }
                 />
                 <label

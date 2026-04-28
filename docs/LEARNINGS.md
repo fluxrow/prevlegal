@@ -5,6 +5,208 @@ Mestra: [[MASTER_PREV_LEGAL]]
 > Erros encontrados, causas e correções aplicadas.
 > Atualizado a cada sessão.
 
+## Atualização 2026-04-28 — Cadastro manual de planejamento não pode herdar a semântica de NB do funil de benefícios
+
+- Problema:
+  - o modal `Novo lead` ainda mostrava `NB`, banco e `valor_rma` mesmo quando o tenant operava em `planejamento_previdenciario`
+  - ao tentar criar lead manual nesse perfil, o operador podia bater em `duplicate key value violates unique constraint "leads_nb_key"`
+- Causa:
+  - a UI de novo lead era estática e legada de `benefícios`
+  - no backend, o cadastro manual ainda usava `NB` técnico como única estratégia de identidade
+  - quando o telefone do planejamento já existia na base importada, o fluxo não reaproveitava o lead existente
+- Correção:
+  - o modal passou a abrir com o perfil operacional padrão do tenant, mas agora o operador escolhe explicitamente `planejamento` ou `benefícios` dentro do próprio cadastro manual
+  - `planejamento` agora coleta contexto útil para advogado/agente em vez de dados de benefício
+  - a API de cadastro manual de `planejamento` reaproveita o lead existente por telefone e só cria novo registro quando realmente precisa
+- Regra prática:
+  - `benefícios` e `planejamento` não podem compartilhar a mesma ergonomia de cadastro manual só porque a tabela ainda tem colunas legadas em comum
+  - quando o operador puder abrir lead manual para mais de uma frente, a escolha do perfil deve ser explícita no modal e não implícita pelo agente default
+
+## Atualização 2026-04-28 — Mojibake em nomes precisava ser corrigido na borda de import e outbound
+
+- Problema:
+  - alguns nomes com acento podiam aparecer quebrados em mensagens, como `CauÃ£`
+- Causa provável:
+  - dado salvo ou reaproveitado com UTF-8 interpretado como latin1 em pontos específicos de import/interpolação
+- Correção:
+  - reparo leve de mojibake aplicado em:
+    - import de nomes
+    - interpolação de campanhas
+    - follow-up
+    - prompt do runtime do agente
+- Regra prática:
+  - quando a operação depende de nome próprio no WhatsApp, vale reparar mojibake nas bordas críticas mesmo antes de uma auditoria global de encoding
+
+## Atualização 2026-04-28 — Runtime de planejamento precisava blindagem extra contra “mini parecer” e resposta duplicada
+
+- Problema observado em smoke real de campanha:
+  - o primeiro retorno até podia começar bem, mas depois o agente escorregava para mensagens grandes demais
+  - apareciam `*`, bullets, enumerações e travessões com cara de texto gerado
+  - em alguns casos, duas respostas diferentes saíam para a mesma ideia do lead, parecendo repetição com palavras trocadas
+- Causas:
+  - `max_tokens` de `planejamento` ainda estava permissivo demais no runtime real
+  - o modelo bruto ainda podia devolver texto com cara de relatório mesmo com instrução contrária
+  - webhook duplicado ou inbound duplicado ainda podia gerar uma segunda resposta nova para a mesma frase do lead
+- Correção:
+  - endurecer o prompt imediato de `planejamento` contra markdown, listas, bullets, travessões e repetição da própria fala
+  - reduzir teto real do runtime para `220` no primeiro retorno pós-campanha e `320` nas demais respostas de planejamento
+  - aplicar sanitização final de WhatsApp na resposta antes do envio
+  - quando a resposta ainda vier com cara de parecer, passar por uma reescrita curta e humana antes de enviar
+  - se chegar inbound duplicado muito parecido em janela curta e já houver resposta do agente para a mesma frase, reutilizar a resposta anterior em vez de gerar outra nova
+- Regra prática:
+  - em `planejamento_previdenciario`, o runtime precisa ter uma segunda camada de contenção além do prompt, porque “resposta tecnicamente boa” ainda pode ser operacionalmente ruim no WhatsApp
+
+## Atualização 2026-04-28 — Default de campanha precisava variar por perfil operacional
+
+- A tela e a API de campanhas ainda nasciam com `apenas_verificados = true` de forma global
+- Isso é razoável para `beneficios_previdenciarios`, mas atrapalha a operação de `planejamento_previdenciario` quando a lista inicial vem só com `nome + telefone`
+- Risco prático:
+  - operador cria campanha de planejamento
+  - lista entra corretamente
+  - worker e disparo estão saudáveis
+  - mas o volume cai para `0` ou quase `0` por filtro conservador inadequado ao perfil
+- Correção:
+  - UI de campanhas passa a sugerir `apenas_verificados = false` quando o agente selecionado/default é de `planejamento_previdenciario`
+  - API de criação aplica o mesmo fallback por `perfil_operacao`, evitando divergência entre frontend e chamadas diretas
+- Regra prática:
+  - default operacional de campanha não pode ser global quando `benefícios` e `planejamento` têm funis e premissas diferentes
+
+## Atualização 2026-04-27 — Poda da knowledge de planejamento melhorou advogado/dentista e reduziu o prompt total
+
+- O seed e o runtime já tinham sido endurecidos, mas a knowledge ainda continha muitos gatilhos de resposta “pronta”:
+  - `regra prática`
+  - `quase sempre`
+  - `sempre`
+  - exemplos com cifras, patrimônio acumulado e percentuais de longo prazo
+- Isso estava empurrando o modelo a soar como se já tivesse feito conta individual, especialmente em:
+  - pró-labore de médico PJ
+  - matching/fundo corporativo
+  - FUNPRESP
+  - advogado fora do repertório
+- Correção aplicada:
+  - poda cirúrgica em `03_planejamento_por_perfil.md`
+  - poda cirúrgica em `04_previdencia_complementar.md`
+  - poda cirúrgica em `08_perguntas_tecnicas_frequentes.md`
+- Efeito observado no smoke:
+  - prompt estimado caiu de ~`33.4k` para ~`33.0k` tokens
+  - `T4` advogado ficou menos “receita pronta”
+  - `T5` dentista ficou menos conclusiva
+  - `T2` médico PJ ainda puxa números do próprio mecanismo previdenciário e segue como principal resíduo
+- Regra prática:
+  - em knowledge de `planejamento`, número didático demais vira munição de autoridade precoce
+  - quando o objetivo é triagem consultiva premium, a base deve privilegiar:
+    - estrutura
+    - variáveis
+    - limites da análise
+    - e perguntas de descoberta
+  - mais do que:
+    - tabelas de patrimônio
+    - “estratégia típica”
+    - e conclusões percentuais de longo prazo
+
+## Atualização 2026-04-27 — Segunda passada no playbook de planejamento reduziu “cara de parecer”, mas ainda sobrou resíduo nos casos mais delicados
+
+- Depois da primeira rodada de guardrails, o comportamento ainda estava técnico demais no smoke: muito subtítulo, muita lista e números demais em perguntas iniciais
+- Correções adicionais aplicadas:
+  - runtime de `planejamento_previdenciario` passou a proibir subtítulos/listas longas com cara de relatório no WhatsApp
+  - conhecimento técnico passou a ser enquadrado como apoio de princípio, não como licença para despejar cifras e projeções
+  - teto default de `max_tokens` de `planejamento` caiu de `1200` para `900`
+  - primeiro retorno pós-campanha de `planejamento` caiu para cap de `360` tokens
+  - seed `ana_planejamento` passou a reforçar conversa curta, qualitativa e sem parecer técnico escrito
+- Resultado do smoke técnico após a segunda passada:
+  - `T1` melhorou e deixou de cravar a conclusão
+  - `T3` ficou menos “laudo” e mais utilitário
+  - `T6` continua sólido em não chutar valor
+  - `T2`, `T4` e `T5` ainda mostram que números gerais e contexto demais escapam quando a knowledge oferece munição pronta
+- Regra prática:
+  - em `planejamento_previdenciario`, o gargalo restante não é mais “agente prolixo genérico”
+  - o gargalo restante é “quando a knowledge tem número ou tese pronta, o agente ainda tende a tratar isso como atalho de autoridade”
+  - o próximo endurecimento deve atacar:
+    - perfis fora do repertório profundo
+    - exemplos numéricos dentro da knowledge
+    - e talvez roteamento temático mais curto para reduzir excesso de contexto por pergunta
+
+## Atualização 2026-04-27 — build/lint verdes e smoke técnico do planejamento expôs risco de copy superassertiva
+
+- O projeto voltou a ficar com `npm run lint` e `npm run build` verdes localmente
+- O problema dominante da rodada não era bug funcional único, e sim uma sequência de falhas de typecheck por profundidade excessiva de tipos do Supabase em rotas críticas
+- Padrão de correção aplicado:
+  - casts locais explícitos para helpers como `getConfiguracaoAtual`, `getGoogleCalendarStatus`, `ensureConfiguracaoAtual` e similares
+  - remoção de helpers genéricos de `applyTenantFilter(...)` em rotas onde eles forçavam instância de tipo profunda demais
+  - ajuste do `tsconfig` para excluir `supabase/functions/*` do build do app Next, preservando a separação entre runtime Node/Next e runtime Deno
+- Regra prática:
+  - quando uma edge function do Supabase usa imports remotos Deno, ela não deve entrar no typecheck do app web principal
+  - quando o helper genérico de filtro por tenant só adiciona profundidade de tipos, vale preferir o filtro explícito por rota
+
+## Atualização 2026-04-27 — Smoke técnico do agente de planejamento validou runtime, mas mostrou excesso de confiança e custo alto
+
+- O script `scripts/smoke-test-agent-ana.ts` voltou a rodar ponta a ponta com o prompt real do playbook `ana_planejamento`
+- O runtime carregou a base de conhecimento corretamente e respondeu todos os `6` cenários
+- O prompt atual de planejamento ficou com `132299` caracteres, cerca de `33k` tokens estimados antes mesmo da mensagem do lead
+- Nos cenários do smoke, a Anthropic recebeu ~`42.8k` tokens de entrada por chamada, com custo estimado entre `US$ 0.135` e `US$ 0.145` por resposta
+- Achados principais:
+  - `T1` magistrado/FUNPRESP:
+    - ponto bom: mencionou voluntariedade, irrevogabilidade e benefício especial
+    - risco: inclinou demais a conclusão ao afirmar que a migração “frequentemente é vantajosa”
+  - `T2` médico PJ/pró-labore:
+    - ponto bom: diferenciou otimização tributária de previdenciária
+    - risco: trouxe números concretos demais e uma diferença patrimonial estimada (`~R$ 1,5 milhão`) cedo demais
+  - `T3` executivo/PGBL:
+    - ponto bom: explicou irreversibilidade e estratégia de aportes futuros
+    - risco: ainda empurrou a regressiva como quase resposta pronta para horizonte longo
+  - `T4` advogado:
+    - risco maior do lote
+    - o agente falou com segurança excessiva fora do repertório profundo, inclusive propondo percentuais de composição de renda na aposentadoria
+  - `T5` dentista:
+    - ponto bom: reconheceu a tese geral e a necessidade de PPP/LTCAT
+    - risco: antecipou idade e ganho temporal de forma assertiva demais para um caso sem análise documental
+  - `T6` médico pedindo valor:
+    - foi o melhor comportamento do lote
+    - não chutou valor e voltou para descoberta / CNIS / regime
+- Regra prática:
+  - em `planejamento_previdenciario`, “parecer premium” não pode virar “parecer que já calculou”
+  - o agente deve responder tecnicamente, mas sem:
+    - cravar escolha ótima
+    - estimar valor de aposentadoria
+    - estimar ganho patrimonial
+    - prometer antecipação temporal exata
+    - montar percentuais de estratégia sem dados individuais
+  - em perguntas técnicas iniciais, o melhor padrão é:
+    - explicar o mecanismo
+    - delimitar as variáveis
+    - fazer `1-2` perguntas de descoberta
+    - e reservar conclusão/posição firme para a análise individual do especialista
+
+## Atualização 2026-04-27 — Disparo de campanha com sleeps na request morria cedo e mascarava a causa real
+
+- Relato operacional: uma campanha de `benefícios_previdenciarios` com estimativa de `~50` contatos só conseguiu disparar `3-4`
+- A primeira suspeita natural era:
+  - warm-up muito restritivo
+  - ou `apenas_verificados` filtrando quase toda a base
+- A auditoria confirmou que esses fatores podem reduzir a elegibilidade, mas havia um problema estrutural maior:
+  - `POST /api/campanhas/[id]/disparar` fazia o loop inteiro dentro da request
+  - entre os envios, aplicava `delay_min_ms` / `delay_max_ms`
+  - a cada lote, ainda fazia `pausa_entre_lotes_s`
+  - com warm-up ativo, a rota podia facilmente ultrapassar o tempo útil da função antes de terminar
+- Resultado prático:
+  - a campanha parecia “parar sozinha” em poucos envios
+  - o operador ficava sem diagnóstico claro se o corte tinha vindo de:
+    - timeout
+    - warmup
+    - verificação
+    - falta de contato elegível
+- Correção:
+  - extrair a lógica para `src/lib/campaign-dispatch.ts`
+  - criar `POST/GET /api/campanhas/worker`
+  - mudar `POST /api/campanhas/[id]/disparar` para modo resiliente:
+    - ativa a campanha
+    - processa apenas o primeiro passo
+    - deixa o restante com o worker/cron
+    - devolve diagnóstico operacional do funil de elegibilidade e do cap efetivo
+- Regra prática:
+  - campanha média ou grande não deve depender de uma única request HTTP quando o produto explicitamente quer pacing, lotes e warm-up
+  - se existe delay real entre mensagens, isso é scheduler/worker, não handler síncrono de clique
+
 ---
 
 ## Navegação

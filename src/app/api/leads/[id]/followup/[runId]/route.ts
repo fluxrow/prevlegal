@@ -3,6 +3,7 @@ import { getTenantContext, canAccessLeadId } from '@/lib/tenant-context'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminSupabase } from '@/lib/internal-collaboration'
 import { sendWhatsAppMessage } from '@/lib/whatsapp-provider'
+import { repairCommonMojibake } from '@/lib/text-repair'
 
 export async function PATCH(
   request: NextRequest,
@@ -84,8 +85,12 @@ export async function PATCH(
       return NextResponse.json({ error: 'Nenhum passo encontrado para esta execução' }, { status: 400 })
     }
 
+    const nomeCompleto = repairCommonMojibake(String(lead.nome || '').trim())
+    const primeiroNome = nomeCompleto.split(/\s+/)[0] || 'cliente'
+
     const mensagem = stepAtual.mensagem
-      .replace(/\{nome\}/g, lead.nome || 'cliente')
+      .replace(/\{nome\}/g, primeiroNome)
+      .replace(/\{nome_completo\}/g, nomeCompleto)
       .replace(/\{nb\}/g, lead.nb || '')
       .replace(/\{escritorio\}/g, tenant?.nome || 'escritório')
 

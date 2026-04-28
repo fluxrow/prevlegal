@@ -1,25 +1,17 @@
 # Previdência Complementar — PGBL, VGBL e Fundos Fechados
 
-> Para lead de alta renda, o INSS sozinho cobre uma fração mínima do padrão de vida na aposentadoria. A previdência complementar é o pilar central do planejamento — e é onde mais existe desinformação, escolha errada de produto e perda patrimonial silenciosa.
+> Para lead de alta renda, o INSS sozinho costuma cobrir apenas uma parte do padrão de vida esperado na aposentadoria. A previdência complementar é um dos pilares centrais do planejamento — mas o agente deve usar este conteúdo para explicar estrutura e variáveis, não para entregar recomendação pronta nem projeção numérica individual.
 
 ## 1. Por que previdência complementar virou obrigatória para lead premium
 
-Profissional que ganha R$ 30 mil/mês contribui ao INSS sobre o teto (R$ 8.157,41 em 2026) — recebe, na melhor das hipóteses, o teto de aposentadoria. Isso significa **queda de 73% no padrão de vida** ao se aposentar.
-
-Para o lead premium, o cálculo é direto:
-
-| Renda atual | Aposentadoria INSS (teto) | Gap a cobrir |
-|-------------|--------------------------|--------------|
-| R$ 20.000 | R$ 8.157 | R$ 11.843 |
-| R$ 50.000 | R$ 8.157 | R$ 41.843 |
-| R$ 100.000 | R$ 8.157 | R$ 91.843 |
+Para quem tem renda acima do teto do INSS, a aposentadoria pública tende a representar apenas uma parte da renda atual. Quanto maior a diferença entre renda efetiva e teto previdenciário, maior costuma ser a necessidade de complementar por outras fontes.
 
 Esse gap é coberto por:
 - **Previdência complementar** (PGBL, VGBL, fundos fechados)
 - **Patrimônio próprio gerador de renda** (imóveis, FIIs, ações dividendos, renda fixa)
 - **Continuidade de atividade profissional pós-aposentadoria** (consultoria, conselhos)
 
-Planejamento previdenciário moderno desenha **a combinação ideal** dessas três fontes para cada perfil.
+Planejamento previdenciário moderno desenha **a combinação mais adequada** dessas fontes para cada perfil, considerando carreira, horizonte, patrimônio, tributação e objetivos.
 
 ## 2. PGBL (Plano Gerador de Benefícios Livres)
 
@@ -33,9 +25,9 @@ Você aporta dinheiro mensalmente ou em aporte único. Esse dinheiro é investid
 - O contribuinte faça **declaração completa** do IR (não a simplificada)
 - Contribua também ao INSS ou regime próprio (RPPS)
 
-Exemplo prático: profissional com renda bruta tributável anual de R$ 600 mil pode aportar até **R$ 72 mil/ano em PGBL** com dedução. Se está na alíquota de 27,5%, isso significa **R$ 19.800 a menos de IR a pagar** no ano.
+Exemplo didático: quem tem renda tributável mais alta pode usar o limite de 12% do PGBL para ganhar eficiência fiscal. O valor exato do benefício depende da renda tributável, do tipo de declaração e das demais deduções do caso.
 
-Esse benefício fiscal **é o ponto central** que diferencia PGBL de qualquer outro investimento.
+Esse benefício fiscal costuma ser um dos principais fatores a favor do PGBL, mas não elimina a necessidade de analisar tributação futura, horizonte e liquidez.
 
 ### Tributação no resgate (a contrapartida)
 
@@ -55,7 +47,7 @@ PGBL **incide IR sobre todo o saldo resgatado** (não apenas sobre os rendimento
   - Mais de 10 anos: **10%**
 - Indicado para horizonte longo (10+ anos)
 
-**Regra prática:** quem aporta com horizonte de 15-30 anos para aposentadoria deve **sempre escolher tabela regressiva**. A alíquota final de 10% é a mais baixa do mercado para investimentos com vantagem fiscal.
+Para horizontes longos, a tabela regressiva frequentemente entra na análise com força. Ainda assim, a escolha depende do padrão esperado de resgate, da renda futura e da estrutura tributária total do titular.
 
 ### Quando PGBL faz sentido
 
@@ -97,7 +89,7 @@ Em compensação, no resgate, **o IR incide apenas sobre os rendimentos** — n�
 
 ## 4. PGBL vs. VGBL — Quadro decisório
 
-| Situação | Produto recomendado |
+| Situação | Produto que costuma fazer mais sentido |
 |----------|---------------------|
 | Faz declaração completa, contribui INSS/RPPS, ainda não atingiu 12% da renda | **PGBL** |
 | Já atingiu 12% em PGBL, quer aportar mais | **VGBL** complementar |
@@ -106,7 +98,7 @@ Em compensação, no resgate, **o IR incide apenas sobre os rendimentos** — n�
 | Renda em faixa de isenção do IR | **VGBL** |
 | Foco em planejamento sucessório | **VGBL** (vantagens sucessórias) |
 
-**Estratégia comum em alta renda:** PGBL até o limite de 12% + VGBL para aportes acima disso.
+**Estratégia comum em alta renda:** combinar PGBL até onde o benefício fiscal fizer sentido e, em alguns casos, usar VGBL para aportes adicionais. Isso não substitui a análise do caso concreto.
 
 ## 5. Fundos de Pensão Fechados (Entidades Fechadas de Previdência Complementar — EFPCs)
 
@@ -131,7 +123,7 @@ Fundos previdenciários vinculados a empregador, categoria profissional ou assoc
 **Patrocínio com matching**
 A maioria oferece **matching da empresa**: para cada R$ 1,00 que o participante aporta, a empresa aporta R$ 1,00 (ou em outras proporções, geralmente 50% a 100% do aporte do participante, até um teto).
 
-**Não aderir ao percentual máximo é abrir mão de salário diferido pago pela empresa.** Esse é o erro mais caro que executivos cometem.
+Contribuir abaixo do patamar elegível de matching pode significar renunciar a contrapartida patrocinada. O agente deve tratar isso como ponto de atenção importante, mas sem transformar a resposta em ordem categórica antes de olhar regras do plano, vesting, liquidez e horizonte.
 
 **Modalidades de plano**
 - **Benefício Definido (BD):** o valor da aposentadoria é definido por fórmula. A entidade assume o risco atuarial. Modelo em extinção, mantido apenas para participantes antigos. Exemplo: PREVI antiga, PETROS antiga.
@@ -148,7 +140,7 @@ Quando o participante sai da empresa, pode portar o saldo para outro plano (PGBL
 
 Aderir? Quanto contribuir? Em que perfil de investimento alocar?
 
-A regra prática é: **se há matching da empresa, contribuir no percentual máximo elegível.** Não fazer isso é deixar dinheiro na mesa.
+Em muitos casos, principalmente quando há matching robusto, faz sentido analisar contribuição no patamar máximo elegível. A resposta correta depende das regras do plano, da permanência esperada no vínculo e da posição financeira do titular.
 
 ## 6. FUNPRESP — Fundo de Pensão dos Servidores Federais
 
@@ -167,30 +159,17 @@ Criada em 2013, opera desde outubro de 2013. Obrigatória para servidores do Jud
 - A União, como patrocinadora, **paga matching idêntico** ao percentual escolhido pelo servidor
 - Percentual mínimo: 7,5% / Percentual máximo: 8,5%
 
-**Cálculo prático:**
-Servidor que ganha R$ 25.000/mês:
-- Parcela acima do teto: R$ 25.000 - R$ 8.157 = **R$ 16.843**
-- Contribuição máxima do servidor (8,5%): R$ 1.432/mês
-- Matching da União (8,5%): **R$ 1.432/mês**
-- Total que entra no fundo: **R$ 2.864/mês**
-
-Se o servidor escolhe contribuir com 7,5% em vez de 8,5%:
-- Servidor: R$ 1.263/mês
-- União: R$ 1.263/mês
-- Total: R$ 2.526/mês
-- **Diferença mensal abrindo mão: R$ 338**
-- Em 30 anos de carreira: **mais de R$ 200 mil sem rendimentos** (com rendimentos compostos: 500-700 mil)
-
-**A escolha de não contribuir no máximo é uma das maiores perdas patrimoniais silenciosas do servidor público brasileiro.**
+**Leitura prática:**
+Pequenas diferenças percentuais na contribuição podem produzir efeitos relevantes ao longo do tempo, porque alteram tanto o aporte do servidor quanto a contrapartida da União. O agente deve usar essa lógica para mostrar importância da decisão, sem projetar patrimônio final como se já tivesse feito cálculo individual.
 
 ### Migração para FUNPRESP (servidores antigos)
 
 Servidores que ingressaram **antes** de 2013 (Executivo) ou da data correspondente (Judiciário) podem **optar voluntariamente** por migrar para o regime FUNPRESP.
 
 A análise de migração é técnica:
-- Em geral, migração é vantajosa para servidores que ainda têm muitos anos de carreira pela frente
-- Pode ser desvantajosa para quem está perto da aposentadoria
-- Recebe **benefício especial** como compensação pela renúncia ao regime antigo
+- envolve idade, tempo de serviço, regime atual, remuneração, benefício especial e horizonte até aposentadoria
+- pode levar a conclusões diferentes conforme o caso
+- recebe **benefício especial** como compensação pela renúncia ao regime antigo
 
 A decisão de migrar é **irrevogável** e exige análise atuarial individualizada.
 
@@ -213,7 +192,7 @@ Indicação de beneficiários em VGBL é confidencial. Não consta em registro p
 **4. Flexibilidade de beneficiários**
 Pode indicar quem quiser como beneficiário, em qualquer proporção, **respeitada a legítima** (50% para herdeiros necessários: filhos, cônjuge e ascendentes em alguns casos).
 
-**Para empresários e profissionais com patrimônio significativo, VGBL frequentemente faz parte da estratégia sucessória integrada — não apenas como previdência.**
+**Para empresários e profissionais com patrimônio significativo, VGBL pode integrar a estratégia sucessória** — mas deve ser analisado em conjunto com regras locais, composição patrimonial e objetivos familiares.
 
 ## 8. Como o agente deve usar esse conteúdo
 
@@ -227,11 +206,11 @@ Pode indicar quem quiser como beneficiário, em qualquer proporção, **respeita
 
 ### Frases de posicionamento
 
-> "Para o seu perfil de renda, a aposentadoria do INSS sozinha vai cobrir uma fração pequena do seu padrão de vida atual — algo entre 10% e 30%. A previdência complementar é o pilar que cobre o resto. Não é só ter PGBL ou VGBL — é dimensionar quanto cada pilar precisa contribuir e estruturar a estratégia certa para o seu horizonte."
+> "Para o seu perfil de renda, a aposentadoria do INSS tende a cobrir só uma parte do padrão de vida atual. A previdência complementar entra justamente para fechar esse desenho de forma estruturada, em vez de depender de decisão solta por produto."
 
-> "Se sua empresa oferece fundo de pensão com matching, contribuir abaixo do percentual máximo é literalmente abrir mão de salário diferido pago pela empresa. Conhece o caso de quem está deixando 4-5% de matching na mesa todo mês? Mais comum do que parece."
+> "Se sua empresa oferece fundo de pensão com matching, vale olhar com cuidado quanto desse benefício você está capturando hoje. Muitas vezes existe valor patrocinado relevante que passa despercebido."
 
-> "Para servidor federal pós-2013, a FUNPRESP é uma decisão de altíssimo impacto patrimonial. A diferença entre contribuir com 7,5% e 8,5% pode representar centenas de milhares de reais ao longo da carreira — somando o seu aporte e o matching da União."
+> "Para servidor federal pós-2013, a FUNPRESP é uma decisão de alto impacto porque mexe em contribuição própria, contrapartida da União e horizonte de longo prazo. O ponto central é entender qual estrutura faz sentido no seu caso."
 
 ### Limites do que o agente pode afirmar
 

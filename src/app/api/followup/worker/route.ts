@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { sendWhatsAppMessage } from "@/lib/whatsapp-provider";
+import { repairCommonMojibake } from "@/lib/text-repair";
 
 // Proteção por secret — chamada pelo Vercel Cron ou manualmente via header
 function authorized(request: NextRequest) {
@@ -22,8 +23,12 @@ function substituirVariaveis(
   lead: { nome?: string | null; nb?: string | null },
   tenant: { nome?: string | null },
 ) {
+  const nomeCompleto = repairCommonMojibake(String(lead.nome || "").trim());
+  const primeiroNome = nomeCompleto.split(/\s+/)[0] || "cliente";
+
   return template
-    .replace(/\{nome\}/g, lead.nome || "cliente")
+    .replace(/\{nome\}/g, primeiroNome)
+    .replace(/\{nome_completo\}/g, nomeCompleto)
     .replace(/\{nb\}/g, lead.nb || "")
     .replace(/\{escritorio\}/g, tenant.nome || "escritório");
 }

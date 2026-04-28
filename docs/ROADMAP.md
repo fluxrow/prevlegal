@@ -4,6 +4,161 @@ Contexto: [[SESSION_HISTORY_MASTER]]
 Mestra: [[MASTER_PREV_LEGAL]]
 > Última atualização: 10/04/2026
 
+## Atualizacao 2026-04-28 — Cadastro manual de planejamento deixou de depender da semântica de benefício
+
+- ajuste operacional aplicado para o caso real da Pagliuca:
+  - a tela `Novo lead` agora abre com o perfil operacional padrão do tenant, mas o operador pode trocar manualmente no próprio modal
+  - `planejamento_previdenciario` mostra:
+    - e-mail
+    - categoria profissional
+    - data de nascimento
+    - contexto inicial
+  - `beneficios_previdenciarios` continua com:
+    - `NB`
+    - banco
+    - `valor_rma`
+    - `ganho_potencial`
+- correção de backend associada:
+  - cadastro manual de `planejamento` passa a reaproveitar o lead existente quando o telefone já está na base do tenant, evitando erro de `duplicate key ... leads_nb_key`
+  - o identificador técnico legado continua sendo gerado quando necessário, mas deixa de ser o gargalo operacional
+- ajuste lateral:
+  - nomes com mojibake passaram a ser reparados em import e interpolação outbound crítica
+- impacto prático:
+  - operador pode complementar lead de planejamento sem precisar “inventar NB”
+  - a mudança não mexe no fluxo de `benefícios`
+
+## Atualizacao 2026-04-28 — Planejamento ganhou contenção extra de estilo no runtime real
+
+- após smoke manual da campanha da Pagliuca, ficou claro que o gargalo não era só técnico:
+  - o agente ainda escorregava para respostas longas
+  - reapareciam `*`, listas e texto com cara de parecer
+  - em cenário de inbound duplicado, podia nascer nova resposta para a mesma ideia
+- reforços aplicados no runtime:
+  - teto menor de tokens em `planejamento`
+  - sanitização final de WhatsApp
+  - reescrita curta quando o texto vier com cara de relatório
+  - reaproveitamento da resposta anterior em caso de inbound duplicado recente
+- leitura prática:
+  - antes de escalar volume hoje, vale rerodar exatamente o cenário real que mostrou repetição, porque esse caso agora é o canário certo do runtime
+
+## Atualizacao 2026-04-28 — Campanha de planejamento não exige verificação prévia por padrão
+
+- ajuste operacional aplicado para o caso real da Pagliuca:
+  - UI de campanhas agora desliga `apenas_verificados` por padrão quando o agente/perfil é `planejamento_previdenciario`
+  - API de criação de campanha também usa esse fallback quando a campanha de planejamento é criada sem esse campo explícito
+- comportamento preservado:
+  - `beneficios_previdenciarios` continua com verificação ligada por padrão
+- motivo:
+  - listas de planejamento com `nome + telefone` não devem travar o primeiro disparo só porque ainda não passaram por verificação formal de WhatsApp
+- regra prática:
+  - para planejamento, contato operacional válido já basta para o primeiro disparo
+  - para benefícios, manter o filtro conservador segue fazendo sentido
+
+## Atualizacao 2026-04-27 — Knowledge de planejamento foi podada; próximo alvo específico é médico PJ / pró-labore
+
+- `npm run build` passou inteiro
+- o smoke técnico `scripts/smoke-test-agent-ana.ts` foi rodado novamente após poda da knowledge de:
+  - `03_planejamento_por_perfil.md`
+  - `04_previdencia_complementar.md`
+  - `08_perguntas_tecnicas_frequentes.md`
+- mudanças aplicadas:
+  - troca de “regra prática” por “estrutura de análise”
+  - redução de cifras, percentuais e patrimônios hipotéticos
+  - redução de frases que empurravam “sempre”, “quase sempre”, “vale mais” ou “estratégia típica” cedo demais
+  - prompt total caiu de ~`33.4k` para ~`33.0k` tokens estimados no smoke
+- comportamento observado:
+  - `T4` advogado fora do repertório ficou mais consultivo e menos prescritivo
+  - `T5` dentista ficou menos assertiva e mais documental
+  - `T1` e `T3` mantiveram melhora
+  - `T2` médico PJ continua sendo o principal cenário residual de excesso numérico
+- próximo ajuste recomendado antes de ampliar volume em `planejamento`:
+  - [ ] isolar a trilha `médico PJ / pró-labore` com guardrails ainda mais fortes contra exemplos monetários e comparações de aposentadoria
+
+## Atualizacao 2026-04-27 — Playbook de planejamento endurecido e validado; próximo refinamento é perfis fora do repertório profundo
+
+- `npm run lint` passou inteiro
+- `npm run build` passou inteiro
+- o smoke técnico `scripts/smoke-test-agent-ana.ts` foi rodado novamente após ajuste de seed + runtime do `planejamento_previdenciario`
+- melhorias aplicadas:
+  - primeiro retorno pós-campanha mais curto
+  - menos markdown de relatório no WhatsApp
+  - menor teto de tokens para `planejamento`
+  - knowledge técnica passou a ser enquadrada como apoio, e não como autorização para parecer precoce
+- comportamento melhorou principalmente em:
+  - `T1` magistrado/FUNPRESP
+  - `T3` executivo/PGBL
+  - `T6` pedido de valor específico
+- risco residual:
+  - `T2` médico PJ ainda puxa números ilustrativos demais
+  - `T4` advogado fora do repertório ainda assume contexto demais em vez de descobrir
+  - `T5` dentista ainda fica mais assertiva do que o ideal para pergunta inicial
+- próximo ajuste recomendado antes de escalar volume em campanhas de `planejamento`:
+  - [ ] separar guardrails mais duros para perfis fora do repertório profundo
+  - [ ] revisar a knowledge de `planejamento` para podar exemplos numéricos que puxam resposta de “parecer”
+  - [ ] rodar smoke real no WhatsApp com atenção especial ao primeiro retorno técnico do lead
+
+## Atualizacao 2026-04-27 — build/lint verdes + smoke técnico do planejamento rodando, mas com novo ajuste recomendado antes da primeira campanha
+
+- `npm run lint` passou inteiro
+- `npm run build` passou inteiro
+- o typecheck do app foi isolado do runtime Deno de `supabase/functions/*`, evitando falso negativo no build do Next
+- o smoke técnico `scripts/smoke-test-agent-ana.ts` voltou a rodar ponta a ponta com o runtime real do playbook de `planejamento_previdenciario`
+- achados do smoke técnico:
+  - runtime ativo e base de conhecimento carregando
+  - porém o prompt de planejamento ficou grande demais (`132299` chars, ~`33k` tokens estimados antes da pergunta do lead)
+  - cada cenário ficou entrando na Anthropic com ~`42.8k` tokens de input, custo alto demais para operação recorrente
+  - o agente ainda tende a:
+    - responder com blocos longos demais
+    - cravar inclinação estratégica cedo demais
+    - inventar números ilustrativos demais para um momento que ainda deveria ser consultivo
+- recomendação operacional imediata antes da primeira campanha de planejamento:
+  - [x] endurecer guardrails específicos de `planejamento_previdenciario` para:
+    - não sugerir que uma opção "frequentemente é vantajosa" sem análise individual
+    - não estimar valores, diferenças patrimoniais, tempo exato de antecipação ou mix percentual de renda sem CNIS/documentação
+    - priorizar `1-2` perguntas de descoberta antes de aula técnica longa
+    - limitar o primeiro retorno técnico a blocos curtos
+  - [ ] reduzir a carga do prompt de planejamento:
+    - resumir a knowledge base injetada
+    - ou quebrar a base por tema / roteamento contextual
+    - ou gerar uma versão “pre-campanha” mais curta para o primeiro turno
+- importante:
+  - este ajuste é de `planejamento_previdenciario`
+  - não deve contaminar o playbook curto e de credibilidade inicial de `beneficios_previdenciarios`
+
+## Atualizacao 2026-04-27 — Campanhas ganharam worker próprio e diagnóstico de elegibilidade/disparo
+
+- investigando o relato de que uma campanha de `benefícios` com expectativa de `~50` contatos só tinha conseguido disparar `3-4`, ficou claro que o problema não era apenas “lista ruim”
+- causa estrutural identificada:
+  - `POST /api/campanhas/[id]/disparar` fazia o loop inteiro do disparo dentro da própria requisição
+  - a rota ainda aplicava:
+    - delay aleatório entre mensagens
+    - pausa entre lotes
+    - cap de `warmup` do canal
+  - em campanhas médias, especialmente com warm-up ativo, isso podia estourar a janela da função antes de concluir o lote
+- correção aplicada:
+  - criação de `src/lib/campaign-dispatch.ts`
+  - criação de `POST/GET /api/campanhas/worker`
+  - novo cron em `vercel.json` para `/api/campanhas/worker` a cada minuto
+  - `POST /api/campanhas/[id]/disparar` agora:
+    - ativa a campanha
+    - processa só o primeiro passo
+    - devolve diagnóstico com:
+      - total bruto
+      - sem contato resolvido
+      - filtrados por `apenas_verificados`
+      - elegíveis
+      - tentados hoje
+      - cap efetivo de warmup / lote / delay
+  - o restante segue em worker, sem depender de uma única request longa
+- impacto prático:
+  - campanhas de `benefícios` deixam de ficar truncadas por timeout silencioso
+  - o operador passa a ter pistas melhores quando o gargalo for:
+    - `warmup`
+    - `apenas_verificados`
+    - falta de contato resolvido
+- próximo ajuste recomendado nessa frente:
+  - [ ] mostrar esse diagnóstico também na UI de campanhas, não só na resposta da API
+
 ## Atualizacao Observabilidade / logging bruto de tokens do agente entrou no pre-go-live — 18/04/2026
 
 - [x] Logging bruto de tokens do agente (pré-go-live)

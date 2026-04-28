@@ -3,8 +3,13 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { UserPlus } from 'lucide-react'
 import NovoLeadModal from './novo-lead-modal'
+import type { OperationProfile } from '@/lib/operation-profile'
 
-export default function LeadsNovoLeadButton() {
+interface LeadsNovoLeadButtonProps {
+  operationProfile: OperationProfile
+}
+
+export default function LeadsNovoLeadButton({ operationProfile }: LeadsNovoLeadButtonProps) {
   const [open, setOpen] = useState(false)
   const router = useRouter()
 
@@ -23,6 +28,7 @@ export default function LeadsNovoLeadButton() {
 
       {open && (
         <NovoLeadModal
+          operationProfile={operationProfile}
           onClose={() => setOpen(false)}
           onCriado={() => {
             setOpen(false)

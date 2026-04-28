@@ -137,9 +137,9 @@ Regra absoluta: **nunca afirmar valor específico, regra específica ou recomend
 
 **Resposta direta:** FUNPRESP é a previdência complementar dos servidores federais. **Obrigatória** para quem ingressou no serviço público federal após a criação da entidade no respectivo poder (Executivo: 2013, Judiciário: 2013, cada poder tem sua data). Cobre a parcela de remuneração que excede o teto do RGPS.
 
-**Detalhe:** Servidor contribui entre 7,5% e 8,5% sobre a parcela acima do teto, com **matching idêntico da União**. Escolher 8,5% em vez de 7,5% representa mais R$ 100-500/mês de "salário diferido" pago pela União, dependendo do salário — ao longo de 30 anos, pode somar R$ 500 mil a R$ 1 milhão de diferença no saldo acumulado.
+**Detalhe:** Servidor contribui entre 7,5% e 8,5% sobre a parcela acima do teto, com **matching idêntico da União**. Pequenas diferenças no percentual podem produzir efeito relevante no longo prazo porque alteram tanto o aporte próprio quanto a contrapartida patrocinada.
 
-**Conexão:** "Não aderir ao percentual máximo é abrir mão de remuneração paga pelo empregador. Para servidores federais pós-2013, é uma das decisões previdenciárias mais importantes."
+**Conexão:** "Para servidores federais pós-2013, o ponto central é entender como o percentual escolhido conversa com o horizonte de carreira, a remuneração e os objetivos de longo prazo."
 
 ### 13. "Militar se aposenta com que idade?"
 
@@ -181,7 +181,7 @@ Regra absoluta: **nunca afirmar valor específico, regra específica ou recomend
 
 **Ressalva:** Consultório particular sem exposição hospitalar geralmente não caracteriza atividade especial. Médico com trajetória mista (hospital + consultório) tem tempo especial apenas nos períodos hospitalares.
 
-**Conexão:** "Análise de tempo especial para médico é um dos pontos mais impactantes do planejamento da categoria — pode antecipar aposentadoria em 10-15 anos. Exige reconstituição da trajetória e análise documental."
+**Conexão:** "Análise de tempo especial para médico pode ser muito relevante na categoria, mas exige reconstituição da trajetória e análise documental antes de qualquer conclusão segura."
 
 ### 17. "Dentista também tem aposentadoria especial?"
 
@@ -189,7 +189,7 @@ Regra absoluta: **nunca afirmar valor específico, regra específica ou recomend
 
 **Detalhe:** Categoria reconhecida historicamente como exposta a agentes biológicos. Com os EPIs atuais e protocolos de biossegurança, a discussão se complica — alguns julgados do INSS negam sob argumento de proteção adequada. Frequentemente resolvido judicialmente.
 
-**Conexão:** "Dentista frequentemente descobre esse direito tardiamente. Análise documental pode reconstruir tempo especial e gerar ganho significativo em tempo e valor."
+**Conexão:** "Dentista frequentemente só entende esse tema quando revisa documentação e histórico de exposição. A análise documental é que mostra se existe tempo especial útil e qual o impacto real no caso."
 
 ### 18. "Policial tem regra especial de aposentadoria?"
 
@@ -206,7 +206,7 @@ Regra absoluta: **nunca afirmar valor específico, regra específica ou recomend
 
 **Resposta direta:** **Sim, é possível.** Servidores que ingressaram **antes** da criação da FUNPRESP no respectivo poder (Executivo antes de 2013, por exemplo) podem **voluntariamente optar** por migrar para o novo regime, recebendo **benefício especial** como compensação pela renúncia ao regime antigo.
 
-**Ressalva:** A decisão de migrar é **irrevogável**. Em geral é vantajosa para servidores com muitos anos ainda pela frente, e pode ser desvantajosa para quem está perto da aposentadoria.
+**Ressalva:** A decisão de migrar é **irrevogável**. Idade, tempo de serviço, remuneração, benefício especial e horizonte podem levar a conclusões diferentes conforme o caso.
 
 **Conexão:** "Análise de viabilidade da migração FUNPRESP exige cálculo atuarial individualizado — considera idade, tempo de serviço, salário e horizonte. É uma das decisões mais complexas do planejamento para servidor antigo."
 
@@ -282,12 +282,12 @@ Regra absoluta: **nunca afirmar valor específico, regra específica ou recomend
 
 ### 26. "PGBL ou VGBL — qual é melhor?"
 
-**Resposta direta:** Depende do seu perfil tributário. **Regra prática:**
+**Resposta direta:** Depende do seu perfil tributário. Como ponto de partida:
 
 - **PGBL**: se você faz **declaração completa** do IR E contribui para INSS/RPPS. Dedução de até 12% da renda bruta tributável. No resgate, IR incide sobre **todo o saldo**.
 - **VGBL**: se você faz declaração simplificada, não contribui ao INSS/RPPS, ou já atingiu o limite de 12% em PGBL. Sem dedução no aporte. No resgate, IR incide apenas sobre os **rendimentos**.
 
-**Estratégia comum para alta renda:** PGBL até o limite de 12% da renda tributável + VGBL complementar para aportes acima disso.
+**Estratégia comum para alta renda:** em alguns casos, usar PGBL até onde o benefício fiscal fizer sentido e complementar com VGBL para aportes adicionais.
 
 **Conexão:** "A escolha ótima no seu caso depende da sua estrutura tributária — faixa de IR, tipo de declaração, outras deduções. Análise específica define a estratégia."
 
@@ -302,7 +302,7 @@ Regra absoluta: **nunca afirmar valor específico, regra específica ou recomend
 - 8-10 anos: 15%
 - Mais de 10 anos: **10%**
 
-**Detalhe:** Para quem vai resgatar em horizonte longo (10+ anos), 10% é a menor alíquota do mercado entre investimentos com vantagem fiscal. Muito inferior à alíquota máxima da tabela progressiva (27,5%).
+**Detalhe:** Para quem vai resgatar em horizonte longo, a regressiva costuma entrar forte na análise. Ainda assim, isso precisa ser comparado com a renda esperada no resgate e com o padrão de uso do plano.
 
 **Ressalva:** Tabela regressiva é **irrevogável**. Escolheu, não muda. Se você for resgatar antes de 10 anos e em valores pequenos (que cairiam em faixa isenta da progressiva), a progressiva pode ser melhor.
 
@@ -321,9 +321,9 @@ Regra absoluta: **nunca afirmar valor específico, regra específica ou recomend
 
 ### 29. "Vale a pena PGBL do banco?"
 
-**Resposta direta:** PGBL de grande banco de varejo **frequentemente tem taxas altas** (carregamento de 2-5% + administração de 2-4% ao ano) que corroem a rentabilidade de longo prazo.
+**Resposta direta:** Alguns PGBLs de grande banco de varejo têm taxas altas e podem comprometer o resultado de longo prazo. A qualidade do produto depende do plano específico.
 
-**Detalhe:** Existem alternativas com taxas muito menores — corretoras independentes, bancos digitais especializados, seguradoras de private. Para patrimônio de R$ 100k+, a diferença de taxas pode representar 20-30% menor saldo final em 20 anos.
+**Detalhe:** Existem alternativas com custos menores, e diferenças de taxa acumuladas por muitos anos podem impactar bastante o saldo final. O agente deve usar isso para justificar auditoria do produto, não para cravar troca imediata.
 
 **Ressalva:** Alguns PGBLs de banco são decentes, especialmente em planos empresariais com negociação coletiva. Análise depende do produto específico.
 
@@ -343,9 +343,9 @@ Regra absoluta: **nunca afirmar valor específico, regra específica ou recomend
 
 ### 31. "Meu patrão oferece fundo de pensão. Devo aderir?"
 
-**Resposta direta:** **Quase sempre sim**, especialmente se houver matching (contribuição da empresa junto à sua). Não aderir ao matching máximo é literalmente abrir mão de salário diferido pago pela empresa.
+**Resposta direta:** Muitas vezes faz sentido, especialmente se houver matching (contribuição da empresa junto à sua). Mas a decisão deve considerar regras do plano, vesting, custos, liquidez e horizonte.
 
-**Exemplo:** Empresa oferece matching de 100% até 7% do salário. Você que ganha R$ 15k/mês e contribui com 3% (R$ 450), perde R$ 600/mês de matching que a empresa pagaria se você contribuísse com 7% (R$ 1.050). Em 30 anos: R$ 216k sem rendimentos — com rendimentos compostos, pode passar de R$ 700k.
+**Exemplo conceitual:** se a empresa aporta junto até certo percentual, contribuir abaixo desse limite pode significar abrir mão de contrapartida relevante ao longo do tempo.
 
 **Ressalva:** Avaliar se o fundo fechado da empresa tem taxas razoáveis e perfil de investimento adequado. Alguns fundos antigos são menos competitivos.
 
@@ -371,7 +371,7 @@ Regra absoluta: **nunca afirmar valor específico, regra específica ou recomend
 
 ### 33. "Empresário deve pagar pró-labore alto?"
 
-**Resposta direta:** Para quem pensa em aposentadoria pública relevante: **geralmente sim**. Pró-labore no teto do INSS garante contribuição máxima e aposentadoria potencial no teto. Custo: R$ 897/mês (11%) de contribuição do sócio + 20% patronal que a empresa paga sobre o pró-labore.
+**Resposta direta:** Depende. Para quem quer fortalecer a cobertura do INSS, subir o pró-labore pode fazer sentido. Mas a decisão correta precisa equilibrar custo tributário, proteção previdenciária, patrimônio e horizonte.
 
 **Detalhe:** Tentação clássica é pró-labore mínimo (1 SM) para economizar tributo. Economia imediata, mas:
 - Aposentadoria do INSS mínima (salário mínimo)
@@ -379,12 +379,7 @@ Regra absoluta: **nunca afirmar valor específico, regra específica ou recomend
 - Salário-maternidade mínimo
 - Pensão por morte mínima para dependentes
 
-**Análise comparativa em 30 anos:**
-- Pró-labore mínimo: aposentadoria ~R$ 1.500
-- Pró-labore no teto: aposentadoria ~R$ 8.000+
-- Diferença em 20 anos de aposentadoria recebida: ~R$ 1,5 milhão
-
-**Conexão:** "Valor ótimo de pró-labore no seu caso depende de idade, outras fontes de renda, patrimônio e objetivos. Planejamento projeta cenários e recomenda."
+**Conexão:** "Valor ótimo de pró-labore no seu caso depende de idade, outras fontes de renda, patrimônio e objetivos. O planejamento projeta cenários e mostra os trade-offs antes de qualquer decisão."
 
 ### 34. "Médico autônomo deve abrir PJ?"
 
@@ -399,7 +394,7 @@ Regra absoluta: **nunca afirmar valor específico, regra específica ou recomend
 - Pró-labore mínimo reduz contribuição e reduz aposentadoria futura
 - Carnê leão (autônomo) garante contribuição no teto automaticamente sobre o que se ganha até o teto
 
-**Conexão:** "Para médico autônomo pesando abertura de PJ, análise integrada considera impacto tributário + impacto previdenciário. Frequentemente a conclusão certa é abrir PJ **e** estruturar pró-labore estratégico."
+**Conexão:** "Para médico autônomo pensando em abrir PJ, a análise integrada considera impacto tributário + impacto previdenciário. Em alguns casos a PJ faz sentido; em outros, o melhor desenho depende da estrutura real de renda e contribuição."
 
 ### 35. "Advogado autônomo pode usar a caixa de assistência da OAB?"
 
@@ -409,7 +404,7 @@ Regra absoluta: **nunca afirmar valor específico, regra específica ou recomend
 
 **Ressalva:** Antes de aderir, vale comparar taxas e rentabilidade histórica com alternativas de mercado (PGBL/VGBL independente). Em alguns casos, CAA é competitiva; em outros, produto de mercado é melhor.
 
-**Conexão:** "Planejamento para advogado frequentemente compara essas opções e dimensiona a estrutura ótima — CAA, INSS, PGBL, patrimônio próprio."
+**Conexão:** "Planejamento para advogado pode comparar essas opções e dimensionar uma estrutura coerente entre CAA, INSS, previdência privada e patrimônio próprio."
 
 ### 36. "Executivo com stock options: como planejar previdência?"
 
