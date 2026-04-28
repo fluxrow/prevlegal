@@ -1,7 +1,8 @@
 'use client'
 
+import Link from 'next/link'
 import { useState, useRef } from 'react'
-import { Upload, FileSpreadsheet, CheckCircle2, AlertCircle, Loader2, ArrowLeft } from 'lucide-react'
+import { FileSpreadsheet, CheckCircle2, AlertCircle, Loader2, ArrowLeft } from 'lucide-react'
 
 type ImportStats = {
   total_registros: number
@@ -52,9 +53,9 @@ export default function ImportPage() {
   return (
     <div style={{ padding: '32px', maxWidth: '800px' }}>
       <div style={{ marginBottom: '28px' }}>
-        <a href="/leads" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: 'var(--text-muted)', fontSize: '13px', textDecoration: 'none', marginBottom: '16px' }}>
+        <Link href="/leads" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: 'var(--text-muted)', fontSize: '13px', textDecoration: 'none', marginBottom: '16px' }}>
           <ArrowLeft size={14} /> Voltar para Leads
-        </a>
+        </Link>
         <h1 style={{ fontFamily: 'Syne, sans-serif', fontSize: '22px', fontWeight: '700', color: 'var(--text-primary)', letterSpacing: '-0.5px', marginBottom: '4px' }}>Importar Lista</h1>
         <p style={{ color: 'var(--text-muted)', fontSize: '13px', lineHeight: 1.5 }}>
           O importador agora aceita planilhas em ordem variável quando houver cabeçalhos reconhecíveis.
@@ -154,7 +155,7 @@ export default function ImportPage() {
             </div>
           )}
           <div style={{ marginTop: '14px', textAlign: 'center' }}>
-            <a href="/leads" style={{ color: 'var(--accent)', fontSize: '13px', textDecoration: 'none' }}>Ver Kanban atualizado →</a>
+            <Link href="/leads" style={{ color: 'var(--accent)', fontSize: '13px', textDecoration: 'none' }}>Ver Kanban atualizado →</Link>
           </div>
         </div>
       )}

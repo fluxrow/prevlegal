@@ -1,7 +1,6 @@
 import {
   DEFAULT_OPERATION_PROFILE,
   normalizeOperationProfile,
-  type OperationProfile,
 } from "@/lib/operation-profile";
 
 type TemplateMap = Record<string, string>;

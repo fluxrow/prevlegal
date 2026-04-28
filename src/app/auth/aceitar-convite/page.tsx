@@ -15,7 +15,7 @@ function AceitarConviteForm() {
   const searchParams = useSearchParams()
   const supabase = createClient()
   const token = searchParams.get('token')
-  const [status, setStatus] = useState<'loading' | 'valido' | 'invalido' | 'obsoleto' | 'registrando' | 'sucesso' | 'erro'>('loading')
+  const [status, setStatus] = useState<'loading' | 'valido' | 'invalido' | 'obsoleto' | 'registrando' | 'sucesso' | 'erro'>(() => token ? 'loading' : 'invalido')
   const [convite, setConvite] = useState<Convite | null>(null)
   const [nome, setNome] = useState('')
   const [senha, setSenha] = useState('')
@@ -23,14 +23,22 @@ function AceitarConviteForm() {
   const [staleEmail, setStaleEmail] = useState('')
 
   useEffect(() => {
-    if (!token) { setStatus('invalido'); return }
+    if (!token) return
+
+    let cancelled = false
+
     fetch(`/api/usuarios/convite?token=${token}`)
       .then(r => r.json())
       .then(d => {
+        if (cancelled) return
         if (d.convite) { setConvite(d.convite); setStatus('valido') }
         else if (d.stale) { setStaleEmail(d.email || ''); setStatus('obsoleto') }
         else setStatus('invalido')
       })
+
+    return () => {
+      cancelled = true
+    }
   }, [token])
 
   async function aceitar() {

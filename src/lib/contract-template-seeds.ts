@@ -5,8 +5,25 @@ import {
   type ContractTemplateSeedTenant,
 } from '@/lib/contract-templates'
 
+type QueryError = {
+  message: string
+}
+
+type ContractTemplateSeedSelectQuery = {
+  eq: (column: string, value: string) => ContractTemplateSeedSelectQuery
+  limit: (count: number) => ContractTemplateSeedSelectQuery
+  maybeSingle: () => PromiseLike<{ data: { id: string } | null; error: QueryError | null }>
+}
+
+type ContractTemplateSeedSupabase = {
+  from: (table: string) => {
+    select: (columns: string) => ContractTemplateSeedSelectQuery
+    insert: (values: Record<string, unknown>) => PromiseLike<{ error: QueryError | null }>
+  }
+}
+
 export async function seedDefaultPlanningContractTemplate(
-  supabase: any,
+  supabase: ContractTemplateSeedSupabase,
   tenant: ContractTemplateSeedTenant,
 ) {
   if (!tenant?.id || !shouldSeedPagliucaPlanningTemplate(tenant)) {

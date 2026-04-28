@@ -1,10 +1,10 @@
-import { createClient } from '@supabase/supabase-js'
+import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 
 export type DocumentSourceType = 'lead_documento' | 'agent_document'
 export type DocumentProcessingStatus = 'pending' | 'processing' | 'done' | 'failed'
 
 type SupabaseLike = {
-  from: (table: string) => any
+  from: SupabaseClient['from']
   storage: {
     from: (bucket: string) => {
       createSignedUrl: (path: string, expiresIn: number) => Promise<{
@@ -100,6 +100,25 @@ type ParseDocumentResult = {
   chunks?: ParsedDocumentChunk[]
 }
 
+type LeadDocumentRecord = Record<string, unknown> & {
+  id: string
+}
+
+type DocumentJobStatusRow = {
+  source_id: string
+  status: string | null
+  error_message: string | null
+  finished_at: string | null
+}
+
+type ParsedDocumentSummaryRow = {
+  source_id: string
+  doc_type_guess: string | null
+  plain_text: string | null
+  markdown: string | null
+  updated_at: string | null
+}
+
 export function createDocumentProcessingAdminClient() {
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -189,7 +208,7 @@ export async function queueDocumentProcessingJob(
 
 export async function mergeLeadDocumentsWithProcessing(
   supabase: Pick<SupabaseLike, 'from'>,
-  documents: Array<Record<string, any>>,
+  documents: LeadDocumentRecord[],
 ) {
   const ids = documents.map((doc) => doc.id).filter(Boolean)
   if (ids.length === 0) return documents
@@ -229,11 +248,11 @@ export async function mergeLeadDocumentsWithProcessing(
     throw new Error(parsedError.message)
   }
 
-  const jobsBySource = new Map<string, Record<string, any>>(
-    (jobs || []).map((job: Record<string, any>) => [job.source_id, job]),
+  const jobsBySource = new Map<string, DocumentJobStatusRow>(
+    ((jobs || []) as DocumentJobStatusRow[]).map((job) => [job.source_id, job]),
   )
-  const parsedBySource = new Map<string, Record<string, any>>(
-    (parsed || []).map((entry: Record<string, any>) => [entry.source_id, entry]),
+  const parsedBySource = new Map<string, ParsedDocumentSummaryRow>(
+    ((parsed || []) as ParsedDocumentSummaryRow[]).map((entry) => [entry.source_id, entry]),
   )
 
   return documents.map((doc) => {

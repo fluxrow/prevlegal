@@ -40,13 +40,6 @@ function parseDate(val: unknown): string | null {
   return null;
 }
 
-function parseGanho(val: unknown): number | null {
-  if (!val) return null
-  const s = String(val).replace(/[R$\s.]/g, '').replace(',', '.')
-  const n = parseFloat(s)
-  return isNaN(n) ? null : n
-}
-
 async function main() {
   console.log('📂 Lendo planilha...')
   const wb = XLSX.readFile(PLANILHA)

@@ -23,13 +23,38 @@ Este guia existe para responder:
 ## Fluxo certo de campanha
 
 1. campanha sai de `rascunho` ou `pausada`
-2. seleciona leads da lista ou seleção personalizada
-3. resolve o contato operacional correto
-4. resolve o canal WhatsApp do tenant
-5. envia a mensagem
-6. cria ou reaproveita `conversa`
-7. espelha outbound na trilha da thread
-8. se o lead responder e a conversa estiver em `agente`, o runtime continua o atendimento
+2. `POST /api/campanhas/[id]/disparar` ativa a campanha e processa só o primeiro passo
+3. o worker de campanhas continua o restante por scheduler
+4. seleciona leads da lista ou seleção personalizada
+5. resolve o contato operacional correto
+6. resolve o canal WhatsApp do tenant
+7. envia a mensagem
+8. cria ou reaproveita `conversa`
+9. espelha outbound na trilha da thread
+10. se o lead responder e a conversa estiver em `agente`, o runtime continua o atendimento
+
+## Regra de arquitetura
+
+- campanha média ou grande não deve depender de uma única request síncrona
+- se houver:
+  - delay entre mensagens
+  - pausa entre lotes
+  - cap de warm-up
+  - limite diário
+  isso precisa ser executado por worker / scheduler
+- o click manual pode iniciar a campanha e disparar o primeiro passo
+- o restante deve seguir por `worker`, não por `sleep` longo na request
+
+## Diagnóstico mínimo que o backend deve expor
+
+- total bruto de leads considerados
+- quantos ficaram sem contato resolvido
+- quantos foram filtrados por `apenas_verificados`
+- quantos estavam elegíveis de fato
+- quantos já foram tentados
+- quantos ainda restam
+- cap efetivo de `warmup` / lote / delay
+- disponibilidade do dia (`tentados hoje` vs `disponível hoje`)
 
 ## Regras de contato
 

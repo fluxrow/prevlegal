@@ -95,7 +95,7 @@ async function runImport() {
     const sheetName = workbook.SheetNames[0]
     
     // Ler como array bidimensional porque a planilha real NÃO tem cabeçalho
-    const rowsArray = xlsx.utils.sheet_to_json<any[]>(workbook.Sheets[sheetName], { header: 1 })
+    const rowsArray = xlsx.utils.sheet_to_json<unknown[]>(workbook.Sheets[sheetName], { header: 1 })
 
     console.log(`Registros brutos lidos (sem cabeçalho na planilha): ${rowsArray.length}`)
     
@@ -137,7 +137,7 @@ async function runImport() {
     let ignored = 0;
 
     for (const row of dedupedRows) {
-        let nbStr = String(row[0] || '').replace(/\D/g, '');
+        const nbStr = String(row[0] || '').replace(/\D/g, '');
         const statusRow = String(row[43] || '').trim();
         const cpf = String(row[7] || '').replace(/\D/g, '');
 

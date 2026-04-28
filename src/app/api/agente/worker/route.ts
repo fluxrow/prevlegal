@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
     mensagem_id: string
     conversa_id: string | null
     status: string
-    detalhe?: string
+    detalhe?: string | null
   }> = []
 
   for (const row of messagesToProcess) {

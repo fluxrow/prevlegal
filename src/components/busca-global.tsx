@@ -213,7 +213,7 @@ export default function BuscaGlobal() {
         {query.length >= 2 && !loading && resultados.length === 0 && (
           <div style={{ padding: '32px', textAlign: 'center' }}>
             <p style={{ fontSize: '13px', color: 'var(--text-muted)', margin: 0 }}>
-              Nenhum resultado para <strong style={{ color: 'var(--text-secondary)' }}>"{query}"</strong>
+              Nenhum resultado para <strong style={{ color: 'var(--text-secondary)' }}>&quot;{query}&quot;</strong>
             </p>
           </div>
         )}

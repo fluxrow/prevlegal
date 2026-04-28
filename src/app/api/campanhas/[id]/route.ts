@@ -4,6 +4,10 @@ import { createClient as createAdmin } from '@supabase/supabase-js'
 import { createClient as createServerClient } from '@/lib/supabase/server'
 import { getTenantContext } from '@/lib/tenant-context'
 
+function getErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : String(error || 'Erro desconhecido')
+}
+
 function createAdminClient() {
   return createAdmin(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -54,7 +58,7 @@ export async function PATCH(
       'status',
     ]
 
-    const updates: Record<string, any> = {}
+    const updates: Record<string, unknown> = {}
     for (const key of allowed) {
       if (key in body) {
         updates[key] = body[key]
@@ -79,8 +83,8 @@ export async function PATCH(
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
     return NextResponse.json({ campanha: data })
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 })
+  } catch (err: unknown) {
+    return NextResponse.json({ error: getErrorMessage(err) }, { status: 500 })
   }
 }
 
@@ -120,7 +124,7 @@ export async function DELETE(
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
     return NextResponse.json({ success: true })
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 })
+  } catch (err: unknown) {
+    return NextResponse.json({ error: getErrorMessage(err) }, { status: 500 })
   }
 }

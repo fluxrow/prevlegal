@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import { GitMerge, Plus, RefreshCw, Trash2, Play, X, ChevronDown, ChevronUp } from 'lucide-react'
 
 export interface EventTrigger {
@@ -26,6 +26,10 @@ type TriggerFormData = {
   cancelar_followups_rodando: boolean
   enviar_mensagem_transicao: boolean
   mensagem_transicao_texto: string | null
+}
+
+function getErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : 'Erro desconhecido'
 }
 
 const STATUS_LABELS: Record<string, string> = {
@@ -77,7 +81,7 @@ export default function TriggerConfig() {
   })
 
   // Loaders
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       setLoading(true)
       setError('')
@@ -102,15 +106,19 @@ export default function TriggerConfig() {
       setFollowupRules(rData)
       setAgentes(aData)
       
-      if (!editingTrigger && rData.length > 0 && formData.acao_tipo === 'iniciar_followup' && !formData.acao_ref_id) {
-          setFormData(prev => ({...prev, acao_ref_id: rData[0].id}))
+      if (!editingTrigger && rData.length > 0) {
+        setFormData((prev) => (
+          prev.acao_tipo === 'iniciar_followup' && !prev.acao_ref_id
+            ? { ...prev, acao_ref_id: rData[0].id }
+            : prev
+        ))
       }
-    } catch (e: any) {
-      setError(e.message)
+    } catch (error: unknown) {
+      setError(getErrorMessage(error))
     } finally {
       setLoading(false)
     }
-  }
+  }, [editingTrigger])
 
   const regrasAtivas = followupRules.filter((regra) => regra.ativo !== false)
   const agentesAtivos = agentes.filter((agente) => agente.ativo !== false)
@@ -207,8 +215,8 @@ export default function TriggerConfig() {
   }
 
   useEffect(() => {
-    fetchData()
-  }, [])
+    void fetchData()
+  }, [fetchData])
 
   // Handlers
   const handleSave = async () => {
@@ -296,10 +304,10 @@ export default function TriggerConfig() {
         tone: feedbackTone,
         text: `${detalhes ? `${data?.message || 'Templates aplicados.'} ${detalhes}` : (data?.message || 'Templates aplicados.')}${unavailableDetails}`,
       })
-    } catch (err: any) {
+    } catch (error: unknown) {
       setSeedFeedback({
         tone: 'error',
-        text: err?.message || 'Erro ao aplicar templates PrevLegal',
+        text: getErrorMessage(error) || 'Erro ao aplicar templates PrevLegal',
       })
     } finally {
       setIsSeeding(false)

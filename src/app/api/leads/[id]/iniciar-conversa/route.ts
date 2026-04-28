@@ -11,10 +11,6 @@ function createAdminSupabase() {
   )
 }
 
-function applyTenantFilter(query: any, tenantId: string | null) {
-  return tenantId ? query.eq('tenant_id', tenantId) : query.is('tenant_id', null)
-}
-
 async function promoteLeadToContactedIfNew(
   supabase: ReturnType<typeof createAdminSupabase>,
   tenantId: string | null,
@@ -65,7 +61,7 @@ export async function POST(
     .from('leads')
     .select('id, nome, telefone, tenant_id, status')
     .eq('id', id)
-  leadQuery = applyTenantFilter(leadQuery, context.tenantId)
+  leadQuery = context.tenantId ? leadQuery.eq('tenant_id', context.tenantId) : leadQuery.is('tenant_id', null)
 
   const { data: lead, error: leadError } = await leadQuery.maybeSingle()
   if (leadError || !lead) {
@@ -80,7 +76,7 @@ export async function POST(
     .from('conversas')
     .select('id')
     .eq('lead_id', lead.id)
-  conversaQuery = applyTenantFilter(conversaQuery, context.tenantId)
+  conversaQuery = context.tenantId ? conversaQuery.eq('tenant_id', context.tenantId) : conversaQuery.is('tenant_id', null)
 
   let { data: conversa } = await conversaQuery.limit(1).maybeSingle()
 

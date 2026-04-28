@@ -37,34 +37,36 @@ export default function PrepararMinutaLead({ lead }: Props) {
   const [generated, setGenerated] = useState<{ pdf_url: string } | null>(null)
   const [markingReady, setMarkingReady] = useState(false)
 
-  async function fetchTemplates() {
-    const res = await fetch('/api/contract-templates')
-    const json = await res.json()
-    if (res.status === 403) {
-      setCanUse(false)
-      return
-    }
-    if (!res.ok) {
-      toast.error(json?.error || 'Não foi possível carregar templates de contrato')
-      return
-    }
-    setCanUse(true)
-    setTemplates((json.templates || []).filter((item: Template) => item.ativo))
-  }
-
   useEffect(() => {
-    void fetchTemplates()
+    let cancelled = false
+
+    const loadTemplates = async () => {
+      const res = await fetch('/api/contract-templates')
+      const json = await res.json()
+      if (cancelled) return
+
+      if (res.status === 403) {
+        setCanUse(false)
+        return
+      }
+      if (!res.ok) {
+        toast.error(json?.error || 'Não foi possível carregar templates de contrato')
+        return
+      }
+      setCanUse(true)
+      setTemplates((json.templates || []).filter((item: Template) => item.ativo))
+    }
+
+    void loadTemplates()
+
+    return () => {
+      cancelled = true
+    }
   }, [])
 
   useEffect(() => {
-    if (!open || !templateId) {
-      setPreviewValues({})
-      setMissingFields([])
-      setManualValues({})
-      return
-    }
+    if (!open || !templateId) return
 
-    setLoading(true)
     fetch(`/api/leads/${lead.id}/preparar-minuta?template_id=${templateId}`)
       .then(async (res) => {
         const json = await res.json()
@@ -142,7 +144,14 @@ export default function PrepararMinutaLead({ lead }: Props) {
   return (
     <>
       <button
-        onClick={() => setOpen(true)}
+        onClick={() => {
+          setGenerated(null)
+          setMissingFields([])
+          setPreviewValues({})
+          setManualValues({})
+          setLoading(false)
+          setOpen(true)
+        }}
         style={{
           display: 'inline-flex',
           alignItems: 'center',
@@ -172,7 +181,14 @@ export default function PrepararMinutaLead({ lead }: Props) {
             zIndex: 1000,
             padding: '24px',
           }}
-          onClick={() => setOpen(false)}
+          onClick={() => {
+            setOpen(false)
+            setGenerated(null)
+            setMissingFields([])
+            setPreviewValues({})
+            setManualValues({})
+            setLoading(false)
+          }}
         >
           <div
             style={{
@@ -195,7 +211,14 @@ export default function PrepararMinutaLead({ lead }: Props) {
                   Gere a minuta com os dados do lead preenchidos e deixe o PDF pronto para revisão/envio manual.
                 </p>
               </div>
-              <button onClick={() => setOpen(false)} style={{ border: 'none', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '22px' }}>
+              <button onClick={() => {
+                setOpen(false)
+                setGenerated(null)
+                setMissingFields([])
+                setPreviewValues({})
+                setManualValues({})
+                setLoading(false)
+              }} style={{ border: 'none', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '22px' }}>
                 ×
               </button>
             </div>
@@ -208,6 +231,7 @@ export default function PrepararMinutaLead({ lead }: Props) {
                 <select
                   value={templateId}
                   onChange={(e) => {
+                    setLoading(true)
                     setTemplateId(e.target.value)
                     setGenerated(null)
                     setManualValues({})
@@ -327,7 +351,14 @@ export default function PrepararMinutaLead({ lead }: Props) {
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '18px' }}>
-              <button onClick={() => setOpen(false)} style={{ border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)', borderRadius: '10px', padding: '10px 14px', cursor: 'pointer' }}>
+              <button onClick={() => {
+                setOpen(false)
+                setGenerated(null)
+                setMissingFields([])
+                setPreviewValues({})
+                setManualValues({})
+                setLoading(false)
+              }} style={{ border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)', borderRadius: '10px', padding: '10px 14px', cursor: 'pointer' }}>
                 Fechar
               </button>
               <button

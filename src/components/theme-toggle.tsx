@@ -13,26 +13,24 @@ function applyTheme(theme: ThemeMode) {
 }
 
 export default function ThemeToggle() {
-  const [theme, setTheme] = useState<ThemeMode>('dark')
+  const [theme, setTheme] = useState<ThemeMode>(() => {
+    if (typeof document !== 'undefined') {
+      const current = document.documentElement.dataset.theme
+      if (current === 'light' || current === 'dark') return current
+    }
+
+    if (typeof window !== 'undefined') {
+      const saved = window.localStorage.getItem(STORAGE_KEY)
+      if (saved === 'light' || saved === 'dark') return saved
+      return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'
+    }
+
+    return 'dark'
+  })
 
   useEffect(() => {
-    const current = document.documentElement.dataset.theme
-    if (current === 'light' || current === 'dark') {
-      setTheme(current)
-      return
-    }
-
-    const saved = window.localStorage.getItem(STORAGE_KEY)
-    if (saved === 'light' || saved === 'dark') {
-      setTheme(saved)
-      applyTheme(saved)
-      return
-    }
-
-    const preferred = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'
-    setTheme(preferred)
-    applyTheme(preferred)
-  }, [])
+    applyTheme(theme)
+  }, [theme])
 
   function toggleTheme() {
     const next = theme === 'dark' ? 'light' : 'dark'

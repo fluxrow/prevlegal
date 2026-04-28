@@ -52,7 +52,29 @@ export default function ContractTemplateManager() {
   }
 
   useEffect(() => {
-    void fetchTemplates()
+    let cancelled = false
+
+    const loadInitialTemplates = async () => {
+      const res = await fetch('/api/contract-templates')
+      const json = await res.json()
+      if (cancelled) return
+
+      if (!res.ok) {
+        toast.error(json?.error || 'Não foi possível carregar os templates')
+        setLoading(false)
+        return
+      }
+
+      setTemplates(json.templates || [])
+      setPlaceholders(json.availablePlaceholders || [])
+      setLoading(false)
+    }
+
+    void loadInitialTemplates()
+
+    return () => {
+      cancelled = true
+    }
   }, [])
 
   const detectedPlaceholders = useMemo(() => {

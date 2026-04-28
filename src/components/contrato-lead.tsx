@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { Check, ChevronDown, ChevronUp, DollarSign, Plus, X } from 'lucide-react'
 
@@ -64,13 +64,34 @@ export default function ContratoLead({ leadId }: Props) {
   const [expandido, setExpandido] = useState<string | null>(null)
   const [atualizando, setAtualizando] = useState<string | null>(null)
 
-  useEffect(() => {
-    void fetchContratos()
-  }, [leadId])
-
-  function redirectToReauth() {
+  const redirectToReauth = useCallback(() => {
     router.replace(`/reauth?next=${encodeURIComponent(pathname || `/leads/${leadId}`)}`)
-  }
+  }, [leadId, pathname, router])
+
+  useEffect(() => {
+    let cancelled = false
+
+    const loadInitialContratos = async () => {
+      const res = await fetch(`/api/financeiro/contratos?lead_id=${leadId}`)
+      if (cancelled) return
+
+      if (res.status === 428) {
+        redirectToReauth()
+        return
+      }
+
+      const json = await res.json()
+      if (!cancelled && json.contratos) {
+        setContratos(json.contratos)
+      }
+    }
+
+    void loadInitialContratos()
+
+    return () => {
+      cancelled = true
+    }
+  }, [leadId, redirectToReauth])
 
   async function fetchContratos() {
     const res = await fetch(`/api/financeiro/contratos?lead_id=${leadId}`)

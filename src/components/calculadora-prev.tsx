@@ -8,8 +8,6 @@ interface Props {
   leadId: string
 }
 
-const ESTADOS_BR = ['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO']
-
 const TIPO_PERIODO_LABEL: Record<string, string> = {
   normal: 'Contribuição Normal',
   especial_15: 'Especial 15 anos (alto risco)',

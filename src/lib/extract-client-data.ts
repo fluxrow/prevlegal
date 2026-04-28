@@ -17,6 +17,13 @@ type MessageRow = {
   created_at: string
 }
 
+type AnthropicUsage = {
+  input_tokens?: number | null
+  output_tokens?: number | null
+  cache_creation_input_tokens?: number | null
+  cache_read_input_tokens?: number | null
+}
+
 function createAdminSupabase() {
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -63,6 +70,16 @@ function sanitizeJsonText(value: string) {
     .replace(/^```\s*/i, '')
     .replace(/\s*```$/i, '')
     .trim()
+}
+
+function getAnthropicUsage(response: { usage?: AnthropicUsage }) {
+  return response.usage || {}
+}
+
+function getErrorMessage(error: unknown) {
+  return error instanceof Error
+    ? error.message
+    : 'Falha desconhecida na extração de dados do cliente'
 }
 
 function coerceExtractedClientData(input: unknown): ExtractedClientData {
@@ -149,7 +166,7 @@ export async function extractClientDataFromConversation(params: {
         .join(''),
     )
 
-    const usage = (response as any)?.usage || {}
+    const usage = getAnthropicUsage(response)
     const custoUsd = calculateUsageCostUsd({
       modelo: EXTRACTION_MODEL,
       inputTokens: usage.input_tokens ?? 0,
@@ -188,7 +205,7 @@ export async function extractClientDataFromConversation(params: {
       missing_fields: missingFields,
       custo_usd: custoUsd,
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     await logLlmUsage({
       tenantId: params.tenantId,
       conversaId: params.conversaId,
@@ -200,7 +217,7 @@ export async function extractClientDataFromConversation(params: {
       outputTokens: 0,
       latenciaMs: Date.now() - startedAt,
       sucesso: false,
-      erroDescricao: error?.message || 'Falha desconhecida na extração de dados do cliente',
+      erroDescricao: getErrorMessage(error),
     })
 
     throw error

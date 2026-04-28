@@ -263,7 +263,7 @@ export async function PATCH(
   }
 
   // Se o status mudou, dispara a orquestração via background (assíncrono)
-  if (oldLead && payload.status && oldLead.status !== payload.status) {
+  if (context.tenantId && oldLead && payload.status && oldLead.status !== payload.status) {
     // Importa dinamicamente para não bloquear a inicialização ou apenas importa no topo
     const { processEventTriggers } = await import('@/lib/events/orchestrator')
     

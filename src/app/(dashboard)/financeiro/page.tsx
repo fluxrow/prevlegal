@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { AlertCircle, Check, CheckCircle, ChevronDown, ChevronUp, Clock, DollarSign, TrendingUp, X } from 'lucide-react'
 
@@ -65,6 +65,8 @@ interface Contrato {
   parcelas: Parcela[]
 }
 
+type FiltroFinanceiro = 'todos' | 'ativo' | 'quitado' | 'inadimplente' | 'cancelado'
+
 const STATUS_CONTRATO: Record<string, { label: string; cor: string }> = {
   ativo: { label: 'Ativo', cor: '#4f7aff' },
   quitado: { label: 'Quitado', cor: '#2dd4a0' },
@@ -94,6 +96,12 @@ function fmtData(d: string | null) {
   return new Date(`${d}T00:00:00`).toLocaleDateString('pt-BR')
 }
 
+function resolveFiltroInicial(value: string | null): FiltroFinanceiro {
+  return ['todos', 'ativo', 'quitado', 'inadimplente', 'cancelado'].includes(value || '')
+    ? (value as FiltroFinanceiro)
+    : 'todos'
+}
+
 export default function FinanceiroPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -101,23 +109,10 @@ export default function FinanceiroPage() {
   const [contratos, setContratos] = useState<Contrato[]>([])
   const [loading, setLoading] = useState(true)
   const [expandido, setExpandido] = useState<string | null>(null)
-  const [filtro, setFiltro] = useState('todos')
+  const [filtro, setFiltro] = useState(() => resolveFiltroInicial(searchParams.get('filtro')))
   const [atualizandoParcela, setAtualizandoParcela] = useState<string | null>(null)
 
-  useEffect(() => {
-    fetchData()
-  }, [])
-
-  useEffect(() => {
-    const filtroParam = searchParams.get('filtro')
-    if (!filtroParam) return
-
-    if (['todos', 'ativo', 'quitado', 'inadimplente', 'cancelado'].includes(filtroParam)) {
-      setFiltro(filtroParam)
-    }
-  }, [searchParams])
-
-  async function fetchData() {
+  const fetchData = useCallback(async () => {
     setLoading(true)
     const [resumoResponse, contratosResponse] = await Promise.all([
       fetch('/api/financeiro/resumo'),
@@ -136,7 +131,41 @@ export default function FinanceiroPage() {
     if (resumoRes.resumo) setResumo(resumoRes.resumo)
     if (contratosRes.contratos) setContratos(contratosRes.contratos)
     setLoading(false)
-  }
+  }, [router])
+
+  useEffect(() => {
+    let cancelled = false
+
+    const loadInitialData = async () => {
+      const [resumoResponse, contratosResponse] = await Promise.all([
+        fetch('/api/financeiro/resumo'),
+        fetch('/api/financeiro/contratos'),
+      ])
+      if (cancelled) return
+
+      if (resumoResponse.status === 428 || contratosResponse.status === 428) {
+        router.replace('/reauth?next=/financeiro')
+        return
+      }
+
+      const [resumoRes, contratosRes] = await Promise.all([
+        resumoResponse.json(),
+        contratosResponse.json(),
+      ])
+
+      if (!cancelled) {
+        if (resumoRes.resumo) setResumo(resumoRes.resumo)
+        if (contratosRes.contratos) setContratos(contratosRes.contratos)
+        setLoading(false)
+      }
+    }
+
+    void loadInitialData()
+
+    return () => {
+      cancelled = true
+    }
+  }, [router])
 
   async function marcarParcela(parcelaId: string, status: 'pago' | 'pendente') {
     setAtualizandoParcela(parcelaId)
@@ -414,13 +443,13 @@ export default function FinanceiroPage() {
       ) : null}
 
       <div style={{ display: 'flex', gap: '6px', marginBottom: '16px', flexWrap: 'wrap' }}>
-        {[
+        {([
           { value: 'todos', label: 'Todos' },
           { value: 'ativo', label: 'Ativos' },
           { value: 'quitado', label: 'Quitados' },
           { value: 'inadimplente', label: 'Inadimplentes' },
           { value: 'cancelado', label: 'Cancelados' },
-        ].map((item) => (
+        ] satisfies Array<{ value: FiltroFinanceiro; label: string }>).map((item) => (
           <button
             key={item.value}
             onClick={() => setFiltro(item.value)}

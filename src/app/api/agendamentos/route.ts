@@ -8,6 +8,37 @@ import {
   isMissingUserCalendarColumnError,
 } from '@/lib/permissions'
 
+type ScopedSupabase = {
+  from: (table: string) => {
+    select: (columns: string, options?: Record<string, unknown>) => ScopedMaybeSingleQuery
+    insert: (payload: Record<string, unknown>) => {
+      select: (columns: string) => {
+        single: () => PromiseLike<{ data: unknown; error: { message: string } | null }>
+      }
+    }
+  }
+}
+
+type ScopedMaybeSingleQuery = {
+  eq: (column: string, value: string) => ScopedMaybeSingleQuery
+  maybeSingle: <T>() => PromiseLike<{ data: T | null; error: { message: string } | null }>
+}
+
+type ScopedLead = {
+  id: string
+  nome: string | null
+  tenant_id: string | null
+  responsavel_id: string | null
+}
+
+type ScopedUsuario = {
+  id: string
+  nome: string | null
+  email: string | null
+  google_calendar_email?: string | null
+  google_calendar_connected_at?: string | null
+}
+
 const AGENDAMENTOS_RELATION_SELECT = `
   *,
   leads (id, nome, telefone, banco, ganho_potencial),
@@ -21,7 +52,7 @@ const AGENDAMENTOS_INSERT_RETURN_SELECT = `
 `
 
 async function getScopedLead(
-  supabase: any,
+  supabase: ScopedSupabase,
   context: NonNullable<Awaited<ReturnType<typeof getTenantContext>>>,
   leadId: string,
 ) {
@@ -37,7 +68,7 @@ async function getScopedLead(
     query = query.eq('responsavel_id', context.usuarioId)
   }
 
-  const { data, error } = await query.maybeSingle()
+  const { data, error } = await query.maybeSingle<ScopedLead>()
 
   if (error) {
     throw new Error(error.message)
@@ -47,7 +78,7 @@ async function getScopedLead(
 }
 
 async function getScopedUsuario(
-  supabase: any,
+  supabase: ScopedSupabase,
   context: NonNullable<Awaited<ReturnType<typeof getTenantContext>>>,
   usuarioId: string | null | undefined,
 ) {
@@ -59,7 +90,7 @@ async function getScopedUsuario(
     .select('id, nome, email, google_calendar_email, google_calendar_connected_at')
     .eq('id', resolvedId)
     .eq('tenant_id', context.tenantId)
-    .maybeSingle()
+    .maybeSingle<ScopedUsuario>()
 
   if (isMissingUserCalendarColumnError(result.error)) {
     result = await supabase
@@ -67,7 +98,7 @@ async function getScopedUsuario(
       .select('id, nome, email')
       .eq('id', resolvedId)
       .eq('tenant_id', context.tenantId)
-      .maybeSingle()
+      .maybeSingle<ScopedUsuario>()
   }
 
   const { data, error } = result
@@ -79,10 +110,10 @@ async function getScopedUsuario(
 }
 
 async function insertAgendamentoWithSchemaFallback(
-  supabase: any,
+  supabase: ScopedSupabase,
   payload: Record<string, unknown>,
 ) {
-  let result = await supabase
+  const result = await supabase
     .from('agendamentos')
     .insert(payload)
     .select(AGENDAMENTOS_INSERT_RETURN_SELECT)
@@ -143,13 +174,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'lead_id e data_hora são obrigatórios' }, { status: 400 })
     }
 
-    const lead = await getScopedLead(adminSupabase, context, lead_id)
+    const scopedSupabase = adminSupabase as unknown as Parameters<typeof getScopedLead>[0]
+    const lead = await getScopedLead(scopedSupabase, context, lead_id)
     if (!lead) {
       return NextResponse.json({ error: 'Lead fora do escopo deste tenant/usuário' }, { status: 403 })
     }
 
     const usuarioResponsavel = await getScopedUsuario(
-      adminSupabase,
+      scopedSupabase,
       context,
       context.isAdmin ? usuario_id : context.usuarioId,
     )
@@ -170,7 +202,7 @@ export async function POST(request: Request) {
 
     try {
       const resultado = await criarEventoCalendar({
-        supabase: adminSupabase,
+        supabase: adminSupabase as unknown as Parameters<typeof criarEventoCalendar>[0]['supabase'],
         tenantId: context.tenantId,
         ownerUsuarioId: usuarioResponsavel.id,
         titulo: `Consulta Previdenciária — ${lead?.nome ?? 'Lead'}`,
@@ -189,21 +221,24 @@ export async function POST(request: Request) {
       console.warn('Google Calendar não conectado, agendando sem evento:', err)
     }
 
-    const { data, error } = await insertAgendamentoWithSchemaFallback(adminSupabase, {
-      tenant_id: context.tenantId,
-      lead_id,
-      usuario_id: usuarioResponsavel.id,
-      data_hora,
-      duracao_minutos,
-      observacoes,
-      honorario,
-      google_event_id: googleEventId,
-      meet_link: meetLink,
-      calendar_owner_scope: calendarOwnerScope,
-      calendar_owner_usuario_id: calendarOwnerUsuarioId,
-      calendar_owner_email: calendarOwnerEmail,
-      status: 'agendado',
-    })
+    const { data, error } = await insertAgendamentoWithSchemaFallback(
+      adminSupabase as unknown as Parameters<typeof insertAgendamentoWithSchemaFallback>[0],
+      {
+        tenant_id: context.tenantId,
+        lead_id,
+        usuario_id: usuarioResponsavel.id,
+        data_hora,
+        duracao_minutos,
+        observacoes,
+        honorario,
+        google_event_id: googleEventId,
+        meet_link: meetLink,
+        calendar_owner_scope: calendarOwnerScope,
+        calendar_owner_usuario_id: calendarOwnerUsuarioId,
+        calendar_owner_email: calendarOwnerEmail,
+        status: 'agendado',
+      },
+    )
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 })

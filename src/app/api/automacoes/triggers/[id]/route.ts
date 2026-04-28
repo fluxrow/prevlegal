@@ -3,6 +3,21 @@ import { contextHasPermission, getTenantContext } from '@/lib/tenant-context'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminSupabase } from '@/lib/internal-collaboration'
 
+function getErrorMessage(error: unknown) {
+    return error instanceof Error ? error.message : 'Erro interno'
+}
+
+type TriggerUpdateData = {
+    trigger_evento?: unknown
+    trigger_condicao?: unknown
+    acao_tipo?: unknown
+    acao_ref_id?: unknown
+    ativo?: unknown
+    cancelar_followups_rodando?: unknown
+    enviar_mensagem_transicao?: unknown
+    mensagem_transicao_texto?: unknown
+}
+
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
     try {
         const authSupabase = await createClient()
@@ -32,7 +47,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
             mensagem_transicao_texto
         } = body
 
-        const updateData: any = {}
+        const updateData: TriggerUpdateData = {}
         if (trigger_evento !== undefined) updateData.trigger_evento = trigger_evento
         if (trigger_condicao !== undefined) updateData.trigger_condicao = trigger_condicao
         if (acao_tipo !== undefined) updateData.acao_tipo = acao_tipo
@@ -60,9 +75,9 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         }
 
         return NextResponse.json(data)
-    } catch (e: any) {
-        console.error('Catch PATCH event_triggers:', e)
-        return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
+    } catch (error: unknown) {
+        console.error('Catch PATCH event_triggers:', error)
+        return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 })
     }
 }
 
@@ -95,8 +110,8 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
         }
 
         return new NextResponse(null, { status: 204 })
-    } catch (e: any) {
-        console.error('Catch DELETE event_triggers:', e)
-        return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
+    } catch (error: unknown) {
+        console.error('Catch DELETE event_triggers:', error)
+        return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 })
     }
 }

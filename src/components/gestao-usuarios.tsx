@@ -1,6 +1,6 @@
 'use client'
-import { useEffect, useState } from 'react'
-import { UserPlus, Copy, Check, Shield, Eye, Edit3, Crown, ToggleLeft, ToggleRight, X, Mail, ChevronDown, ChevronUp } from 'lucide-react'
+import { useCallback, useEffect, useState } from 'react'
+import { UserPlus, Copy, Check, Eye, Edit3, Crown, ToggleLeft, ToggleRight, X, Mail, ChevronDown, ChevronUp } from 'lucide-react'
 import { DEFAULT_PERMISSIONS_BY_ROLE, resolvePermissions, type PermissionKey, type PermissionMap, type Role } from '@/lib/permissions'
 
 interface Usuario {
@@ -56,9 +56,7 @@ export default function GestaoUsuarios() {
   const [usuarioPermissoes, setUsuarioPermissoes] = useState<Usuario | null>(null)
   const [permissionDraft, setPermissionDraft] = useState<PermissionMap>(DEFAULT_PERMISSIONS_BY_ROLE.operador)
 
-  useEffect(() => { fetchData() }, [])
-
-  async function fetchData() {
+  const fetchData = useCallback(async () => {
     setLoading(true)
     const res = await fetch('/api/usuarios')
     const json = await res.json()
@@ -66,7 +64,29 @@ export default function GestaoUsuarios() {
     setConvites(json.convites || [])
     setMeuRole((json.role || 'operador') as Role)
     setLoading(false)
-  }
+  }, [])
+
+  useEffect(() => {
+    let cancelled = false
+
+    const loadInitialData = async () => {
+      const res = await fetch('/api/usuarios')
+      const json = await res.json()
+
+      if (!cancelled) {
+        setUsuarios(json.usuarios || [])
+        setConvites(json.convites || [])
+        setMeuRole((json.role || 'operador') as Role)
+        setLoading(false)
+      }
+    }
+
+    void loadInitialData()
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   async function alterarRole(id: string, role: string, ativo: boolean) {
     await fetch('/api/usuarios', {
@@ -74,7 +94,7 @@ export default function GestaoUsuarios() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id, role, ativo }),
     })
-    fetchData()
+    void fetchData()
   }
 
   function abrirPermissoes(usuario: Usuario) {
@@ -98,7 +118,7 @@ export default function GestaoUsuarios() {
 
     if (res.ok) {
       setUsuarioPermissoes(null)
-      fetchData()
+      void fetchData()
     } else {
       setErro('Não foi possível salvar as permissões desse usuário')
     }
@@ -123,7 +143,7 @@ export default function GestaoUsuarios() {
       }),
     })
     const json = await res.json()
-    if (res.ok) { setUrlConvite(json.url); fetchData() }
+    if (res.ok) { setUrlConvite(json.url); void fetchData() }
     else setErro(json.error || 'Erro ao enviar convite')
     setEnviando(false)
   }
@@ -134,7 +154,7 @@ export default function GestaoUsuarios() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id }),
     })
-    fetchData()
+    void fetchData()
   }
 
   async function copiarUrl() {

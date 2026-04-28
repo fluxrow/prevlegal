@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Zap, Play, Pause, X, ChevronDown, ChevronUp, Clock, RefreshCw, Send } from 'lucide-react'
 
 interface FollowupRule {
@@ -87,20 +87,33 @@ export default function FollowupLead({ leadId }: { leadId: string }) {
   const [refreshing, setRefreshing] = useState(false)
   const [executandoRunId, setExecutandoRunId] = useState<string | null>(null)
 
-  const fetchRuns = async () => {
+  const fetchRuns = useCallback(async () => {
     const res = await fetch(`/api/leads/${leadId}/followup`)
     if (res.ok) setRuns(await res.json())
     setLoading(false)
-  }
-
-  const fetchRules = async () => {
-    const res = await fetch('/api/followup/rules')
-    if (res.ok) setRules(await res.json())
-  }
+  }, [leadId])
 
   useEffect(() => {
-    void fetchRuns()
-    void fetchRules()
+    let cancelled = false
+
+    const loadInitialData = async () => {
+      const [runsRes, rulesRes] = await Promise.all([
+        fetch(`/api/leads/${leadId}/followup`),
+        fetch('/api/followup/rules'),
+      ])
+
+      if (cancelled) return
+
+      if (runsRes.ok) setRuns(await runsRes.json())
+      if (rulesRes.ok) setRules(await rulesRes.json())
+      if (!cancelled) setLoading(false)
+    }
+
+    void loadInitialData()
+
+    return () => {
+      cancelled = true
+    }
   }, [leadId])
 
   useEffect(() => {
@@ -118,7 +131,7 @@ export default function FollowupLead({ leadId }: { leadId: string }) {
       window.clearInterval(interval)
       window.removeEventListener('focus', handleFocus)
     }
-  }, [leadId])
+  }, [fetchRuns])
 
   const runAtiva = runs.find(r => r.status === 'ativo' || r.status === 'pausado')
 

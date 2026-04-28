@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
+import { useCallback, useEffect, useState, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { ArrowLeft, User, FileText, CreditCard, MessageSquare, Upload, Trash2, File, ExternalLink, Send, MessageSquarePlus, Pencil, CalendarClock, Users, CheckSquare, ArrowRightLeft } from 'lucide-react'
 import CalculadoraPrev from '@/components/calculadora-prev'
@@ -201,6 +201,10 @@ function formatDateTime(value: string | null | undefined) {
   })
 }
 
+function getErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : 'Falha ao resetar lead de teste'
+}
+
 export default function LeadDetailPage() {
   const { id } = useParams<{ id: string }>()
   const router = useRouter()
@@ -232,7 +236,7 @@ export default function LeadDetailPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  async function fetchLead() {
+  const fetchLead = useCallback(async () => {
     const res = await fetch(`/api/leads/${id}`)
     if (res.ok) {
       const data = await res.json()
@@ -241,32 +245,14 @@ export default function LeadDetailPage() {
       setAnotacoes(data.anotacoes || [])
     }
     setLoading(false)
-  }
-
-  useEffect(() => {
-    fetchLead()
-    fetchDocumentos()
-    fetchInterno()
   }, [id])
 
-  const hasStructuredRelatedContacts = Boolean(
-    lead?.conjuge_nome ||
-    lead?.conjuge_celular ||
-    lead?.conjuge_telefone ||
-    lead?.filho_nome ||
-    lead?.filho_celular ||
-    lead?.filho_telefone ||
-    lead?.irmao_nome ||
-    lead?.irmao_celular ||
-    lead?.irmao_telefone
-  )
-
-  async function fetchDocumentos() {
+  const fetchDocumentos = useCallback(async () => {
     const res = await fetch(`/api/leads/${id}/documentos`)
     if (res.ok) setDocumentos(await res.json())
-  }
+  }, [id])
 
-  async function fetchInterno() {
+  const fetchInterno = useCallback(async () => {
     const res = await fetch(`/api/leads/${id}/interno`)
     if (!res.ok) return
     const data = await res.json()
@@ -279,7 +265,25 @@ export default function LeadDetailPage() {
       ...current,
       to_usuario_id: current.to_usuario_id || data.thread?.current_owner?.id || '',
     }))
-  }
+  }, [id])
+
+  useEffect(() => {
+    void fetchLead()
+    void fetchDocumentos()
+    void fetchInterno()
+  }, [fetchDocumentos, fetchInterno, fetchLead])
+
+  const hasStructuredRelatedContacts = Boolean(
+    lead?.conjuge_nome ||
+    lead?.conjuge_celular ||
+    lead?.conjuge_telefone ||
+    lead?.filho_nome ||
+    lead?.filho_celular ||
+    lead?.filho_telefone ||
+    lead?.irmao_nome ||
+    lead?.irmao_celular ||
+    lead?.irmao_telefone
+  )
 
   async function handleUpload() {
     if (!selectedFile || !docForm.nome) return
@@ -411,8 +415,8 @@ export default function LeadDetailPage() {
 
       await Promise.all([fetchLead(), fetchDocumentos(), fetchInterno()])
       alert(`Lead resetado com sucesso. Conversas apagadas: ${data?.cleanup?.conversas ?? 0}. Mensagens apagadas: ${data?.cleanup?.mensagens ?? 0}.`)
-    } catch (error: any) {
-      alert(error?.message || 'Falha ao resetar lead de teste')
+    } catch (error: unknown) {
+      alert(getErrorMessage(error))
     } finally {
       setResettingTestLead(false)
     }

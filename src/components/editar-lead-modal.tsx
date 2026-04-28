@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Loader2, Save, X } from 'lucide-react'
 import { CONTACT_TARGET_OPTIONS } from '@/lib/contact-target'
 
@@ -218,11 +218,6 @@ export default function EditarLeadModal({
   const [form, setForm] = useState(() => buildInitialForm(lead))
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
-
-  useEffect(() => {
-    setForm(buildInitialForm(lead))
-    setError('')
-  }, [lead])
 
   async function save() {
     if (!form.nome.trim()) {

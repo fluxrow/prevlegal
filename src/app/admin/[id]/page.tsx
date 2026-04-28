@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import SessionActivityTracker from '@/components/session-activity-tracker'
 import { ADMIN_IDLE_MINUTES } from '@/lib/session-config'
@@ -373,11 +373,7 @@ export default function TenantDetailPage() {
   const [actingChannelId, setActingChannelId] = useState<string | null>(null)
   const channelFormRef = useRef<HTMLDivElement | null>(null)
 
-  useEffect(() => {
-    loadPage()
-  }, [id])
-
-  async function loadPage() {
+  const loadPage = useCallback(async () => {
     setLoading(true)
     const [metricasRes, channelsRes] = await Promise.all([
       fetch(`/api/admin/tenants/${id}/metricas`),
@@ -400,7 +396,44 @@ export default function TenantDetailPage() {
     if (metricasJson) setData(metricasJson)
     setWhatsappNumbers(channelsJson?.numbers || [])
     setLoading(false)
-  }
+  }, [id, router])
+
+  useEffect(() => {
+    let cancelled = false
+
+    const loadInitialPage = async () => {
+      const [metricasRes, channelsRes] = await Promise.all([
+        fetch(`/api/admin/tenants/${id}/metricas`),
+        fetch(`/api/admin/tenants/${id}/whatsapp-numbers`),
+      ])
+      if (cancelled) return
+
+      if (metricasRes.status === 401 || channelsRes.status === 401) {
+        router.push('/admin/login')
+        return
+      }
+
+      if (metricasRes.status === 428 || channelsRes.status === 428) {
+        router.push(`/admin/reauth?next=${encodeURIComponent(`/admin/${id}`)}`)
+        return
+      }
+
+      const metricasJson = metricasRes.ok ? await metricasRes.json() : null
+      const channelsJson = channelsRes.ok ? await channelsRes.json() : null
+
+      if (!cancelled) {
+        if (metricasJson) setData(metricasJson)
+        setWhatsappNumbers(channelsJson?.numbers || [])
+        setLoading(false)
+      }
+    }
+
+    void loadInitialPage()
+
+    return () => {
+      cancelled = true
+    }
+  }, [id, router])
 
   function setChannelField<K extends keyof ChannelFormState>(field: K, value: ChannelFormState[K]) {
     setChannelForm((prev) => ({ ...prev, [field]: value }))

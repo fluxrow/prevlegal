@@ -1,6 +1,31 @@
 import { NextResponse } from 'next/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
 
+type AdminSupabaseLike = {
+  from: (table: string) => {
+    select: (columns: string) => {
+      eq: (column: string, value: string) => {
+        eq: (column: string, value: string) => {
+          eq: (column: string, value: boolean) => {
+            gt: (column: string, value: string) => {
+              single: <T>() => PromiseLike<{ data: T | null }>
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+type ResetConvite = {
+  id: string
+  email: string
+  role: string
+  tenant_id: string | null
+  expires_at: string
+  aceito: boolean
+}
+
 function createAdminSupabase() {
   return createAdminClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -8,7 +33,7 @@ function createAdminSupabase() {
   )
 }
 
-async function getResetConvite(adminSupabase: any, token: string) {
+async function getResetConvite(adminSupabase: AdminSupabaseLike, token: string) {
   const { data } = await adminSupabase
     .from('convites')
     .select('id, email, role, tenant_id, expires_at, aceito')
@@ -16,13 +41,14 @@ async function getResetConvite(adminSupabase: any, token: string) {
     .eq('role', 'password_reset')
     .eq('aceito', false)
     .gt('expires_at', new Date().toISOString())
-    .single()
+    .single<ResetConvite>()
 
   return data
 }
 
 export async function GET(request: Request) {
   const adminSupabase = createAdminSupabase()
+  const scopedAdminSupabase = adminSupabase as unknown as AdminSupabaseLike
   const { searchParams } = new URL(request.url)
   const token = searchParams.get('token')
 
@@ -30,7 +56,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Token ausente' }, { status: 400 })
   }
 
-  const convite = await getResetConvite(adminSupabase, token)
+  const convite = await getResetConvite(scopedAdminSupabase, token)
   if (!convite) {
     return NextResponse.json({ error: 'Link invalido ou expirado' }, { status: 404 })
   }
@@ -59,6 +85,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   const adminSupabase = createAdminSupabase()
+  const scopedAdminSupabase = adminSupabase as unknown as AdminSupabaseLike
   const { token, senha } = await request.json()
 
   if (!token || !senha) {
@@ -69,7 +96,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'A nova senha precisa ter pelo menos 8 caracteres.' }, { status: 400 })
   }
 
-  const convite = await getResetConvite(adminSupabase, token)
+  const convite = await getResetConvite(scopedAdminSupabase, token)
   if (!convite) {
     return NextResponse.json({ error: 'Link invalido ou expirado' }, { status: 404 })
   }

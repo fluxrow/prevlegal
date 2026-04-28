@@ -240,7 +240,7 @@ export async function POST() {
           ? 'Templates PrevLegal aplicados com sucesso.'
           : 'Nenhum template novo foi inserido.',
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Erro no seed de templates de automações:', error)
     return NextResponse.json({ error: 'Erro interno ao aplicar templates PrevLegal' }, { status: 500 })
   }

@@ -20,6 +20,10 @@ interface Rule {
 
 const DEFAULT_STEP: Step = { ordem: 1, delay_horas: 24, canal: 'whatsapp', mensagem: '' }
 
+function getErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : 'desconhecido'
+}
+
 function StepEditor({
   step,
   index,
@@ -161,8 +165,8 @@ function RuleForm({
           return
         }
       }
-    } catch (e: any) {
-      setErro(`Erro de rede: ${e?.message || 'desconhecido'}`)
+    } catch (error: unknown) {
+      setErro(`Erro de rede: ${getErrorMessage(error)}`)
       setSalvando(false)
       return
     }
@@ -252,14 +256,50 @@ export default function FollowupConfig() {
         const d = await res.json().catch(() => null)
         setErroFetch(`Erro ao carregar regras: ${d?.error || res.status}`)
       }
-    } catch (e: any) {
-      setErroFetch(`Erro de rede: ${e?.message || 'desconhecido'}`)
+    } catch (error: unknown) {
+      setErroFetch(`Erro de rede: ${getErrorMessage(error)}`)
     } finally {
       setLoading(false)
     }
   }
 
-  useEffect(() => { void fetchRules() }, [])
+  useEffect(() => {
+    let cancelled = false
+
+    const loadInitialRules = async () => {
+      setErroFetch(null)
+      setLoading(true)
+      try {
+        const res = await fetch('/api/followup/rules')
+        if (!res.ok) {
+          const data = await res.json().catch(() => null)
+          if (!cancelled) {
+            setErroFetch(`Erro ao carregar regras: ${data?.error || res.status}`)
+          }
+          return
+        }
+
+        const data = await res.json()
+        if (!cancelled) {
+          setRules(Array.isArray(data) ? data : [])
+        }
+      } catch (error: unknown) {
+        if (!cancelled) {
+          setErroFetch(`Erro de rede: ${getErrorMessage(error)}`)
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false)
+        }
+      }
+    }
+
+    void loadInitialRules()
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   async function toggleAtivo(rule: Rule) {
     await fetch(`/api/followup/rules/${rule.id}`, {

@@ -43,7 +43,10 @@ export async function POST(
 
   const email = tenant.responsavel_email.trim().toLowerCase()
 
-  const canBootstrapPrimeiroTenant = await canProvisionOutsideContainment(adminSupabase, id)
+  const canBootstrapPrimeiroTenant = await canProvisionOutsideContainment(
+    adminSupabase as unknown as Parameters<typeof canProvisionOutsideContainment>[0],
+    id,
+  )
 
   if (!isAllowedByTenantContainment(email, id) && !canBootstrapPrimeiroTenant) {
     return NextResponse.json({

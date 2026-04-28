@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   X, User, FileText, CreditCard, Hash,
@@ -123,7 +123,6 @@ export default function LeadDrawer({
   const [lead, setLead] = useState<Lead | null>(null)
   const [anotacoes, setAnotacoes] = useState<Anotacao[]>([])
   const [conversaId, setConversaId] = useState<string | null>(null)
-  const [loading, setLoading] = useState(false)
   const [novaAnotacao, setNovaAnotacao] = useState('')
   const [salvando, setSalvando] = useState(false)
   const [showStatus, setShowStatus] = useState(false)
@@ -133,16 +132,22 @@ export default function LeadDrawer({
   const router = useRouter()
 
   useEffect(() => {
-    if (!leadId) { setLead(null); setConversaId(null); return }
-    setLoading(true)
+    if (!leadId) return
+
+    let cancelled = false
+
     fetch(`/api/leads/${leadId}`)
       .then(r => r.json())
       .then(data => {
+        if (cancelled) return
         setLead(data.lead)
         setAnotacoes(data.anotacoes || [])
         setConversaId(data.conversa?.id || null)
       })
-      .finally(() => setLoading(false))
+
+    return () => {
+      cancelled = true
+    }
   }, [leadId])
 
   async function salvarAnotacao() {
@@ -186,6 +191,7 @@ export default function LeadDrawer({
     lead?.irmao_celular ||
     lead?.irmao_telefone
   )
+  const loading = Boolean(leadId && lead?.id !== leadId)
   if (!leadId) return null
 
   return (

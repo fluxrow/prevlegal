@@ -73,8 +73,8 @@ export async function getPlanningKnowledgeBlock(): Promise<PlanningKnowledgeBloc
     }
 
     return block
-  } catch (error: any) {
-    if (error?.code === 'ENOENT') {
+  } catch (error: unknown) {
+    if (typeof error === 'object' && error !== null && 'code' in error && error.code === 'ENOENT') {
       return {
         content: '',
         warning: `Diretório de conhecimento não encontrado em ${KNOWLEDGE_ROOT}. Seguindo sem injeção técnica adicional.`,

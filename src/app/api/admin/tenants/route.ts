@@ -3,6 +3,14 @@ import { verificarAdminAuth, verificarAdminReauthRecente } from '@/lib/admin-aut
 import { createClient } from '@supabase/supabase-js'
 import { seedDefaultPlanningContractTemplate } from '@/lib/contract-template-seeds'
 
+type AdminSupabaseLike = {
+  from: (table: string) => {
+    select: (columns: string) => {
+      like: (column: string, pattern: string) => PromiseLike<{ data: Array<{ slug: string }> | null }>
+    }
+  }
+}
+
 function slugify(value: string) {
   return value
     .normalize('NFD')
@@ -13,7 +21,7 @@ function slugify(value: string) {
     .replace(/-{2,}/g, '-')
 }
 
-async function buildUniqueSlug(adminSupabase: any, baseValue: string) {
+async function buildUniqueSlug(adminSupabase: AdminSupabaseLike, baseValue: string) {
   const base = slugify(baseValue) || `escritorio-${Date.now()}`
   const { data: existing } = await adminSupabase
     .from('tenants')
@@ -49,7 +57,7 @@ function parseMoneyInput(value: unknown) {
 }
 
 async function normalizeTenantPayload(
-  adminSupabase: any,
+  adminSupabase: AdminSupabaseLike,
   body: Record<string, unknown>
 ) {
   const nome = String(body.nome || '').trim()
@@ -138,12 +146,15 @@ export async function POST(request: Request) {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
   try {
-    await seedDefaultPlanningContractTemplate(adminSupabase, {
-      id: data.id,
-      slug: data.slug,
-      nome: data.nome,
-      responsavel_email: data.responsavel_email,
-    })
+    await seedDefaultPlanningContractTemplate(
+      adminSupabase as unknown as Parameters<typeof seedDefaultPlanningContractTemplate>[0],
+      {
+        id: data.id,
+        slug: data.slug,
+        nome: data.nome,
+        responsavel_email: data.responsavel_email,
+      },
+    )
   } catch (seedError) {
     console.warn('[contract-template-seed] não foi possível semear template inicial', seedError)
   }

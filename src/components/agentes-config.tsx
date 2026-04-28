@@ -95,7 +95,15 @@ const AGENTE_VAZIO: Omit<Agente, "id" | "created_at"> = {
   is_default: false,
 };
 
-interface FormState extends Omit<Agente, "id" | "created_at"> {}
+type FormState = Omit<Agente, "id" | "created_at">;
+
+type AgenteMetricasData = {
+  total_respostas: number;
+  leads_via_campanha: number;
+  total_leads_atendidos: number;
+  escalonamentos: number;
+  taxa_escalonamento_pct: number;
+};
 
 function AgenteForm({
   initial,
@@ -176,8 +184,10 @@ function AgenteForm({
           <label style={labelStyle}>Perfil operacional</label>
           <select
             style={inputStyle}
-            value={(form as any).perfil_operacao || "beneficios_previdenciarios"}
-            onChange={(e) => set("perfil_operacao" as any, e.target.value)}
+            value={form.perfil_operacao || "beneficios_previdenciarios"}
+            onChange={(e) =>
+              set("perfil_operacao", e.target.value as OperationProfile)
+            }
           >
             {OPERATION_PROFILE_OPTIONS.map((opt) => (
               <option key={opt.value} value={opt.value}>
@@ -190,8 +200,8 @@ function AgenteForm({
           <label style={labelStyle}>Tipo / Roteamento (Fase D)</label>
           <select
             style={inputStyle}
-            value={(form as any).tipo || "geral"}
-            onChange={(e) => set("tipo" as any, e.target.value)}
+            value={form.tipo || "geral"}
+            onChange={(e) => set("tipo", e.target.value)}
           >
             {TIPO_OPTIONS.map((opt) => (
               <option key={opt.value} value={opt.value}>
@@ -540,7 +550,7 @@ function AgenteForm({
 
 // Card de métricas lazy-loaded por agente (Fase D)
 function AgenteMetricas({ agenteId }: { agenteId: string }) {
-  const [metricas, setMetricas] = useState<any>(null);
+  const [metricas, setMetricas] = useState<AgenteMetricasData | null>(null);
   const [aberto, setAberto] = useState(false);
   const [loading, setLoading] = useState(false);
 

@@ -9,6 +9,18 @@ import { sendWhatsAppMessage } from '@/lib/whatsapp-provider'
 const LISTA_MANUAL_NOME = 'Cadastro manual'
 const LISTA_MANUAL_FORNECEDOR = 'sistema'
 
+type AgentFailurePayload = {
+  horario_inicio?: string
+  horario_fim?: string
+  dias_uteis_only?: boolean
+}
+
+type AgentEscalationConfig = {
+  agente_gatilhos_escalada?: string | null
+}
+
+type ConfiguracoesSupabase = Parameters<typeof getConfiguracaoAtual>[0]
+
 function createAdminSupabase() {
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -101,10 +113,6 @@ async function parseWebhookPayload(request: NextRequest) {
   return { raw: rawBody }
 }
 
-function applyTenantFilter(query: any, tenantId: string | null) {
-  return tenantId ? query.eq('tenant_id', tenantId) : query.is('tenant_id', null)
-}
-
 async function hasRecentDuplicateMessage({
   supabase,
   tenantId,
@@ -132,7 +140,7 @@ async function hasRecentDuplicateMessage({
     .order('created_at', { ascending: false })
     .limit(1)
 
-  query = applyTenantFilter(query, tenantId)
+  query = tenantId ? query.eq('tenant_id', tenantId) : query.is('tenant_id', null)
 
   if (to) {
     query = query.eq('telefone_destinatario', to)
@@ -161,7 +169,7 @@ async function registerAgentAutoresponderFailure({
   campanhaId?: string | null
   channelId?: string | null
   leadName: string
-  result: { status: number; error: string; payload?: any }
+  result: { status: number; error: string; payload?: AgentFailurePayload }
 }) {
   const normalizedError = String(result.error || '').toLowerCase()
   const outsideHours = normalizedError.includes('fora do horário')
@@ -256,12 +264,12 @@ async function registerAgentAutoresponderFailure({
 }
 
 function getNestedValue(source: unknown, path: string[]) {
-  let current = source as any
+  let current: unknown = source
   for (const segment of path) {
     if (current == null || typeof current !== 'object' || !(segment in current)) {
       return undefined
     }
-    current = current[segment]
+    current = (current as Record<string, unknown>)[segment]
   }
   return current
 }
@@ -448,7 +456,7 @@ async function findConversationByNormalizedPhone(
       .like('telefone', `%${pattern}%`)
       .limit(25)
 
-    query = applyTenantFilter(query, tenantId)
+    query = tenantId ? query.eq('tenant_id', tenantId) : query.is('tenant_id', null)
 
     const { data } = await query
     for (const candidate of (data || []) as ConversationPhoneCandidate[]) {
@@ -516,7 +524,6 @@ async function ensureLeadForInbound(
   supabase: ReturnType<typeof createAdminSupabase>,
   tenantId: string,
   from: string,
-  body: string,
 ) {
   const phoneDigits = getPhoneDigits(from)
   const phone10or11 = phoneDigits.startsWith('55') ? phoneDigits.slice(2) : phoneDigits
@@ -643,7 +650,9 @@ async function handleChannelOriginatedMessage({
       .eq('whatsapp_number_id', routing.channelId)
       .or(`twilio_message_sid.eq.${externalId},twilio_sid.eq.${externalId}`)
 
-    duplicateQuery = applyTenantFilter(duplicateQuery, routing.tenantId)
+    duplicateQuery = routing.tenantId
+      ? duplicateQuery.eq('tenant_id', routing.tenantId)
+      : duplicateQuery.is('tenant_id', null)
 
     const { data: duplicate } = await duplicateQuery.maybeSingle()
     if (duplicate) {
@@ -669,7 +678,7 @@ async function handleChannelOriginatedMessage({
 
   try {
     if (routing.tenantId) {
-      lead = await ensureLeadForInbound(supabase, routing.tenantId, parties.counterpartyPhone, body)
+      lead = await ensureLeadForInbound(supabase, routing.tenantId, parties.counterpartyPhone)
       tenantId = lead?.tenant_id || routing.tenantId
     }
   } catch (error) {
@@ -864,7 +873,9 @@ async function handleReceiveEvent(request: NextRequest, event: string) {
       .eq('twilio_message_sid', externalId)
       .eq('whatsapp_number_id', routing.channelId)
 
-    duplicateQuery = applyTenantFilter(duplicateQuery, routing.tenantId)
+    duplicateQuery = routing.tenantId
+      ? duplicateQuery.eq('tenant_id', routing.tenantId)
+      : duplicateQuery.is('tenant_id', null)
 
     const { data: duplicate } = await duplicateQuery.maybeSingle()
     if (duplicate) {
@@ -890,7 +901,7 @@ async function handleReceiveEvent(request: NextRequest, event: string) {
 
   try {
     if (routing.tenantId) {
-      lead = await ensureLeadForInbound(supabase, routing.tenantId, from, body)
+      lead = await ensureLeadForInbound(supabase, routing.tenantId, from)
       tenantId = lead?.tenant_id || routing.tenantId
     }
   } catch (error) {
@@ -991,8 +1002,9 @@ async function handleReceiveEvent(request: NextRequest, event: string) {
       },
     })
 
-    const { data: config } = await getConfiguracaoAtual(
-      supabase,
+    const configuracoesSupabase = supabase as unknown as ConfiguracoesSupabase
+    const { data: config } = await getConfiguracaoAtual<AgentEscalationConfig>(
+      configuracoesSupabase,
       tenantId,
       'agente_gatilhos_escalada',
     )
@@ -1077,8 +1089,8 @@ async function handleReceiveEvent(request: NextRequest, event: string) {
           leadName: lead?.nome || from,
           result: {
             status: result.status,
-            error: result.error,
-            payload: result.payload,
+            error: result.error || 'Erro desconhecido ao acionar agente via Z-API',
+            payload: result.payload ?? undefined,
           },
         })
       }

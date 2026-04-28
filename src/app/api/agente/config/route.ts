@@ -4,6 +4,10 @@ import { ensureConfiguracaoAtual, getConfiguracaoAtual } from '@/lib/configuraco
 import { createClient as createServerClient } from '@/lib/supabase/server'
 import { getTenantContext } from '@/lib/tenant-context'
 
+function getErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : String(error || 'Erro desconhecido')
+}
+
 function createAdminSupabase() {
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -11,14 +15,17 @@ function createAdminSupabase() {
   )
 }
 
+type ConfiguracoesSupabase = Parameters<typeof getConfiguracaoAtual>[0]
+
 export async function GET() {
   const authSupabase = await createServerClient()
   const context = await getTenantContext(authSupabase)
   if (!context) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const supabase = createAdminSupabase()
+  const configuracoesSupabase = supabase as unknown as ConfiguracoesSupabase
   const { data, error } = await getConfiguracaoAtual(
-    supabase,
+    configuracoesSupabase,
     context.tenantId,
     'agente_ativo, agente_nome, agente_prompt_sistema, agente_modelo, agente_max_tokens, agente_resposta_automatica, agente_horario_inicio, agente_horario_fim, agente_apenas_dias_uteis',
   )
@@ -35,6 +42,7 @@ export async function POST(request: NextRequest) {
     if (!context.isAdmin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
     const supabase = createAdminSupabase()
+    const configuracoesSupabase = supabase as unknown as ConfiguracoesSupabase
     const body = await request.json()
 
     const campos = [
@@ -43,13 +51,13 @@ export async function POST(request: NextRequest) {
       'agente_horario_fim', 'agente_apenas_dias_uteis'
     ]
 
-    const updates: Record<string, any> = {}
+    const updates: Record<string, unknown> = {}
     campos.forEach(c => { if (body[c] !== undefined) updates[c] = body[c] })
     updates.updated_at = new Date().toISOString()
 
     // Upsert — garante que existe um registro
     const { data: existing, error: ensureError } = await ensureConfiguracaoAtual(
-      supabase,
+      configuracoesSupabase,
       context.tenantId,
     )
 
@@ -64,7 +72,7 @@ export async function POST(request: NextRequest) {
 
     if (result.error) return NextResponse.json({ error: result.error.message }, { status: 500 })
     return NextResponse.json({ success: true })
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 })
+  } catch (err: unknown) {
+    return NextResponse.json({ error: getErrorMessage(err) }, { status: 500 })
   }
 }

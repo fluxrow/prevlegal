@@ -6,6 +6,10 @@ import { getTenantContext } from '@/lib/tenant-context'
 const LISTA_MANUAL_NOME = 'Cadastro manual'
 const LISTA_MANUAL_FORNECEDOR = 'sistema'
 
+function getErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : String(error || 'Erro desconhecido')
+}
+
 export async function GET(request: Request) {
   try {
     const supabase = await createClient()
@@ -71,7 +75,7 @@ export async function GET(request: Request) {
     )
 
     return NextResponse.json({ listas: listasComTotal })
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 })
+  } catch (err: unknown) {
+    return NextResponse.json({ error: getErrorMessage(err) }, { status: 500 })
   }
 }

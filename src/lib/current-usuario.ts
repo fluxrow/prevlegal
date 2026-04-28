@@ -15,8 +15,29 @@ const USUARIO_SELECT_VARIANTS = [
   'id, auth_id, tenant_id, nome, email, role, ativo',
 ] as const
 
-async function runUsuarioLookup(executor: (selectClause: string) => Promise<{ data: any; error: unknown }>) {
-  let lastResult: { data: any; error: unknown } | null = null
+type UsuarioLookupRecord = {
+  id: string
+  auth_id?: string | null
+  tenant_id?: string | null
+  nome?: string | null
+  email?: string | null
+  role?: string | null
+  permissions?: unknown
+  ativo?: boolean | null
+  google_calendar_email?: string | null
+  google_calendar_connected_at?: string | null
+  convidado_em?: string | null
+  updated_at?: string | null
+  ultimo_acesso?: string | null
+}
+
+type UsuarioLookupResult = {
+  data: UsuarioLookupRecord | null
+  error: unknown
+}
+
+async function runUsuarioLookup(executor: (selectClause: string) => Promise<UsuarioLookupResult>) {
+  let lastResult: UsuarioLookupResult | null = null
 
   for (const selectClause of USUARIO_SELECT_VARIANTS) {
     const result = await executor(selectClause)

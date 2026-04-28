@@ -16,22 +16,34 @@ interface Notificacao {
 export default function NotificacoesBell() {
   const [notificacoes, setNotificacoes] = useState<Notificacao[]>([])
   const [open, setOpen] = useState(false)
+  const [nowMs, setNowMs] = useState(() => Date.now())
   const ref = useRef<HTMLDivElement>(null)
 
   const naoLidas = notificacoes.filter(n => !n.lida).length
 
-  async function fetchNotificacoes() {
-    const res = await fetch('/api/notificacoes')
-    if (res.ok) {
-      const data = await res.json()
-      setNotificacoes(data)
-    }
-  }
-
   useEffect(() => {
-    fetchNotificacoes()
-    const interval = setInterval(fetchNotificacoes, 10000)
-    return () => clearInterval(interval)
+    let cancelled = false
+
+    const loadNotificacoes = async () => {
+      const res = await fetch('/api/notificacoes')
+      if (!res.ok || cancelled) return
+
+      const data = await res.json()
+      if (!cancelled) {
+        setNotificacoes(data)
+      }
+    }
+
+    void loadNotificacoes()
+    const interval = setInterval(() => {
+      void loadNotificacoes()
+    }, 10000)
+    const clockInterval = setInterval(() => setNowMs(Date.now()), 60 * 1000)
+    return () => {
+      cancelled = true
+      clearInterval(interval)
+      clearInterval(clockInterval)
+    }
   }, [])
 
   useEffect(() => {
@@ -63,7 +75,7 @@ export default function NotificacoesBell() {
   }
 
   function tempoRelativo(dateStr: string) {
-    const diff = Date.now() - new Date(dateStr).getTime()
+    const diff = nowMs - new Date(dateStr).getTime()
     const mins = Math.floor(diff / 60000)
     if (mins < 1) return 'agora'
     if (mins < 60) return `${mins}m atrás`

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { MessageSquare, User, Bot, UserCheck, RotateCcw, Send, Users } from 'lucide-react'
 import { useOnboarding } from '@/hooks/useOnboarding'
@@ -152,10 +152,137 @@ export default function CaixaDeEntradaPage() {
     }
   }
 
-  useEffect(() => {
-    fetchConversas()
-    fetchThreadsPortal()
+  const fetchConversas = useCallback(async () => {
+    const res = await fetch('/api/conversas')
+    if (res.ok) {
+      const rawData = await res.json()
+      const data = (rawData || []).map((conversa: Conversa) => ({
+        ...conversa,
+        status: normalizeInboxStatus(conversa.status),
+      }))
+      setConversas(data)
+      setConversaSelecionada((prev) => {
+        if (!prev) return prev
+        return data.find((conversa: Conversa) => conversa.id === prev.id) || null
+      })
+      setLoading(false)
+    }
   }, [])
+
+  const fetchMensagens = useCallback(async (conversaId: string) => {
+    const res = await fetch(`/api/conversas/${conversaId}`)
+    if (res.ok) setMensagens(await res.json())
+  }, [])
+
+  const aplicarConversaAtualizada = useCallback((atualizada: Conversa) => {
+    setConversas((prev) => prev.map((conversa) => (conversa.id === atualizada.id ? { ...conversa, ...atualizada } : conversa)))
+    setConversaSelecionada((prev) => (prev?.id === atualizada.id ? { ...prev, ...atualizada } : prev))
+  }, [])
+
+  const atualizarConversa = useCallback(async (
+    conversaId: string,
+    payload: Record<string, unknown>,
+    optimistic?: Partial<Conversa>,
+  ) => {
+    if (optimistic) {
+      setConversas((prev) => prev.map((conversa) => (conversa.id === conversaId ? { ...conversa, ...optimistic } : conversa)))
+      setConversaSelecionada((prev) => (prev?.id === conversaId ? { ...prev, ...optimistic } : prev))
+    }
+
+    const res = await fetch(`/api/conversas/${conversaId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    })
+
+    if (res.ok) {
+      const atualizada = await res.json()
+      aplicarConversaAtualizada(atualizada)
+      notifyPendenciasChanged()
+      return atualizada as Conversa
+    }
+
+    await fetchConversas()
+    return null
+  }, [aplicarConversaAtualizada, fetchConversas])
+
+  const selecionarConversa = useCallback(async (
+    conversa: Conversa,
+    options?: { syncUrl?: boolean },
+  ) => {
+    setThreadSelecionada(null)
+    setMsgsPortal([])
+    setConversaSelecionada(conversa)
+
+    if (options?.syncUrl !== false) {
+      const params = new URLSearchParams(searchParams.toString())
+      params.delete('tab')
+      params.delete('leadId')
+      params.set('conversaId', conversa.id)
+      params.set('telefone', conversa.telefone)
+      router.replace(`${pathname}?${params.toString()}`, { scroll: false })
+    }
+
+    if (conversa.nao_lidas > 0) {
+      await atualizarConversa(
+        conversa.id,
+        { action: 'mark_read' },
+        { nao_lidas: 0 },
+      )
+    }
+  }, [atualizarConversa, pathname, router, searchParams])
+
+  const fetchThreadsPortal = useCallback(async () => {
+    const res = await fetch('/api/portal/threads')
+    if (res.ok) {
+      const data = await res.json()
+      const threads = data.threads || []
+      setThreadsPortal(threads)
+      setThreadSelecionada((prev) => {
+        if (!prev) return prev
+        return threads.find((item: ThreadPortal) => item.lead_id === prev.lead_id) || null
+      })
+    }
+  }, [])
+
+  const selecionarThreadPortal = useCallback((
+    thread: ThreadPortal,
+    options?: { syncUrl?: boolean },
+  ) => {
+    setConversaSelecionada(null)
+    setMensagens([])
+    setThreadSelecionada(thread)
+
+    if (options?.syncUrl !== false) {
+      const params = new URLSearchParams(searchParams.toString())
+      params.delete('conversaId')
+      params.delete('telefone')
+      params.set('tab', 'portal')
+      params.set('leadId', thread.lead_id)
+      router.replace(`${pathname}?${params.toString()}`, { scroll: false })
+    }
+  }, [pathname, router, searchParams])
+
+  const fetchInternoData = useCallback((leadId: string) =>
+    fetch(`/api/leads/${leadId}/interno`)
+      .then(r => r.ok ? r.json() : null)
+      .then(d => {
+        if (!d) { setInternoData(null); return }
+        setInternoData({
+          thread: d.thread ?? null,
+          tasks: d.tasks ?? [],
+          mensagens: d.mensagens ?? [],
+        })
+      })
+      .catch(() => setInternoData(null)), [])
+
+  useEffect(() => {
+    const loadInbox = async () => {
+      await Promise.all([fetchConversas(), fetchThreadsPortal()])
+    }
+
+    void loadInbox()
+  }, [fetchConversas, fetchThreadsPortal])
 
   function selecionarAba(aba: AbaInbox) {
     setAbaAtiva(aba)
@@ -187,14 +314,17 @@ export default function CaixaDeEntradaPage() {
   useEffect(() => {
     const tab = searchParams.get('tab')
     if (!tab) {
-      setAbaAtiva('todas')
-      return
+      const timer = window.setTimeout(() => setAbaAtiva('todas'), 0)
+      return () => window.clearTimeout(timer)
     }
 
     const abasValidas: AbaInbox[] = ['todas', 'agente', 'humano', 'aguardando_cliente', 'resolvido', 'portal']
     if (abasValidas.includes(tab as AbaInbox)) {
-      setAbaAtiva(tab as AbaInbox)
+      const timer = window.setTimeout(() => setAbaAtiva(tab as AbaInbox), 0)
+      return () => window.clearTimeout(timer)
     }
+
+    return undefined
   }, [searchParams])
 
   useEffect(() => {
@@ -219,9 +349,12 @@ export default function CaixaDeEntradaPage() {
     }
 
     humanLinkHandledRef.current = token
-    setAbaAtiva('todas')
-    void selecionarConversa(encontrada, { syncUrl: false })
-  }, [conversas, searchParams, conversaSelecionada?.id])
+    const timer = window.setTimeout(() => {
+      setAbaAtiva('todas')
+      void selecionarConversa(encontrada, { syncUrl: false })
+    }, 0)
+    return () => window.clearTimeout(timer)
+  }, [conversas, searchParams, conversaSelecionada?.id, selecionarConversa])
 
   useEffect(() => {
     const leadId = searchParams.get('leadId')
@@ -238,32 +371,39 @@ export default function CaixaDeEntradaPage() {
     }
 
     portalLinkHandledRef.current = leadId
-    setAbaAtiva('portal')
-    selecionarThreadPortal(encontrada, { syncUrl: false })
-  }, [threadsPortal, searchParams, threadSelecionada?.lead_id])
+    const timer = window.setTimeout(() => {
+      setAbaAtiva('portal')
+      selecionarThreadPortal(encontrada, { syncUrl: false })
+    }, 0)
+    return () => window.clearTimeout(timer)
+  }, [threadsPortal, searchParams, threadSelecionada?.lead_id, selecionarThreadPortal])
 
   useEffect(() => {
-    if (conversaSelecionada && abaAtiva !== 'portal') fetchMensagens(conversaSelecionada.id)
-  }, [conversaSelecionada, abaAtiva])
+    if (!conversaSelecionada || abaAtiva === 'portal') return
 
-  const fetchInternoData = (leadId: string) =>
-    fetch(`/api/leads/${leadId}/interno`)
-      .then(r => r.ok ? r.json() : null)
-      .then(d => {
-        if (!d) { setInternoData(null); return }
-        setInternoData({
-          thread: d.thread ?? null,
-          tasks: d.tasks ?? [],
-          mensagens: d.mensagens ?? [],
-        })
-      })
-      .catch(() => setInternoData(null))
+    const loadMensagens = async () => {
+      await fetchMensagens(conversaSelecionada.id)
+    }
+
+    void loadMensagens()
+  }, [conversaSelecionada, abaAtiva, fetchMensagens])
 
   useEffect(() => {
     const leadId = conversaSelecionada?.leads?.id
-    if (!leadId) { setInternoData(null); setPanelInternoAberto(false); return }
-    void fetchInternoData(leadId)
-  }, [conversaSelecionada])
+    if (!leadId) {
+      const timer = window.setTimeout(() => {
+        setInternoData(null)
+        setPanelInternoAberto(false)
+      }, 0)
+      return () => window.clearTimeout(timer)
+    }
+
+    const loadInterno = async () => {
+      await fetchInternoData(leadId)
+    }
+
+    void loadInterno()
+  }, [conversaSelecionada, fetchInternoData])
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -271,8 +411,10 @@ export default function CaixaDeEntradaPage() {
 
   useEffect(() => {
     const interval = setInterval(() => {
-      fetchConversas()
-      if (conversaSelecionada && abaAtiva !== 'portal') fetchMensagens(conversaSelecionada.id)
+      void fetchConversas()
+      if (conversaSelecionada && abaAtiva !== 'portal') {
+        void fetchMensagens(conversaSelecionada.id)
+      }
     }, 5000)
 
     const portalIv = setInterval(fetchThreadsPortal, 10000)
@@ -280,7 +422,7 @@ export default function CaixaDeEntradaPage() {
       clearInterval(interval)
       clearInterval(portalIv)
     }
-  }, [conversaSelecionada, abaAtiva])
+  }, [conversaSelecionada, abaAtiva, fetchConversas, fetchMensagens, fetchThreadsPortal])
 
   useEffect(() => {
     if (!threadSelecionada) return
@@ -300,117 +442,6 @@ export default function CaixaDeEntradaPage() {
     const iv = setInterval(fetchMsgs, 5000)
     return () => clearInterval(iv)
   }, [threadSelecionada])
-
-  async function fetchConversas() {
-    const res = await fetch('/api/conversas')
-    if (res.ok) {
-      const rawData = await res.json()
-      const data = (rawData || []).map((conversa: Conversa) => ({
-        ...conversa,
-        status: normalizeInboxStatus(conversa.status),
-      }))
-      setConversas(data)
-      setConversaSelecionada((prev) => {
-        if (!prev) return prev
-        return data.find((conversa: Conversa) => conversa.id === prev.id) || null
-      })
-      setLoading(false)
-    }
-  }
-
-  async function fetchMensagens(conversaId: string) {
-    const res = await fetch(`/api/conversas/${conversaId}`)
-    if (res.ok) setMensagens(await res.json())
-  }
-
-  function aplicarConversaAtualizada(atualizada: Conversa) {
-    setConversas((prev) => prev.map((conversa) => (conversa.id === atualizada.id ? { ...conversa, ...atualizada } : conversa)))
-    setConversaSelecionada((prev) => (prev?.id === atualizada.id ? { ...prev, ...atualizada } : prev))
-  }
-
-  async function atualizarConversa(
-    conversaId: string,
-    payload: Record<string, unknown>,
-    optimistic?: Partial<Conversa>,
-  ) {
-    if (optimistic) {
-      setConversas((prev) => prev.map((conversa) => (conversa.id === conversaId ? { ...conversa, ...optimistic } : conversa)))
-      setConversaSelecionada((prev) => (prev?.id === conversaId ? { ...prev, ...optimistic } : prev))
-    }
-
-    const res = await fetch(`/api/conversas/${conversaId}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    })
-
-    if (res.ok) {
-      const atualizada = await res.json()
-      aplicarConversaAtualizada(atualizada)
-      notifyPendenciasChanged()
-      return atualizada as Conversa
-    }
-
-    await fetchConversas()
-    return null
-  }
-
-  async function selecionarConversa(
-    conversa: Conversa,
-    options?: { syncUrl?: boolean },
-  ) {
-    setThreadSelecionada(null)
-    setMsgsPortal([])
-    setConversaSelecionada(conversa)
-
-    if (options?.syncUrl !== false) {
-      const params = new URLSearchParams(searchParams.toString())
-      params.delete('tab')
-      params.delete('leadId')
-      params.set('conversaId', conversa.id)
-      params.set('telefone', conversa.telefone)
-      router.replace(`${pathname}?${params.toString()}`, { scroll: false })
-    }
-
-    if (conversa.nao_lidas > 0) {
-      await atualizarConversa(
-        conversa.id,
-        { action: 'mark_read' },
-        { nao_lidas: 0 },
-      )
-    }
-  }
-
-  async function fetchThreadsPortal() {
-    const res = await fetch('/api/portal/threads')
-    if (res.ok) {
-      const data = await res.json()
-      const threads = data.threads || []
-      setThreadsPortal(threads)
-      setThreadSelecionada((prev) => {
-        if (!prev) return prev
-        return threads.find((item: ThreadPortal) => item.lead_id === prev.lead_id) || null
-      })
-    }
-  }
-
-  function selecionarThreadPortal(
-    thread: ThreadPortal,
-    options?: { syncUrl?: boolean },
-  ) {
-    setConversaSelecionada(null)
-    setMensagens([])
-    setThreadSelecionada(thread)
-
-    if (options?.syncUrl !== false) {
-      const params = new URLSearchParams(searchParams.toString())
-      params.delete('conversaId')
-      params.delete('telefone')
-      params.set('tab', 'portal')
-      params.set('leadId', thread.lead_id)
-      router.replace(`${pathname}?${params.toString()}`, { scroll: false })
-    }
-  }
 
   async function assumirConversa(conversaId: string) {
     await atualizarConversa(
@@ -525,9 +556,14 @@ export default function CaixaDeEntradaPage() {
     if (!conversaSelecionada || abaAtiva === 'portal' || abaAtiva === 'todas') return
     const statusAtual = normalizeInboxStatus(conversaSelecionada.status)
     if (statusAtual !== abaAtiva) {
-      setConversaSelecionada(null)
-      setMensagens([])
+      const timer = window.setTimeout(() => {
+        setConversaSelecionada(null)
+        setMensagens([])
+      }, 0)
+      return () => window.clearTimeout(timer)
     }
+
+    return undefined
   }, [abaAtiva, conversaSelecionada])
 
   const badgePortal = threadsPortal.reduce((a, t) => a + t.nao_lidas, 0)
@@ -868,7 +904,7 @@ export default function CaixaDeEntradaPage() {
                 )}
                 {ultimaNota && !panelInternoAberto && (
                   <span style={{ fontSize: '11px', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '200px', fontStyle: 'italic', fontFamily: 'DM Sans, sans-serif' }}>
-                    "{ultimaNota.mensagem}"
+                    &ldquo;{ultimaNota.mensagem}&rdquo;
                   </span>
                 )}
                 <span style={{ marginLeft: 'auto', fontSize: '11px', color: 'var(--accent)', fontFamily: 'DM Sans, sans-serif' }}>

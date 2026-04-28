@@ -1,6 +1,7 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import Image from 'next/image'
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useParams } from 'next/navigation'
 import {
   CalendarDays,
@@ -267,35 +268,7 @@ export default function PortalClientePage() {
   const [sucessoConfirmacao, setSucessoConfirmacao] = useState('')
   const msgEndRef = useRef<HTMLDivElement>(null)
 
-  useEffect(() => {
-    fetchPortal()
-  }, [token])
-
-  useEffect(() => {
-    setUltimoAcessoBase(null)
-  }, [token])
-
-  useEffect(() => {
-    msgEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [payload?.mensagens])
-
-  useEffect(() => {
-    if (payload?.viewer) {
-      setPerfil({
-        nome: payload.viewer.nome || '',
-        email: payload.viewer.email || '',
-        telefone: payload.viewer.telefone || '',
-      })
-    }
-  }, [payload?.viewer])
-
-  useEffect(() => {
-    if (!ultimoAcessoBase && payload?.viewer?.ultimo_acesso_em) {
-      setUltimoAcessoBase(payload.viewer.ultimo_acesso_em)
-    }
-  }, [payload?.viewer?.ultimo_acesso_em, ultimoAcessoBase])
-
-  async function fetchPortal() {
+  const fetchPortal = useCallback(async () => {
     setLoading(true)
     const res = await fetch(`/api/portal/${token}`)
     if (!res.ok) {
@@ -305,8 +278,52 @@ export default function PortalClientePage() {
     }
     const json = (await res.json()) as PortalPayload
     setPayload(json)
+    setPerfil({
+      nome: json.viewer?.nome || '',
+      email: json.viewer?.email || '',
+      telefone: json.viewer?.telefone || '',
+    })
+    setUltimoAcessoBase((current) => current || json.viewer?.ultimo_acesso_em || null)
     setLoading(false)
-  }
+  }, [token])
+
+  useEffect(() => {
+    let cancelled = false
+
+    const loadPortal = async () => {
+      setLoading(true)
+      const res = await fetch(`/api/portal/${token}`)
+      if (cancelled) return
+
+      if (!res.ok) {
+        setErro('Portal não encontrado ou link inválido.')
+        setLoading(false)
+        return
+      }
+
+      const json = (await res.json()) as PortalPayload
+      if (cancelled) return
+
+      setPayload(json)
+      setPerfil({
+        nome: json.viewer?.nome || '',
+        email: json.viewer?.email || '',
+        telefone: json.viewer?.telefone || '',
+      })
+      setUltimoAcessoBase(json.viewer?.ultimo_acesso_em || null)
+      setLoading(false)
+    }
+
+    void loadPortal()
+
+    return () => {
+      cancelled = true
+    }
+  }, [token])
+
+  useEffect(() => {
+    msgEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [payload?.mensagens])
 
   function abrirMensagens() {
     setAba('mensagens')
@@ -434,7 +451,7 @@ export default function PortalClientePage() {
     setEnviandoRemarcacao(false)
   }
 
-  async function confirmarPresenca() {
+  const confirmarPresenca = useCallback(async () => {
     setConfirmandoPresenca(true)
     setErroConfirmacao('')
     setSucessoConfirmacao('')
@@ -453,15 +470,18 @@ export default function PortalClientePage() {
     setSucessoConfirmacao('Presença confirmada com sucesso. A equipe já foi avisada.')
     await fetchPortal()
     setConfirmandoPresenca(false)
-  }
+  }, [fetchPortal, token])
 
   const lead = payload?.lead ?? null
   const documentos = payload?.documentos ?? []
-  const mensagens = payload?.mensagens ?? []
+  const mensagens = useMemo(() => payload?.mensagens ?? [], [payload?.mensagens])
   const branding = payload?.branding
   const proximoAgendamento = payload?.proximo_agendamento ?? null
-  const pendenciasDocumento = payload?.pendencias_documento ?? []
-  const timeline = payload?.timeline ?? []
+  const pendenciasDocumento = useMemo(
+    () => payload?.pendencias_documento ?? [],
+    [payload?.pendencias_documento],
+  )
+  const timeline = useMemo(() => payload?.timeline ?? [], [payload?.timeline])
   const viewer = payload?.viewer ?? null
   const accentColor = branding?.cor_primaria || '#4f7aff'
   const podeConfirmarPresenca = Boolean(
@@ -474,7 +494,10 @@ export default function PortalClientePage() {
     () => mensagens.filter((m) => m.remetente === 'escritorio' && !m.lida).length,
     [mensagens],
   )
-  const ultimoAcesso = ultimoAcessoBase ? new Date(ultimoAcessoBase) : null
+  const ultimoAcesso = useMemo(
+    () => (ultimoAcessoBase ? new Date(ultimoAcessoBase) : null),
+    [ultimoAcessoBase],
+  )
   const novidadesRecentes = useMemo(() => {
     if (!ultimoAcesso) return []
     return timeline.filter((evento) => new Date(evento.created_at).getTime() > ultimoAcesso.getTime()).slice(0, 4)
@@ -549,6 +572,7 @@ export default function PortalClientePage() {
     [
       accentColor,
       confirmandoPresenca,
+      confirmarPresenca,
       consultaJaConfirmada,
       msgNaoLidas,
       pendenciasDocumento,
@@ -635,9 +659,12 @@ export default function PortalClientePage() {
             }}
           >
             {branding.logo_url ? (
-              <img
+              <Image
                 src={branding.logo_url}
                 alt={branding.nome_escritorio}
+                width={34}
+                height={34}
+                unoptimized
                 style={{ width: '100%', height: '100%', objectFit: 'cover' }}
               />
             ) : (

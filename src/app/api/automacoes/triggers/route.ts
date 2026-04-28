@@ -3,6 +3,10 @@ import { contextHasPermission, getTenantContext } from '@/lib/tenant-context'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminSupabase } from '@/lib/internal-collaboration'
 
+function getErrorMessage(error: unknown) {
+    return error instanceof Error ? error.message : 'Erro interno'
+}
+
 export async function GET() {
     try {
         const authSupabase = await createClient()
@@ -30,8 +34,8 @@ export async function GET() {
         }
 
         return NextResponse.json(data)
-    } catch (e: any) {
-        console.error('Catch GET event_triggers:', e)
+    } catch (error: unknown) {
+        console.error('Catch GET event_triggers:', error)
         return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
     }
 }
@@ -93,8 +97,8 @@ export async function POST(req: Request) {
         }
 
         return NextResponse.json(data, { status: 201 })
-    } catch (e: any) {
-        console.error('Catch POST event_triggers:', e)
-        return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 })
+    } catch (error: unknown) {
+        console.error('Catch POST event_triggers:', error)
+        return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 })
     }
 }

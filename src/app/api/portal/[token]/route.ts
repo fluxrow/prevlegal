@@ -10,6 +10,8 @@ function createAdminSupabase() {
   )
 }
 
+type ConfiguracoesSupabase = Parameters<typeof getConfiguracaoAtual>[0]
+
 function normalizeBranding(payload: {
   tenantNome?: string | null
   responsavelEmail?: string | null
@@ -33,6 +35,20 @@ type TimelineEvent = {
   titulo: string
   descricao: string | null
   created_at: string
+}
+
+type PortalMessage = {
+  id: string
+  remetente: string
+  mensagem: string
+  lida: boolean
+  created_at: string
+}
+
+type PortalBrandingConfig = {
+  nome_escritorio?: string | null
+  logo_url?: string | null
+  cor_primaria?: string | null
 }
 
 function isMissingRelation(error?: { code?: string; message?: string } | null) {
@@ -137,11 +153,14 @@ export async function GET(
             .eq('id', lead.tenant_id)
             .maybeSingle()
         : Promise.resolve({ data: null }),
-      getConfiguracaoAtual(
-        adminSupabase,
-        lead.tenant_id,
-        'nome_escritorio, logo_url, cor_primaria',
-      ),
+      (() => {
+        const configuracoesSupabase = adminSupabase as unknown as ConfiguracoesSupabase
+        return getConfiguracaoAtual<PortalBrandingConfig>(
+          configuracoesSupabase,
+          lead.tenant_id,
+          'nome_escritorio, logo_url, cor_primaria',
+        )
+      })(),
       adminSupabase
         .from('lead_documentos')
         .select('id, nome, tipo, arquivo_url, gerado_por_ia, tipo_documento, created_at')
@@ -227,7 +246,8 @@ export async function GET(
     corPrimaria: configuracao?.cor_primaria,
   })
 
-  const mensagensNaoLidas = (mensagens || []).filter(
+  const mensagensPortal = (mensagens || []) as PortalMessage[]
+  const mensagensNaoLidas = mensagensPortal.filter(
     (message) => message.remetente === 'escritorio' && !message.lida,
   ).length
 
@@ -240,7 +260,7 @@ export async function GET(
     },
     branding,
     documentos: documentos || [],
-    mensagens: mensagens || [],
+    mensagens: mensagensPortal,
     proximo_agendamento: proximoAgendamento || null,
     pendencias_documento: pendenciasDocumento,
     timeline:

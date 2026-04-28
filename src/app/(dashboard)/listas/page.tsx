@@ -1,4 +1,5 @@
 'use client'
+import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { List, CheckCircle, XCircle, HelpCircle, Zap, Upload, Users, Trash2, FolderPlus } from 'lucide-react'
 import ListasOnboardingTour from '@/components/listas-onboarding-tour'
@@ -18,12 +19,21 @@ interface Lista {
   created_at: string
 }
 
+type ListaVerificationResult = {
+  error?: string
+  stats?: {
+    verificados: number
+    com_whatsapp: number
+    sem_whatsapp: number
+  }
+}
+
 export default function ListasPage() {
   const [listas, setListas] = useState<Lista[]>([])
   const [loading, setLoading] = useState(true)
   const [verificando, setVerificando] = useState<string | null>(null)
   const [excluindo, setExcluindo] = useState<string | null>(null)
-  const [statsVerif, setStatsVerif] = useState<Record<string, any>>({})
+  const [statsVerif, setStatsVerif] = useState<Record<string, ListaVerificationResult | null>>({})
   const [acaoErro, setAcaoErro] = useState<string>('')
 
   useEffect(() => { fetchListas() }, [])
@@ -88,13 +98,13 @@ export default function ListasPage() {
             Gerencie suas listas importadas e verifique presenca no WhatsApp
           </p>
         </div>
-        <a data-tour="listas-importar" href="/leads/import" style={{
+        <Link data-tour="listas-importar" href="/leads/import" style={{
           display: 'flex', alignItems: 'center', gap: '7px', padding: '9px 16px',
           borderRadius: '8px', background: 'var(--accent)', color: '#fff',
           textDecoration: 'none', fontSize: '13px', fontWeight: '500'
         }}>
           <Upload size={14} /> Importar lista
-        </a>
+        </Link>
       </div>
 
       <div data-tour="listas-status" style={{

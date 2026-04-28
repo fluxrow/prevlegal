@@ -1,6 +1,16 @@
 const DEFAULT_TIMEOUT_MS = 120000
 const MAX_RETRY_ATTEMPTS = 4
 
+type AgentAutoresponderPayload = {
+  reason?: string
+  retryable?: boolean
+  retry_after_ms?: number
+  error?: string
+  horario_inicio?: string
+  horario_fim?: string
+  dias_uteis_only?: boolean
+}
+
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
@@ -31,9 +41,9 @@ export async function triggerAgentAutoresponder(mensagemId: string) {
       })
 
       const body = await response.text().catch(() => '')
-      let payload: any = null
+      let payload: AgentAutoresponderPayload | null = null
       try {
-        payload = body ? JSON.parse(body) : null
+        payload = body ? (JSON.parse(body) as AgentAutoresponderPayload) : null
       } catch {
         payload = null
       }
@@ -68,7 +78,7 @@ export async function triggerAgentAutoresponder(mensagemId: string) {
         status: response.status,
         payload,
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (attempt < MAX_RETRY_ATTEMPTS) {
         await sleep(1000 * attempt)
         continue
@@ -77,7 +87,7 @@ export async function triggerAgentAutoresponder(mensagemId: string) {
       return {
         ok: false,
         status: 0,
-        error: error?.message || 'Falha ao acionar agente',
+        error: error instanceof Error ? error.message : 'Falha ao acionar agente',
       }
     }
   }

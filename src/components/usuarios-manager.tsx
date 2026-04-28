@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { UserPlus, Shield, User, ToggleLeft, ToggleRight, Loader2, X, Eye, EyeOff } from 'lucide-react'
 
 type Usuario = {
@@ -18,15 +18,25 @@ export default function UsuariosManager() {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
 
-  useEffect(() => { fetchUsuarios() }, [])
+  useEffect(() => {
+    let cancelled = false
 
-  async function fetchUsuarios() {
-    setLoading(true)
-    const res = await fetch('/api/usuarios')
-    const data = await res.json()
-    setUsuarios(data.usuarios || [])
-    setLoading(false)
-  }
+    const loadInitialData = async () => {
+      const res = await fetch('/api/usuarios')
+      const data = await res.json()
+
+      if (!cancelled) {
+        setUsuarios(data.usuarios || [])
+        setLoading(false)
+      }
+    }
+
+    void loadInitialData()
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   async function criarUsuario() {
     if (!form.nome || !form.email || !form.password) { setError('Preencha todos os campos'); return }

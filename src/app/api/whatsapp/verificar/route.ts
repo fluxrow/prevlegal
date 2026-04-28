@@ -5,6 +5,14 @@ import { createClient as createAdmin } from '@supabase/supabase-js'
 import { getTenantContext } from '@/lib/tenant-context'
 import { resolveWhatsAppChannel } from '@/lib/whatsapp-provider'
 
+type LeadIdRow = { id: string }
+type LeadWhatsappRow = { id: string; telefone: string | null; nome: string | null; tem_whatsapp: boolean | null }
+type LeadWhatsappFlagRow = { tem_whatsapp: boolean | null }
+
+function getErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : String(error || 'Erro desconhecido')
+}
+
 function createAdminClient() {
   return createAdmin(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -29,7 +37,7 @@ async function checkWhatsApp(phone: string): Promise<boolean> {
   const url = `https://lookups.twilio.com/v2/PhoneNumbers/${encodeURIComponent(phone)}?Fields=whatsapp`
   const res = await fetch(url, { headers: { Authorization: `Basic ${encoded}` } })
   if (!res.ok) return false
-  const data = await res.json()
+  const data = await res.json() as { whatsapp?: { has_whatsapp?: boolean } }
   return data?.whatsapp?.has_whatsapp === true
 }
 
@@ -76,7 +84,7 @@ export async function POST(request: NextRequest) {
 
     const { data: listaLeads, error: leadsError } = await leadsDaListaQuery
     if (leadsError || !listaLeads) return NextResponse.json({ error: 'Erro ao buscar leads da lista' }, { status: 500 })
-    const leadIds = listaLeads.map((lead: any) => lead.id)
+    const leadIds = (listaLeads as LeadIdRow[]).map((lead) => lead.id)
 
     if (leadIds.length === 0) {
       return NextResponse.json({ success: true, stats: { verificados: 0, com_whatsapp: 0, sem_whatsapp: 0 } })
@@ -93,7 +101,7 @@ export async function POST(request: NextRequest) {
     let comWhatsapp = 0, semWhatsapp = 0, erros = 0
     for (let i = 0; i < leads.length; i += 10) {
       const batch = leads.slice(i, i + 10)
-      await Promise.all(batch.map(async (lead: any) => {
+      await Promise.all((batch as LeadWhatsappRow[]).map(async (lead) => {
         const phone = normalizePhone(lead.telefone || '')
         if (!phone) {
           await adminClient.from('leads').update({ tem_whatsapp: false, whatsapp_verificado_em: new Date().toISOString() }).eq('id', lead.id)
@@ -111,13 +119,13 @@ export async function POST(request: NextRequest) {
     }
     const { data: statsLeads } = await adminClient.from('leads').select('tem_whatsapp').in('id', leadIds)
     await adminClient.from('listas').update({
-      total_com_whatsapp: (statsLeads || []).filter((l: any) => l.tem_whatsapp === true).length,
-      total_sem_whatsapp: (statsLeads || []).filter((l: any) => l.tem_whatsapp === false).length,
-      total_nao_verificado: (statsLeads || []).filter((l: any) => l.tem_whatsapp == null).length,
+      total_com_whatsapp: ((statsLeads as LeadWhatsappFlagRow[] | null) || []).filter((l) => l.tem_whatsapp === true).length,
+      total_sem_whatsapp: ((statsLeads as LeadWhatsappFlagRow[] | null) || []).filter((l) => l.tem_whatsapp === false).length,
+      total_nao_verificado: ((statsLeads as LeadWhatsappFlagRow[] | null) || []).filter((l) => l.tem_whatsapp == null).length,
       updated_at: new Date().toISOString()
     }).eq('id', lista_id)
     return NextResponse.json({ success: true, stats: { verificados: leads.length, com_whatsapp: comWhatsapp, sem_whatsapp: semWhatsapp, erros } })
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 })
+  } catch (err: unknown) {
+    return NextResponse.json({ error: getErrorMessage(err) }, { status: 500 })
   }
 }

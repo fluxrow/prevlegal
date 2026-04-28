@@ -2,10 +2,6 @@ import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 import { getTenantContext } from '@/lib/tenant-context'
 
-function applyTenantFilter(query: any, tenantId: string | null) {
-  return tenantId ? query.eq('tenant_id', tenantId) : query.is('tenant_id', null)
-}
-
 export async function GET() {
   const supabase = await createClient()
   const context = await getTenantContext(supabase)
@@ -33,7 +29,9 @@ export async function GET() {
         total_respondidos, total_convertidos, honorarios_gerados
       `)
       .order('created_at', { ascending: false })
-    campanhasQuery = applyTenantFilter(campanhasQuery, context.tenantId)
+    campanhasQuery = context.tenantId
+      ? campanhasQuery.eq('tenant_id', context.tenantId)
+      : campanhasQuery.is('tenant_id', null)
 
     if (!context.isAdmin) {
       campanhasQuery = campanhasQuery.eq('responsavel_id', context.usuarioId)

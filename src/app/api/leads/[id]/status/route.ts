@@ -36,7 +36,7 @@ export async function PATCH(
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  if (oldLead && oldLead.status !== status) {
+  if (context.tenantId && oldLead && oldLead.status !== status) {
     const { processEventTriggers } = await import('@/lib/events/orchestrator')
 
     await processEventTriggers(context.tenantId, id, 'lead_status_mudou', status)

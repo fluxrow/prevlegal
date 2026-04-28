@@ -131,10 +131,12 @@ export async function updateSession(request: NextRequest) {
   }
 
   if (user && !isPublic) {
-    const currentTenantId = await getAuthenticatedTenantIdForContainment(supabase, user.id)
+    const containmentSupabase =
+      supabase as unknown as Parameters<typeof getAuthenticatedTenantIdForContainment>[0]
+    const currentTenantId = await getAuthenticatedTenantIdForContainment(containmentSupabase, user.id)
     const blockedByContainment = isBlockedByTenantContainment(user.email, currentTenantId)
     const bootstrapBypass = blockedByContainment
-      ? await canBypassContainmentForBootstrap(supabase, user.id)
+      ? await canBypassContainmentForBootstrap(containmentSupabase, user.id)
       : false
 
     if (blockedByContainment && !bootstrapBypass) {

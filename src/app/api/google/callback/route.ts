@@ -6,6 +6,7 @@ import { google } from 'googleapis'
 import { isMissingUserCalendarColumnError } from '@/lib/permissions'
 
 type GoogleAuthTarget = 'tenant' | 'user'
+type ConfiguracoesSupabase = Parameters<typeof ensureConfiguracaoAtual>[0]
 
 function getEnv(name: string) {
   return process.env[name]?.trim()
@@ -82,8 +83,9 @@ export async function GET(request: NextRequest) {
         )
       }
 
+      const configuracoesSupabase = supabase as unknown as ConfiguracoesSupabase
       const { data: config, error: configError } = await ensureConfiguracaoAtual(
-        supabase,
+        configuracoesSupabase,
         context.tenantId,
       )
 

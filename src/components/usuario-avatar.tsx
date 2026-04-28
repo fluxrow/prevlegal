@@ -1,6 +1,7 @@
 'use client'
-import { useEffect, useState } from 'react'
+import Image from 'next/image'
 import Link from 'next/link'
+import { useEffect, useState } from 'react'
 
 interface UsuarioInfo {
   nome: string
@@ -53,7 +54,7 @@ export default function UsuarioAvatar() {
         display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
       }}>
         {usuario.foto_url
-          ? <img src={usuario.foto_url} alt={usuario.nome} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          ? <Image src={usuario.foto_url} alt={usuario.nome} width={26} height={26} unoptimized style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
           : <span style={{ fontSize: '11px', fontWeight: '700', color: cor, fontFamily: 'Syne, sans-serif' }}>{inicial}</span>}
       </div>
       <div>

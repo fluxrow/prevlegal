@@ -3,6 +3,8 @@ import { createClient } from '@/lib/supabase/server'
 import { getTenantContext } from '@/lib/tenant-context'
 import { getGoogleCalendarStatus } from '@/lib/google-calendar'
 
+type CalendarStatusSupabase = Parameters<typeof getGoogleCalendarStatus>[0]['supabase']
+
 export async function GET() {
   const supabase = await createClient()
   const context = await getTenantContext(supabase)
@@ -15,8 +17,9 @@ export async function GET() {
   }
 
   try {
+    const calendarStatusSupabase = supabase as unknown as CalendarStatusSupabase
     const status = await getGoogleCalendarStatus({
-      supabase,
+      supabase: calendarStatusSupabase,
       tenantId: context.tenantId,
       usuarioId: context.usuarioId,
     })

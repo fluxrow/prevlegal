@@ -10,14 +10,16 @@ interface BeforeInstallPromptEvent extends Event {
 
 export default function PortalInstallPrompt({ accentColor }: { accentColor: string }) {
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null)
-  const [isStandalone, setIsStandalone] = useState(false)
+  const [isStandalone, setIsStandalone] = useState(() => {
+    if (typeof window === 'undefined') return false
 
-  useEffect(() => {
-    const standalone =
+    return (
       window.matchMedia('(display-mode: standalone)').matches ||
       Boolean((window.navigator as Navigator & { standalone?: boolean }).standalone)
-    setIsStandalone(standalone)
+    )
+  })
 
+  useEffect(() => {
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('/sw.js').catch(() => undefined)

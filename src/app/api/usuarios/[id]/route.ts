@@ -42,7 +42,8 @@ export async function PATCH(
     .single()
 
   if (isMissingPermissionsColumnError(result.error)) {
-    const { permissions: _permissions, ...fallbackUpdate } = update
+    const fallbackUpdate = { ...update }
+    delete fallbackUpdate.permissions
     result = await adminClient
       .from('usuarios')
       .update({ ...fallbackUpdate, updated_at: new Date().toISOString() })

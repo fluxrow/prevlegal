@@ -3,6 +3,8 @@ import { NextResponse } from 'next/server'
 import { getConfiguracaoAtual } from '@/lib/configuracoes'
 import { resolveUsuarioAtual } from '@/lib/current-usuario'
 
+type ConfiguracoesSupabase = Parameters<typeof getConfiguracaoAtual>[0]
+
 export async function GET() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -18,8 +20,9 @@ export async function GET() {
     .limit(1)
     .single()
 
+  const configuracoesSupabase = supabase as unknown as ConfiguracoesSupabase
   const { data: config } = await getConfiguracaoAtual(
-    supabase,
+    configuracoesSupabase,
     usuario.tenant_id || null,
     'google_calendar_email, google_calendar_connected_at, google_calendar_token',
   )

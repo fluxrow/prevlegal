@@ -1,12 +1,39 @@
-type SupabaseLike = {
-  from: (table: string) => any
+type QueryError = {
+  message?: string
 }
 
-function applyTenantFilter(query: any, tenantId: string | null) {
+type QueryResult<T extends Record<string, unknown> = Record<string, unknown>> = {
+  data: T | null
+  error: QueryError | null
+}
+
+type SupabaseLike = {
+  from: (table: string) => {
+    select: (columns?: string) => TenantScopedQuery
+    insert: (payload: Record<string, unknown>) => {
+      select: (columns?: string) => {
+        single: <T extends Record<string, unknown> = Record<string, unknown>>() => PromiseLike<QueryResult<T>>
+      }
+    }
+  }
+}
+
+type TenantScopedQuery = {
+  eq: (column: string, value: string | null) => TenantScopedQueryResult
+  is: (column: string, value: null) => TenantScopedQueryResult
+}
+
+type TenantScopedQueryResult = {
+  limit: (count: number) => {
+    maybeSingle: <T extends Record<string, unknown> = Record<string, unknown>>() => PromiseLike<QueryResult<T>>
+  }
+}
+
+function applyTenantFilter(query: TenantScopedQuery, tenantId: string | null): TenantScopedQueryResult {
   return tenantId ? query.eq('tenant_id', tenantId) : query.is('tenant_id', null)
 }
 
-export async function getConfiguracaoAtual(
+export async function getConfiguracaoAtual<T extends Record<string, unknown> = Record<string, unknown>>(
   supabase: SupabaseLike,
   tenantId: string | null,
   columns = '*',
@@ -16,7 +43,7 @@ export async function getConfiguracaoAtual(
     tenantId,
   )
 
-  return query.limit(1).maybeSingle()
+  return query.limit(1).maybeSingle<T>()
 }
 
 export async function ensureConfiguracaoAtual(
@@ -24,7 +51,7 @@ export async function ensureConfiguracaoAtual(
   tenantId: string | null,
   defaults: Record<string, unknown> = {},
 ) {
-  const { data: existing, error } = await getConfiguracaoAtual(supabase, tenantId, 'id')
+  const { data: existing, error } = await getConfiguracaoAtual<{ id: string }>(supabase, tenantId, 'id')
 
   if (error) {
     return { data: null, error }
@@ -44,5 +71,5 @@ export async function ensureConfiguracaoAtual(
     .from('configuracoes')
     .insert(payload)
     .select('id')
-    .single()
+    .single<{ id: string }>()
 }

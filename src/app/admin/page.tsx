@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import SessionActivityTracker from '@/components/session-activity-tracker'
 import { ADMIN_IDLE_MINUTES } from '@/lib/session-config'
@@ -132,9 +132,7 @@ export default function AdminPage() {
   const [togglingId, setTogglingId] = useState<string | null>(null)
   const router = useRouter()
 
-  useEffect(() => { fetchData() }, [])
-
-  async function fetchData() {
+  const fetchData = useCallback(async () => {
     setLoading(true)
     const res = await fetch('/api/admin/tenants')
     if (res.status === 401) { router.push('/admin/login'); return }
@@ -143,7 +141,32 @@ export default function AdminPage() {
     setTenants(json.tenants || [])
     setMetricas(json.metricas || { totalLeads: 0, totalConversas: 0 })
     setLoading(false)
-  }
+  }, [router])
+
+  useEffect(() => {
+    let cancelled = false
+
+    const loadInitialData = async () => {
+      const res = await fetch('/api/admin/tenants')
+      if (cancelled) return
+
+      if (res.status === 401) { router.push('/admin/login'); return }
+      if (res.status === 428) { router.push('/admin/reauth?next=/admin'); return }
+
+      const json = await res.json()
+      if (!cancelled) {
+        setTenants(json.tenants || [])
+        setMetricas(json.metricas || { totalLeads: 0, totalConversas: 0 })
+        setLoading(false)
+      }
+    }
+
+    void loadInitialData()
+
+    return () => {
+      cancelled = true
+    }
+  }, [router])
 
   async function salvar() {
     setSalvando(true)

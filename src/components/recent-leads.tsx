@@ -1,5 +1,7 @@
 'use client'
 
+import Link from 'next/link'
+
 type Lead = {
   id: string
   nome: string
@@ -26,9 +28,9 @@ export default function RecentLeads({ leads }: { leads: Lead[] }) {
     return (
       <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)', fontSize: '13px' }}>
         Nenhum lead importado ainda.<br />
-        <a href="/leads" style={{ color: 'var(--accent)', textDecoration: 'none', marginTop: '8px', display: 'inline-block' }}>
+        <Link href="/leads" style={{ color: 'var(--accent)', textDecoration: 'none', marginTop: '8px', display: 'inline-block' }}>
           Importar primeira lista →
-        </a>
+        </Link>
       </div>
     )
   }
@@ -38,7 +40,7 @@ export default function RecentLeads({ leads }: { leads: Lead[] }) {
       {leads.map(lead => {
         const sc = statusConfig[lead.status] || statusConfig.new
         return (
-          <a key={lead.id} href={`/leads/${lead.id}`} style={{ textDecoration: 'none' }}>
+          <Link key={lead.id} href={`/leads/${lead.id}`} style={{ textDecoration: 'none' }}>
             <div
               style={{ display: 'flex', alignItems: 'center', padding: '10px 12px', borderRadius: '8px', cursor: 'pointer', gap: '12px', transition: 'background 0.15s' }}
               onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-hover)')}
@@ -60,7 +62,7 @@ export default function RecentLeads({ leads }: { leads: Lead[] }) {
               </div>
               <div style={{ padding: '3px 10px', borderRadius: '20px', background: sc.bg, color: sc.color, fontSize: '11px', fontWeight: '500' }}>{sc.label}</div>
             </div>
-          </a>
+          </Link>
         )
       })}
     </div>

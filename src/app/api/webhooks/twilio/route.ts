@@ -6,15 +6,23 @@ import { getTwilioRoutingContextByWhatsAppNumber } from '@/lib/twilio'
 import { triggerAgentAutoresponder } from '@/lib/agent-autoresponder'
 import { sendWhatsAppMessage } from '@/lib/whatsapp-provider'
 
+type AgentFailurePayload = {
+  horario_inicio?: string
+  horario_fim?: string
+  dias_uteis_only?: boolean
+}
+
+type AgentEscalationConfig = {
+  agente_gatilhos_escalada?: string | null
+}
+
+type ConfiguracoesSupabase = Parameters<typeof getConfiguracaoAtual>[0]
+
 function createAdminSupabase() {
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   )
-}
-
-function applyTenantFilter(query: any, tenantId: string | null) {
-  return tenantId ? query.eq('tenant_id', tenantId) : query.is('tenant_id', null)
 }
 
 async function registerAgentAutoresponderFailure({
@@ -34,7 +42,7 @@ async function registerAgentAutoresponderFailure({
   leadId?: string | null
   campanhaId?: string | null
   leadName: string
-  result: { status: number; error: string; payload?: any }
+  result: { status: number; error: string; payload?: AgentFailurePayload }
 }) {
   const normalizedError = String(result.error || '').toLowerCase()
   const outsideHours = normalizedError.includes('fora do horário')
@@ -168,7 +176,7 @@ export async function POST(request: NextRequest) {
     .limit(2)
 
   if (routing.tenantId) {
-    leadQuery = applyTenantFilter(leadQuery, routing.tenantId)
+    leadQuery = leadQuery.eq('tenant_id', routing.tenantId)
   }
 
   const { data: leadMatches } = await leadQuery
@@ -204,7 +212,7 @@ export async function POST(request: NextRequest) {
       .from('conversas')
       .select('id, nao_lidas, status')
       .eq('telefone', from)
-    conversaQuery = applyTenantFilter(conversaQuery, tenantId)
+    conversaQuery = tenantId ? conversaQuery.eq('tenant_id', tenantId) : conversaQuery.is('tenant_id', null)
     const { data: conversaExistente } = await conversaQuery.maybeSingle()
 
     if (conversaExistente) {
@@ -260,8 +268,9 @@ export async function POST(request: NextRequest) {
     })
 
     // 5d. Detectar gatilhos de escalada
-    const { data: config } = await getConfiguracaoAtual(
-      supabase,
+    const configuracoesSupabase = supabase as unknown as ConfiguracoesSupabase
+    const { data: config } = await getConfiguracaoAtual<AgentEscalationConfig>(
+      configuracoesSupabase,
       tenantId,
       'agente_gatilhos_escalada',
     )
@@ -357,8 +366,8 @@ export async function POST(request: NextRequest) {
           leadName: lead?.nome || telefoneNormalizado,
           result: {
             status: result.status,
-            error: result.error,
-            payload: result.payload,
+            error: result.error || 'Erro desconhecido ao acionar agente via Twilio',
+            payload: result.payload ?? undefined,
           },
         })
       }

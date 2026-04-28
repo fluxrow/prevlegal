@@ -4,11 +4,23 @@ import { createClient as createAdmin } from '@supabase/supabase-js'
 import { createClient as createServerClient } from '@/lib/supabase/server'
 import { getTenantContext } from '@/lib/tenant-context'
 
+type CampaignIdRow = {
+  id: string
+}
+
+type LeadIdRow = {
+  lead_id: string | null
+}
+
 function createAdminClient() {
   return createAdmin(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   )
+}
+
+function getErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : 'Erro interno'
 }
 
 // GET /api/agentes/[id]/metricas
@@ -45,19 +57,21 @@ export async function GET(
       .eq('respondido_por_agente', true)
 
     // 2. Leads ativos atendidos pelo agente via campanha
-    const { count: leadsViaCampanha } = await adminClient
-      .from('leads')
-      .select('id', { count: 'exact', head: true })
+    const { data: campanhasDoAgente } = await adminClient
+      .from('campanhas')
+      .select('id')
+      .eq('agente_id', id)
       .eq('tenant_id', context.tenantId)
-      .not('campanha_id', 'is', null)
-      .in(
-        'campanha_id',
-        // subconsulta: campanhas com este agente
-        adminClient
-          .from('campanhas')
-          .select('id')
-          .eq('agente_id', id) as any
-      )
+
+    const campanhaIds = (campanhasDoAgente || []).map((campanha: CampaignIdRow) => campanha.id)
+
+    const { count: leadsViaCampanha } = campanhaIds.length
+      ? await adminClient
+          .from('leads')
+          .select('id', { count: 'exact', head: true })
+          .eq('tenant_id', context.tenantId)
+          .in('campanha_id', campanhaIds)
+      : { count: 0 }
 
     // 3. Taxa de escalonamento para humano
     // leads cujas conversas foram assumidas por humano após o agente responder
@@ -69,7 +83,13 @@ export async function GET(
       .not('lead_id', 'is', null)
       .limit(500)
 
-    const leadIds = [...new Set((mensagensDoAgente || []).map((m: any) => m.lead_id).filter(Boolean))]
+    const leadIds = [
+      ...new Set(
+        (mensagensDoAgente || [])
+          .map((mensagem: LeadIdRow) => mensagem.lead_id)
+          .filter((leadId): leadId is string => Boolean(leadId))
+      ),
+    ]
 
     let taxaEscalonamento = 0
     let escalonamentos = 0
@@ -113,7 +133,7 @@ export async function GET(
       },
       campanhas: campanhasVinculadas || [],
     })
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 })
+  } catch (error: unknown) {
+    return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 })
   }
 }

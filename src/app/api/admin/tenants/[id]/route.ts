@@ -2,6 +2,14 @@ import { NextResponse } from 'next/server'
 import { verificarAdminAuth, verificarAdminReauthRecente } from '@/lib/admin-auth'
 import { createClient } from '@supabase/supabase-js'
 
+type AdminSupabaseLike = {
+  from: (table: string) => {
+    select: (columns: string) => {
+      like: (column: string, pattern: string) => PromiseLike<{ data: Array<{ id: string; slug: string }> | null }>
+    }
+  }
+}
+
 function slugify(value: string) {
   return value
     .normalize('NFD')
@@ -33,7 +41,7 @@ function parseMoneyInput(value: unknown) {
 }
 
 async function buildUniqueSlug(
-  adminSupabase: any,
+  adminSupabase: AdminSupabaseLike,
   baseValue: string,
   currentId: string
 ) {

@@ -22,7 +22,7 @@ type NotificationRecord = {
   lida: boolean
   link?: string | null
   created_at: string
-  metadata?: Record<string, any> | null
+  metadata?: Record<string, unknown> | null
 }
 
 async function filterVisibleNotifications(

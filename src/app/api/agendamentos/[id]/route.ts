@@ -15,17 +15,40 @@ const AGENDAMENTO_RETURN_SELECT = `
   usuarios:usuarios!agendamentos_usuario_id_fkey(id, nome, email)
 `
 
+type CalendarSupabase = Parameters<typeof atualizarEventoCalendar>[0]['supabase']
+
+type AgendamentoAtual = {
+  lead_id: string | null
+  google_event_id: string | null
+  status: string
+  calendar_owner_scope?: 'tenant' | 'user' | null
+  calendar_owner_usuario_id?: string | null
+}
+
+type ScopedSupabase = {
+  from: (table: string) => {
+    select: (columns: string) => {
+      eq: (column: string, value: string | null) => {
+        eq: (column: string, value: string | null) => {
+          single: <T>() => PromiseLike<{ data: T | null; error: { message: string } | null }>
+        }
+        single: <T>() => PromiseLike<{ data: T | null; error: { message: string } | null }>
+      }
+    }
+  }
+}
+
 async function getAgendamentoAtualWithSchemaFallback(
-  supabase: any,
+  supabase: ScopedSupabase,
   tenantId: string | null,
   id: string,
 ) {
-  let result = await supabase
+  const result = await supabase
     .from('agendamentos')
     .select(AGENDAMENTO_SELECT_FULL)
     .eq('id', id)
     .eq('tenant_id', tenantId)
-    .single()
+    .single<AgendamentoAtual>()
 
   if (!isMissingAgendamentoOwnerColumnError(result.error)) {
     return result
@@ -36,7 +59,7 @@ async function getAgendamentoAtualWithSchemaFallback(
     .select(AGENDAMENTO_SELECT_LEGACY)
     .eq('id', id)
     .eq('tenant_id', tenantId)
-    .single()
+    .single<AgendamentoAtual>()
 }
 
 export async function PATCH(
@@ -54,14 +77,19 @@ export async function PATCH(
 
   const body = await request.json()
   const { status, data_hora, duracao_minutos, observacoes, honorario, usuario_id } = body
+  const scopedAdminSupabase =
+    adminSupabase as unknown as Parameters<typeof getAgendamentoAtualWithSchemaFallback>[0]
 
   // Busca agendamento atual
   const { data: atual } = await getAgendamentoAtualWithSchemaFallback(
-    adminSupabase,
+    scopedAdminSupabase,
     context.tenantId,
     id,
   )
   if (!atual) return NextResponse.json({ error: 'Agendamento não encontrado' }, { status: 404 })
+  if (!atual.lead_id) {
+    return NextResponse.json({ error: 'Agendamento sem lead vinculado' }, { status: 409 })
+  }
 
   if (!context.isAdmin) {
     const allowed = await canAccessLeadId(supabase, context, atual.lead_id)
@@ -88,8 +116,9 @@ export async function PATCH(
   // Atualiza no Google Calendar se remarcando
   if (atual?.google_event_id && data_hora) {
     try {
+      const calendarSupabase = adminSupabase as unknown as CalendarSupabase
       await atualizarEventoCalendar({
-        supabase: adminSupabase,
+        supabase: calendarSupabase,
         tenantId: context.tenantId,
         googleEventId: atual.google_event_id,
         dataHora: data_hora,
@@ -105,8 +134,9 @@ export async function PATCH(
   // Cancela no Google Calendar se status = cancelado
   if (status === 'cancelado' && atual?.google_event_id) {
     try {
+      const calendarSupabase = adminSupabase as unknown as CalendarSupabase
       await cancelarEventoCalendar({
-        supabase: adminSupabase,
+        supabase: calendarSupabase,
         tenantId: context.tenantId,
         googleEventId: atual.google_event_id,
         ownerScope: 'calendar_owner_scope' in atual ? atual.calendar_owner_scope : undefined,
@@ -154,14 +184,19 @@ export async function DELETE(
   )
   const context = await getTenantContext(supabase)
   if (!context) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const scopedAdminSupabase =
+    adminSupabase as unknown as Parameters<typeof getAgendamentoAtualWithSchemaFallback>[0]
 
   const { data: atual } = await getAgendamentoAtualWithSchemaFallback(
-    adminSupabase,
+    scopedAdminSupabase,
     context.tenantId,
     id,
   )
 
   if (!atual) return NextResponse.json({ error: 'Agendamento não encontrado' }, { status: 404 })
+  if (!atual.lead_id) {
+    return NextResponse.json({ error: 'Agendamento sem lead vinculado' }, { status: 409 })
+  }
 
   if (!context.isAdmin) {
     const allowed = await canAccessLeadId(supabase, context, atual.lead_id)
@@ -170,8 +205,9 @@ export async function DELETE(
 
   if (atual?.google_event_id) {
     try {
+      const calendarSupabase = adminSupabase as unknown as CalendarSupabase
       await cancelarEventoCalendar({
-        supabase: adminSupabase,
+        supabase: calendarSupabase,
         tenantId: context.tenantId,
         googleEventId: atual.google_event_id,
         ownerScope: 'calendar_owner_scope' in atual ? atual.calendar_owner_scope : undefined,

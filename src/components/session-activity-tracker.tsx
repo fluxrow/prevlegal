@@ -74,7 +74,7 @@ export default function SessionActivityTracker({
       document.removeEventListener('visibilitychange', handleVisibility)
       if (idleTimerRef.current) window.clearTimeout(idleTimerRef.current)
     }
-  }, [resetIdleTimer])
+  }, [])
 
   return null
 }

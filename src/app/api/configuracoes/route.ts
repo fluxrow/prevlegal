@@ -4,6 +4,10 @@ import { ensureConfiguracaoAtual, getConfiguracaoAtual } from '@/lib/configuraco
 import { createClient as createServerClient } from '@/lib/supabase/server'
 import { getTenantContext } from '@/lib/tenant-context'
 
+function getErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : String(error || 'Erro desconhecido')
+}
+
 function createAdminSupabase() {
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -11,13 +15,16 @@ function createAdminSupabase() {
   )
 }
 
+type ConfiguracoesSupabase = Parameters<typeof getConfiguracaoAtual>[0]
+
 export async function GET() {
   const authSupabase = await createServerClient()
   const context = await getTenantContext(authSupabase)
   if (!context) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const supabase = createAdminSupabase()
-  const { data, error } = await getConfiguracaoAtual(supabase, context.tenantId)
+  const configuracoesSupabase = supabase as unknown as ConfiguracoesSupabase
+  const { data, error } = await getConfiguracaoAtual(configuracoesSupabase, context.tenantId)
 
   if (error) return NextResponse.json(null)
   return NextResponse.json(data)
@@ -31,11 +38,12 @@ export async function PATCH(request: NextRequest) {
     if (!context.isAdmin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
     const supabase = createAdminSupabase()
+    const configuracoesSupabase = supabase as unknown as ConfiguracoesSupabase
     const body = await request.json()
     body.updated_at = new Date().toISOString()
 
     const { data: existing, error: ensureError } = await ensureConfiguracaoAtual(
-      supabase,
+      configuracoesSupabase,
       context.tenantId,
     )
 
@@ -50,7 +58,7 @@ export async function PATCH(request: NextRequest) {
 
     if (result.error) return NextResponse.json({ error: result.error.message }, { status: 500 })
     return NextResponse.json({ success: true })
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 })
+  } catch (err: unknown) {
+    return NextResponse.json({ error: getErrorMessage(err) }, { status: 500 })
   }
 }

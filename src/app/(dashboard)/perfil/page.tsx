@@ -1,4 +1,5 @@
 'use client'
+import Image from 'next/image'
 import { useEffect, useRef, useState } from 'react'
 import { User, Building2, FileText, Camera, Save, CheckCircle, AlertCircle, Upload, Calendar } from 'lucide-react'
 
@@ -167,30 +168,36 @@ export default function PerfilPage() {
       })
   }, [])
 
+  function showToast(tipo: 'ok' | 'erro', msg: string) {
+    setToast({ tipo, msg })
+    setTimeout(() => setToast(null), 3500)
+  }
+
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     const google = params.get('google')
     const googleTarget = params.get('google_target')
     if (!google) return
 
-    if (google === 'conectado') {
-      showToast('ok', googleTarget === 'tenant' ? 'Calendário do escritório conectado' : 'Seu Google Calendar foi conectado')
-    } else if (google === 'erro') {
-      showToast('erro', googleTarget === 'tenant' ? 'Falha ao conectar o calendário do escritório' : 'Falha ao conectar seu Google Calendar')
-    } else if (google === 'forbidden') {
-      showToast('erro', 'Apenas admins podem conectar o calendário padrão do escritório')
-    }
+    const timer = window.setTimeout(() => {
+      if (google === 'conectado') {
+        showToast('ok', googleTarget === 'tenant' ? 'Calendário do escritório conectado' : 'Seu Google Calendar foi conectado')
+      } else if (google === 'erro') {
+        showToast('erro', googleTarget === 'tenant' ? 'Falha ao conectar o calendário do escritório' : 'Falha ao conectar seu Google Calendar')
+      } else if (google === 'forbidden') {
+        showToast('erro', 'Apenas admins podem conectar o calendário padrão do escritório')
+      }
+    }, 0)
 
     window.history.replaceState({}, '', '/perfil')
+
+    return () => {
+      window.clearTimeout(timer)
+    }
   }, [])
 
   function set(field: keyof Perfil, value: string) {
     setPerfil(p => ({ ...p, [field]: value }))
-  }
-
-  function showToast(tipo: 'ok' | 'erro', msg: string) {
-    setToast({ tipo, msg })
-    setTimeout(() => setToast(null), 3500)
   }
 
   async function salvar() {
@@ -363,7 +370,7 @@ export default function PerfilPage() {
           <div style={{ position: 'relative', flexShrink: 0 }}>
             <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: 'var(--bg)', border: '2px solid var(--border)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               {perfil.foto_url
-                ? <img src={perfil.foto_url} alt="Foto" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                ? <Image src={perfil.foto_url} alt="Foto" width={80} height={80} unoptimized style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 : <User size={28} color="var(--text-muted)" />}
             </div>
             <button
@@ -445,7 +452,7 @@ export default function PerfilPage() {
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '20px' }}>
           <div style={{ width: '64px', height: '64px', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: '10px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             {perfil.escritorio_logo_url
-              ? <img src={perfil.escritorio_logo_url} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain', padding: '6px' }} />
+              ? <Image src={perfil.escritorio_logo_url} alt="Logo" width={64} height={64} unoptimized style={{ width: '100%', height: '100%', objectFit: 'contain', padding: '6px' }} />
               : <Building2 size={22} color="var(--text-muted)" />}
           </div>
           <div>

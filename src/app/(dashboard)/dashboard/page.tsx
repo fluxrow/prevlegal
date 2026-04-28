@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { Users, TrendingUp, Calendar, DollarSign, ArrowUpRight, Clock, CheckCircle2, XCircle } from 'lucide-react'
 import RecentLeads from '@/components/recent-leads'
@@ -137,7 +138,7 @@ export default async function DashboardPage() {
                                     color: 'var(--border)', fontSize: '18px', zIndex: 1
                                 }}>›</div>
                             )}
-                            <a href={href} style={{
+                            <Link href={href} style={{
                                 display: 'block',
                                 background: 'var(--bg-surface)',
                                 border: `1px solid ${color}30`,
@@ -149,7 +150,7 @@ export default async function DashboardPage() {
                                 <Icon size={18} color={color} strokeWidth={1.8} style={{ marginBottom: '8px' }} />
                                 <div style={{ fontSize: '22px', fontWeight: '700', fontFamily: 'Syne, sans-serif', color, letterSpacing: '-0.5px' }}>{value}</div>
                                 <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>{label}</div>
-                            </a>
+                            </Link>
                         </div>
                     ))}
                 </div>
@@ -164,7 +165,7 @@ export default async function DashboardPage() {
             }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                     <h3 style={{ fontFamily: 'Syne, sans-serif', fontSize: '14px', fontWeight: '600', color: 'var(--text-secondary)' }}>Leads Recentes</h3>
-                    <a href="/leads" style={{ fontSize: '12px', color: 'var(--accent)', textDecoration: 'none' }}>Ver todos →</a>
+                    <Link href="/leads" style={{ fontSize: '12px', color: 'var(--accent)', textDecoration: 'none' }}>Ver todos →</Link>
                 </div>
                 <RecentLeads leads={recentLeads || []} />
             </div>

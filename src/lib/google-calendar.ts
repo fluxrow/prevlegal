@@ -3,7 +3,30 @@ import { getConfiguracaoAtual } from '@/lib/configuracoes'
 import { isMissingUserCalendarColumnError } from '@/lib/permissions'
 
 type SupabaseLike = {
-  from: (table: string) => any
+  from: (table: string) => {
+    select: (columns?: string) => SupabaseQueryLike
+    insert: (payload: Record<string, unknown>) => {
+      select: (columns?: string) => {
+        single: <T extends Record<string, unknown> = Record<string, unknown>>() => PromiseLike<{
+          data: T | null
+          error: { message?: string } | null
+        }>
+      }
+    }
+    update: (values: Record<string, unknown>) => {
+      eq: (column: string, value: string | null) => unknown
+    }
+  }
+}
+
+type QueryError = {
+  message: string
+  code?: string
+}
+
+type SupabaseQueryLike = {
+  eq: (column: string, value: string | null) => SupabaseQueryLike
+  maybeSingle: <T>() => PromiseLike<{ data: T | null; error: QueryError | null }>
 }
 
 type CalendarOwnerScope = 'tenant' | 'user'
@@ -24,6 +47,21 @@ type CalendarStatus = {
   connectedAt: string | null
 }
 
+type TenantCalendarConfig = {
+  id?: string | null
+  google_calendar_token?: Record<string, unknown> | null
+  google_calendar_email?: string | null
+  google_calendar_connected_at?: string | null
+}
+
+type UserCalendarRow = {
+  id?: string | null
+  nome?: string | null
+  google_calendar_token?: Record<string, unknown> | null
+  google_calendar_email?: string | null
+  google_calendar_connected_at?: string | null
+}
+
 function getEnv(name: string) {
   return process.env[name]?.trim()
 }
@@ -40,8 +78,8 @@ async function getTenantCalendarConnection(
   supabase: SupabaseLike,
   tenantId: string | null,
 ): Promise<CalendarConnection | null> {
-  const { data: config, error } = await getConfiguracaoAtual(
-    supabase,
+  const { data: config, error } = await getConfiguracaoAtual<TenantCalendarConfig>(
+    supabase as unknown as Parameters<typeof getConfiguracaoAtual>[0],
     tenantId,
     'id, google_calendar_token, google_calendar_email, google_calendar_connected_at',
   )
@@ -75,7 +113,7 @@ async function getUserCalendarConnection(
     .select('id, nome, google_calendar_token, google_calendar_email, google_calendar_connected_at')
     .eq('id', usuarioId)
     .eq('tenant_id', tenantId)
-    .maybeSingle()
+    .maybeSingle<UserCalendarRow>()
 
   if (error) {
     if (isMissingUserCalendarColumnError(error)) {
@@ -90,7 +128,7 @@ async function getUserCalendarConnection(
 
   return {
     ownerScope: 'user',
-    ownerUsuarioId: usuario.id,
+    ownerUsuarioId: usuario.id || null,
     ownerEmail: usuario.google_calendar_email || null,
     ownerLabel: usuario.nome ? `calendário de ${usuario.nome}` : 'calendário do responsável',
     tokens: usuario.google_calendar_token as Record<string, unknown>,

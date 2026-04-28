@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
 import { CalendarClock, Loader2, Save, Search, Video, X } from 'lucide-react'
 
@@ -132,51 +132,7 @@ export default function NovoAgendamentoModal({
     [usuarios, usuarioId],
   )
 
-  useEffect(() => {
-    if (!open) return
-
-    setError('')
-    setObservacoes('')
-    setHonorario('')
-    setDuracaoMinutos('30')
-    setDataHora(toDateTimeLocalInput(new Date(Date.now() + 60 * 60 * 1000)))
-    setLeadQuery(initialLead?.nome || '')
-    setSelectedLeadId(initialLead?.id || '')
-    setLeadOptions(initialLead ? [initialLead] : [])
-    setEmailReuniao(initialLead?.email || '')
-
-    void loadUsuarios()
-    if (!initialLead) {
-      void searchLeads('')
-    }
-  }, [open, initialLead])
-
-  useEffect(() => {
-    if (lockLead && initialLead) return
-
-    const query = leadQuery.trim()
-    const digits = query.replace(/\D/g, '')
-    const shouldSearch = query.length === 0 || query.length >= 2 || digits.length >= 3
-
-    if (!shouldSearch) {
-      setLeadOptions(initialLead ? [initialLead] : [])
-      return
-    }
-
-    const timeoutId = window.setTimeout(() => {
-      void searchLeads(query)
-    }, 250)
-
-    return () => window.clearTimeout(timeoutId)
-  }, [leadQuery, lockLead, initialLead])
-
-  useEffect(() => {
-    if (selectedLead?.email) {
-      setEmailReuniao((current) => current || selectedLead.email || '')
-    }
-  }, [selectedLead?.email])
-
-  async function loadUsuarios() {
+  const loadUsuarios = useCallback(async () => {
     setLoadingUsuarios(true)
     try {
       const res = await fetch('/api/usuarios')
@@ -202,9 +158,9 @@ export default function NovoAgendamentoModal({
     } finally {
       setLoadingUsuarios(false)
     }
-  }
+  }, [])
 
-  async function searchLeads(query: string) {
+  const searchLeads = useCallback(async (query: string) => {
     if (lockLead && initialLead) return
 
     const requestId = latestSearchRef.current + 1
@@ -263,7 +219,51 @@ export default function NovoAgendamentoModal({
         setLoadingLeads(false)
       }
     }
-  }
+  }, [initialLead, lockLead])
+
+  useEffect(() => {
+    if (!open) return
+
+    setError('')
+    setObservacoes('')
+    setHonorario('')
+    setDuracaoMinutos('30')
+    setDataHora(toDateTimeLocalInput(new Date(Date.now() + 60 * 60 * 1000)))
+    setLeadQuery(initialLead?.nome || '')
+    setSelectedLeadId(initialLead?.id || '')
+    setLeadOptions(initialLead ? [initialLead] : [])
+    setEmailReuniao(initialLead?.email || '')
+
+    void loadUsuarios()
+    if (!initialLead) {
+      void searchLeads('')
+    }
+  }, [open, initialLead, loadUsuarios, searchLeads])
+
+  useEffect(() => {
+    if (lockLead && initialLead) return
+
+    const query = leadQuery.trim()
+    const digits = query.replace(/\D/g, '')
+    const shouldSearch = query.length === 0 || query.length >= 2 || digits.length >= 3
+
+    if (!shouldSearch) {
+      setLeadOptions(initialLead ? [initialLead] : [])
+      return
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      void searchLeads(query)
+    }, 250)
+
+    return () => window.clearTimeout(timeoutId)
+  }, [leadQuery, lockLead, initialLead, searchLeads])
+
+  useEffect(() => {
+    if (selectedLead?.email) {
+      setEmailReuniao((current) => current || selectedLead.email || '')
+    }
+  }, [selectedLead?.email])
 
   async function handleSubmit() {
     if (!selectedLeadId) {

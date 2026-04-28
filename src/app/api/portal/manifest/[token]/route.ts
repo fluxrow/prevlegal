@@ -2,12 +2,19 @@ import { NextResponse } from 'next/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { getConfiguracaoAtual } from '@/lib/configuracoes'
 
+type PortalManifestConfig = {
+  nome_escritorio?: string | null
+  cor_primaria?: string | null
+}
+
 function createAdminSupabase() {
   return createAdminClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
   )
 }
+
+type ConfiguracoesSupabase = Parameters<typeof getConfiguracaoAtual>[0]
 
 function normalizeBranding(payload: {
   tenantNome?: string | null
@@ -42,11 +49,14 @@ export async function GET(
     lead.tenant_id
       ? adminSupabase.from('tenants').select('nome').eq('id', lead.tenant_id).maybeSingle()
       : Promise.resolve({ data: null }),
-    getConfiguracaoAtual(
-      adminSupabase,
-      lead.tenant_id,
-      'nome_escritorio, cor_primaria',
-    ),
+    (() => {
+      const configuracoesSupabase = adminSupabase as unknown as ConfiguracoesSupabase
+      return getConfiguracaoAtual<PortalManifestConfig>(
+        configuracoesSupabase,
+        lead.tenant_id,
+        'nome_escritorio, cor_primaria',
+      )
+    })(),
   ])
 
   const branding = normalizeBranding({
