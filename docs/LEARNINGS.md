@@ -5,6 +5,32 @@ Mestra: [[MASTER_PREV_LEGAL]]
 > Erros encontrados, causas e correções aplicadas.
 > Atualizado a cada sessão.
 
+## Atualização 2026-04-29 — Quando a Anthropic fica sem saldo, o problema aparente vira “handoff indevido”, mas a causa real é indisponibilidade do LLM
+
+- Problema:
+  - no smoke real de campanha/reset, o lead respondia normalmente ao disparo
+  - em vez de continuar com a Bianca, a conversa mudava para `humano` e o operador via `Em atendimento`
+  - do lado do lead, não havia resposta nova no WhatsApp, o que fazia parecer bug de roteamento ou reset
+- Evidência:
+  - a conversa `dfbc6c14-3cdd-4497-ab15-2f27d8212036` ficou com `status = humano`, `agente_ativo = true` e `assumido_por = null`
+  - a mensagem inbound `fceb38fd-a207-4072-95cd-5b0a7d52dca6` ficou sem `resposta_agente`
+  - duas notificações foram gravadas em sequência:
+    - `anthropic_credit_low`
+    - `agent_autoresponder_failed`
+  - a descrição registrou explicitamente: `Your credit balance is too low to access the Anthropic API`
+- Causa:
+  - o runtime do agente já tinha proteção para saldo insuficiente da Anthropic e devolvia a conversa para o humano
+  - porém esse ramo não mandava uma resposta de contingência ao lead
+  - como a route ainda lançava erro depois da primeira tratativa, o webhook registrava uma segunda escalada genérica
+- Correção:
+  - em `anthropic_credit_low`, o runtime agora tenta enviar uma mensagem curta de continuidade ao lead antes de encerrar o atendimento automático
+  - o inbound original passa a ser marcado com `resposta_agente` quando esse aviso sai com sucesso
+  - o helper `triggerAgentAutoresponder(...)` trata `anthropic_credit_low_handled` como caso já absorvido, evitando a duplicação de notificação
+- Regra prática:
+  - conversa cair para `humano` com `agente_ativo = true` não significa necessariamente bug de reset ou de canal
+  - antes de mexer em roteamento, vale checar `notificacoes.metadata.motivo` e o erro persistido do LLM
+  - indisponibilidade do provedor precisa degradar com mensagem visível ao lead; sem isso, o produto parece ter “sumido” no meio da conversa
+
 ## Atualização 2026-04-29 — Prompt salvo no banco não é suficiente para segurar handoff humano se o runtime não blindar a saída final
 
 - Problema:

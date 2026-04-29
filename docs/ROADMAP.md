@@ -4,6 +4,23 @@ Contexto: [[SESSION_HISTORY_MASTER]]
 Mestra: [[MASTER_PREV_LEGAL]]
 > Última atualização: 10/04/2026
 
+## Atualizacao 2026-04-29 — Falha de saldo na Anthropic agora degrada com aviso ao lead, sem silêncio no WhatsApp nem dupla notificação interna
+
+- achado no smoke real:
+  - após responder ao disparo de campanha, o lead podia cair direto para `Em atendimento` sem receber retorno da Bianca
+  - a conversa ficava em `humano` mesmo com `agente_ativo = true`, dando a impressão de bug no reset ou no roteamento
+- causa raiz:
+  - a chamada ao modelo da Anthropic estava falhando por `credit balance is too low`
+  - o runtime já devolvia a conversa para `humano`, mas sem mensagem de contingência no WhatsApp
+  - além disso, a mesma ocorrência gerava uma notificação no `/api/agente/responder` e outra no webhook, duplicando o ruído operacional
+- correção aplicada:
+  - em caso de saldo insuficiente da Anthropic, o runtime agora envia uma mensagem curta de continuidade ao lead antes de devolver a conversa para o humano
+  - o inbound original passa a ficar marcado com `resposta_agente`, evitando a sensação de “sumiu para atendimento humano sem responder”
+  - o helper do autoresponder trata esse caso como já resolvido internamente, impedindo a segunda notificação genérica do webhook
+- leitura prática:
+  - o bloqueio real continua sendo operacional: sem saldo na Anthropic, a Bianca não consegue seguir o fluxo automático
+  - mas, se isso voltar a acontecer, o lead não fica mais sem resposta e a equipe interna recebe um único sinal claro do problema
+
 ## Atualizacao 2026-04-29 — Pagliuca ganhou nomeação nominal de `Marcos ou Diogo` e aviso de fora do horário deixou de reabrir o mesmo inbound
 
 - achado do smoke real:

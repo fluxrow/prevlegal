@@ -194,6 +194,22 @@ function normalizePlanningHumanAttribution(text: string, promptHint?: string | n
     )
 }
 
+function buildAnthropicCreditFallbackMessage({
+  operationProfile,
+  planningHumanHandoff,
+}: {
+  operationProfile: string
+  planningHumanHandoff: ReturnType<typeof getPlanningHumanHandoffContext>
+}) {
+  if (normalizeOperationProfile(operationProfile) === 'planejamento_previdenciario') {
+    return planningHumanHandoff.named
+      ? `Recebi sua mensagem. Vou encaminhar seu atendimento para ${planningHumanHandoff.inviteReference} seguirem com você por aqui assim que possível.`
+      : 'Recebi sua mensagem. Vou encaminhar seu atendimento para a equipe jurídica responsável seguir com você por aqui assim que possível.'
+  }
+
+  return 'Recebi sua mensagem. Vou encaminhar seu atendimento para a equipe responsável seguir com você por aqui assim que possível.'
+}
+
 // Prompt padrão do sistema caso o escritório não tenha configurado um personalizado
 const PROMPT_PADRAO = `Você é uma consultora virtual de atendimento previdenciário.
 
@@ -1421,11 +1437,51 @@ export async function POST(request: NextRequest) {
       }
 
       if (isAnthropicCreditError(modelError)) {
+        const fallbackText = buildAnthropicCreditFallbackMessage({
+          operationProfile: normalizedOperationProfile,
+          planningHumanHandoff,
+        })
+        let fallbackSent = false
+
+        if (config.agente_resposta_automatica && tenantId && mensagem.telefone_remetente) {
+          try {
+            const fallbackSendResult = await sendWhatsAppMessage({
+              tenantId,
+              to: mensagem.telefone_remetente,
+              body: fallbackText,
+            })
+
+            if (fallbackSendResult.success) {
+              fallbackSent = true
+
+              await supabase
+                .from('mensagens_inbound')
+                .update({
+                  respondido_por_agente: true,
+                  respondido_manualmente: false,
+                  resposta_agente: fallbackText,
+                  twilio_sid: fallbackSendResult.externalMessageId || null,
+                  lido: true,
+                  lido_em: new Date().toISOString(),
+                })
+                .eq('id', mensagem_id)
+            }
+          } catch (fallbackSendError) {
+            console.warn('[agente] Falha ao enviar aviso de contingência por saldo Anthropic:', fallbackSendError)
+          }
+        }
+
         if (mensagem.conversa_id) {
           await supabase
             .from('conversas')
             .update({
               status: 'humano',
+              ...(fallbackSent
+                ? {
+                    ultima_mensagem: fallbackText,
+                    ultima_mensagem_at: new Date().toISOString(),
+                  }
+                : {}),
             })
             .eq('id', mensagem.conversa_id)
         }
@@ -1436,7 +1492,9 @@ export async function POST(request: NextRequest) {
             tenant_id: tenantId,
             tipo: 'escalada',
             titulo: `Agente indisponível — ${nomeLead}`,
-            descricao: 'O agente não conseguiu responder porque o saldo da API Anthropic está insuficiente. Assuma a conversa manualmente.',
+            descricao: fallbackSent
+              ? 'O agente não conseguiu responder porque o saldo da API Anthropic está insuficiente. O lead recebeu um aviso de continuidade com a equipe humana.'
+              : 'O agente não conseguiu responder porque o saldo da API Anthropic está insuficiente. Assuma a conversa manualmente.',
             link: mensagem.conversa_id
               ? `/caixa-de-entrada?conversaId=${mensagem.conversa_id}&telefone=${encodeURIComponent(mensagem.telefone_remetente || '')}`
               : '/caixa-de-entrada',
@@ -1445,9 +1503,20 @@ export async function POST(request: NextRequest) {
               conversa_id: mensagem.conversa_id || null,
               lead_id: mensagem.lead_id || null,
               mensagem_id,
+              fallback_sent: fallbackSent,
             },
           })
         }
+
+        return NextResponse.json(
+          {
+            queued: false,
+            handled: true,
+            reason: 'anthropic_credit_low_handled',
+            fallback_sent: fallbackSent,
+          },
+          { status: 202 },
+        )
       }
 
       throw modelError

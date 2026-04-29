@@ -57,6 +57,14 @@ export async function triggerAgentAutoresponder(mensagemId: string) {
           }
         }
 
+        if (payload?.reason === 'anthropic_credit_low_handled') {
+          return {
+            ok: true,
+            status: response.status,
+            payload,
+          }
+        }
+
         if (payload?.reason === 'outside_hours') {
           return {
             ok: false,
