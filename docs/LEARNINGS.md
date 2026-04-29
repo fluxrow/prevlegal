@@ -40,6 +40,19 @@ Mestra: [[MASTER_PREV_LEGAL]]
   - reduzir tokens ajuda muito a controlar prolixidade, mas precisa vir acompanhado de proteção contra mensagem cortada
   - em WhatsApp, resposta mais curta só é boa se continuar parecendo frase completa
 
+## Atualização 2026-04-29 — Abordagem comercial não autoriza atribuir o diagnóstico técnico à sócia do escritório
+
+- Problema:
+  - a Bianca chegou a dizer que a Dra. Ana conduzia pessoalmente a análise individual
+- Causa:
+  - o playbook de `planejamento` falava em `especialista` e `advogado responsável`, mas ainda não proibia explicitamente a inferência “nome citado na abordagem = pessoa que executa o diagnóstico”
+- Correção:
+  - seed de `planejamento` endurecido para vedar essa atribuição automática
+  - runtime reforçado para usar linguagem neutra de handoff humano: `advogado responsável da equipe`, `especialista responsável` ou `equipe jurídica responsável`
+- Regra prática:
+  - nome citado na abertura comercial não deve virar, por inferência do agente, o nome do executor da etapa técnica
+  - quando o sistema não tiver um campo canônico de especialista por tenant, é mais seguro usar handoff humano neutro do que nomear a pessoa errada
+
 ## Atualização 2026-04-28 — Cadastro manual de planejamento não pode herdar a semântica de NB do funil de benefícios
 
 - Problema:

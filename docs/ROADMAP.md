@@ -32,6 +32,20 @@ Mestra: [[MASTER_PREV_LEGAL]]
   - reduz chance de terminar em “meio pensamento”
   - preserva o estilo mais humano e enxuto alcançado no runtime
 
+## Atualizacao 2026-04-29 — Handoff humano de planejamento não pode ser atribuído automaticamente à Dra. Ana
+
+- achado do smoke real:
+  - a Bianca chegou a responder como se a Dra. Ana fosse quem conduz pessoalmente o diagnóstico técnico individual
+- problema:
+  - no fluxo real da Pagliuca, essa etapa deve ficar com o advogado ou especialista responsável da equipe
+  - atribuir automaticamente à sócia/fundadora cria expectativa errada e desalinha a operação
+- correção:
+  - seed de `planejamento` endurecido para proibir esse atalho
+  - runtime também passou a instruir explicitamente que a etapa humana deve ser referida como `advogado responsável da equipe`, `especialista responsável` ou `equipe jurídica responsável`
+- impacto prático:
+  - a Bianca continua fazendo triagem e avanço comercial
+  - a validação individual deixa de ser jogada automaticamente na conta da Dra. Ana
+
 ## Atualizacao 2026-04-28 — Cadastro manual de planejamento deixou de depender da semântica de benefício
 
 - ajuste operacional aplicado para o caso real da Pagliuca:
