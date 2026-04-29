@@ -60,6 +60,19 @@ Mestra: [[MASTER_PREV_LEGAL]]
   - o operador volta a conseguir subir o histórico e ler desde o começo
   - a thread deixa de mostrar “ecos” do mesmo inbound quando o reaproveitamento de resposta já resolveu o caso sem novo envio
 
+## Atualizacao 2026-04-29 — Plataforma endurecida para operar só com Z-API e absorver duplicata tardia de `externalId`
+
+- achado na varredura:
+  - em produção, hoje só existem canais ativos `zapi`; não há tenant ativo com número Twilio configurado
+  - mesmo assim, a base ainda carregava fallback legado da Twilio e a Z-API mostrava vários pares duplicados do mesmo `externalId`
+- correção aplicada:
+  - o webhook Twilio agora ignora payload que não resolva para um tenant Twilio explícito
+  - o resolver de canal deixou de cair automaticamente no fallback legado da Twilio quando não houver configuração ativa e `ALLOW_LEGACY_TWILIO_FALLBACK` não estiver habilitado
+  - a Z-API ganhou um colapso pós-insert de duplicata por `externalId`, limpando o segundo registro mesmo se ele conseguir furar a checagem inicial
+- leitura prática:
+  - para os próximos disparos, a plataforma fica operacionalmente ancorada na Z-API
+  - reduzimos o risco de eco por webhook repetido e também o risco de um fallback silencioso mandar tráfego para Twilio sem intenção
+
 ## Atualizacao 2026-04-29 — Nomeação nominal de `Diogo/Marcos` ficou pronta só para teste local de planejamento
 
 - necessidade operacional:

@@ -150,6 +150,45 @@ async function hasRecentDuplicateMessage({
   return Boolean(data?.id)
 }
 
+async function collapseDuplicateExternalMessage({
+  supabase,
+  tenantId,
+  channelId,
+  externalId,
+  currentMessageId,
+}: {
+  supabase: ReturnType<typeof createAdminSupabase>
+  tenantId: string | null
+  channelId: string
+  externalId: string | null
+  currentMessageId: string
+}) {
+  const normalizedExternalId = String(externalId || '').trim()
+  if (!normalizedExternalId) return { isDuplicate: false, canonicalId: currentMessageId }
+
+  let query = supabase
+    .from('mensagens_inbound')
+    .select('id, created_at')
+    .eq('twilio_message_sid', normalizedExternalId)
+    .eq('whatsapp_number_id', channelId)
+    .order('created_at', { ascending: true })
+
+  query = tenantId ? query.eq('tenant_id', tenantId) : query.is('tenant_id', null)
+
+  const { data, error } = await query
+  if (error || !data || data.length <= 1) {
+    return { isDuplicate: false, canonicalId: currentMessageId }
+  }
+
+  const canonical = data[0]
+  if (!canonical || canonical.id === currentMessageId) {
+    return { isDuplicate: false, canonicalId: currentMessageId }
+  }
+
+  await supabase.from('mensagens_inbound').delete().eq('id', currentMessageId)
+  return { isDuplicate: true, canonicalId: canonical.id }
+}
+
 async function registerAgentAutoresponderFailure({
   supabase,
   tenantId,
@@ -743,7 +782,7 @@ async function handleChannelOriginatedMessage({
     conversaId = novaConversa?.id || null
   }
 
-  const { error: insertError } = await supabase
+  const { data: mirroredMessage, error: insertError } = await supabase
     .from('mensagens_inbound')
     .insert({
       tenant_id: tenantId,
@@ -761,10 +800,26 @@ async function handleChannelOriginatedMessage({
       lido: true,
       lido_em: new Date().toISOString(),
     })
+    .select('id')
+    .single()
 
   if (insertError) {
     console.error('Erro ao espelhar mensagem enviada pelo próprio canal Z-API:', insertError)
     return NextResponse.json({ error: insertError.message }, { status: 500 })
+  }
+
+  if (externalId && mirroredMessage?.id) {
+    const collapsed = await collapseDuplicateExternalMessage({
+      supabase,
+      tenantId,
+      channelId: routing.channelId,
+      externalId,
+      currentMessageId: mirroredMessage.id,
+    })
+
+    if (collapsed.isDuplicate) {
+      return NextResponse.json({ ok: true, duplicate: true, mirrored: true, collapsed: true })
+    }
   }
 
   return NextResponse.json({
@@ -943,6 +998,20 @@ async function handleReceiveEvent(request: NextRequest, event: string) {
   if (insertError) {
     console.error('Erro ao salvar mensagem inbound Z-API:', insertError)
     return NextResponse.json({ error: insertError.message }, { status: 500 })
+  }
+
+  if (externalId && mensagemInserida?.id) {
+    const collapsed = await collapseDuplicateExternalMessage({
+      supabase,
+      tenantId,
+      channelId: routing.channelId,
+      externalId,
+      currentMessageId: mensagemInserida.id,
+    })
+
+    if (collapsed.isDuplicate) {
+      return NextResponse.json({ ok: true, duplicate: true, collapsed: true })
+    }
   }
 
   const conversaExistente = await findConversationByNormalizedPhone(

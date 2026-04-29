@@ -195,6 +195,24 @@ async function getWhatsAppNumberRow(
   }
 }
 
+async function hasAnyActiveWhatsAppNumber(tenantId: string | null) {
+  if (!tenantId) return false
+
+  try {
+    const supabase = createAdminSupabase()
+    const { count, error } = await supabase
+      .from('whatsapp_numbers')
+      .select('id', { count: 'exact', head: true })
+      .eq('tenant_id', tenantId)
+      .eq('ativo', true)
+
+    if (error) return false
+    return Number(count || 0) > 0
+  } catch {
+    return false
+  }
+}
+
 export async function getZApiRoutingContextByInstanceId(
   instanceId?: string | null,
 ): Promise<ZApiRoutingContext> {
@@ -241,6 +259,22 @@ export async function resolveWhatsAppChannel(
   if (row?.provider === 'twilio') {
     const twilioChannel = mapTwilioRowToChannel(row)
     if (twilioChannel) return twilioChannel
+  }
+
+  const allowLegacyTwilioFallback = String(process.env.ALLOW_LEGACY_TWILIO_FALLBACK || '').trim() === 'true'
+  const tenantHasActiveChannels = await hasAnyActiveWhatsAppNumber(tenantId)
+
+  if (tenantHasActiveChannels || !allowLegacyTwilioFallback) {
+    return {
+      id: null,
+      tenantId,
+      provider: 'zapi',
+      label: null,
+      from: '',
+      purpose: null,
+      metadata: null,
+      zapi: undefined,
+    }
   }
 
   const legacyTwilio = await getTwilioCredentialsByTenantId(tenantId)

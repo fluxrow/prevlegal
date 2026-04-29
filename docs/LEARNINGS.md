@@ -87,6 +87,35 @@ Mestra: [[MASTER_PREV_LEGAL]]
   - mesmo quando a camada operacional evita novo envio, o histórico lido pela UI pode precisar de saneamento
   - se a deduplicação física no banco não for imediata, pelo menos a leitura exibida ao operador precisa colapsar o espelho redundante
 
+## Atualização 2026-04-29 — Fallback legado de provedor vira risco operacional quando o ambiente já migrou para um único canal
+
+- Problema:
+  - a produção atual já operava só com `zapi`, mas ainda existia fallback legado para `twilio`
+  - isso aumentava o risco de tráfego cair num provedor que o tenant não estava mais usando conscientemente
+- Evidência:
+  - consulta operacional mostrou apenas canais `zapi` ativos e nenhum tenant com número Twilio configurado
+- Correção:
+  - o webhook Twilio passou a ignorar payload sem mapeamento explícito de tenant
+  - o resolver de canal só usa fallback legado de Twilio se `ALLOW_LEGACY_TWILIO_FALLBACK=true`
+- Regra prática:
+  - depois que a operação converge para um único provedor, o fallback legado deve ser desativado por padrão
+  - fallback silencioso é confortável no bootstrap, mas perigoso em go-live
+
+## Atualização 2026-04-29 — Deduplicação pré-insert não basta quando o provedor pode reenviar o mesmo `externalId` em janelas separadas
+
+- Problema:
+  - a Z-API continuava deixando pares duplicados do mesmo `externalId` na base, mesmo já havendo checagem anterior por `twilio_message_sid`
+- Evidência:
+  - múltiplos `externalId` recentes apareciam duas vezes no mesmo tenant
+  - em parte dos pares, o segundo registro entrava vários segundos depois do primeiro
+- Causa provável:
+  - o provedor pode reenviar o mesmo webhook fora da janela em que a checagem inicial foi suficiente, ou duas execuções podem atravessar a camada inicial antes da segunda enxergar o estado final consolidado
+- Correção:
+  - além da checagem antes do insert, a Z-API agora faz colapso pós-insert por `externalId`
+  - se o registro atual não for o canônico mais antigo daquele `externalId`, ele é removido imediatamente e a execução retorna como duplicata absorvida
+- Regra prática:
+  - em integrações webhook críticas, idempotência robusta costuma exigir duas camadas: barrar antes de inserir e colapsar depois caso a duplicata ainda consiga entrar
+
 ## Atualização 2026-04-29 — Nomear especialistas do planejamento por tenant pede trava para não vazar em produção cedo demais
 
 - Problema:

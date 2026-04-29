@@ -192,6 +192,16 @@ export async function POST(request: NextRequest) {
   const messageSid = params.MessageSid
   const routing = await getTwilioRoutingContextByWhatsAppNumber(to)
 
+  if (!routing.tenantId) {
+    return new NextResponse(
+      '<?xml version="1.0" encoding="UTF-8"?><Response></Response>',
+      {
+        status: 202,
+        headers: { 'Content-Type': 'text/xml' },
+      },
+    )
+  }
+
   // 1. Validar assinatura Twilio
   const twilioSignature = request.headers.get('x-twilio-signature') || ''
   const url = `${process.env.NEXT_PUBLIC_APP_URL}/api/webhooks/twilio`
