@@ -6,6 +6,13 @@ import { MessageSquare, User, Bot, UserCheck, RotateCcw, Send, Users } from 'luc
 import { useOnboarding } from '@/hooks/useOnboarding'
 import OnboardingTooltip from '@/components/onboarding-tooltip'
 import { samePhone } from '@/lib/contact-shortcuts'
+import {
+  normalizeOperationalConversationState,
+  OPERATIONAL_CONVERSATION_STATES,
+  OPERATIONAL_STATE_LABELS,
+  OPERATIONAL_STATE_META,
+  type OperationalConversationState,
+} from '@/lib/inbox-operational-state'
 
 const TOUR_INBOX = [
   {
@@ -32,6 +39,9 @@ interface Conversa {
   id: string
   telefone: string
   status: 'agente' | 'humano' | 'aguardando_cliente' | 'resolvido' | 'encerrado'
+  estado_operacional: OperationalConversationState
+  estado_operacional_prazo_at?: string | null
+  estado_operacional_atualizado_em?: string | null
   ultima_mensagem: string
   ultima_mensagem_at: string
   nao_lidas: number
@@ -120,6 +130,34 @@ function formatTime(dt: string) {
   return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
 }
 
+function formatOperationalDeadline(dt?: string | null) {
+  if (!dt) return null
+  const deadline = new Date(dt)
+  if (Number.isNaN(deadline.getTime())) return null
+  return deadline.toLocaleString('pt-BR', {
+    day: '2-digit',
+    month: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+}
+
+function toDateTimeLocalValue(dt?: string | null) {
+  if (!dt) return ''
+  const date = new Date(dt)
+  if (Number.isNaN(date.getTime())) return ''
+
+  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000)
+  return local.toISOString().slice(0, 16)
+}
+
+function fromDateTimeLocalValue(value: string) {
+  if (!value) return null
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return null
+  return date.toISOString()
+}
+
 export default function CaixaDeEntradaPage() {
   const router = useRouter()
   const pathname = usePathname()
@@ -141,6 +179,10 @@ export default function CaixaDeEntradaPage() {
   const [textoResposta, setTextoResposta] = useState('')
   const [enviando, setEnviando] = useState(false)
   const [erroEnvio, setErroEnvio] = useState<string | null>(null)
+  const [estadoOperacionalDraft, setEstadoOperacionalDraft] = useState<OperationalConversationState>('em_andamento')
+  const [prazoOperacionalDraft, setPrazoOperacionalDraft] = useState('')
+  const [salvandoEstadoOperacional, setSalvandoEstadoOperacional] = useState(false)
+  const [erroEstadoOperacional, setErroEstadoOperacional] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const messagesContainerRef = useRef<HTMLDivElement>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -153,6 +195,17 @@ export default function CaixaDeEntradaPage() {
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new Event('prevlegal:pendencias-changed'))
     }
+  }
+
+  function syncOperationalStateDraft(conversa: Conversa) {
+    setEstadoOperacionalDraft(
+      normalizeOperationalConversationState(
+        conversa.estado_operacional,
+        conversa.status,
+      ),
+    )
+    setPrazoOperacionalDraft(toDateTimeLocalValue(conversa.estado_operacional_prazo_at))
+    setErroEstadoOperacional(null)
   }
 
   const fetchConversas = useCallback(async () => {
@@ -215,6 +268,7 @@ export default function CaixaDeEntradaPage() {
   ) => {
     setThreadSelecionada(null)
     setMsgsPortal([])
+    syncOperationalStateDraft(conversa)
     setConversaSelecionada(conversa)
 
     if (options?.syncUrl !== false) {
@@ -520,6 +574,46 @@ export default function CaixaDeEntradaPage() {
     )
   }
 
+  async function salvarEstadoOperacional() {
+    if (!conversaSelecionada) return
+
+    setSalvandoEstadoOperacional(true)
+    setErroEstadoOperacional(null)
+
+    const requiresDeadline = OPERATIONAL_STATE_META[estadoOperacionalDraft].requiresDeadline
+    const prazoIso = fromDateTimeLocalValue(prazoOperacionalDraft)
+
+    if (prazoOperacionalDraft && !prazoIso) {
+      setErroEstadoOperacional('Prazo operacional inválido')
+      setSalvandoEstadoOperacional(false)
+      return
+    }
+
+    const optimistic: Partial<Conversa> = {
+      estado_operacional: estadoOperacionalDraft,
+      estado_operacional_prazo_at: requiresDeadline ? prazoIso : null,
+      estado_operacional_atualizado_em: new Date().toISOString(),
+    }
+
+    const atualizada = await atualizarConversa(
+      conversaSelecionada.id,
+      {
+        action: 'set_operational_state',
+        estado_operacional: estadoOperacionalDraft,
+        estado_operacional_prazo_at: requiresDeadline ? prazoIso : null,
+      },
+      optimistic,
+    )
+
+    if (!atualizada) {
+      setErroEstadoOperacional('Não foi possível salvar o estado operacional')
+    } else {
+      syncOperationalStateDraft(atualizada)
+    }
+
+    setSalvandoEstadoOperacional(false)
+  }
+
   async function enviarResposta() {
     if (!textoResposta.trim() || !conversaSelecionada) return
     setEnviando(true)
@@ -606,6 +700,14 @@ export default function CaixaDeEntradaPage() {
   const badgePortal = threadsPortal.reduce((a, t) => a + t.nao_lidas, 0)
   const conversaGeridaPorHumano = conversaSelecionada ? STATUS_HUMANOS.has(conversaSelecionada.status) : false
   const podeResponderManual = conversaSelecionada?.status === 'humano'
+  const estadoOperacionalSelecionado = conversaSelecionada
+    ? normalizeOperationalConversationState(conversaSelecionada.estado_operacional, conversaSelecionada.status)
+    : 'em_andamento'
+  const estadoOperacionalSelecionadoMeta = OPERATIONAL_STATE_META[estadoOperacionalSelecionado]
+  const prazoOperacionalSelecionadoFormatado = formatOperationalDeadline(
+    conversaSelecionada?.estado_operacional_prazo_at,
+  )
+  const requiresDeadlineDraft = OPERATIONAL_STATE_META[estadoOperacionalDraft].requiresDeadline
 
   function isMensagemOutbound(msg: Mensagem) {
     if (!conversaSelecionada) return false
@@ -620,6 +722,302 @@ export default function CaixaDeEntradaPage() {
     color: 'var(--text-primary)',
     fontSize: '14px',
     fontFamily: 'DM Sans, sans-serif',
+  }
+
+  function renderConversationPanel() {
+    if (!conversaSelecionada) return null
+
+    return (
+      <div data-tour="inbox-painel" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        <div style={{ padding: '16px 24px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-surface)' }}>
+          <div>
+            <p style={{ fontSize: '15px', fontWeight: '600', color: 'var(--text-primary)', fontFamily: 'DM Sans, sans-serif', margin: '0 0 2px' }}>
+              {conversaSelecionada.leads?.nome || conversaSelecionada.telefone}
+            </p>
+            <p style={{ fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'DM Sans, sans-serif', margin: 0 }}>
+              {conversaSelecionada.telefone}
+              {conversaSelecionada.leads?.nb && ` • NB ${conversaSelecionada.leads.nb}`}
+            </p>
+            {conversaGeridaPorHumano && conversaSelecionada.assumido_em ? (
+              <p style={{ fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'DM Sans, sans-serif', margin: '4px 0 0' }}>
+                Fila humana ativa desde {new Date(conversaSelecionada.assumido_em).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+              </p>
+            ) : null}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px', flexWrap: 'wrap' }}>
+              <span style={{ fontSize: '11px', padding: '4px 10px', borderRadius: '999px', background: estadoOperacionalSelecionadoMeta.bg, color: estadoOperacionalSelecionadoMeta.color, fontWeight: '700', fontFamily: 'DM Sans, sans-serif' }}>
+                Estado operacional: {OPERATIONAL_STATE_LABELS[estadoOperacionalSelecionado]}
+              </span>
+              {prazoOperacionalSelecionadoFormatado ? (
+                <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'DM Sans, sans-serif' }}>
+                  Prazo: {prazoOperacionalSelecionadoFormatado}
+                </span>
+              ) : null}
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', minWidth: '280px' }}>
+              <label style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '600', fontFamily: 'DM Sans, sans-serif' }}>
+                Estado operacional
+              </label>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+                <select
+                  value={estadoOperacionalDraft}
+                  onChange={(event) => {
+                    const nextValue = event.target.value as OperationalConversationState
+                    setEstadoOperacionalDraft(nextValue)
+                    if (!OPERATIONAL_STATE_META[nextValue].requiresDeadline) {
+                      setPrazoOperacionalDraft('')
+                    }
+                  }}
+                  style={{
+                    ...inputStyle,
+                    minWidth: '220px',
+                    height: '40px',
+                    padding: '0 12px',
+                  }}
+                >
+                  {OPERATIONAL_CONVERSATION_STATES.map((state) => (
+                    <option key={state} value={state}>
+                      {OPERATIONAL_STATE_LABELS[state]}
+                    </option>
+                  ))}
+                </select>
+                {requiresDeadlineDraft ? (
+                  <input
+                    type="datetime-local"
+                    value={prazoOperacionalDraft}
+                    onChange={(event) => setPrazoOperacionalDraft(event.target.value)}
+                    style={{
+                      ...inputStyle,
+                      height: '40px',
+                      minWidth: '220px',
+                      padding: '0 12px',
+                    }}
+                  />
+                ) : null}
+                <button
+                  onClick={() => void salvarEstadoOperacional()}
+                  disabled={salvandoEstadoOperacional}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '8px 14px',
+                    background: 'var(--accent)',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: '8px',
+                    fontSize: '12px',
+                    fontWeight: '600',
+                    fontFamily: 'DM Sans, sans-serif',
+                    cursor: salvandoEstadoOperacional ? 'wait' : 'pointer',
+                    opacity: salvandoEstadoOperacional ? 0.75 : 1,
+                  }}
+                >
+                  {salvandoEstadoOperacional ? 'Salvando...' : 'Salvar estado'}
+                </button>
+              </div>
+              <p style={{ margin: 0, fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'DM Sans, sans-serif' }}>
+                {OPERATIONAL_STATE_META[estadoOperacionalDraft].hint}
+              </p>
+              {erroEstadoOperacional ? (
+                <p style={{ margin: 0, fontSize: '11px', color: '#ff6b6b', fontFamily: 'DM Sans, sans-serif' }}>
+                  {erroEstadoOperacional}
+                </p>
+              ) : null}
+            </div>
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+              <span style={{ fontSize: '12px', padding: '4px 12px', borderRadius: '20px', background: (STATUS_CONVERSA[conversaSelecionada.status] || STATUS_CONVERSA.agente).bg, color: (STATUS_CONVERSA[conversaSelecionada.status] || STATUS_CONVERSA.agente).color, fontWeight: '600' }}>
+                {(STATUS_CONVERSA[conversaSelecionada.status] || STATUS_CONVERSA.agente).icon} {(STATUS_CONVERSA[conversaSelecionada.status] || STATUS_CONVERSA.agente).label}
+              </span>
+              {conversaSelecionada.status === 'agente' && (
+                <button onClick={() => assumirConversa(conversaSelecionada.id)}
+                  style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 14px', background: '#2dd4a020', color: '#2dd4a0', border: '1px solid #2dd4a040', borderRadius: '8px', fontSize: '12px', fontWeight: '600', fontFamily: 'DM Sans, sans-serif', cursor: 'pointer' }}>
+                  <UserCheck size={13} /> Assumir conversa
+                </button>
+              )}
+              {conversaSelecionada.status === 'humano' && (
+                <>
+                  <button onClick={() => marcarAguardandoCliente(conversaSelecionada.id)}
+                    style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 14px', background: '#f59e0b20', color: '#f59e0b', border: '1px solid #f59e0b40', borderRadius: '8px', fontSize: '12px', fontWeight: '600', fontFamily: 'DM Sans, sans-serif', cursor: 'pointer' }}>
+                    ⏳ Aguardar cliente
+                  </button>
+                  <button onClick={() => marcarResolvido(conversaSelecionada.id)}
+                    style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 14px', background: '#14b8a620', color: '#14b8a6', border: '1px solid #14b8a640', borderRadius: '8px', fontSize: '12px', fontWeight: '600', fontFamily: 'DM Sans, sans-serif', cursor: 'pointer' }}>
+                    ✅ Resolver
+                  </button>
+                </>
+              )}
+              {conversaSelecionada.status === 'aguardando_cliente' && (
+                <>
+                  <button onClick={() => reabrirConversa(conversaSelecionada.id)}
+                    style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 14px', background: '#2dd4a020', color: '#2dd4a0', border: '1px solid #2dd4a040', borderRadius: '8px', fontSize: '12px', fontWeight: '600', fontFamily: 'DM Sans, sans-serif', cursor: 'pointer' }}>
+                    <UserCheck size={13} /> Retomar atendimento
+                  </button>
+                  <button onClick={() => marcarResolvido(conversaSelecionada.id)}
+                    style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 14px', background: '#14b8a620', color: '#14b8a6', border: '1px solid #14b8a640', borderRadius: '8px', fontSize: '12px', fontWeight: '600', fontFamily: 'DM Sans, sans-serif', cursor: 'pointer' }}>
+                    ✅ Resolver
+                  </button>
+                </>
+              )}
+              {conversaSelecionada.status === 'resolvido' && (
+                <button onClick={() => reabrirConversa(conversaSelecionada.id)}
+                  style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 14px', background: '#2dd4a020', color: '#2dd4a0', border: '1px solid #2dd4a040', borderRadius: '8px', fontSize: '12px', fontWeight: '600', fontFamily: 'DM Sans, sans-serif', cursor: 'pointer' }}>
+                  <UserCheck size={13} /> Reabrir conversa
+                </button>
+              )}
+              {conversaGeridaPorHumano && (
+                <button onClick={() => devolverAoAgente(conversaSelecionada.id)}
+                  style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 14px', background: '#4f7aff20', color: '#4f7aff', border: '1px solid #4f7aff40', borderRadius: '8px', fontSize: '12px', fontWeight: '600', fontFamily: 'DM Sans, sans-serif', cursor: 'pointer' }}>
+                  <RotateCcw size={13} /> Devolver ao agente
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {internoData && conversaSelecionada.leads?.id && (() => {
+          const tasksAbertas = internoData.tasks.filter(t => t.status === 'aberta' || t.status === 'em_andamento').length
+          const ultimaNota = internoData.mensagens.find(m => m.tipo === 'comentario')
+          const owner = internoData.thread?.current_owner
+          if (!owner && tasksAbertas === 0 && !ultimaNota) return null
+          return (
+            <button
+              onClick={() => setPanelInternoAberto(o => !o)}
+              style={{ padding: '7px 24px', borderTop: 'none', borderLeft: 'none', borderRight: 'none', borderBottom: '1px solid var(--border)', background: panelInternoAberto ? 'rgba(79,122,255,0.08)' : 'var(--bg-card)', display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap', cursor: 'pointer', width: '100%', textAlign: 'left' }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                <Users size={12} color="var(--accent)" />
+                <span style={{ fontSize: '11px', color: 'var(--accent)', fontWeight: '600', fontFamily: 'DM Sans, sans-serif' }}>Coordenação interna</span>
+              </div>
+              {owner && (
+                <span style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px', fontFamily: 'DM Sans, sans-serif' }}>
+                  <UserCheck size={11} /> <strong style={{ color: 'var(--text-secondary)' }}>{owner.nome}</strong>
+                </span>
+              )}
+              {tasksAbertas > 0 && (
+                <span style={{ fontSize: '11px', background: '#f59e0b20', color: '#f59e0b', padding: '2px 8px', borderRadius: '10px', fontWeight: '600', fontFamily: 'DM Sans, sans-serif' }}>
+                  {tasksAbertas} task{tasksAbertas > 1 ? 's' : ''}
+                </span>
+              )}
+              {ultimaNota && !panelInternoAberto && (
+                <span style={{ fontSize: '11px', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '200px', fontStyle: 'italic', fontFamily: 'DM Sans, sans-serif' }}>
+                  &ldquo;{ultimaNota.mensagem}&rdquo;
+                </span>
+              )}
+              <span style={{ marginLeft: 'auto', fontSize: '11px', color: 'var(--accent)', fontFamily: 'DM Sans, sans-serif' }}>
+                {panelInternoAberto ? '▲ Fechar' : '▼ Abrir'}
+              </span>
+            </button>
+          )
+        })()}
+
+        <div ref={messagesContainerRef} style={{ flex: 1, overflowY: 'auto', padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          {conversaSelecionada.status === 'aguardando_cliente' && (
+            <div style={{ padding: '10px 12px', borderRadius: '10px', background: '#f59e0b12', border: '1px solid #f59e0b35', color: '#f5d48b', fontSize: '12px', fontFamily: 'DM Sans, sans-serif' }}>
+              Esta conversa está aguardando retorno do cliente. Se ele responder, ela volta automaticamente para <strong>Em atendimento</strong>.
+            </div>
+          )}
+          {conversaSelecionada.status === 'resolvido' && (
+            <div style={{ padding: '10px 12px', borderRadius: '10px', background: '#14b8a612', border: '1px solid #14b8a635', color: '#8de7db', fontSize: '12px', fontFamily: 'DM Sans, sans-serif' }}>
+              Esta conversa foi marcada como resolvida. Se o cliente responder, a thread reaparece como <strong>Em atendimento</strong>.
+            </div>
+          )}
+          {mensagens.map(msg => (
+            <div key={msg.id}>
+              {!isMensagemOutbound(msg) && (
+                <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: msg.resposta_agente ? '6px' : '0' }}>
+                  <div style={{ maxWidth: '70%' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+                      <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: 'var(--bg-hover)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <User size={11} color="var(--text-muted)" />
+                      </div>
+                      <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'DM Sans, sans-serif' }}>{formatTime(msg.created_at)}</span>
+                    </div>
+                    <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '12px 12px 12px 4px', padding: '10px 14px' }}>
+                      <p style={{ fontSize: '13px', color: 'var(--text-primary)', fontFamily: 'DM Sans, sans-serif', lineHeight: '1.5', margin: 0 }}>{msg.mensagem}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {(msg.resposta_agente || isMensagemOutbound(msg)) && (
+                <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                  <div style={{ maxWidth: '70%' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '6px', marginBottom: '4px' }}>
+                      <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'DM Sans, sans-serif' }}>
+                        {msg.respondido_manualmente ? '👤 Humano' : '🤖 Agente'}
+                      </span>
+                      <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: msg.respondido_manualmente ? '#2dd4a020' : '#4f7aff20', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        {msg.respondido_manualmente ? <User size={11} color="#2dd4a0" /> : <Bot size={11} color="#4f7aff" />}
+                      </div>
+                    </div>
+                    <div style={{ background: msg.respondido_manualmente ? '#2dd4a015' : '#4f7aff15', border: `1px solid ${msg.respondido_manualmente ? '#2dd4a030' : '#4f7aff30'}`, borderRadius: '12px 12px 4px 12px', padding: '10px 14px' }}>
+                      <p style={{ fontSize: '13px', color: 'var(--text-primary)', fontFamily: 'DM Sans, sans-serif', lineHeight: '1.5', margin: 0 }}>{msg.resposta_agente || msg.mensagem}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+          <div ref={messagesEndRef} />
+        </div>
+
+        {podeResponderManual && (
+          <div style={{ padding: '16px 24px', borderTop: '1px solid var(--border)', background: 'var(--bg-surface)', display: 'flex', gap: '10px', alignItems: 'flex-end' }}>
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-end' }}>
+                <textarea
+                  value={textoResposta}
+                  onChange={e => setTextoResposta(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); enviarResposta() } }}
+                  placeholder="Digite sua resposta... (Enter para enviar)"
+                  rows={1}
+                  style={{ ...inputStyle, flex: 1, resize: 'none', minHeight: '44px', maxHeight: '120px', lineHeight: '1.5' }}
+                />
+                <button
+                  onClick={enviarResposta}
+                  disabled={enviando || !textoResposta.trim()}
+                  style={{ padding: '10px 16px', background: textoResposta.trim() ? 'var(--accent)' : 'var(--bg-hover)', color: textoResposta.trim() ? '#fff' : 'var(--text-muted)', border: 'none', borderRadius: '8px', cursor: textoResposta.trim() ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: '600', fontFamily: 'DM Sans, sans-serif', transition: 'all 0.15s' }}
+                >
+                  <Send size={14} /> {enviando ? '...' : 'Enviar'}
+                </button>
+              </div>
+              {erroEnvio ? (
+                <p style={{ margin: 0, color: '#ff6b6b', fontSize: '12px', fontFamily: 'DM Sans, sans-serif' }}>
+                  {erroEnvio}
+                </p>
+              ) : null}
+            </div>
+          </div>
+        )}
+
+        {!podeResponderManual && conversaSelecionada.status === 'agente' && (
+          <div style={{ padding: '12px 24px', borderTop: '1px solid var(--border)', background: 'var(--bg-surface)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Bot size={14} color="var(--accent)" />
+            <p style={{ fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'DM Sans, sans-serif', margin: 0 }}>
+              Agente IA respondendo automaticamente — clique em <strong style={{ color: 'var(--text-secondary)' }}>Assumir conversa</strong> para responder manualmente
+            </p>
+          </div>
+        )}
+        {!podeResponderManual && conversaSelecionada.status === 'aguardando_cliente' && (
+          <div style={{ padding: '12px 24px', borderTop: '1px solid var(--border)', background: 'var(--bg-surface)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <UserCheck size={14} color="#f59e0b" />
+            <p style={{ fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'DM Sans, sans-serif', margin: 0 }}>
+              A thread está em espera. Clique em <strong style={{ color: 'var(--text-secondary)' }}>Retomar atendimento</strong> para voltar a responder manualmente.
+            </p>
+          </div>
+        )}
+        {!podeResponderManual && conversaSelecionada.status === 'resolvido' && (
+          <div style={{ padding: '12px 24px', borderTop: '1px solid var(--border)', background: 'var(--bg-surface)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <UserCheck size={14} color="#14b8a6" />
+            <p style={{ fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'DM Sans, sans-serif', margin: 0 }}>
+              A conversa está concluída. Use <strong style={{ color: 'var(--text-secondary)' }}>Reabrir conversa</strong> se precisar voltar ao atendimento.
+            </p>
+          </div>
+        )}
+      </div>
+    )
   }
 
   return (
@@ -731,6 +1129,8 @@ export default function CaixaDeEntradaPage() {
               )}
               {conversasFiltradas.map(conversa => {
                 const st = STATUS_CONVERSA[conversa.status] || STATUS_CONVERSA.agente
+                const estadoOperacional = normalizeOperationalConversationState(conversa.estado_operacional, conversa.status)
+                const estadoOperacionalMeta = OPERATIONAL_STATE_META[estadoOperacional]
                 const selecionada = conversaSelecionada?.id === conversa.id
                 return (
                   <div
@@ -764,9 +1164,14 @@ export default function CaixaDeEntradaPage() {
                       <p style={{ fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'DM Sans, sans-serif', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '190px', margin: 0 }}>
                         {conversa.ultima_mensagem || '—'}
                       </p>
-                      <span style={{ fontSize: '10px', padding: '2px 7px', borderRadius: '10px', background: st.bg, color: st.color, fontWeight: '600', whiteSpace: 'nowrap', marginLeft: '6px' }}>
-                        {st.icon} {st.label}
-                      </span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginLeft: '6px' }}>
+                        <span style={{ fontSize: '10px', padding: '2px 7px', borderRadius: '10px', background: estadoOperacionalMeta.bg, color: estadoOperacionalMeta.color, fontWeight: '600', whiteSpace: 'nowrap' }}>
+                          {OPERATIONAL_STATE_LABELS[estadoOperacional]}
+                        </span>
+                        <span style={{ fontSize: '10px', padding: '2px 7px', borderRadius: '10px', background: st.bg, color: st.color, fontWeight: '600', whiteSpace: 'nowrap' }}>
+                          {st.icon} {st.label}
+                        </span>
+                      </div>
                     </div>
                     {conversa.leads?.nb && (
                       <p style={{ fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'DM Sans, sans-serif', marginTop: '2px', marginBottom: 0 }}>
@@ -849,214 +1254,7 @@ export default function CaixaDeEntradaPage() {
           <MessageSquare size={40} color="var(--text-muted)" />
           <p style={{ color: 'var(--text-muted)', fontSize: '14px', fontFamily: 'DM Sans, sans-serif' }}>Selecione uma conversa</p>
         </div>
-      ) : (
-        <div data-tour="inbox-painel" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-          <div style={{ padding: '16px 24px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-surface)' }}>
-            <div>
-              <p style={{ fontSize: '15px', fontWeight: '600', color: 'var(--text-primary)', fontFamily: 'DM Sans, sans-serif', margin: '0 0 2px' }}>
-                {conversaSelecionada.leads?.nome || conversaSelecionada.telefone}
-              </p>
-              <p style={{ fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'DM Sans, sans-serif', margin: 0 }}>
-                {conversaSelecionada.telefone}
-                {conversaSelecionada.leads?.nb && ` • NB ${conversaSelecionada.leads.nb}`}
-              </p>
-              {conversaGeridaPorHumano && conversaSelecionada.assumido_em ? (
-                <p style={{ fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'DM Sans, sans-serif', margin: '4px 0 0' }}>
-                  Fila humana ativa desde {new Date(conversaSelecionada.assumido_em).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
-                </p>
-              ) : null}
-            </div>
-            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-              <span style={{ fontSize: '12px', padding: '4px 12px', borderRadius: '20px', background: (STATUS_CONVERSA[conversaSelecionada.status] || STATUS_CONVERSA.agente).bg, color: (STATUS_CONVERSA[conversaSelecionada.status] || STATUS_CONVERSA.agente).color, fontWeight: '600' }}>
-                {(STATUS_CONVERSA[conversaSelecionada.status] || STATUS_CONVERSA.agente).icon} {(STATUS_CONVERSA[conversaSelecionada.status] || STATUS_CONVERSA.agente).label}
-              </span>
-              {conversaSelecionada.status === 'agente' && (
-                <button onClick={() => assumirConversa(conversaSelecionada.id)}
-                  style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 14px', background: '#2dd4a020', color: '#2dd4a0', border: '1px solid #2dd4a040', borderRadius: '8px', fontSize: '12px', fontWeight: '600', fontFamily: 'DM Sans, sans-serif', cursor: 'pointer' }}>
-                  <UserCheck size={13} /> Assumir conversa
-                </button>
-              )}
-              {conversaSelecionada.status === 'humano' && (
-                <>
-                  <button onClick={() => marcarAguardandoCliente(conversaSelecionada.id)}
-                    style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 14px', background: '#f59e0b20', color: '#f59e0b', border: '1px solid #f59e0b40', borderRadius: '8px', fontSize: '12px', fontWeight: '600', fontFamily: 'DM Sans, sans-serif', cursor: 'pointer' }}>
-                    ⏳ Aguardar cliente
-                  </button>
-                  <button onClick={() => marcarResolvido(conversaSelecionada.id)}
-                    style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 14px', background: '#14b8a620', color: '#14b8a6', border: '1px solid #14b8a640', borderRadius: '8px', fontSize: '12px', fontWeight: '600', fontFamily: 'DM Sans, sans-serif', cursor: 'pointer' }}>
-                    ✅ Resolver
-                  </button>
-                </>
-              )}
-              {conversaSelecionada.status === 'aguardando_cliente' && (
-                <>
-                  <button onClick={() => reabrirConversa(conversaSelecionada.id)}
-                    style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 14px', background: '#2dd4a020', color: '#2dd4a0', border: '1px solid #2dd4a040', borderRadius: '8px', fontSize: '12px', fontWeight: '600', fontFamily: 'DM Sans, sans-serif', cursor: 'pointer' }}>
-                    <UserCheck size={13} /> Retomar atendimento
-                  </button>
-                  <button onClick={() => marcarResolvido(conversaSelecionada.id)}
-                    style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 14px', background: '#14b8a620', color: '#14b8a6', border: '1px solid #14b8a640', borderRadius: '8px', fontSize: '12px', fontWeight: '600', fontFamily: 'DM Sans, sans-serif', cursor: 'pointer' }}>
-                    ✅ Resolver
-                  </button>
-                </>
-              )}
-              {conversaSelecionada.status === 'resolvido' && (
-                <button onClick={() => reabrirConversa(conversaSelecionada.id)}
-                  style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 14px', background: '#2dd4a020', color: '#2dd4a0', border: '1px solid #2dd4a040', borderRadius: '8px', fontSize: '12px', fontWeight: '600', fontFamily: 'DM Sans, sans-serif', cursor: 'pointer' }}>
-                  <UserCheck size={13} /> Reabrir conversa
-                </button>
-              )}
-              {conversaGeridaPorHumano && (
-                <button onClick={() => devolverAoAgente(conversaSelecionada.id)}
-                  style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 14px', background: '#4f7aff20', color: '#4f7aff', border: '1px solid #4f7aff40', borderRadius: '8px', fontSize: '12px', fontWeight: '600', fontFamily: 'DM Sans, sans-serif', cursor: 'pointer' }}>
-                  <RotateCcw size={13} /> Devolver ao agente
-                </button>
-              )}
-            </div>
-          </div>
-
-          {internoData && conversaSelecionada.leads?.id && (() => {
-            const tasksAbertas = internoData.tasks.filter(t => t.status === 'aberta' || t.status === 'em_andamento').length
-            const ultimaNota = internoData.mensagens.find(m => m.tipo === 'comentario')
-            const owner = internoData.thread?.current_owner
-            if (!owner && tasksAbertas === 0 && !ultimaNota) return null
-            return (
-              <button
-                onClick={() => setPanelInternoAberto(o => !o)}
-                style={{ padding: '7px 24px', borderTop: 'none', borderLeft: 'none', borderRight: 'none', borderBottom: '1px solid var(--border)', background: panelInternoAberto ? 'rgba(79,122,255,0.08)' : 'var(--bg-card)', display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap', cursor: 'pointer', width: '100%', textAlign: 'left' }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                  <Users size={12} color="var(--accent)" />
-                  <span style={{ fontSize: '11px', color: 'var(--accent)', fontWeight: '600', fontFamily: 'DM Sans, sans-serif' }}>Coordenação interna</span>
-                </div>
-                {owner && (
-                  <span style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px', fontFamily: 'DM Sans, sans-serif' }}>
-                    <UserCheck size={11} /> <strong style={{ color: 'var(--text-secondary)' }}>{owner.nome}</strong>
-                  </span>
-                )}
-                {tasksAbertas > 0 && (
-                  <span style={{ fontSize: '11px', background: '#f59e0b20', color: '#f59e0b', padding: '2px 8px', borderRadius: '10px', fontWeight: '600', fontFamily: 'DM Sans, sans-serif' }}>
-                    {tasksAbertas} task{tasksAbertas > 1 ? 's' : ''}
-                  </span>
-                )}
-                {ultimaNota && !panelInternoAberto && (
-                  <span style={{ fontSize: '11px', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '200px', fontStyle: 'italic', fontFamily: 'DM Sans, sans-serif' }}>
-                    &ldquo;{ultimaNota.mensagem}&rdquo;
-                  </span>
-                )}
-                <span style={{ marginLeft: 'auto', fontSize: '11px', color: 'var(--accent)', fontFamily: 'DM Sans, sans-serif' }}>
-                  {panelInternoAberto ? '▲ Fechar' : '▼ Abrir'}
-                </span>
-              </button>
-            )
-          })()}
-
-          <div ref={messagesContainerRef} style={{ flex: 1, overflowY: 'auto', padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {conversaSelecionada.status === 'aguardando_cliente' && (
-              <div style={{ padding: '10px 12px', borderRadius: '10px', background: '#f59e0b12', border: '1px solid #f59e0b35', color: '#f5d48b', fontSize: '12px', fontFamily: 'DM Sans, sans-serif' }}>
-                Esta conversa está aguardando retorno do cliente. Se ele responder, ela volta automaticamente para <strong>Em atendimento</strong>.
-              </div>
-            )}
-            {conversaSelecionada.status === 'resolvido' && (
-              <div style={{ padding: '10px 12px', borderRadius: '10px', background: '#14b8a612', border: '1px solid #14b8a635', color: '#8de7db', fontSize: '12px', fontFamily: 'DM Sans, sans-serif' }}>
-                Esta conversa foi marcada como resolvida. Se o cliente responder, a thread reaparece como <strong>Em atendimento</strong>.
-              </div>
-            )}
-            {mensagens.map(msg => (
-              <div key={msg.id}>
-                {!isMensagemOutbound(msg) && (
-                  <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: msg.resposta_agente ? '6px' : '0' }}>
-                    <div style={{ maxWidth: '70%' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
-                        <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: 'var(--bg-hover)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <User size={11} color="var(--text-muted)" />
-                        </div>
-                        <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'DM Sans, sans-serif' }}>{formatTime(msg.created_at)}</span>
-                      </div>
-                      <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '12px 12px 12px 4px', padding: '10px 14px' }}>
-                        <p style={{ fontSize: '13px', color: 'var(--text-primary)', fontFamily: 'DM Sans, sans-serif', lineHeight: '1.5', margin: 0 }}>{msg.mensagem}</p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {(msg.resposta_agente || isMensagemOutbound(msg)) && (
-                  <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                    <div style={{ maxWidth: '70%' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '6px', marginBottom: '4px' }}>
-                        <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'DM Sans, sans-serif' }}>
-                          {msg.respondido_manualmente ? '👤 Humano' : '🤖 Agente'}
-                        </span>
-                        <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: msg.respondido_manualmente ? '#2dd4a020' : '#4f7aff20', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          {msg.respondido_manualmente ? <User size={11} color="#2dd4a0" /> : <Bot size={11} color="#4f7aff" />}
-                        </div>
-                      </div>
-                      <div style={{ background: msg.respondido_manualmente ? '#2dd4a015' : '#4f7aff15', border: `1px solid ${msg.respondido_manualmente ? '#2dd4a030' : '#4f7aff30'}`, borderRadius: '12px 12px 4px 12px', padding: '10px 14px' }}>
-                        <p style={{ fontSize: '13px', color: 'var(--text-primary)', fontFamily: 'DM Sans, sans-serif', lineHeight: '1.5', margin: 0 }}>{msg.resposta_agente || msg.mensagem}</p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            ))}
-            <div ref={messagesEndRef} />
-          </div>
-
-          {podeResponderManual && (
-            <div style={{ padding: '16px 24px', borderTop: '1px solid var(--border)', background: 'var(--bg-surface)', display: 'flex', gap: '10px', alignItems: 'flex-end' }}>
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-end' }}>
-                  <textarea
-                    value={textoResposta}
-                    onChange={e => setTextoResposta(e.target.value)}
-                    onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); enviarResposta() } }}
-                    placeholder="Digite sua resposta... (Enter para enviar)"
-                    rows={1}
-                    style={{ ...inputStyle, flex: 1, resize: 'none', minHeight: '44px', maxHeight: '120px', lineHeight: '1.5' }}
-                  />
-                  <button
-                    onClick={enviarResposta}
-                    disabled={enviando || !textoResposta.trim()}
-                    style={{ padding: '10px 16px', background: textoResposta.trim() ? 'var(--accent)' : 'var(--bg-hover)', color: textoResposta.trim() ? '#fff' : 'var(--text-muted)', border: 'none', borderRadius: '8px', cursor: textoResposta.trim() ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: '600', fontFamily: 'DM Sans, sans-serif', transition: 'all 0.15s' }}
-                  >
-                    <Send size={14} /> {enviando ? '...' : 'Enviar'}
-                  </button>
-                </div>
-                {erroEnvio ? (
-                  <p style={{ margin: 0, color: '#ff6b6b', fontSize: '12px', fontFamily: 'DM Sans, sans-serif' }}>
-                    {erroEnvio}
-                  </p>
-                ) : null}
-              </div>
-            </div>
-          )}
-
-          {!podeResponderManual && conversaSelecionada.status === 'agente' && (
-            <div style={{ padding: '12px 24px', borderTop: '1px solid var(--border)', background: 'var(--bg-surface)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Bot size={14} color="var(--accent)" />
-              <p style={{ fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'DM Sans, sans-serif', margin: 0 }}>
-                Agente IA respondendo automaticamente — clique em <strong style={{ color: 'var(--text-secondary)' }}>Assumir conversa</strong> para responder manualmente
-              </p>
-            </div>
-          )}
-          {!podeResponderManual && conversaSelecionada.status === 'aguardando_cliente' && (
-            <div style={{ padding: '12px 24px', borderTop: '1px solid var(--border)', background: 'var(--bg-surface)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <UserCheck size={14} color="#f59e0b" />
-              <p style={{ fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'DM Sans, sans-serif', margin: 0 }}>
-                A thread está em espera. Clique em <strong style={{ color: 'var(--text-secondary)' }}>Retomar atendimento</strong> para voltar a responder manualmente.
-              </p>
-            </div>
-          )}
-          {!podeResponderManual && conversaSelecionada.status === 'resolvido' && (
-            <div style={{ padding: '12px 24px', borderTop: '1px solid var(--border)', background: 'var(--bg-surface)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <UserCheck size={14} color="#14b8a6" />
-              <p style={{ fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'DM Sans, sans-serif', margin: 0 }}>
-                A conversa está concluída. Use <strong style={{ color: 'var(--text-secondary)' }}>Reabrir conversa</strong> se precisar voltar ao atendimento.
-              </p>
-            </div>
-          )}
-        </div>
-      )}
+      ) : renderConversationPanel()}
 
       {panelInternoAberto && internoData && conversaSelecionada && abaAtiva !== 'portal' && (
         <div style={{ width: '272px', flexShrink: 0, borderLeft: '1px solid var(--border)', display: 'flex', flexDirection: 'column', background: 'var(--bg-surface)', overflow: 'hidden' }}>

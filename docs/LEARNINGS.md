@@ -5,6 +5,24 @@ Mestra: [[MASTER_PREV_LEGAL]]
 > Erros encontrados, causas e correções aplicadas.
 > Atualizado a cada sessão.
 
+## Atualização 2026-04-29 — Estado operacional da inbox precisa morar em `conversas`, não no `status` bruto do lead
+
+- Problema de produto:
+  - o operador precisa marcar situações como `morno`, `frio`, `aguardando documentos` e `aguardando contrato`
+  - esses estados não são iguais ao funil do lead e não cabem bem no `status` principal sem bagunçar relatório, roteamento e automação
+- Causa:
+  - o produto vinha misturando três coisas diferentes:
+    - status comercial do lead
+    - status da conversa (`agente`, `humano`, `aguardando_cliente`, `resolvido`)
+    - estado operacional do caso
+- Correção:
+  - a V1 da inbox ganhou um `estado_operacional` separado em `conversas`
+  - junto dele, entram `estado_operacional_prazo_at` e `estado_operacional_atualizado_em`
+  - a UI agora mostra esse estado na lista e no painel da conversa, com troca manual e prazo opcional
+- Regra prática:
+  - automação futura deve reagir ao `estado_operacional`, não ao `status` bruto do lead
+  - estados como `frio` ou `aguardando_documentos` podem virar gatilho depois, mas na V1 devem ser apenas base operacional até aprovação
+
 ## Atualização 2026-04-29 — Quando a Anthropic fica sem saldo, o problema aparente vira “handoff indevido”, mas a causa real é indisponibilidade do LLM
 
 - Problema:

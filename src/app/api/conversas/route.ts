@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getTenantContext } from '@/lib/tenant-context'
 import { canViewConversationForInbox } from '@/lib/inbox-visibility'
+import { normalizeOperationalConversationState } from '@/lib/inbox-operational-state'
 
 const STATUS_VALIDOS = new Set(['agente', 'humano', 'aguardando_cliente', 'resolvido', 'encerrado'])
 
@@ -23,6 +24,10 @@ export async function GET() {
       .map((conversa) => ({
         ...conversa,
         status: STATUS_VALIDOS.has(conversa.status) ? conversa.status : 'agente',
+        estado_operacional: normalizeOperationalConversationState(
+          conversa.estado_operacional,
+          conversa.status,
+        ),
       })),
   )
 }

@@ -3,6 +3,12 @@ import { createClient } from '@/lib/supabase/server'
 import { contextHasPermission, getTenantContext } from '@/lib/tenant-context'
 import { createAdminSupabase } from '@/lib/internal-collaboration'
 import { canViewConversationForInbox } from '@/lib/inbox-visibility'
+import {
+  isOperationalConversationState,
+  normalizeOperationalConversationState,
+  OPERATIONAL_STATE_META,
+  type OperationalConversationState,
+} from '@/lib/inbox-operational-state'
 
 const CONVERSA_STATUS = new Set([
   'agente',
@@ -162,6 +168,33 @@ export async function PATCH(
     case 'mark_read':
       payload = { nao_lidas: 0 }
       break
+    case 'set_operational_state': {
+      if (!isOperationalConversationState(body.estado_operacional)) {
+        return NextResponse.json({ error: 'Estado operacional inválido' }, { status: 400 })
+      }
+
+      const operationalState = body.estado_operacional as OperationalConversationState
+      const requiresDeadline = OPERATIONAL_STATE_META[operationalState].requiresDeadline
+      const deadline =
+        typeof body.estado_operacional_prazo_at === 'string' && body.estado_operacional_prazo_at.trim()
+          ? body.estado_operacional_prazo_at
+          : null
+
+      if (deadline && Number.isNaN(new Date(deadline).getTime())) {
+        return NextResponse.json({ error: 'Prazo operacional inválido' }, { status: 400 })
+      }
+
+      payload = {
+        estado_operacional: operationalState,
+        estado_operacional_prazo_at: deadline,
+        estado_operacional_atualizado_em: now,
+      }
+
+      if (requiresDeadline && !deadline) {
+        payload.estado_operacional_prazo_at = null
+      }
+      break
+    }
     default:
       if (typeof body.status === 'string' && CONVERSA_STATUS.has(body.status)) {
         payload = { status: body.status }
@@ -224,5 +257,8 @@ export async function PATCH(
     }
   }
 
-  return NextResponse.json(data)
+  return NextResponse.json({
+    ...data,
+    estado_operacional: normalizeOperationalConversationState(data.estado_operacional, data.status),
+  })
 }

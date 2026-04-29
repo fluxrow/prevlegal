@@ -55,6 +55,11 @@ Mestra: [[MASTER_PREV_LEGAL]]
 Estado confirmado em 27/04/2026:
 - `npm run lint` verde localmente
 - `npm run build` verde localmente
+- a inbox passou a ter base própria de `estado_operacional` por conversa, separada do funil do lead:
+  - badge visível na lista e no painel
+  - troca manual pelo operador
+  - prazo opcional já persistido para estados que pedem acompanhamento
+  - automações por esse estado continuam fora do ar até aprovação
 - o modal `Novo lead` voltou a respeitar o perfil operacional padrão do tenant:
   - `planejamento_previdenciario` agora abre cadastro com campos de contexto do planejamento
   - `beneficios_previdenciarios` continua com a seção de benefício/NB/banco/RMA

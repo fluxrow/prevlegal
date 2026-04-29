@@ -4,6 +4,32 @@ Contexto: [[SESSION_HISTORY_MASTER]]
 Mestra: [[MASTER_PREV_LEGAL]]
 > Última atualização: 10/04/2026
 
+## Atualizacao 2026-04-29 — Inbox ganhou base de `estado_operacional` separada do funil do lead, sem ativar automações novas
+
+- desenho aprovado para a V1:
+  - o funil do lead continua existindo para relatório e pipeline
+  - a inbox passa a ter um `estado_operacional` próprio da conversa, editável pelo usuário
+  - esse estado não dispara automações sozinho nesta entrega
+- estados expostos na V1:
+  - `em_andamento`
+  - `morno`
+  - `frio`
+  - `aguardando_cliente`
+  - `aguardando_documentos`
+  - `aguardando_contrato`
+  - `agendado`
+  - `em_atendimento_humano`
+  - `convertido`
+  - `encerrado`
+- implementação aplicada:
+  - `conversas` ganhou colunas de `estado_operacional`, `estado_operacional_prazo_at` e `estado_operacional_atualizado_em`
+  - a lista da inbox agora mostra badge do estado operacional além do status atual da conversa
+  - a conversa aberta ganhou seletor manual do estado e prazo opcional para estados que pedem acompanhamento
+  - a API de `PATCH /api/conversas/[id]` agora persiste esse estado sem encostar nas réguas ou nos agentes
+- leitura prática:
+  - o usuário passa a organizar a operação pela realidade do caso, não por configuração de agente
+  - follow-up, recuperação e cobrança por prazo continuam desligados até aprovação explícita
+
 ## Atualizacao 2026-04-29 — Falha de saldo na Anthropic agora degrada com aviso ao lead, sem silêncio no WhatsApp nem dupla notificação interna
 
 - achado no smoke real:
