@@ -23,6 +23,22 @@ function isInternalAgentResponderRequest(request: NextRequest) {
   return request.headers.get('authorization') === `Bearer ${internalToken}`
 }
 
+function isAuthorizedInternalCronRequest(request: NextRequest) {
+  const cronPaths = new Set([
+    '/api/agente/worker',
+    '/api/campanhas/worker',
+    '/api/followup/worker',
+    '/api/document-processing/worker',
+  ])
+
+  if (!cronPaths.has(request.nextUrl.pathname)) return false
+
+  const cronSecret = (process.env.CRON_SECRET || '').trim()
+  if (!cronSecret) return false
+
+  return request.headers.get('authorization') === `Bearer ${cronSecret}`
+}
+
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
 
@@ -92,6 +108,10 @@ export async function updateSession(request: NextRequest) {
   ]
 
   if (isInternalAgentResponderRequest(request)) {
+    return supabaseResponse
+  }
+
+  if (isAuthorizedInternalCronRequest(request)) {
     return supabaseResponse
   }
 

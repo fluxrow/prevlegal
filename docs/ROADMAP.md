@@ -17,6 +17,21 @@ Mestra: [[MASTER_PREV_LEGAL]]
   - a nomeação de `Marcos/Diogo` não depende mais só do prompt salvo no banco
   - o aviso de fora do horário deixa de competir com uma segunda resposta automática para a mesma mensagem do lead
 
+## Atualizacao 2026-04-29 — Worker de campanhas voltou a atravessar o proxy autenticado por `CRON_SECRET`
+
+- achado em produção:
+  - campanhas novas saíam do `0` para `1 enviado` e depois ficavam paradas mesmo após vários minutos
+  - o primeiro disparo acontecia no clique inicial, mas o restante nunca era retomado pelo cron
+- causa raiz:
+  - o `proxy` do app tratava `/api/campanhas/worker` como rota privada comum
+  - com isso, a chamada interna do Vercel Cron era desviada para `/login` antes de chegar na handler
+- correção aplicada:
+  - o middleware agora deixa passar apenas workers internos autenticados por `Authorization: Bearer ${CRON_SECRET}`
+  - a exceção cobre `campanhas`, `agente`, `followup` e `document-processing`, sem abrir a superfície para tráfego não autenticado
+- leitura prática:
+  - a campanha continua disparando o primeiro lead na hora
+  - os próximos envios voltam a depender do worker minuto a minuto, mas agora o cron efetivamente alcança a rota
+
 ## Atualizacao 2026-04-29 — Nomeação nominal de `Diogo/Marcos` ficou pronta só para teste local de planejamento
 
 - necessidade operacional:

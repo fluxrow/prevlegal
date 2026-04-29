@@ -23,6 +23,22 @@ Mestra: [[MASTER_PREV_LEGAL]]
   - em fluxos críticos de WhatsApp, o guardrail precisa existir tanto no prompt quanto na etapa final de saneamento da resposta
   - aviso operacional enviado ao lead precisa atualizar o estado da mensagem original, senão o scheduler pode tratá-la como pendente e responder de novo
 
+## Atualização 2026-04-29 — Cron interno em App Router pode morrer no proxy se a autenticação do worker não for liberada explicitamente
+
+- Problema:
+  - campanhas ficavam com `1 enviado`, `status = ativa` e não avançavam mais
+  - o envio inicial do clique funcionava, mas o restante do lote nunca era retomado
+- Causa:
+  - o worker `/api/campanhas/worker` já validava `CRON_SECRET` dentro da própria route
+  - porém o `proxy` barrava a requisição antes, tratando o cron como rota privada sem sessão e redirecionando para `/login`
+  - como o Vercel Cron não executa fluxo de login, o worker nunca chegava na handler real
+- Correção:
+  - criar bypass explícito no middleware apenas para workers internos autenticados por `Authorization: Bearer ${CRON_SECRET}`
+  - aplicar a mesma lógica aos outros workers de cron do app (`agente`, `followup`, `document-processing`) para manter coerência operacional
+- Regra prática:
+  - em Next.js com `proxy`/middleware, validar segredo dentro da route não basta quando a rota está atrás de auth global
+  - endpoints de cron precisam ser liberados no middleware com critério estrito, senão o scheduler falha “silenciosamente” e o sintoma parece bug de negócio
+
 ## Atualização 2026-04-29 — Nomear especialistas do planejamento por tenant pede trava para não vazar em produção cedo demais
 
 - Problema:
