@@ -154,6 +154,7 @@ async function registerAgentAutoresponderFailure({
   supabase,
   tenantId,
   conversaId,
+  mensagemId,
   from,
   leadId,
   campanhaId,
@@ -164,6 +165,7 @@ async function registerAgentAutoresponderFailure({
   supabase: ReturnType<typeof createAdminSupabase>
   tenantId: string | null
   conversaId: string | null
+  mensagemId?: string | null
   from: string
   leadId?: string | null
   campanhaId?: string | null
@@ -209,6 +211,19 @@ async function registerAgentAutoresponderFailure({
         lido: true,
         lido_em: new Date().toISOString(),
       })
+
+      if (mensagemId) {
+        await supabase
+          .from('mensagens_inbound')
+          .update({
+            respondido_por_agente: true,
+            respondido_manualmente: false,
+            resposta_agente: noticeBody,
+            lido: true,
+            lido_em: new Date().toISOString(),
+          })
+          .eq('id', mensagemId)
+      }
     }
   }
 
@@ -230,13 +245,13 @@ async function registerAgentAutoresponderFailure({
   if (!tenantId) return
 
   const titulo = outsideHours
-    ? `Agente fora do horário — retorno agendado — ${leadName}`
+    ? `Agente fora do horário — aviso enviado — ${leadName}`
     : timeout
       ? `Agente não respondeu a tempo — ${leadName}`
       : `Agente indisponível — ${leadName}`
 
   const descricao = outsideHours
-    ? 'O lead respondeu fora da janela configurada do agente. A conversa permanece com o agente e será retomada automaticamente no próximo horário útil.'
+    ? 'O lead respondeu fora da janela configurada do agente e recebeu o aviso de horário. O mesmo inbound não deve voltar a disparar resposta automática duplicada.'
     : timeout
       ? 'O agente demorou além do limite interno para responder. A conversa foi devolvida para atendimento humano.'
       : `O agente não conseguiu continuar a conversa automaticamente. Motivo: ${result.error}`
@@ -1082,6 +1097,7 @@ async function handleReceiveEvent(request: NextRequest, event: string) {
           supabase,
           tenantId,
           conversaId,
+          mensagemId: mensagemInserida.id,
           from,
           leadId: lead?.id || null,
           campanhaId: lead?.campanha_id || null,

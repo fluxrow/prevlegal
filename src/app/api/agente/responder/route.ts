@@ -30,6 +30,7 @@ const AGENT_FLOOD_LIMIT = 5
 const AGENT_FLOOD_SILENCE_MS = 30000
 const AGENT_SUMMARY_BATCH_SIZE = 10
 const KNOWLEDGE_WARNING_LOGGED = new Set<string>()
+const LOCAL_TEST_PLANNING_SPECIALISTS = 'Marcos ou Diogo'
 
 type HistoricoEntry = { role: 'user' | 'assistant'; content: string }
 
@@ -119,6 +120,78 @@ type AnthropicResponse = {
   content?: Array<{ type: string; text?: string }>
   usage?: AnthropicUsage
   stop_reason?: string | null
+}
+
+function shouldUsePagliucaPlanningSpecialists(promptHint?: string | null) {
+  const normalizedHint = normalizeComparableMessageText(promptHint || '')
+
+  return (
+    normalizedHint.includes('ana terra pagliuca') ||
+    normalizedHint.includes('dra ana') ||
+    normalizedHint.includes('conselho da mulher empresaria') ||
+    normalizedHint.includes(' cme ')
+  )
+}
+
+function getPlanningHumanHandoffContext(promptHint?: string | null) {
+  const explicit = String(process.env.PLANNING_HUMAN_SPECIALISTS || '').trim()
+  const label =
+    explicit ||
+    (shouldUsePagliucaPlanningSpecialists(promptHint) ? LOCAL_TEST_PLANNING_SPECIALISTS : '') ||
+    (!process.env.VERCEL ? LOCAL_TEST_PLANNING_SPECIALISTS : '')
+
+  if (!label) {
+    return {
+      named: false,
+      analysisReference: 'o advogado ou especialista responsável da equipe',
+      stageReference: 'a advogada ou o advogado responsável assumir',
+      escalationContinuation: 'a equipe jurídica responsável continuará o atendimento',
+      inviteReference: 'o advogado ou especialista responsável da equipe',
+    }
+  }
+
+  return {
+    named: true,
+    analysisReference: `${label}, advogados responsáveis da equipe`,
+    stageReference: `${label} seguirem com você`,
+    escalationContinuation: `${label} seguirão com o atendimento`,
+    inviteReference: label,
+  }
+}
+
+function normalizePlanningHumanAttribution(text: string, promptHint?: string | null) {
+  const handoff = getPlanningHumanHandoffContext(promptHint)
+  if (!handoff.named) return text
+
+  return text
+    .replace(
+      /\bA Dra\. Ana conduz essa análise pessoalmente\.?/giu,
+      `O diagnóstico técnico individual fica com ${handoff.analysisReference}.`,
+    )
+    .replace(
+      /\bA Dra\. Ana conduz essa análise\b/giu,
+      `O diagnóstico técnico individual fica com ${handoff.analysisReference}`,
+    )
+    .replace(
+      /\bVou organizar isso com a Dra\. Ana\.?/giu,
+      `Vou organizar isso com ${handoff.inviteReference}.`,
+    )
+    .replace(
+      /\bEssas informações vão ajudar a Dra\. Ana\b/giu,
+      `Essas informações vão ajudar ${handoff.inviteReference}`,
+    )
+    .replace(
+      /\bVocê gostaria que eu agendasse uma conversa com ela\b/giu,
+      `Você gostaria que eu organizasse uma conversa com ${handoff.inviteReference}`,
+    )
+    .replace(
+      /\bcom ela para apresentar sua situação específica\b/giu,
+      `com ${handoff.inviteReference} para olhar sua situação específica`,
+    )
+    .replace(
+      /\bpara ela já ter uma base do seu cenário\b/giu,
+      `para ${handoff.inviteReference} já terem uma base do seu cenário`,
+    )
 }
 
 // Prompt padrão do sistema caso o escritório não tenha configurado um personalizado
@@ -486,13 +559,16 @@ function buildImmediateResponseDirective({
   latestLeadIntent,
   operationProfile,
   isFirstReplyAfterCampaign,
+  planningPromptHint,
 }: {
   latestLeadMessage: string
   latestLeadIntent: string
   operationProfile?: string | null
   isFirstReplyAfterCampaign: boolean
+  planningPromptHint?: string | null
 }) {
   const normalizedProfile = normalizeOperationProfile(operationProfile || 'beneficios_previdenciarios')
+  const planningHumanHandoff = getPlanningHumanHandoffContext(planningPromptHint)
 
   const shared = [
     'RESPOSTA IMEDIATA OBRIGATÓRIA:',
@@ -511,7 +587,9 @@ function buildImmediateResponseDirective({
       '- Você atende apenas o titular do planejamento. Se perceber que está falando com terceiro, peça de forma cordial que o próprio titular siga a conversa.',
       '- Se o lead pedir explicação, explique o conceito pedido em linguagem simples e continue para o próximo passo da esteira.',
       '- Nunca diga que a sócia ou fundadora do escritório é quem pessoalmente conduz o diagnóstico técnico individual só porque o nome dela apareceu na abordagem comercial.',
-      '- Quando falar da etapa humana do planejamento, use formulações como "advogado responsável da equipe", "especialista responsável" ou "equipe jurídica responsável".',
+      planningHumanHandoff.named
+        ? `- Quando falar da etapa humana do planejamento, diga com naturalidade que a análise individual e a validação final ficam com ${planningHumanHandoff.analysisReference}.`
+        : '- Quando falar da etapa humana do planejamento, use formulações como "advogado responsável da equipe", "especialista responsável" ou "equipe jurídica responsável".',
       '- Em WhatsApp, priorize clareza com brevidade. Respostas longas demais reduzem leitura e conversão.',
       '- Em WhatsApp, evite subtítulos em markdown, listas longas e resposta com cara de parecer técnico escrito. Prefira blocos curtos de conversa.',
       '- Em WhatsApp, nunca use asteriscos, bullets, travessões, enumeração tipo 1/2/3, nem termos com cara de relatório ou apresentação.',
@@ -575,6 +653,7 @@ function buildAgentContinuitySection({
   activeAgentTypes,
   hasHistory,
   isFirstReplyAfterCampaign,
+  planningPromptHint,
 }: {
   leadName?: string | null
   currentAgentType?: string | null
@@ -582,8 +661,10 @@ function buildAgentContinuitySection({
   activeAgentTypes: string[]
   hasHistory: boolean
   isFirstReplyAfterCampaign: boolean
+  planningPromptHint?: string | null
 }) {
   const normalizedProfile = normalizeOperationProfile(operationProfile || 'beneficios_previdenciarios')
+  const planningHumanHandoff = getPlanningHumanHandoffContext(planningPromptHint)
   const normalizedType = String(currentAgentType || 'triagem').trim().toLowerCase()
   const downstreamTypes = activeAgentTypes.filter((tipo) => tipo !== normalizedType)
   const hasDownstream = downstreamTypes.length > 0
@@ -597,7 +678,7 @@ function buildAgentContinuitySection({
     normalizedType === 'triagem'
       ? hasDownstream
         ? `Você está na etapa de triagem. Seu papel é aquecer ${leadRef}, validar interesse e deixar o contexto pronto para os próximos agentes ativos (${downstreamTypes.join(', ')}). Não antecipe etapas demais se ainda for cedo.`
-        : `Você está na etapa de triagem e não há agentes posteriores ativos no momento. Seu papel é aquecer ${leadRef}, explicar o essencial em linguagem simples e deixar a conversa pronta para a advogada responsável assumir sem perda de contexto.`
+        : `Você está na etapa de triagem e não há agentes posteriores ativos no momento. Seu papel é aquecer ${leadRef}, explicar o essencial em linguagem simples e deixar a conversa pronta para ${normalizedProfile === 'planejamento_previdenciario' ? planningHumanHandoff.stageReference : 'a advogada responsável assumir'} sem perda de contexto.`
       : `Você está na etapa ${normalizedType}. Continue a conversa como parte do mesmo atendimento, assumindo que ${leadRef} já ouviu a explicação inicial e que o histórico registra o que foi falado ou combinado.`
 
   const continuityHint = isFirstReplyAfterCampaign
@@ -622,7 +703,9 @@ function buildAgentContinuitySection({
           '- Em regra, responda em até 4 blocos curtos de WhatsApp. Só ultrapasse isso se o lead pedir detalhamento técnico adicional.',
           '- Pergunta técnica difícil, por si só, não é motivo para escalar. Responda em nível geral com precisão e profundidade compatíveis com o perfil premium do lead.',
           '- Escale quando o lead pedir análise individual do CNIS ou documentos, cálculo formal/projeção, aceitar diagnóstico técnico pago, pedir para falar com advogado ou quando a conversa chegar à etapa de proposta/contrato/assinatura.',
-          '- Se o lead perguntar quem faz a análise individual, diga que isso fica com o advogado ou especialista responsável da equipe. Não atribua automaticamente à Dra. Ana.',
+          planningHumanHandoff.named
+            ? `- Se o lead perguntar quem faz a análise individual, diga que isso fica com ${planningHumanHandoff.analysisReference}. Não atribua automaticamente à Dra. Ana.`
+            : '- Se o lead perguntar quem faz a análise individual, diga que isso fica com o advogado ou especialista responsável da equipe. Não atribua automaticamente à Dra. Ana.',
           '- Depois que o lead demonstrar interesse real, conduza com naturalidade para diagnóstico, proposta, próximo compromisso ou preparação contratual, sem parecer telemarketing.',
         ].join('\n')
       : [
@@ -1218,9 +1301,10 @@ export async function POST(request: NextRequest) {
     const normalizedOperationProfile = normalizeOperationProfile(
       config.agente_perfil_operacao || agenteRow?.perfil_operacao || 'beneficios_previdenciarios',
     )
+    const planningHumanHandoff = getPlanningHumanHandoffContext()
     if (config.agente_fluxo_qualificacao) partes.push(`\nFLUXO DE QUALIFICAÇÃO:\n${config.agente_fluxo_qualificacao}`)
     if (config.agente_exemplos_dialogo) partes.push(`\nEXEMPLOS DE DIÁLOGO:\n${config.agente_exemplos_dialogo}`)
-    if (config.agente_gatilhos_escalada) partes.push(`\nGATILHOS DE ESCALADA — quando ocorrerem, encerre e informe que a equipe jurídica responsável continuará o atendimento:\n${config.agente_gatilhos_escalada}`)
+    if (config.agente_gatilhos_escalada) partes.push(`\nGATILHOS DE ESCALADA — quando ocorrerem, encerre e informe que ${normalizedOperationProfile === 'planejamento_previdenciario' ? planningHumanHandoff.escalationContinuation : 'a equipe jurídica responsável continuará o atendimento'}:\n${config.agente_gatilhos_escalada}`)
     if (config.agente_frases_proibidas) partes.push(`\nFRASES ABSOLUTAMENTE PROIBIDAS:\n${config.agente_frases_proibidas}`)
     if (config.agente_objeccoes) partes.push(`\nCOMO LIDAR COM OBJEÇÕES:\n${config.agente_objeccoes}`)
     if (config.agente_fallback) partes.push(`\nFALLBACK — quando não entender a mensagem, responda: "${config.agente_fallback}"`)
@@ -1235,6 +1319,7 @@ export async function POST(request: NextRequest) {
         activeAgentTypes,
         hasHistory: historico.length > 1,
         isFirstReplyAfterCampaign,
+        planningPromptHint: config.agente_prompt_sistema || null,
       })}`,
     )
     partes.push(
@@ -1243,6 +1328,7 @@ export async function POST(request: NextRequest) {
         latestLeadIntent,
         operationProfile: normalizedOperationProfile,
         isFirstReplyAfterCampaign,
+        planningPromptHint: config.agente_prompt_sistema || null,
       })}`,
     )
     if (normalizedOperationProfile === 'planejamento_previdenciario') {
@@ -1379,6 +1465,7 @@ export async function POST(request: NextRequest) {
       })
     }
     const previousAssistantMessage = findPreviousAssistantMessage(historico)
+    const planningPromptHint = config.agente_prompt_sistema || promptBase
     let respostaTexto = sanitizeWhatsAppResponseText(respostaTextoBruta)
 
     if (
@@ -1405,6 +1492,10 @@ export async function POST(request: NextRequest) {
       } catch (rewriteError) {
         console.warn('[agente] Falha ao reescrever resposta de planejamento:', rewriteError)
       }
+    }
+
+    if (normalizedOperationProfile === 'planejamento_previdenciario') {
+      respostaTexto = normalizePlanningHumanAttribution(respostaTexto, planningPromptHint)
     }
 
     if (!respostaTexto) {

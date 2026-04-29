@@ -5,6 +5,40 @@ Mestra: [[MASTER_PREV_LEGAL]]
 > Erros encontrados, causas e correções aplicadas.
 > Atualizado a cada sessão.
 
+## Atualização 2026-04-29 — Prompt salvo no banco não é suficiente para segurar handoff humano se o runtime não blindar a saída final
+
+- Problema:
+  - mesmo depois de instruções novas no runtime, a Bianca ainda conseguiu responder com frases como:
+    - `A Dra. Ana conduz essa análise pessoalmente`
+    - `Vou organizar isso com a Dra. Ana`
+  - além disso, um inbound fora do horário podia receber o aviso de espera e depois ainda ganhar resposta normal para a mesma mensagem
+- Causa:
+  - o agente ativo do tenant pode carregar `prompt_base` salvo anteriormente no banco
+  - se a saída do modelo não for blindada na última etapa, resquícios desse prompt antigo ainda vazam
+  - no fluxo de `outside_hours`, o aviso não estava “consumindo” o inbound original, então o worker ainda podia reprocessá-lo depois
+- Correção:
+  - pós-processamento final de `planejamento` agora reatribui menções indevidas de análise/agendamento da Dra. Ana para `Marcos ou Diogo` no contexto da Pagliuca
+  - o webhook de `outside_hours` passou a marcar o inbound original como respondido pelo próprio aviso de horário, reduzindo o risco de mensagem dupla
+- Regra prática:
+  - em fluxos críticos de WhatsApp, o guardrail precisa existir tanto no prompt quanto na etapa final de saneamento da resposta
+  - aviso operacional enviado ao lead precisa atualizar o estado da mensagem original, senão o scheduler pode tratá-la como pendente e responder de novo
+
+## Atualização 2026-04-29 — Nomear especialistas do planejamento por tenant pede trava para não vazar em produção cedo demais
+
+- Problema:
+  - o handoff humano neutro resolveu o erro de atribuir o diagnóstico à Dra. Ana
+  - mas o caso real da Pagliuca pede nomeação explícita de `Diogo` e `Marcos` no `planejamento`
+- Risco:
+  - empurrar isso direto para produção, sem camada de controle, poderia:
+    - vazar nomes errados para outros tenants
+    - cristalizar uma convenção local da Pagliuca como comportamento global do produto
+- Correção aplicada:
+  - o runtime passou a suportar uma referência nominal aos responsáveis do `planejamento`
+  - para o teste interno atual, essa nomeação fica ativa só fora do ambiente Vercel, com fallback neutro no comportamento padrão
+- Regra prática:
+  - quando a nomeação humana for específica de tenant ou operação, o produto precisa de uma chave explícita de configuração antes de promover isso para produção global
+  - enquanto essa chave não existir, teste local controlado é mais seguro do que hardcode produtivo
+
 ## Atualização 2026-04-29 — `202 outside_hours` não pode ser tratado como sucesso silencioso
 
 - Problema:

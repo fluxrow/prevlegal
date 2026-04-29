@@ -4,6 +4,34 @@ Contexto: [[SESSION_HISTORY_MASTER]]
 Mestra: [[MASTER_PREV_LEGAL]]
 > Última atualização: 10/04/2026
 
+## Atualizacao 2026-04-29 — Pagliuca ganhou nomeação nominal de `Marcos ou Diogo` e aviso de fora do horário deixou de reabrir o mesmo inbound
+
+- achado do smoke real:
+  - algumas respostas de `planejamento` ainda conseguiam citar a Dra. Ana como se ela fizesse pessoalmente o diagnóstico técnico individual
+  - quando o lead respondia fora da janela, recebia o aviso de horário e, em alguns casos, o mesmo inbound ainda acabava gerando resposta normal logo depois
+- correção aplicada:
+  - o runtime final de `planejamento` passou a normalizar respostas que tentem jogar análise, agendamento ou preparação técnica na conta da Dra. Ana
+  - para o contexto da Pagliuca, o handoff humano agora nomeia `Marcos ou Diogo` no próprio runtime
+  - o webhook de `outside_hours` agora marca aquele inbound como já respondido pelo aviso de horário, evitando que o mesmo texto seja reprocessado logo em seguida
+- leitura prática:
+  - a nomeação de `Marcos/Diogo` não depende mais só do prompt salvo no banco
+  - o aviso de fora do horário deixa de competir com uma segunda resposta automática para a mesma mensagem do lead
+
+## Atualizacao 2026-04-29 — Nomeação nominal de `Diogo/Marcos` ficou pronta só para teste local de planejamento
+
+- necessidade operacional:
+  - a Bianca não deve mais sugerir que a Dra. Ana faz pessoalmente o diagnóstico técnico individual
+  - no caso da Pagliuca, o handoff humano correto do `planejamento` é para `Diogo` ou `Marcos`
+- ajuste aplicado:
+  - o runtime de `/api/agente/responder` ganhou uma camada local para nomear `Diogo ou Marcos` como responsáveis pela análise individual e validação final
+  - o mesmo runtime mantém fallback neutro (`advogado responsável da equipe` / `especialista responsável`) quando essa nomeação nominal não estiver ativa
+- trava de segurança:
+  - por enquanto isso ficou intencionalmente restrito ao ambiente local de teste, sem push nem deploy
+  - a produção continua no comportamento neutro até validação interna explícita
+- impacto prático:
+  - já dá para rodar smoke interno vendo se a Bianca usa `Diogo/Marcos` com naturalidade
+  - sem risco de vazar essa convenção para outros tenants antes da hora
+
 ## Atualizacao 2026-04-29 — Aviso de fora do horário voltou a disparar no webhook
 
 - achado do smoke real:
