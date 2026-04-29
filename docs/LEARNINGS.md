@@ -24,6 +24,22 @@ Mestra: [[MASTER_PREV_LEGAL]]
   - em automações internas do PrevLegal, `202` não significa automaticamente “sucesso”
   - quando o `reason` representar desvio operacional relevante, como `outside_hours`, o caller precisa tratar isso explicitamente
 
+## Atualização 2026-04-29 — Resposta melhor pode continuar ruim se morrer no teto de tokens
+
+- Problema:
+  - depois dos guardrails de estilo, a Bianca ficou bem mais humana
+  - porém algumas respostas de `planejamento` passaram a terminar no meio da frase
+- Causa:
+  - o teto novo estava conservador o suficiente para evitar textão, mas em certos casos encostava no `max_tokens`
+  - além disso, o runtime ainda não tratava `stop_reason = max_tokens` como sinal de truncamento
+- Correção:
+  - aumento leve e controlado do cap de `planejamento`
+  - detecção de resposta com cara de pensamento incompleto
+  - reescrita curta e humana quando a saída vier truncada
+- Regra prática:
+  - reduzir tokens ajuda muito a controlar prolixidade, mas precisa vir acompanhado de proteção contra mensagem cortada
+  - em WhatsApp, resposta mais curta só é boa se continuar parecendo frase completa
+
 ## Atualização 2026-04-28 — Cadastro manual de planejamento não pode herdar a semântica de NB do funil de benefícios
 
 - Problema:

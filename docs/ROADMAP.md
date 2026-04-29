@@ -20,6 +20,18 @@ Mestra: [[MASTER_PREV_LEGAL]]
   - a conversa continua em `agente`
   - a retomada automática segue valendo na próxima janela útil
 
+## Atualizacao 2026-04-29 — Planejamento ganhou folga controlada contra corte no meio da frase
+
+- após o reteste real, o comportamento da Bianca melhorou bastante, mas apareceu um resíduo:
+  - algumas respostas boas eram cortadas no final, com cara de mensagem truncada por limite
+- ajuste fino aplicado:
+  - cap de `planejamento` subiu levemente, sem voltar ao padrão prolixo
+  - respostas com `stop_reason = max_tokens` ou final com cara de frase interrompida entram em reescrita curta
+  - a reescrita foi instruída a completar a ideia com naturalidade, sem alongar
+- impacto prático:
+  - reduz chance de terminar em “meio pensamento”
+  - preserva o estilo mais humano e enxuto alcançado no runtime
+
 ## Atualizacao 2026-04-28 — Cadastro manual de planejamento deixou de depender da semântica de benefício
 
 - ajuste operacional aplicado para o caso real da Pagliuca:

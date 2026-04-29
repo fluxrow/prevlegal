@@ -197,6 +197,21 @@ function sanitizeWhatsAppResponseText(text: string) {
     .trim()
 }
 
+function endsLikeIncompleteThought(text: string) {
+  const trimmed = text.trim()
+  if (!trimmed) return false
+
+  if (/[.!?)]$/.test(trimmed)) return false
+
+  const lastToken = trimmed.split(/\s+/).at(-1) || ''
+  if (!lastToken) return false
+
+  if (/^[A-Za-zÀ-ÿ]{1,4}$/u.test(lastToken)) return true
+  if (/^(para|pra|com|sem|que|de|da|do|em|ou|e|mas|por)$/iu.test(lastToken)) return true
+
+  return false
+}
+
 function countParagraphs(text: string) {
   return text.split(/\n\s*\n/).filter((chunk) => chunk.trim()).length
 }
@@ -238,10 +253,12 @@ function needsPlanningRewrite({
   text,
   previousAssistant,
   isFirstReplyAfterCampaign,
+  wasCutByTokenLimit,
 }: {
   text: string
   previousAssistant: string
   isFirstReplyAfterCampaign: boolean
+  wasCutByTokenLimit: boolean
 }) {
   const hasMarkdownArtifacts = /[*•`_]/.test(text) || /\n\s*(?:[-•]|\d+[.)])\s/u.test(text)
   const tooLong = text.length > (isFirstReplyAfterCampaign ? 520 : 700)
@@ -249,8 +266,9 @@ function needsPlanningRewrite({
   const repeated = previousAssistant
     ? hasHighContentOverlap(text, previousAssistant)
     : false
+  const truncated = wasCutByTokenLimit || endsLikeIncompleteThought(text)
 
-  return hasMarkdownArtifacts || tooLong || tooManyParagraphs || repeated
+  return hasMarkdownArtifacts || tooLong || tooManyParagraphs || repeated || truncated
 }
 
 function findRecentDuplicateInboundMessage(
@@ -301,7 +319,7 @@ async function rewritePlanningReplyForWhatsApp({
 }) {
   const response = await anthropicClient.messages.create({
     model: 'claude-sonnet-4-20250514',
-    max_tokens: isFirstReplyAfterCampaign ? 190 : 240,
+    max_tokens: isFirstReplyAfterCampaign ? 220 : 280,
     system: [
       'Você reescreve respostas de WhatsApp de uma consultora de planejamento previdenciário.',
       'Objetivo: soar humana, clara e natural.',
@@ -311,6 +329,7 @@ async function rewritePlanningReplyForWhatsApp({
       'Faça no máximo 1 pergunta principal.',
       'Não repita o que a própria consultora acabou de dizer na mensagem anterior.',
       'Não invente análise individual, não dê parecer fechado, não recomende estratégia definitiva e não cite valores específicos sem documento.',
+      'Se o rascunho estiver cortado, complete a ideia de forma curta e natural, sem alongar.',
       'Mantenha só o essencial para avançar a conversa.',
     ].join('\n'),
     messages: [
@@ -1260,13 +1279,13 @@ export async function POST(request: NextRequest) {
     const configuredMaxTokens =
       config.agente_max_tokens ||
       (normalizedOperationProfile === 'planejamento_previdenciario'
-        ? 420
+        ? 460
         : 500)
     const maxTokens =
       normalizedOperationProfile === 'planejamento_previdenciario'
         ? isFirstReplyAfterCampaign
-          ? Math.min(configuredMaxTokens, 220)
-          : Math.min(configuredMaxTokens, 320)
+          ? Math.min(configuredMaxTokens, 260)
+          : Math.min(configuredMaxTokens, 380)
         : configuredMaxTokens
     const llmStartedAt = Date.now()
 
@@ -1346,12 +1365,14 @@ export async function POST(request: NextRequest) {
     }
 
     const respostaTextoBruta = getAnthropicText(response)
+    const stopReason = getStopReason(response)
+    const wasCutByTokenLimit = stopReason === 'max_tokens'
     if (!respostaTextoBruta) {
       console.warn('[agente] Resposta do modelo sem conteúdo textual útil', {
         mensagem_id,
         tenantId,
         leadId: mensagem.lead_id || null,
-        stop_reason: getStopReason(response),
+        stop_reason: stopReason,
       })
     }
     const previousAssistantMessage = findPreviousAssistantMessage(historico)
@@ -1363,6 +1384,7 @@ export async function POST(request: NextRequest) {
         text: respostaTexto,
         previousAssistant: previousAssistantMessage,
         isFirstReplyAfterCampaign,
+        wasCutByTokenLimit,
       })
     ) {
       try {
