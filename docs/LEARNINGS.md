@@ -57,6 +57,36 @@ Mestra: [[MASTER_PREV_LEGAL]]
   - qualquer trilha de provedor WhatsApp precisa de deduplicação própria; não dá para assumir que o comportamento seguro de um canal já cobre o outro
   - quando houver dúvida entre “duplicou só no sistema” e “duplicou no cliente”, vale olhar `externalMessageId` persistido: ids distintos significam que a duplicidade vazou para o canal real
 
+## Atualização 2026-04-29 — Polling de inbox não pode auto-scrollar toda vez que reidrata o mesmo histórico
+
+- Problema:
+  - o operador abria uma conversa longa e a tela descia sozinha para o rodapé a cada poucos segundos
+  - isso impedia ler o histórico desde o começo e passava sensação de “reload infinito”
+- Causa:
+  - o polling da inbox roda continuamente para atualizar conversas e mensagens
+  - o componente chamava `scrollIntoView({ behavior: 'smooth' })` em toda mudança de `mensagens`, mesmo quando o conteúdo só era reidratação do mesmo histórico
+- Correção:
+  - manter estado de “usuário está perto do rodapé”
+  - só auto-scrollar quando entram mensagens novas e a pessoa já está acompanhando o fim da conversa
+  - ao trocar de conversa, ancorar uma vez; depois disso, respeitar a posição manual do operador
+- Regra prática:
+  - em caixas operacionais com polling, “mensagens mudou” não é sinônimo de “usuário quer voltar para o final”
+  - autoscroll precisa ser condicionado à intenção de leitura do operador, senão o produto vira inimigo do suporte
+
+## Atualização 2026-04-29 — Quando a duplicidade já foi neutralizada no runtime, a inbox ainda pode precisar colapsar o espelho persistido
+
+- Problema:
+  - na conversa da `Roseni`, algumas duplicatas continuavam aparecendo no histórico mesmo quando a resposta do agente parecia já ter sido reaproveitada, sem um segundo conteúdo novo
+- Evidência:
+  - pares de mensagens com o mesmo `twilio_message_sid` apareciam no banco
+  - uma versão carregava o outbound efetivo, e a outra era só o espelho persistido do mesmo inbound reaproveitado
+- Correção:
+  - a leitura de `/api/conversas/[id]` passou a deduplicar por `twilio_message_sid`
+  - entre duplicatas do mesmo inbound, a API prefere a versão mais rica: com resposta do agente e identificador real de saída
+- Regra prática:
+  - mesmo quando a camada operacional evita novo envio, o histórico lido pela UI pode precisar de saneamento
+  - se a deduplicação física no banco não for imediata, pelo menos a leitura exibida ao operador precisa colapsar o espelho redundante
+
 ## Atualização 2026-04-29 — Nomear especialistas do planejamento por tenant pede trava para não vazar em produção cedo demais
 
 - Problema:

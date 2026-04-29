@@ -47,6 +47,19 @@ Mestra: [[MASTER_PREV_LEGAL]]
   - isso não corrige só a visualização da inbox
   - impede também a segunda resposta automática no WhatsApp real quando a Twilio reenviar ou duplicar o mesmo inbound
 
+## Atualizacao 2026-04-29 — Inbox deixou de puxar scroll para baixo a cada polling e passou a esconder duplicatas espelhadas do mesmo inbound
+
+- achado em uso real:
+  - ao abrir conversas longas como a da `Roseni`, a caixa rolava sozinha para o fim sem parar
+  - além disso, duplicatas do mesmo inbound reapareciam no histórico mesmo quando o agente já tinha reaproveitado a resposta anterior
+- correção aplicada:
+  - o painel da inbox agora só auto-scrolla quando entra mensagem nova e o operador já está perto do rodapé
+  - ao trocar de conversa, ele ancora uma vez no fim; depois disso, não força a rolagem a cada polling
+  - a leitura de `/api/conversas/[id]` passou a colapsar duplicatas com o mesmo `twilio_message_sid`, preferindo a versão mais completa da mensagem
+- leitura prática:
+  - o operador volta a conseguir subir o histórico e ler desde o começo
+  - a thread deixa de mostrar “ecos” do mesmo inbound quando o reaproveitamento de resposta já resolveu o caso sem novo envio
+
 ## Atualizacao 2026-04-29 — Nomeação nominal de `Diogo/Marcos` ficou pronta só para teste local de planejamento
 
 - necessidade operacional:

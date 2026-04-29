@@ -12,6 +12,60 @@ const CONVERSA_STATUS = new Set([
   'encerrado',
 ])
 
+type ConversationMessageRow = {
+  id: string
+  created_at: string
+  twilio_message_sid?: string | null
+  twilio_sid?: string | null
+  resposta_agente?: string | null
+}
+
+function scoreConversationMessage(row: ConversationMessageRow) {
+  let score = 0
+
+  if (row.resposta_agente?.trim()) score += 4
+  if (row.twilio_sid && row.twilio_sid !== 'on-receive') score += 2
+  if (row.twilio_sid === 'on-receive') score -= 1
+
+  return score
+}
+
+function dedupeConversationMessages<T extends ConversationMessageRow>(rows: T[]) {
+  const byExternalInboundId = new Map<string, T>()
+  const fallbackRows: T[] = []
+
+  for (const row of rows) {
+    const externalInboundId = String(row.twilio_message_sid || '').trim()
+
+    if (!externalInboundId) {
+      fallbackRows.push(row)
+      continue
+    }
+
+    const existing = byExternalInboundId.get(externalInboundId)
+    if (!existing) {
+      byExternalInboundId.set(externalInboundId, row)
+      continue
+    }
+
+    const existingScore = scoreConversationMessage(existing)
+    const currentScore = scoreConversationMessage(row)
+
+    if (currentScore > existingScore) {
+      byExternalInboundId.set(externalInboundId, row)
+      continue
+    }
+
+    if (currentScore === existingScore && new Date(row.created_at).getTime() > new Date(existing.created_at).getTime()) {
+      byExternalInboundId.set(externalInboundId, row)
+    }
+  }
+
+  return [...fallbackRows, ...byExternalInboundId.values()].sort(
+    (left, right) => new Date(left.created_at).getTime() - new Date(right.created_at).getTime(),
+  )
+}
+
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -36,7 +90,7 @@ export async function GET(
     .order('created_at', { ascending: true })
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  return NextResponse.json(data || [])
+  return NextResponse.json(dedupeConversationMessages((data || []) as ConversationMessageRow[]))
 }
 
 export async function PATCH(

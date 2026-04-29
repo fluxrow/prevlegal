@@ -142,9 +142,12 @@ export default function CaixaDeEntradaPage() {
   const [enviando, setEnviando] = useState(false)
   const [erroEnvio, setErroEnvio] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+  const messagesContainerRef = useRef<HTMLDivElement>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const humanLinkHandledRef = useRef<string | null>(null)
   const portalLinkHandledRef = useRef<string | null>(null)
+  const shouldStickToBottomRef = useRef(true)
+  const previousMessageCountRef = useRef(0)
 
   function notifyPendenciasChanged() {
     if (typeof window !== 'undefined') {
@@ -406,8 +409,42 @@ export default function CaixaDeEntradaPage() {
   }, [conversaSelecionada, fetchInternoData])
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [mensagens, msgsPortal])
+    const container = messagesContainerRef.current
+    if (!container) return
+
+    const handleScroll = () => {
+      const distanceToBottom =
+        container.scrollHeight - container.scrollTop - container.clientHeight
+      shouldStickToBottomRef.current = distanceToBottom < 80
+    }
+
+    handleScroll()
+    container.addEventListener('scroll', handleScroll)
+    return () => container.removeEventListener('scroll', handleScroll)
+  }, [conversaSelecionada?.id, threadSelecionada?.lead_id, abaAtiva])
+
+  useEffect(() => {
+    previousMessageCountRef.current = 0
+    shouldStickToBottomRef.current = true
+  }, [conversaSelecionada?.id, threadSelecionada?.lead_id, abaAtiva])
+
+  useEffect(() => {
+    const currentMessageCount = abaAtiva === 'portal' ? msgsPortal.length : mensagens.length
+    const previousMessageCount = previousMessageCountRef.current
+    const hasNewMessages = currentMessageCount > previousMessageCount
+
+    if (
+      currentMessageCount > 0 &&
+      (previousMessageCount === 0 || (hasNewMessages && shouldStickToBottomRef.current))
+    ) {
+      messagesEndRef.current?.scrollIntoView({
+        behavior: previousMessageCount === 0 ? 'auto' : 'smooth',
+        block: 'end',
+      })
+    }
+
+    previousMessageCountRef.current = currentMessageCount
+  }, [mensagens, msgsPortal, abaAtiva])
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -914,7 +951,7 @@ export default function CaixaDeEntradaPage() {
             )
           })()}
 
-          <div style={{ flex: 1, overflowY: 'auto', padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div ref={messagesContainerRef} style={{ flex: 1, overflowY: 'auto', padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {conversaSelecionada.status === 'aguardando_cliente' && (
               <div style={{ padding: '10px 12px', borderRadius: '10px', background: '#f59e0b12', border: '1px solid #f59e0b35', color: '#f5d48b', fontSize: '12px', fontFamily: 'DM Sans, sans-serif' }}>
                 Esta conversa está aguardando retorno do cliente. Se ele responder, ela volta automaticamente para <strong>Em atendimento</strong>.
