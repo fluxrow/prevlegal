@@ -25,6 +25,40 @@ function createAdminSupabase() {
   )
 }
 
+async function hasRecentDuplicateMessage({
+  supabase,
+  tenantId,
+  from,
+  to,
+  body,
+  withinMs = 45000,
+}: {
+  supabase: ReturnType<typeof createAdminSupabase>
+  tenantId: string | null
+  from: string
+  to: string | null
+  body: string
+  withinMs?: number
+}) {
+  let query = supabase
+    .from('mensagens_inbound')
+    .select('id')
+    .eq('telefone_remetente', from)
+    .eq('mensagem', body)
+    .gte('created_at', new Date(Date.now() - withinMs).toISOString())
+    .order('created_at', { ascending: false })
+    .limit(1)
+
+  query = tenantId ? query.eq('tenant_id', tenantId) : query.is('tenant_id', null)
+
+  if (to) {
+    query = query.eq('telefone_destinatario', to)
+  }
+
+  const { data } = await query.maybeSingle()
+  return Boolean(data?.id)
+}
+
 async function registerAgentAutoresponderFailure({
   supabase,
   tenantId,
@@ -197,6 +231,47 @@ export async function POST(request: NextRequest) {
   const { data: leadMatches } = await leadQuery
   const lead = (leadMatches || []).length === 1 ? leadMatches?.[0] : null
   const tenantId = lead?.tenant_id || routing.tenantId || null
+
+  if (messageSid) {
+    let duplicateQuery = supabase
+      .from('mensagens_inbound')
+      .select('id')
+      .eq('twilio_message_sid', messageSid)
+      .limit(1)
+
+    duplicateQuery = tenantId
+      ? duplicateQuery.eq('tenant_id', tenantId)
+      : duplicateQuery.is('tenant_id', null)
+
+    const { data: duplicateBySid } = await duplicateQuery.maybeSingle()
+    if (duplicateBySid) {
+      return new NextResponse(
+        '<?xml version="1.0" encoding="UTF-8"?><Response></Response>',
+        {
+          status: 200,
+          headers: { 'Content-Type': 'text/xml' },
+        },
+      )
+    }
+  }
+
+  const duplicateByBody = await hasRecentDuplicateMessage({
+    supabase,
+    tenantId,
+    from,
+    to,
+    body: body_msg,
+  })
+
+  if (duplicateByBody) {
+    return new NextResponse(
+      '<?xml version="1.0" encoding="UTF-8"?><Response></Response>',
+      {
+        status: 200,
+        headers: { 'Content-Type': 'text/xml' },
+      },
+    )
+  }
 
   // 5. Salvar mensagem inbound
   const { data: mensagemInserida, error: insertError } = await supabase

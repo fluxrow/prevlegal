@@ -39,6 +39,24 @@ Mestra: [[MASTER_PREV_LEGAL]]
   - em Next.js com `proxy`/middleware, validar segredo dentro da route não basta quando a rota está atrás de auth global
   - endpoints de cron precisam ser liberados no middleware com critério estrito, senão o scheduler falha “silenciosamente” e o sintoma parece bug de negócio
 
+## Atualização 2026-04-29 — Ter deduplicação na Z-API não protege automaticamente a trilha Twilio
+
+- Problema:
+  - a mesma mensagem inbound do lead apareceu duas vezes na conversa e disparou duas respostas automáticas distintas
+  - isso gerou dúvida se o erro era só visual da inbox ou se o WhatsApp real também estava duplicando
+- Evidência:
+  - no banco, a mesma mensagem do lead foi persistida duas vezes com `9s` de diferença
+  - cada registro ficou com `resposta_agente` diferente e `externalMessageId` distinto, então houve duas saídas reais, não só duplicidade de UI
+- Causa:
+  - o webhook `Twilio` ainda não tinha a proteção por `MessageSid` e por corpo recente que já existia na `Z-API`
+  - bastava a Twilio reenviar o webhook ou o app receber o mesmo payload de novo para o agente responder duas vezes
+- Correção:
+  - deduplicação por `twilio_message_sid`
+  - fallback por mensagem recente (`45s`) no mesmo tenant/remetente/destinatário
+- Regra prática:
+  - qualquer trilha de provedor WhatsApp precisa de deduplicação própria; não dá para assumir que o comportamento seguro de um canal já cobre o outro
+  - quando houver dúvida entre “duplicou só no sistema” e “duplicou no cliente”, vale olhar `externalMessageId` persistido: ids distintos significam que a duplicidade vazou para o canal real
+
 ## Atualização 2026-04-29 — Nomear especialistas do planejamento por tenant pede trava para não vazar em produção cedo demais
 
 - Problema:

@@ -32,6 +32,21 @@ Mestra: [[MASTER_PREV_LEGAL]]
   - a campanha continua disparando o primeiro lead na hora
   - os próximos envios voltam a depender do worker minuto a minuto, mas agora o cron efetivamente alcança a rota
 
+## Atualizacao 2026-04-29 — Webhook Twilio ganhou deduplicação real de inbound
+
+- achado em produção:
+  - uma mesma resposta do lead podia entrar duas vezes na inbox e gerar duas respostas automáticas diferentes
+  - no caso inspecionado, o mesmo `Oi Bianca, Pode sim` foi persistido duas vezes com `9s` de diferença
+- causa raiz:
+  - a trilha `Twilio` ainda não tinha a mesma blindagem de deduplicação que já existia na `Z-API`
+  - o webhook aceitava o mesmo inbound de novo e reacionava o agente como se fosse mensagem nova
+- correção aplicada:
+  - deduplicação por `MessageSid` no próprio webhook da Twilio
+  - fallback adicional por corpo recente (`45s`) no mesmo tenant/remetente/destinatário
+- leitura prática:
+  - isso não corrige só a visualização da inbox
+  - impede também a segunda resposta automática no WhatsApp real quando a Twilio reenviar ou duplicar o mesmo inbound
+
 ## Atualizacao 2026-04-29 — Nomeação nominal de `Diogo/Marcos` ficou pronta só para teste local de planejamento
 
 - necessidade operacional:
