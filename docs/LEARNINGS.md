@@ -5,6 +5,25 @@ Mestra: [[MASTER_PREV_LEGAL]]
 > Erros encontrados, causas e correções aplicadas.
 > Atualizado a cada sessão.
 
+## Atualização 2026-04-29 — `202 outside_hours` não pode ser tratado como sucesso silencioso
+
+- Problema:
+  - o lead respondia antes da janela do agente
+  - a rota `/api/agente/responder` devolvia `202` com `reason: outside_hours`
+  - mas o aviso “fora do horário” não era enviado ao WhatsApp
+- Causa:
+  - no helper `triggerAgentAutoresponder(...)`, qualquer `202` acabava passando como sucesso operacional
+  - como o webhook só chamava `registerAgentAutoresponderFailure(...)` quando `result.ok === false`, o ramo que envia a mensagem de espera nunca era acionado
+- Correção:
+  - `payload.reason === 'outside_hours'` agora volta do helper como não-ok operacional, com erro explícito e payload preservado
+  - isso reativa o fluxo já existente do webhook, que:
+    - envia o aviso ao lead
+    - mantém a conversa em `agente`
+    - registra a notificação de retomada para o horário útil seguinte
+- Regra prática:
+  - em automações internas do PrevLegal, `202` não significa automaticamente “sucesso”
+  - quando o `reason` representar desvio operacional relevante, como `outside_hours`, o caller precisa tratar isso explicitamente
+
 ## Atualização 2026-04-28 — Cadastro manual de planejamento não pode herdar a semântica de NB do funil de benefícios
 
 - Problema:

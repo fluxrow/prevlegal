@@ -4,6 +4,22 @@ Contexto: [[SESSION_HISTORY_MASTER]]
 Mestra: [[MASTER_PREV_LEGAL]]
 > Última atualização: 10/04/2026
 
+## Atualizacao 2026-04-29 — Aviso de fora do horário voltou a disparar no webhook
+
+- achado do smoke real:
+  - o agente de `planejamento` estava respeitando a janela e devolvendo `202 outside_hours`
+  - mas o lead não recebia a mensagem de “fora do horário”
+- causa:
+  - o helper `triggerAgentAutoresponder(...)` tratava `202` como sucesso genérico
+  - com isso, o webhook não entrava no ramo de `registerAgentAutoresponderFailure(...)`, que é justamente o que envia o aviso ao lead e registra a retomada
+- correção:
+  - `outside_hours` agora volta do helper como não-ok operacional, com payload preservado
+  - isso reativa o fluxo já existente de aviso ao lead tanto em `Z-API` quanto em `Twilio`
+- impacto prático:
+  - antes das `08:00` ou fora da janela configurada, o lead deve receber a mensagem de espera
+  - a conversa continua em `agente`
+  - a retomada automática segue valendo na próxima janela útil
+
 ## Atualizacao 2026-04-28 — Cadastro manual de planejamento deixou de depender da semântica de benefício
 
 - ajuste operacional aplicado para o caso real da Pagliuca:

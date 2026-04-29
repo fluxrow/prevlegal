@@ -57,6 +57,15 @@ export async function triggerAgentAutoresponder(mensagemId: string) {
           }
         }
 
+        if (payload?.reason === 'outside_hours') {
+          return {
+            ok: false,
+            status: response.status,
+            error: payload?.error || 'Fora do horário de atendimento',
+            payload,
+          }
+        }
+
         if (payload?.retryable && attempt < MAX_RETRY_ATTEMPTS) {
           const retryAfterMs = Math.max(1000, Number(payload?.retry_after_ms || 1000))
           await sleep(retryAfterMs)
