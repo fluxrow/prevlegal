@@ -2,6 +2,31 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 
 const OPEN_CAMPAIGN_MESSAGE_STATUSES = ['enviado', 'entregue', 'lido']
 
+export async function resolveCampaignIdForLeadReply({
+  supabase,
+  leadId,
+}: {
+  supabase: SupabaseClient
+  leadId: string | null | undefined
+}) {
+  if (!leadId) return null
+
+  const { data: latestOpenCampaignMessage, error } = await supabase
+    .from('campanha_mensagens')
+    .select('campanha_id')
+    .eq('lead_id', leadId)
+    .in('status', OPEN_CAMPAIGN_MESSAGE_STATUSES)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  if (error) {
+    throw new Error(error.message)
+  }
+
+  return latestOpenCampaignMessage?.campanha_id || null
+}
+
 export async function markCampaignLeadAsResponded({
   supabase,
   campaignId,

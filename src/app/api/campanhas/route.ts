@@ -85,7 +85,13 @@ export async function GET() {
       return NextResponse.json({ campanhas: campaigns })
     }
 
-    const [campaignMessageResponsesResult, inboundResponsesResult] = await Promise.all([
+    const earliestCampaignCreatedAt = campaigns.reduce<string | null>((earliest, campaign) => {
+      if (!campaign.created_at) return earliest
+      if (!earliest || campaign.created_at < earliest) return campaign.created_at
+      return earliest
+    }, null)
+
+    const [campaignMessageResponsesResult, inboundResponsesResult, campaignLeadLinksResult] = await Promise.all([
       adminClient
         .from('campanha_mensagens')
         .select('campanha_id, lead_id')
@@ -97,6 +103,10 @@ export async function GET() {
         .in('campanha_id', campaignIds)
         .eq('respondido_por_agente', false)
         .eq('respondido_manualmente', false),
+      adminClient
+        .from('campanha_leads')
+        .select('campanha_id, lead_id')
+        .in('campanha_id', campaignIds),
     ])
 
     if (campaignMessageResponsesResult.error) {
@@ -105,6 +115,10 @@ export async function GET() {
 
     if (inboundResponsesResult.error) {
       return NextResponse.json({ error: inboundResponsesResult.error.message }, { status: 500 })
+    }
+
+    if (campaignLeadLinksResult.error) {
+      return NextResponse.json({ error: campaignLeadLinksResult.error.message }, { status: 500 })
     }
 
     const campaignMessageResponseMap = new Map<string, Set<string>>()
@@ -123,12 +137,50 @@ export async function GET() {
       inboundResponseMap.set(row.campanha_id, campaignLeadSet)
     }
 
+    const campaignLeadIdsMap = new Map<string, Set<string>>()
+    const selectedLeadIds = new Set<string>()
+    for (const row of campaignLeadLinksResult.data || []) {
+      if (!row.campanha_id || !row.lead_id) continue
+      const campaignLeadSet = campaignLeadIdsMap.get(row.campanha_id) || new Set<string>()
+      campaignLeadSet.add(row.lead_id)
+      campaignLeadIdsMap.set(row.campanha_id, campaignLeadSet)
+      selectedLeadIds.add(row.lead_id)
+    }
+
+    const fallbackInboundByLeadMap = new Map<string, string[]>()
+    if (selectedLeadIds.size > 0 && earliestCampaignCreatedAt) {
+      const { data: fallbackInboundRows, error: fallbackInboundError } = await adminClient
+        .from('mensagens_inbound')
+        .select('lead_id, created_at')
+        .in('lead_id', Array.from(selectedLeadIds))
+        .eq('respondido_por_agente', false)
+        .eq('respondido_manualmente', false)
+        .gte('created_at', earliestCampaignCreatedAt)
+
+      if (fallbackInboundError) {
+        return NextResponse.json({ error: fallbackInboundError.message }, { status: 500 })
+      }
+
+      for (const row of fallbackInboundRows || []) {
+        if (!row.lead_id || !row.created_at) continue
+        const timestamps = fallbackInboundByLeadMap.get(row.lead_id) || []
+        timestamps.push(row.created_at)
+        fallbackInboundByLeadMap.set(row.lead_id, timestamps)
+      }
+    }
+
     const hydratedCampaigns = campaigns.map((campaign) => {
       const respondedByCounter = Number(campaign.total_respondidos || 0)
       const respondedByCampaignMessages =
         campaignMessageResponseMap.get(campaign.id)?.size || 0
       const respondedByInboxInbound =
         inboundResponseMap.get(campaign.id)?.size || 0
+      const respondedBySelectedLeadsFallback = Array.from(
+        campaignLeadIdsMap.get(campaign.id) || [],
+      ).filter((leadId) => {
+        const timestamps = fallbackInboundByLeadMap.get(leadId) || []
+        return timestamps.some((timestamp) => timestamp >= campaign.created_at)
+      }).length
 
       return {
         ...campaign,
@@ -136,6 +188,7 @@ export async function GET() {
           respondedByCounter,
           respondedByCampaignMessages,
           respondedByInboxInbound,
+          respondedBySelectedLeadsFallback,
         ),
       }
     })

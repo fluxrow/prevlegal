@@ -59,6 +59,7 @@ Estado confirmado em 27/04/2026:
 - a leitura de `respondidos` na tela de campanhas deixou de depender só do contador materializado:
   - a listagem agora cruza `campanha_mensagens` e inbound real da inbox para refletir melhor respostas já ocorridas
 - a trilha `Z-API` passou a fechar resposta de campanha com a mesma semântica da `Twilio`, evitando subcontagem de `respondidos`
+- campanhas por seleção personalizada agora resolvem a resposta pelo histórico real de disparo (`campanha_mensagens`) mesmo quando `lead.campanha_id` está nulo
 - a inbox passou a ter base própria de `estado_operacional` por conversa, separada do funil do lead:
   - badge visível na lista e no painel
   - troca manual pelo operador

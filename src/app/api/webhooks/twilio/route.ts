@@ -4,7 +4,10 @@ import twilio from 'twilio'
 import { getConfiguracaoAtual } from '@/lib/configuracoes'
 import { getTwilioRoutingContextByWhatsAppNumber } from '@/lib/twilio'
 import { triggerAgentAutoresponder } from '@/lib/agent-autoresponder'
-import { markCampaignLeadAsResponded } from '@/lib/campaign-response-metrics'
+import {
+  markCampaignLeadAsResponded,
+  resolveCampaignIdForLeadReply,
+} from '@/lib/campaign-response-metrics'
 import { sendWhatsAppMessage } from '@/lib/whatsapp-provider'
 
 type AgentFailurePayload = {
@@ -242,6 +245,8 @@ export async function POST(request: NextRequest) {
   const { data: leadMatches } = await leadQuery
   const lead = (leadMatches || []).length === 1 ? leadMatches?.[0] : null
   const tenantId = lead?.tenant_id || routing.tenantId || null
+  const resolvedCampaignId =
+    lead?.campanha_id || (lead?.id ? await resolveCampaignIdForLeadReply({ supabase, leadId: lead.id }) : null)
 
   if (messageSid) {
     let duplicateQuery = supabase
@@ -290,7 +295,7 @@ export async function POST(request: NextRequest) {
     .insert({
       tenant_id: tenantId,
       lead_id: lead?.id || null,
-      campanha_id: lead?.campanha_id || null,
+      campanha_id: resolvedCampaignId,
       telefone_remetente: from,
       telefone_destinatario: to,
       mensagem: body_msg,
@@ -410,7 +415,7 @@ export async function POST(request: NextRequest) {
 
     await markCampaignLeadAsResponded({
       supabase,
-      campaignId: lead.campanha_id,
+      campaignId: resolvedCampaignId,
       leadId: lead.id,
     })
 
@@ -451,7 +456,7 @@ export async function POST(request: NextRequest) {
           mensagemId: mensagemInserida.id,
           from,
           leadId: lead?.id || null,
-          campanhaId: lead?.campanha_id || null,
+          campanhaId: resolvedCampaignId,
           leadName: lead?.nome || telefoneNormalizado,
           result: {
             status: result.status,

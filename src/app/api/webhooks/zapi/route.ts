@@ -4,7 +4,10 @@ import { getConfiguracaoAtual } from '@/lib/configuracoes'
 import { getZApiRoutingContextByInstanceId } from '@/lib/whatsapp-provider'
 import { normalizeWhatsAppRecipient } from '@/lib/twilio'
 import { triggerAgentAutoresponder } from '@/lib/agent-autoresponder'
-import { markCampaignLeadAsResponded } from '@/lib/campaign-response-metrics'
+import {
+  markCampaignLeadAsResponded,
+  resolveCampaignIdForLeadReply,
+} from '@/lib/campaign-response-metrics'
 import { sendWhatsAppMessage } from '@/lib/whatsapp-provider'
 
 const LISTA_MANUAL_NOME = 'Cadastro manual'
@@ -979,12 +982,15 @@ async function handleReceiveEvent(request: NextRequest, event: string) {
     console.error('Erro ao garantir lead para inbound Z-API:', error)
   }
 
+  const resolvedCampaignId =
+    lead?.campanha_id || (lead?.id ? await resolveCampaignIdForLeadReply({ supabase, leadId: lead.id }) : null)
+
   const { data: mensagemInserida, error: insertError } = await supabase
     .from('mensagens_inbound')
     .insert({
       tenant_id: tenantId,
       lead_id: lead?.id || null,
-      campanha_id: lead?.campanha_id || null,
+      campanha_id: resolvedCampaignId,
       conversa_id: null,
       whatsapp_number_id: routing.channelId,
       telefone_remetente: from,
@@ -1132,7 +1138,7 @@ async function handleReceiveEvent(request: NextRequest, event: string) {
 
     await markCampaignLeadAsResponded({
       supabase,
-      campaignId: lead.campanha_id,
+      campaignId: resolvedCampaignId,
       leadId: lead.id,
     })
 
@@ -1176,7 +1182,7 @@ async function handleReceiveEvent(request: NextRequest, event: string) {
           mensagemId: mensagemInserida.id,
           from,
           leadId: lead?.id || null,
-          campanhaId: lead?.campanha_id || null,
+          campanhaId: resolvedCampaignId,
           channelId: routing.channelId,
           leadName: lead?.nome || from,
           result: {

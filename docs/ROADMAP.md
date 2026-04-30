@@ -26,6 +26,22 @@ Mestra: [[MASTER_PREV_LEGAL]]
   - a operação deixa de depender de SQL manual para pausar disparo
   - a card da campanha fica muito mais próxima do que o operador enxerga na inbox, inclusive em histórico criado antes da correção do webhook
 
+## Atualizacao 2026-04-30 — Campanhas por seleção personalizada deixaram de perder vínculo de resposta por depender de `lead.campanha_id`
+
+- achado operacional:
+  - nas campanhas criadas com `campanha_leads`, os leads continuavam com `lead.campanha_id = null`
+  - quando o lead respondia, o webhook localizava o lead mas não conseguia reatribuir o inbound à campanha correta
+- causa raiz:
+  - `Twilio` e `Z-API` usavam `lead.campanha_id` como fonte principal de rastreio da campanha
+  - isso funciona para fluxos antigos baseados no campo do lead, mas não para seleção personalizada
+- correção aplicada:
+  - ao receber a resposta, o webhook agora tenta resolver a campanha pelo histórico real de disparo aberto em `campanha_mensagens`
+  - o inbound passa a nascer com `campanha_id` resolvido mesmo quando o lead não carrega esse campo
+  - a marcação de `respondido` e o incremento de `total_respondidos` usam essa campanha resolvida
+- leitura prática:
+  - campanhas pequenas e personalizadas da Pagliuca deixam de “conversar na inbox sem pontuar na card”
+  - a rastreabilidade volta a seguir o disparo real, não uma coluna legada do lead
+
 ## Atualizacao 2026-04-29 — Inbox ganhou base de `estado_operacional` separada do funil do lead, sem ativar automações novas
 
 - desenho aprovado para a V1:

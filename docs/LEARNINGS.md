@@ -27,6 +27,26 @@ Mestra: [[MASTER_PREV_LEGAL]]
   - em métricas operacionais de campanha, o painel não deve depender cegamente de um único contador materializado quando o histórico real já existe em tabelas de evento
   - se o produto suporta múltiplos provedores de canal, a atualização de métricas críticas precisa ser simétrica entre eles
 
+## Atualização 2026-04-30 — `campanha_leads` sem resolver campanha no webhook faz a conversa parecer viva e a campanha parecer morta
+
+- Problema:
+  - campanhas por seleção personalizada disparavam normalmente
+  - o lead respondia e a inbox mostrava conversa real
+  - mas a campanha continuava com `0 respondidos`
+- Evidência:
+  - leads da campanha `163ad3aa-f3a4-4921-87e4-541a7f063b9b` estavam em `campanha_leads`
+  - esses mesmos leads tinham `lead.campanha_id = null`
+  - o histórico mostrava mensagens reais deles, mas sem `campanha_id` atrelado no inbound
+- Causa:
+  - o webhook tentava marcar resposta da campanha usando `lead.campanha_id`
+  - em campanhas por seleção, a verdade operacional está em `campanha_leads` e na última `campanha_mensagens` aberta, não no campo legado do lead
+- Correção:
+  - criar resolução de `campaignId` por `campanha_mensagens` aberta mais recente do lead
+  - usar essa campanha resolvida tanto para gravar o inbound quanto para marcar `respondido`
+- Regra prática:
+  - quando o produto permite campanhas por lista e por seleção personalizada, o vínculo da resposta não pode depender só do `lead.campanha_id`
+  - a origem mais segura da verdade é o histórico real do disparo pendente daquele lead
+
 ## Atualização 2026-04-29 — Estado operacional da inbox precisa morar em `conversas`, não no `status` bruto do lead
 
 - Problema de produto:
