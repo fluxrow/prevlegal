@@ -4,6 +4,28 @@ Contexto: [[SESSION_HISTORY_MASTER]]
 Mestra: [[MASTER_PREV_LEGAL]]
 > Última atualização: 10/04/2026
 
+## Atualizacao 2026-04-30 — Campanhas ganharam `Pausar/Retomar` na UI e leitura de respostas ficou resiliente ao histórico real da inbox
+
+- achado operacional:
+  - a tela de campanhas podia mostrar `0 respondidos` mesmo com várias respostas visíveis na caixa de entrada
+  - além disso, a operação ainda dependia de pausa manual no banco porque a UI não expunha `Pausar` / `Retomar`
+- causa raiz:
+  - a trilha `Twilio` já marcava `campanha_mensagens` como `respondido` e incrementava `total_respondidos`
+  - a trilha `Z-API`, que é a base operacional atual, persistia o inbound mas não fazia esse fechamento de métrica
+  - a tela de campanhas dependia demais do contador materializado em `campanhas.total_respondidos`
+- correção aplicada:
+  - `Twilio` e `Z-API` agora compartilham a mesma marcação por lead para resposta de campanha, contando uma vez só por mensagem aberta da campanha
+  - `GET /api/campanhas` passou a hidratar `total_respondidos` com fallback pelo histórico real:
+    - `campanha_mensagens.status = respondido`
+    - leads com inbound real na campanha (`respondido_por_agente = false` e `respondido_manualmente = false`)
+  - a UI de campanhas agora mostra:
+    - `Pausar` para campanhas ativas
+    - `Retomar` para campanhas pausadas
+    - `Disparar agora` apenas para rascunho
+- leitura prática:
+  - a operação deixa de depender de SQL manual para pausar disparo
+  - a card da campanha fica muito mais próxima do que o operador enxerga na inbox, inclusive em histórico criado antes da correção do webhook
+
 ## Atualizacao 2026-04-29 — Inbox ganhou base de `estado_operacional` separada do funil do lead, sem ativar automações novas
 
 - desenho aprovado para a V1:

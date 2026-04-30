@@ -4,6 +4,7 @@ import { getConfiguracaoAtual } from '@/lib/configuracoes'
 import { getZApiRoutingContextByInstanceId } from '@/lib/whatsapp-provider'
 import { normalizeWhatsAppRecipient } from '@/lib/twilio'
 import { triggerAgentAutoresponder } from '@/lib/agent-autoresponder'
+import { markCampaignLeadAsResponded } from '@/lib/campaign-response-metrics'
 import { sendWhatsAppMessage } from '@/lib/whatsapp-provider'
 
 const LISTA_MANUAL_NOME = 'Cadastro manual'
@@ -1128,6 +1129,12 @@ async function handleReceiveEvent(request: NextRequest, event: string) {
         .update({ status: 'awaiting' })
         .eq('id', lead.id)
     }
+
+    await markCampaignLeadAsResponded({
+      supabase,
+      campaignId: lead.campanha_id,
+      leadId: lead.id,
+    })
 
     const { data: runAtiva } = await supabase
       .from('followup_runs')

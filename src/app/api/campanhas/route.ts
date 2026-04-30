@@ -77,7 +77,70 @@ export async function GET() {
     query = context.tenantId ? query.eq('tenant_id', context.tenantId) : query.is('tenant_id', null)
     const { data, error } = await query
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-    return NextResponse.json({ campanhas: data || [] })
+
+    const campaigns = data || []
+    const campaignIds = campaigns.map((campaign) => campaign.id).filter(Boolean)
+
+    if (campaignIds.length === 0) {
+      return NextResponse.json({ campanhas: campaigns })
+    }
+
+    const [campaignMessageResponsesResult, inboundResponsesResult] = await Promise.all([
+      adminClient
+        .from('campanha_mensagens')
+        .select('campanha_id, lead_id')
+        .in('campanha_id', campaignIds)
+        .eq('status', 'respondido'),
+      adminClient
+        .from('mensagens_inbound')
+        .select('campanha_id, lead_id, respondido_por_agente, respondido_manualmente')
+        .in('campanha_id', campaignIds)
+        .eq('respondido_por_agente', false)
+        .eq('respondido_manualmente', false),
+    ])
+
+    if (campaignMessageResponsesResult.error) {
+      return NextResponse.json({ error: campaignMessageResponsesResult.error.message }, { status: 500 })
+    }
+
+    if (inboundResponsesResult.error) {
+      return NextResponse.json({ error: inboundResponsesResult.error.message }, { status: 500 })
+    }
+
+    const campaignMessageResponseMap = new Map<string, Set<string>>()
+    for (const row of campaignMessageResponsesResult.data || []) {
+      if (!row.campanha_id || !row.lead_id) continue
+      const campaignLeadSet = campaignMessageResponseMap.get(row.campanha_id) || new Set<string>()
+      campaignLeadSet.add(row.lead_id)
+      campaignMessageResponseMap.set(row.campanha_id, campaignLeadSet)
+    }
+
+    const inboundResponseMap = new Map<string, Set<string>>()
+    for (const row of inboundResponsesResult.data || []) {
+      if (!row.campanha_id || !row.lead_id) continue
+      const campaignLeadSet = inboundResponseMap.get(row.campanha_id) || new Set<string>()
+      campaignLeadSet.add(row.lead_id)
+      inboundResponseMap.set(row.campanha_id, campaignLeadSet)
+    }
+
+    const hydratedCampaigns = campaigns.map((campaign) => {
+      const respondedByCounter = Number(campaign.total_respondidos || 0)
+      const respondedByCampaignMessages =
+        campaignMessageResponseMap.get(campaign.id)?.size || 0
+      const respondedByInboxInbound =
+        inboundResponseMap.get(campaign.id)?.size || 0
+
+      return {
+        ...campaign,
+        total_respondidos: Math.max(
+          respondedByCounter,
+          respondedByCampaignMessages,
+          respondedByInboxInbound,
+        ),
+      }
+    })
+
+    return NextResponse.json({ campanhas: hydratedCampaigns })
   } catch (err: unknown) {
     return NextResponse.json({ error: getErrorMessage(err) }, { status: 500 })
   }

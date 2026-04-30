@@ -4,6 +4,7 @@ import twilio from 'twilio'
 import { getConfiguracaoAtual } from '@/lib/configuracoes'
 import { getTwilioRoutingContextByWhatsAppNumber } from '@/lib/twilio'
 import { triggerAgentAutoresponder } from '@/lib/agent-autoresponder'
+import { markCampaignLeadAsResponded } from '@/lib/campaign-response-metrics'
 import { sendWhatsAppMessage } from '@/lib/whatsapp-provider'
 
 type AgentFailurePayload = {
@@ -399,18 +400,6 @@ export async function POST(request: NextRequest) {
 
   // 6. Se lead encontrado, atualizar status da mensagem na campanha e status do lead
   if (lead?.id) {
-    // Atualizar última mensagem da campanha para "respondido"
-    await supabase
-      .from('campanha_mensagens')
-      .update({
-        status: 'respondido',
-        respondido_at: new Date().toISOString()
-      })
-      .eq('lead_id', lead.id)
-      .in('status', ['enviado', 'entregue', 'lido'])
-      .order('created_at', { ascending: false })
-      .limit(1)
-
     // Atualizar status do lead para "awaiting" se ainda estava em "contacted"
     if (lead.status === 'contacted') {
       await supabase
@@ -419,12 +408,11 @@ export async function POST(request: NextRequest) {
         .eq('id', lead.id)
     }
 
-    // Incrementar total_respondidos na campanha
-    if (lead.campanha_id) {
-      await supabase.rpc('increment_campanha_respondidos', {
-        p_campanha_id: lead.campanha_id
-      })
-    }
+    await markCampaignLeadAsResponded({
+      supabase,
+      campaignId: lead.campanha_id,
+      leadId: lead.id,
+    })
 
     // Stop automático de follow-up quando lead responde
     const { data: runAtiva } = await supabase

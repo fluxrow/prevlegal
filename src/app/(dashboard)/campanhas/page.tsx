@@ -201,6 +201,7 @@ export default function CampanhasPage() {
   const [showForm, setShowForm] = useState(false);
   const [disparando, setDisparando] = useState<string | null>(null);
   const [deletando, setDeletando] = useState<string | null>(null);
+  const [alterandoStatus, setAlterandoStatus] = useState<string | null>(null);
   const [templateFoiEditado, setTemplateFoiEditado] = useState(false);
   const [apenasVerificadosFoiEditado, setApenasVerificadosFoiEditado] = useState(false);
   const [leadSearch, setLeadSearch] = useState("");
@@ -424,6 +425,40 @@ export default function CampanhasPage() {
     else showToast("error", data.error || "Erro ao disparar campanha");
     setDisparando(null);
     await fetchAll();
+  }
+
+  async function atualizarStatusCampanha(id: string, status: "ativa" | "pausada") {
+    setAlterandoStatus(id);
+    try {
+      const endpoint = status === "ativa" ? `/api/campanhas/${id}/disparar` : `/api/campanhas/${id}`;
+      const method = status === "ativa" ? "POST" : "PATCH";
+      const body =
+        status === "ativa"
+          ? undefined
+          : JSON.stringify({ status: "pausada" });
+
+      const res = await fetch(endpoint, {
+        method,
+        headers: body ? { "Content-Type": "application/json" } : undefined,
+        body,
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        showToast("error", data.error || "Não foi possível atualizar a campanha");
+        return;
+      }
+
+      showToast(
+        "success",
+        status === "ativa"
+          ? "Campanha retomada com sucesso"
+          : "Campanha pausada com sucesso",
+      );
+      await fetchAll();
+    } finally {
+      setAlterandoStatus(null);
+    }
   }
 
   async function salvarConfigDisparo() {
@@ -1335,6 +1370,7 @@ export default function CampanhasPage() {
               const pctEnv = pct(c.total_enviados, c.total_leads);
               const isDisparando = disparando === c.id;
               const isDeletando = deletando === c.id;
+              const isAlterandoStatus = alterandoStatus === c.id;
               return (
                 <div
                   key={c.id}
@@ -1394,30 +1430,73 @@ export default function CampanhasPage() {
                       </span>
                     </div>
                     <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                      {["rascunho", "pausada"].includes(c.status) && (
+                      {c.status === "ativa" && (
                         <button
-                          onClick={() => setConfirmDisparo(c.id)}
-                          disabled={isDisparando || isDeletando}
+                          onClick={() => atualizarStatusCampanha(c.id, "pausada")}
+                          disabled={isDisparando || isDeletando || isAlterandoStatus}
                           style={{
                             display: "flex",
                             alignItems: "center",
                             gap: "6px",
                             padding: "8px 16px",
                             borderRadius: "8px",
-                            background: isDisparando
+                            background: isAlterandoStatus
                               ? "var(--bg-hover)"
-                              : "#22c55e20",
-                            color: isDisparando ? "var(--text-muted)" : "#22c55e",
+                              : "#f59e0b20",
+                            color: isAlterandoStatus ? "var(--text-muted)" : "#f59e0b",
                             border:
                               "1px solid " +
-                              (isDisparando ? "var(--border)" : "#22c55e40"),
+                              (isAlterandoStatus ? "var(--border)" : "#f59e0b40"),
                             fontSize: "12px",
                             fontWeight: "500",
-                            cursor: isDisparando ? "not-allowed" : "pointer",
+                            cursor: isAlterandoStatus ? "not-allowed" : "pointer",
+                          }}
+                        >
+                          {isAlterandoStatus ? "Pausando..." : "Pausar"}
+                        </button>
+                      )}
+                      {["rascunho", "pausada"].includes(c.status) && (
+                        <button
+                          onClick={() =>
+                            c.status === "pausada"
+                              ? atualizarStatusCampanha(c.id, "ativa")
+                              : setConfirmDisparo(c.id)
+                          }
+                          disabled={isDisparando || isDeletando || isAlterandoStatus}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "6px",
+                            padding: "8px 16px",
+                            borderRadius: "8px",
+                            background: isDisparando || isAlterandoStatus
+                              ? "var(--bg-hover)"
+                              : "#22c55e20",
+                            color:
+                              isDisparando || isAlterandoStatus
+                                ? "var(--text-muted)"
+                                : "#22c55e",
+                            border:
+                              "1px solid " +
+                              (isDisparando || isAlterandoStatus
+                                ? "var(--border)"
+                                : "#22c55e40"),
+                            fontSize: "12px",
+                            fontWeight: "500",
+                            cursor:
+                              isDisparando || isAlterandoStatus
+                                ? "not-allowed"
+                                : "pointer",
                           }}
                         >
                           <Zap size={13} />
-                          {isDisparando ? "Disparando..." : "Disparar agora"}
+                          {c.status === "pausada"
+                            ? isAlterandoStatus
+                              ? "Retomando..."
+                              : "Retomar"
+                            : isDisparando
+                              ? "Disparando..."
+                              : "Disparar agora"}
                         </button>
                       )}
                       {c.status !== "ativa" && (

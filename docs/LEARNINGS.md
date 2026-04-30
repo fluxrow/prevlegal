@@ -5,6 +5,28 @@ Mestra: [[MASTER_PREV_LEGAL]]
 > Erros encontrados, causas e correções aplicadas.
 > Atualizado a cada sessão.
 
+## Atualização 2026-04-30 — Se a campanha opera por Z-API, confiar só em `campanhas.total_respondidos` distorce a leitura da operação
+
+- Problema:
+  - a card da campanha podia mostrar `0 respondidos` mesmo quando a inbox já tinha várias respostas de leads
+  - isso levava a leituras erradas do disparo e fazia parecer que o problema era só visual da caixa de entrada
+- Causa:
+  - a trilha `Twilio` já fechava a resposta da campanha em duas camadas:
+    - marcava a `campanha_mensagens` como `respondido`
+    - incrementava `campanhas.total_respondidos`
+  - a trilha `Z-API` estava parando antes dessas duas ações
+  - como a tela de campanhas lia só o agregado materializado, o histórico real de inbound ficava invisível no painel
+- Correção:
+  - centralizar a marcação de `lead respondeu à campanha` em helper único, usado por `Twilio` e `Z-API`
+  - contar só quando existir uma mensagem aberta da campanha (`enviado`, `entregue`, `lido`), evitando supercontagem por mensagens repetidas do mesmo lead
+  - na listagem de campanhas, hidratar `total_respondidos` pelo maior valor entre:
+    - contador materializado em `campanhas`
+    - leads distintos com `campanha_mensagens.status = respondido`
+    - leads distintos com inbound real da campanha na inbox
+- Regra prática:
+  - em métricas operacionais de campanha, o painel não deve depender cegamente de um único contador materializado quando o histórico real já existe em tabelas de evento
+  - se o produto suporta múltiplos provedores de canal, a atualização de métricas críticas precisa ser simétrica entre eles
+
 ## Atualização 2026-04-29 — Estado operacional da inbox precisa morar em `conversas`, não no `status` bruto do lead
 
 - Problema de produto:

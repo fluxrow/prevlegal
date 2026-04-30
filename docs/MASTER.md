@@ -55,6 +55,10 @@ Mestra: [[MASTER_PREV_LEGAL]]
 Estado confirmado em 27/04/2026:
 - `npm run lint` verde localmente
 - `npm run build` verde localmente
+- campanhas agora têm controle operacional direto de `Pausar` e `Retomar` na UI, sem depender de SQL manual no banco
+- a leitura de `respondidos` na tela de campanhas deixou de depender só do contador materializado:
+  - a listagem agora cruza `campanha_mensagens` e inbound real da inbox para refletir melhor respostas já ocorridas
+- a trilha `Z-API` passou a fechar resposta de campanha com a mesma semântica da `Twilio`, evitando subcontagem de `respondidos`
 - a inbox passou a ter base própria de `estado_operacional` por conversa, separada do funil do lead:
   - badge visível na lista e no painel
   - troca manual pelo operador
