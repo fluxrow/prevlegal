@@ -286,6 +286,63 @@ function sanitizeWhatsAppResponseText(text: string) {
     .trim()
 }
 
+function startsWithGreeting(text: string) {
+  const normalized = normalizeComparableMessageText(text)
+  return /^(oi|ola|olá|bom dia|boa tarde|boa noite|tudo bem|tudo certo)\b/u.test(normalized)
+}
+
+function stripLeadingGreeting(text: string) {
+  return text
+    .replace(/^(oi|olá|ola|bom dia|boa tarde|boa noite)[,\s!.-]*/iu, '')
+    .replace(/^(tudo bem( por aqui)?|tudo certo( por aqui)?|tudo ótimo por aqui|tudo otimo por aqui|por aqui tudo bem|por aqui tudo certo)[,\s!.-]*/iu, '')
+    .trim()
+}
+
+function softenPlanningGreeting({
+  text,
+  latestLeadMessage,
+  previousAssistant,
+  isFirstReplyAfterCampaign,
+}: {
+  text: string
+  latestLeadMessage: string
+  previousAssistant: string
+  isFirstReplyAfterCampaign: boolean
+}) {
+  if (!isFirstReplyAfterCampaign) return text
+
+  const leadStartedWithGreeting = startsWithGreeting(latestLeadMessage)
+  const assistantAlreadyGreeted = startsWithGreeting(previousAssistant)
+
+  if (!leadStartedWithGreeting && !assistantAlreadyGreeted) {
+    return text
+  }
+
+  const paragraphs = text
+    .split(/\n\s*\n/)
+    .map((chunk) => chunk.trim())
+    .filter(Boolean)
+
+  if (paragraphs.length === 0) return text
+
+  const nextParagraphs = [...paragraphs]
+
+  if (assistantAlreadyGreeted && startsWithGreeting(nextParagraphs[0] || '')) {
+    const stripped = stripLeadingGreeting(nextParagraphs[0] || '')
+    nextParagraphs[0] = stripped || nextParagraphs[0]
+  }
+
+  if (
+    leadStartedWithGreeting &&
+    nextParagraphs.length > 0 &&
+    !/^(tudo bem|tudo certo|tudo ótimo|tudo otimo|por aqui tudo)/iu.test(nextParagraphs[0] || '')
+  ) {
+    nextParagraphs.unshift('Tudo bem por aqui, obrigada.')
+  }
+
+  return sanitizeWhatsAppResponseText(nextParagraphs.join('\n\n'))
+}
+
 function endsLikeIncompleteThought(text: string) {
   const trimmed = text.trim()
   if (!trimmed) return false
@@ -478,6 +535,15 @@ function classifyLatestLeadTurn(message: string) {
   }
 
   if (
+    /^(oi|ola|olá|bom dia|boa tarde|boa noite)( bianca)?([,!.\s-]+(tudo bem|tudo bom|como vai|como voce esta|como você esta))?\??$/.test(
+      normalized,
+    ) ||
+    /^(tudo bem|tudo bom|como vai)( bianca)?\??$/.test(normalized)
+  ) {
+    return 'saudacao_curta'
+  }
+
+  if (
     normalized.includes('explica') ||
     normalized.includes('explicar') ||
     normalized.includes('como funciona') ||
@@ -610,11 +676,19 @@ function buildImmediateResponseDirective({
       '- Em WhatsApp, evite subtítulos em markdown, listas longas e resposta com cara de parecer técnico escrito. Prefira blocos curtos de conversa.',
       '- Em WhatsApp, nunca use asteriscos, bullets, travessões, enumeração tipo 1/2/3, nem termos com cara de relatório ou apresentação.',
       '- Antes de responder, confira o que você mesma acabou de dizer no histórico e não repita a explicação com palavras diferentes. Se o lead trouxe pouco fato novo, reconheça brevemente e avance com uma pergunta útil.',
+      '- Se o lead só abrir com uma saudação como "boa tarde, tudo bem?", responda com 1 reconhecimento social curto e siga com uma ponte leve antes de entrar no tema. Não despeje o planejamento de uma vez na mesma respiração.',
+      ...(latestLeadIntent === 'saudacao_curta'
+        ? [
+            '- A mensagem do lead é basicamente uma saudação curta. Sua primeira frase deve ser uma aproximação humana breve, e só a segunda entra no contexto do planejamento.',
+            '- Evite começar essa resposta com explicação técnica longa. Prefira uma ponte curta como "Tudo bem por aqui, obrigada." antes de retomar o motivo do contato.',
+          ]
+        : []),
       ...(isFirstReplyAfterCampaign
         ? [
             '- Este é o primeiro retorno do lead após a abordagem ativa do escritório.',
             '- Não diga que o lead já tinha interesse anterior, que já demonstrou interesse antes, nem que o histórico mostra intenção antiga, a menos que isso esteja literalmente escrito em mensagens anteriores do próprio lead.',
             '- Se a resposta do lead for só uma saudação curta, primeiro retome com naturalidade o motivo do contato em no máximo 2 frases curtas e só depois faça 1 pergunta diagnóstica curta.',
+            '- Se você já saudou o lead na mensagem de disparo, não repita "bom dia", "boa tarde" ou "boa noite" no primeiro retorno. Se quiser ser cordial, use algo como "Tudo bem por aqui, obrigada." e siga.',
             '- Nessa retomada inicial, fale do assunto antes de perguntar, mas sem textão: explique brevemente por que planejamento previdenciário pode ser relevante e convide o lead a dizer o perfil profissional dele.',
             '- No primeiro retorno após campanha, responda idealmente em 2 ou 3 blocos curtos de WhatsApp. Use 4 apenas se ficar realmente necessário.',
             '- No primeiro retorno após campanha, não use lista numerada, não enumere todas as etapas do serviço e não despeje detalhes técnicos demais de uma vez.',
@@ -1565,6 +1639,12 @@ export async function POST(request: NextRequest) {
 
     if (normalizedOperationProfile === 'planejamento_previdenciario') {
       respostaTexto = normalizePlanningHumanAttribution(respostaTexto, planningPromptHint)
+      respostaTexto = softenPlanningGreeting({
+        text: respostaTexto,
+        latestLeadMessage,
+        previousAssistant: previousAssistantMessage,
+        isFirstReplyAfterCampaign,
+      })
     }
 
     if (!respostaTexto) {

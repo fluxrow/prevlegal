@@ -21,6 +21,10 @@ const CONVERSA_STATUS = new Set([
 type ConversationMessageRow = {
   id: string
   created_at: string
+  mensagem?: string | null
+  telefone_remetente?: string | null
+  telefone_destinatario?: string | null
+  respondido_manualmente?: boolean | null
   twilio_message_sid?: string | null
   twilio_sid?: string | null
   resposta_agente?: string | null
@@ -37,37 +41,74 @@ function scoreConversationMessage(row: ConversationMessageRow) {
 }
 
 function dedupeConversationMessages<T extends ConversationMessageRow>(rows: T[]) {
-  const byExternalInboundId = new Map<string, T>()
-  const fallbackRows: T[] = []
+  const result: T[] = []
+  const byExternalInboundId = new Map<string, number>()
+  const byRecentManualMirror = new Map<string, number>()
 
-  for (const row of rows) {
-    const externalInboundId = String(row.twilio_message_sid || '').trim()
-
-    if (!externalInboundId) {
-      fallbackRows.push(row)
-      continue
-    }
-
-    const existing = byExternalInboundId.get(externalInboundId)
-    if (!existing) {
-      byExternalInboundId.set(externalInboundId, row)
-      continue
-    }
-
+  const pickPreferredRow = (existing: T, candidate: T) => {
     const existingScore = scoreConversationMessage(existing)
-    const currentScore = scoreConversationMessage(row)
+    const candidateScore = scoreConversationMessage(candidate)
 
-    if (currentScore > existingScore) {
-      byExternalInboundId.set(externalInboundId, row)
+    if (candidateScore > existingScore) return candidate
+    if (candidateScore < existingScore) return existing
+
+    return new Date(candidate.created_at).getTime() > new Date(existing.created_at).getTime()
+      ? candidate
+      : existing
+  }
+
+  const rowsAsc = [...rows].sort(
+    (left, right) => new Date(left.created_at).getTime() - new Date(right.created_at).getTime(),
+  )
+
+  for (const row of rowsAsc) {
+    const externalInboundId = String(row.twilio_message_sid || '').trim()
+    const normalizedBody = String(row.mensagem || '').trim().toLowerCase()
+    const manualMirrorFingerprint =
+      row.respondido_manualmente &&
+      normalizedBody &&
+      row.telefone_remetente &&
+      row.telefone_destinatario
+        ? `${row.telefone_remetente}::${row.telefone_destinatario}::${normalizedBody}`
+        : ''
+
+    let duplicateIndex: number | null = null
+
+    if (externalInboundId) {
+      duplicateIndex = byExternalInboundId.get(externalInboundId) ?? null
+    }
+
+    if (duplicateIndex === null && manualMirrorFingerprint) {
+      const existingIndex = byRecentManualMirror.get(manualMirrorFingerprint)
+      if (existingIndex !== undefined) {
+        const existingRow = result[existingIndex]
+        const existingTs = new Date(existingRow.created_at).getTime()
+        const currentTs = new Date(row.created_at).getTime()
+
+        if (Math.abs(currentTs - existingTs) <= 180000) {
+          duplicateIndex = existingIndex
+        }
+      }
+    }
+
+    if (duplicateIndex !== null) {
+      const preferred = pickPreferredRow(result[duplicateIndex], row)
+      result[duplicateIndex] = preferred
       continue
     }
 
-    if (currentScore === existingScore && new Date(row.created_at).getTime() > new Date(existing.created_at).getTime()) {
-      byExternalInboundId.set(externalInboundId, row)
+    const nextIndex = result.push(row) - 1
+
+    if (externalInboundId) {
+      byExternalInboundId.set(externalInboundId, nextIndex)
+    }
+
+    if (manualMirrorFingerprint) {
+      byRecentManualMirror.set(manualMirrorFingerprint, nextIndex)
     }
   }
 
-  return [...fallbackRows, ...byExternalInboundId.values()].sort(
+  return result.sort(
     (left, right) => new Date(left.created_at).getTime() - new Date(right.created_at).getTime(),
   )
 }

@@ -449,3 +449,13 @@ Estratégia: entrar com R$ 1.997 para gerar cases, subir gradualmente.
   - totalizacao internacional (`PrevGlobal`)
 - referencia canonica:
   - `docs/PREVIDENCIARIO_EXPANSION_STRATEGY.md`
+
+## Atualização 2026-04-30 — Operação da Pagliuca refinada na camada de conversa e carteira
+
+- a frente de `planejamento` recebeu ajuste fino para a `Bianca` ficar mais natural na sequência do disparo:
+  - saudação curta do lead deixa de gerar resposta que repete `bom dia` / `boa tarde`
+  - o primeiro retorno pós-campanha passa a privilegiar uma aproximação social breve antes da ponte para o diagnóstico
+- a aba de `Leads` agora reflete o `estado operacional` da conversa mais recente no próprio card, aproximando carteira e inbox
+- a trilha de handoff humano com `Z-API` foi endurecida para evitar falso duplicado visual em outbound manual:
+  - o espelhamento do canal reaproveita o registro manual recente
+  - a leitura da thread colapsa mensagens manuais espelhadas com mesmo corpo e mesmos telefones

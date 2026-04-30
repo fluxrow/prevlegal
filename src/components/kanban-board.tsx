@@ -5,6 +5,11 @@ import { DollarSign, User, ChevronDown, MessageSquare } from 'lucide-react'
 import LeadDrawer from './lead-drawer'
 import ModalMsgLead from './modal-msg-lead'
 import { getContactTargetLabel } from '@/lib/contact-target'
+import {
+  normalizeOperationalConversationState,
+  OPERATIONAL_STATE_LABELS,
+  OPERATIONAL_STATE_META,
+} from '@/lib/inbox-operational-state'
 
 type Lead = {
   id: string
@@ -18,6 +23,7 @@ type Lead = {
   banco: string | null
   origem?: string | null
   contato_abordagem_tipo?: string | null
+  estado_operacional?: string | null
 }
 
 type Column = {
@@ -58,6 +64,9 @@ function LeadCard({
 
   const scoreColor = lead.score >= 80 ? '#2dd4a0' : lead.score >= 60 ? '#f5c842' : '#ff8c42'
   const contactTargetLabel = getContactTargetLabel(lead.contato_abordagem_tipo)
+  const operationalState = normalizeOperationalConversationState(lead.estado_operacional, null)
+  const operationalMeta = OPERATIONAL_STATE_META[operationalState]
+  const operationalLabel = OPERATIONAL_STATE_LABELS[operationalState]
 
   return (
     <>
@@ -155,6 +164,24 @@ function LeadCard({
                 display: 'inline-block',
               }}>
                 {contactTargetLabel}
+              </span>
+            </div>
+            <div style={{ marginTop: '4px' }}>
+              <span
+                title={operationalMeta.hint}
+                style={{
+                  fontSize: '9px',
+                  fontWeight: '700',
+                  background: operationalMeta.bg,
+                  color: operationalMeta.color,
+                  border: `1px solid ${operationalMeta.color}30`,
+                  borderRadius: '20px',
+                  padding: '1px 7px',
+                  letterSpacing: '0.04em',
+                  display: 'inline-block',
+                }}
+              >
+                {operationalLabel}
               </span>
             </div>
           </div>

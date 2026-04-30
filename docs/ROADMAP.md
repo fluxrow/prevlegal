@@ -2859,3 +2859,23 @@ Status atual em 18/03/2026:
   - Mensagem fora da janela não derruba a conversa para `humano`
   - Novo worker `/api/agente/worker` reprocessa pendências a cada 5 minutos
   - Válido para Z-API e Twilio
+
+## Atualização 2026-04-30 — Bianca mais natural e aba de leads com estado operacional visível
+
+- a operação pediu duas melhorias de UX diretamente ligadas à campanha de `planejamento`:
+  - a `Bianca` não deve repetir `bom dia` / `boa tarde` logo após já ter saudado o lead no disparo
+  - a aba de leads precisa refletir o `estado operacional` definido na inbox para facilitar leitura e ações futuras
+- direção aplicada:
+  - o runtime de `planejamento` passa a detectar saudação curta e força uma ponte social breve antes de entrar no tema
+  - no primeiro retorno pós-campanha, a resposta deixa de repetir a mesma saudação do disparo e pode usar só uma aproximação curta
+  - o kanban de leads passa a mostrar badge com o mesmo `estado operacional` da conversa mais recente do lead
+
+## Atualização 2026-04-30 — Duplicação visual de outbound manual na inbox
+
+- no handoff humano, mensagens manuais enviadas pelo sistema podiam aparecer duplicadas na thread mesmo quando o WhatsApp real mostrava apenas um envio
+- causa consolidada:
+  - o envio manual criava um registro local imediatamente
+  - depois o espelhamento `fromMe` da `Z-API` podia inserir um segundo registro com o mesmo corpo
+- correção aplicada:
+  - o espelhamento da `Z-API` reaproveita o outbound manual recente em vez de inserir nova linha
+  - a leitura da conversa colapsa duplicatas manuais recentes com a mesma mensagem e mesmos telefones

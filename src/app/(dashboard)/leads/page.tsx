@@ -8,6 +8,7 @@ import { Users, DollarSign, TrendingUp } from 'lucide-react'
 import { getTenantContext } from '@/lib/tenant-context'
 import type { LeadStatus } from '@/lib/types'
 import { normalizeOperationProfile } from '@/lib/operation-profile'
+import { normalizeOperationalConversationState } from '@/lib/inbox-operational-state'
 
 const STATUS_OPTIONS: Array<{ value: LeadStatus; label: string }> = [
   { value: 'new', label: 'Novos' },
@@ -62,12 +63,45 @@ export default async function LeadsPage({
       .maybeSingle(),
   ])
 
+  const leadIds = (leads || []).map((lead) => lead.id)
+  const latestConversationByLead = new Map<
+    string,
+    { estado_operacional: string | null; status: string | null }
+  >()
+
+  if (leadIds.length > 0) {
+    const { data: conversations } = await supabase
+      .from('conversas')
+      .select('lead_id, status, estado_operacional, ultima_mensagem_at')
+      .eq('tenant_id', context.tenantId)
+      .in('lead_id', leadIds)
+      .order('ultima_mensagem_at', { ascending: false })
+
+    for (const conversation of conversations || []) {
+      if (!conversation.lead_id || latestConversationByLead.has(conversation.lead_id)) continue
+      latestConversationByLead.set(conversation.lead_id, {
+        estado_operacional: conversation.estado_operacional || null,
+        status: conversation.status || null,
+      })
+    }
+  }
+
+  const leadsWithOperationalState = (leads || []).map((lead) => {
+    const conversation = latestConversationByLead.get(lead.id)
+    return {
+      ...lead,
+      estado_operacional: conversation
+        ? normalizeOperationalConversationState(conversation.estado_operacional, conversation.status)
+        : null,
+    }
+  })
+
   const operationProfile = normalizeOperationProfile(defaultAgent?.perfil_operacao || null)
 
-  const total = leads?.length || 0
-  const potencial = leads?.reduce((s, l) => s + (l.ganho_potencial || 0), 0) || 0
+  const total = leadsWithOperationalState.length
+  const potencial = leadsWithOperationalState.reduce((s, l) => s + (l.ganho_potencial || 0), 0) || 0
   const scoreM = total > 0
-    ? Math.round(leads!.reduce((s, l) => s + l.score, 0) / total)
+    ? Math.round(leadsWithOperationalState.reduce((s, l) => s + l.score, 0) / total)
     : 0
 
   function fmt(v: number) {
@@ -192,7 +226,7 @@ export default async function LeadsPage({
 
       {/* Kanban */}
       <div data-tour="leads-kanban">
-        <KanbanBoard initialLeads={leads || []} />
+        <KanbanBoard initialLeads={leadsWithOperationalState} />
       </div>
 
       <LeadsOnboardingTour />

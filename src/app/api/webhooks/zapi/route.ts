@@ -154,6 +154,41 @@ async function hasRecentDuplicateMessage({
   return Boolean(data?.id)
 }
 
+async function findRecentManualOutboundMirror({
+  supabase,
+  tenantId,
+  channelId,
+  from,
+  to,
+  body,
+  withinMs = 180000,
+}: {
+  supabase: ReturnType<typeof createAdminSupabase>
+  tenantId: string | null
+  channelId: string
+  from: string
+  to: string
+  body: string
+  withinMs?: number
+}) {
+  let query = supabase
+    .from('mensagens_inbound')
+    .select('id')
+    .eq('whatsapp_number_id', channelId)
+    .eq('telefone_remetente', from)
+    .eq('telefone_destinatario', to)
+    .eq('mensagem', body)
+    .eq('respondido_manualmente', true)
+    .gte('created_at', new Date(Date.now() - withinMs).toISOString())
+    .order('created_at', { ascending: false })
+    .limit(1)
+
+  query = tenantId ? query.eq('tenant_id', tenantId) : query.is('tenant_id', null)
+
+  const { data } = await query.maybeSingle()
+  return data?.id || null
+}
+
 async function collapseDuplicateExternalMessage({
   supabase,
   tenantId,
@@ -716,6 +751,29 @@ async function handleChannelOriginatedMessage({
     if (duplicate) {
       return NextResponse.json({ ok: true, duplicate: true, mirrored: true })
     }
+  }
+
+  const recentManualMirrorId = await findRecentManualOutboundMirror({
+    supabase,
+    tenantId: routing.tenantId,
+    channelId: routing.channelId,
+    from: parties.channelPhone || routing.from || '',
+    to: parties.counterpartyPhone,
+    body,
+  })
+
+  if (recentManualMirrorId) {
+    await supabase
+      .from('mensagens_inbound')
+      .update({
+        twilio_message_sid: externalId || null,
+        twilio_sid: event,
+        lido: true,
+        lido_em: new Date().toISOString(),
+      })
+      .eq('id', recentManualMirrorId)
+
+    return NextResponse.json({ ok: true, duplicate: true, mirrored: true, reused_manual_outbound: true })
   }
 
   const duplicateByBody = await hasRecentDuplicateMessage({

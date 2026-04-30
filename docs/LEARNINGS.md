@@ -2572,3 +2572,30 @@ Os selects ainda pediam apenas `usuarios(...)`, então o PostgREST não sabia qu
   - colaboração interna por lead deve usar thread, tasks e handoff reais, não coordenação implícita
   - agendamento deve funcionar como transição operacional do lead, com agenda por usuário como comportamento correto
   - admin deve distinguir tenant criado, tenant configurado e tenant realmente operando
+
+## Atualização 2026-04-30 — Saudação repetida derruba naturalidade mesmo com bom conteúdo
+
+- em `planejamento`, não basta encurtar a resposta; a abertura também precisa soar humana
+- quando o disparo já cumpriu a saudação inicial, repetir `bom dia` ou `boa tarde` no primeiro retorno do lead deixa a conversa mecânica
+- quando o lead responde só com `boa tarde, tudo bem?`, o melhor comportamento é:
+  - 1 linha curta de aproximação
+  - 1 ponte leve para o contexto
+  - só então a pergunta útil
+
+## Atualização 2026-04-30 — Badge operacional na aba de leads melhora leitura de carteira
+
+- o usuário não deveria precisar abrir a conversa para descobrir se o lead está `morno`, `frio` ou `aguardando documentos`
+- refletir o `estado operacional` mais recente da conversa diretamente no card do lead melhora:
+  - leitura de carteira
+  - priorização manual
+  - consistência entre inbox e leads
+
+## Atualização 2026-04-30 — Duplicidade de outbound manual pode ser só de sistema, não de canal
+
+- em handoff humano com `Z-API`, o sistema pode mostrar duplicidade mesmo quando o WhatsApp real enviou apenas uma mensagem
+- isso acontece quando:
+  - a resposta manual é persistida localmente
+  - e o espelhamento `fromMe` cria um segundo registro para o mesmo texto
+- conclusão operacional:
+  - antes de acusar disparo duplicado no canal, conferir o celular conectado
+  - a thread do sistema precisa colapsar esse espelhamento para evitar falsa leitura de erro
