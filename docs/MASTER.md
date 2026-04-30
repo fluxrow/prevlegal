@@ -459,3 +459,24 @@ Estratégia: entrar com R$ 1.997 para gerar cases, subir gradualmente.
 - a trilha de handoff humano com `Z-API` foi endurecida para evitar falso duplicado visual em outbound manual:
   - o espelhamento do canal reaproveita o registro manual recente
   - a leitura da thread colapsa mensagens manuais espelhadas com mesmo corpo e mesmos telefones
+
+## Atualização 2026-04-30 — Base de recontato automático preparada com rollout seguro
+
+- foi aberta a fundação do recontato automático para dois tipos de retomada:
+  - `campanha_sem_resposta`
+  - `conversa_em_aberto`
+- a base ficou pronta para operar em quatro modos por tenant:
+  - `off`
+  - `shadow`
+  - `manual_review`
+  - `live`
+- esta rodada **não liga automação nova em produção por padrão**:
+  - não foi adicionado cron novo ao `vercel.json`
+  - o worker interno existe, mas depende de ativação deliberada posterior
+- a UI de `Configurações > Geral` agora já permite:
+  - ajustar flags
+  - rodar varredura manual
+  - revisar candidatos
+  - disparar manualmente em `manual_review`
+- implicação prática:
+  - o escritório pode testar a lógica de recontato com rastreabilidade e sem deixar o sistema “sair falando sozinho” cedo demais

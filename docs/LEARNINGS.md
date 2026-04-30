@@ -2599,3 +2599,19 @@ Os selects ainda pediam apenas `usuarios(...)`, então o PostgREST não sabia qu
 - conclusão operacional:
   - antes de acusar disparo duplicado no canal, conferir o celular conectado
   - a thread do sistema precisa colapsar esse espelhamento para evitar falsa leitura de erro
+
+## Atualização 2026-04-30 — Recontato automático seguro precisa nascer em camadas, não “ligado”
+
+- campanha não é a ferramenta ideal para todos os tipos de retomada:
+  - `nunca respondeu` e `base fria` combinam com lote / campanha
+  - `respondeu e pausou` combina melhor com motor comportamental por conversa
+- exigir mudança manual de estado para todos os leads não escala em campanhas de `100+` contatos por dia
+- o modelo mais seguro e prático é:
+  - sistema detecta elegíveis automaticamente
+  - usuário só revisa exceções ou aprova fila
+  - rollout começa em `shadow` / `manual_review`
+- regra canônica para não bagunçar produção:
+  - não ligar cron novo enquanto a lógica ainda está sendo calibrada
+  - subir a fundação primeiro
+  - observar candidatos
+  - só então decidir quando o `live` faz sentido

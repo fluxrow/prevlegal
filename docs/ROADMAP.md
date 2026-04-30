@@ -2879,3 +2879,35 @@ Status atual em 18/03/2026:
 - correção aplicada:
   - o espelhamento da `Z-API` reaproveita o outbound manual recente em vez de inserir nova linha
   - a leitura da conversa colapsa duplicatas manuais recentes com a mesma mensagem e mesmos telefones
+
+## Atualização 2026-04-30 — Fundação segura do recontato automático (sem cron ativo)
+
+- foi aberta a `V1` técnica do recontato automático para dois cenários distintos:
+  - `campanha_sem_resposta`
+  - `conversa_em_aberto`
+- a entrega foi desenhada para **não ligar nada sozinho em produção por padrão**:
+  - novas flags por tenant em `configuracoes`
+  - modos:
+    - `off`
+    - `shadow`
+    - `manual_review`
+    - `live`
+  - migration própria para base estrutural
+  - worker interno preparado, mas **sem cron novo no `vercel.json` nesta rodada**
+- superfícies entregues:
+  - tabela de auditoria/candidatos `automation_recontact_candidates`
+  - motor de elegibilidade para montar candidatos
+  - rota de revisão manual em `/api/automacoes/recontato/candidates`
+  - UI em `Configurações > Geral` para:
+    - salvar flags
+    - rodar varredura manual
+    - revisar fila
+    - disparar candidato manualmente em `manual_review`
+- direção operacional consolidada:
+  - massa e `base fria sem resposta` continuam mais próximas de campanha
+  - retomada de conversa pausada passa a nascer como motor separado e auditável
+  - rollout seguro canônico:
+    - `off`
+    - `shadow`
+    - `manual_review`
+    - só depois `live`

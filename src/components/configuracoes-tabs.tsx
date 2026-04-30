@@ -4,6 +4,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import GestaoUsuarios from "@/components/gestao-usuarios";
 import OnboardingResetSection from "@/components/onboarding-reset-section";
 import AgentesConfig from "@/components/agentes-config";
+import RecontactAutomationSection from "@/components/recontact-automation-section";
 import { Users, Settings, Bot, FileText } from "lucide-react";
 
 type Tab = "usuarios" | "agentes" | "geral" | "templates";
@@ -98,7 +99,12 @@ export default function ConfiguracoesTabs() {
         </div>
       )}
 
-      {abaAtiva === "geral" && <OnboardingResetSection />}
+      {abaAtiva === "geral" && (
+        <>
+          <RecontactAutomationSection />
+          <OnboardingResetSection />
+        </>
+      )}
     </div>
   );
 }

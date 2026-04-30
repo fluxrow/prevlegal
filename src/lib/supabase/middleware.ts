@@ -24,12 +24,13 @@ function isInternalAgentResponderRequest(request: NextRequest) {
 }
 
 function isAuthorizedInternalCronRequest(request: NextRequest) {
-  const cronPaths = new Set([
-    '/api/agente/worker',
-    '/api/campanhas/worker',
-    '/api/followup/worker',
-    '/api/document-processing/worker',
-  ])
+const cronPaths = new Set([
+  '/api/agente/worker',
+  '/api/campanhas/worker',
+  '/api/followup/worker',
+  '/api/document-processing/worker',
+  '/api/automacoes/recontato/worker',
+])
 
   if (!cronPaths.has(request.nextUrl.pathname)) return false
 
