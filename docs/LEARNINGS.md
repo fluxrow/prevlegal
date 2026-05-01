@@ -2615,3 +2615,15 @@ Os selects ainda pediam apenas `usuarios(...)`, então o PostgREST não sabia qu
   - subir a fundação primeiro
   - observar candidatos
   - só então decidir quando o `live` faz sentido
+
+## Atualização 2026-04-30 — Aviso de fora do horário não deve “consumir” o inbound
+
+- marcar o inbound original como respondido no caso `outside_hours` impede a retomada automática depois
+- o desenho correto é:
+  - enviar o aviso de horário
+  - manter a conversa em `agente`
+  - guardar um `reprocessar_apos`
+  - deixar o worker retomar quando a janela abrir
+- isso evita dois extremos ruins:
+  - ficar mudo para sempre depois do aviso
+  - ou reenviar o mesmo aviso a cada ciclo do worker

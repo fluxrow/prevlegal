@@ -2911,3 +2911,17 @@ Status atual em 18/03/2026:
     - `shadow`
     - `manual_review`
     - só depois `live`
+
+## Atualização 2026-04-30 — Fora do horário volta a entrar no worker quando a janela abre
+
+- havia um buraco operacional na retomada pós-horário:
+  - o lead recebia o aviso de `fora do horário`
+  - mas o inbound original ficava marcado como se já estivesse resolvido
+  - quando a janela útil abria, o worker não encontrava mais nada para a Bianca retomar
+- correção aplicada:
+  - `mensagens_inbound` agora pode guardar `agente_reprocessar_apos`
+  - no caso `outside_hours`, o inbound original fica pendente com relógio de reprocesso
+  - o aviso continua sendo enviado uma vez
+  - o worker ignora a pendência até o horário liberar e então reprocessa a mesma mensagem
+- endurecimento adicional:
+  - o worker passa a ignorar pendência velha que já foi superada por mensagem mais nova na conversa

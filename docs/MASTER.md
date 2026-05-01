@@ -480,3 +480,15 @@ Estratégia: entrar com R$ 1.997 para gerar cases, subir gradualmente.
   - disparar manualmente em `manual_review`
 - implicação prática:
   - o escritório pode testar a lógica de recontato com rastreabilidade e sem deixar o sistema “sair falando sozinho” cedo demais
+
+## Atualização 2026-04-30 — Retomada automática pós-fora-do-horário estabilizada
+
+- o fluxo de `outside_hours` da Bianca foi corrigido para o comportamento canônico:
+  - o lead recebe aviso de horário
+  - a conversa permanece em `agente`
+  - o inbound original fica agendado para reprocessamento interno
+  - quando a janela útil abre, o worker volta a acionar a Bianca automaticamente
+- base técnica aplicada:
+  - nova coluna `mensagens_inbound.agente_reprocessar_apos`
+  - worker do agente endurecido para respeitar esse relógio
+  - pendências antigas superadas por mensagens mais novas deixam de ser reprocessadas à toa

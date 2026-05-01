@@ -5,6 +5,7 @@ type AgentAutoresponderPayload = {
   reason?: string
   retryable?: boolean
   retry_after_ms?: number
+  retry_at?: string
   error?: string
   horario_inicio?: string
   horario_fim?: string

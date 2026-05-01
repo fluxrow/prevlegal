@@ -42,6 +42,7 @@ type InboundMessageRow = {
   respondido_por_agente: boolean | null
   respondido_manualmente: boolean | null
   resposta_agente: string | null
+  agente_reprocessar_apos?: string | null
   created_at: string
 }
 
@@ -851,6 +852,70 @@ function getOperationalClock() {
   }
 }
 
+function getCurrentLocalDateParts() {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: APP_TIMEZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    weekday: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).formatToParts(new Date())
+
+  const map = new Map(parts.map((part) => [part.type, part.value]))
+  return {
+    year: Number(map.get('year') || '0'),
+    month: Number(map.get('month') || '0'),
+    day: Number(map.get('day') || '0'),
+    weekday: String(map.get('weekday') || ''),
+    hour: Number(map.get('hour') || '0'),
+    minute: Number(map.get('minute') || '0'),
+  }
+}
+
+function getNextOperationalRetryAt(config: AgentRuntimeConfig) {
+  const start = String(config.agente_horario_inicio || '').trim()
+  if (!start) return null
+
+  const [startHourRaw, startMinuteRaw] = start.split(':')
+  const startHour = Number(startHourRaw)
+  const startMinute = Number(startMinuteRaw || '0')
+  if (!Number.isFinite(startHour) || !Number.isFinite(startMinute)) return null
+
+  const current = getCurrentLocalDateParts()
+  const currentMinutes = current.hour * 60 + current.minute
+  const startMinutes = startHour * 60 + startMinute
+
+  const weekdayMap = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+  const currentWeekdayIndex = weekdayMap.indexOf(current.weekday)
+  const currentIsWeekend = currentWeekdayIndex === 0 || currentWeekdayIndex === 6
+  const weekendOnly = Boolean(config.agente_apenas_dias_uteis)
+
+  const candidate = new Date(Date.UTC(current.year, current.month - 1, current.day, startHour + 3, startMinute, 0))
+
+  if (weekendOnly && currentIsWeekend) {
+    const daysUntilMonday = currentWeekdayIndex === 6 ? 2 : 1
+    candidate.setUTCDate(candidate.getUTCDate() + daysUntilMonday)
+    return candidate.toISOString()
+  }
+
+  if (currentMinutes < startMinutes) {
+    return candidate.toISOString()
+  }
+
+  candidate.setUTCDate(candidate.getUTCDate() + 1)
+
+  if (weekendOnly) {
+    while (candidate.getUTCDay() === 0 || candidate.getUTCDay() === 6) {
+      candidate.setUTCDate(candidate.getUTCDate() + 1)
+    }
+  }
+
+  return candidate.toISOString()
+}
+
 function isAnthropicCreditError(error: unknown) {
   const message = getErrorMessage(error).toLowerCase()
   return (
@@ -1202,6 +1267,7 @@ export async function POST(request: NextRequest) {
           error: 'Fora do horário de atendimento (fim de semana)',
           queued: true,
           reason: 'outside_hours',
+          retry_at: getNextOperationalRetryAt(config),
           horario_inicio: config.agente_horario_inicio,
           horario_fim: config.agente_horario_fim,
           dias_uteis_only: Boolean(config.agente_apenas_dias_uteis),
@@ -1213,6 +1279,7 @@ export async function POST(request: NextRequest) {
           error: 'Fora do horário de atendimento',
           queued: true,
           reason: 'outside_hours',
+          retry_at: getNextOperationalRetryAt(config),
           horario_inicio: config.agente_horario_inicio,
           horario_fim: config.agente_horario_fim,
           dias_uteis_only: Boolean(config.agente_apenas_dias_uteis),
@@ -1230,7 +1297,7 @@ export async function POST(request: NextRequest) {
     if (historyScopeValue) {
       const { data } = await supabase
         .from('mensagens_inbound')
-        .select('id, mensagem, telefone_remetente, telefone_destinatario, respondido_por_agente, respondido_manualmente, resposta_agente, created_at')
+        .select('id, mensagem, telefone_remetente, telefone_destinatario, respondido_por_agente, respondido_manualmente, resposta_agente, agente_reprocessar_apos, created_at')
         .eq(historyScopeColumn, historyScopeValue)
         .order('created_at', { ascending: false })
         .limit(40)
@@ -1259,6 +1326,7 @@ export async function POST(request: NextRequest) {
         .update({
           respondido_por_agente: true,
           resposta_agente: duplicateInbound.resposta_agente.trim(),
+          agente_reprocessar_apos: null,
           lido: true,
           lido_em: new Date().toISOString(),
         })
@@ -1534,6 +1602,7 @@ export async function POST(request: NextRequest) {
                   respondido_por_agente: true,
                   respondido_manualmente: false,
                   resposta_agente: fallbackText,
+                  agente_reprocessar_apos: null,
                   twilio_sid: fallbackSendResult.externalMessageId || null,
                   lido: true,
                   lido_em: new Date().toISOString(),
@@ -1664,6 +1733,7 @@ export async function POST(request: NextRequest) {
       .update({
         respondido_por_agente: true,
         resposta_agente: respostaTexto,
+        agente_reprocessar_apos: null,
         lido: true,
         lido_em: new Date().toISOString(),
         agente_respondente_id: agenteRow?.id ?? null,

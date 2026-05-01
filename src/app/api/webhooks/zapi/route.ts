@@ -14,6 +14,7 @@ const LISTA_MANUAL_NOME = 'Cadastro manual'
 const LISTA_MANUAL_FORNECEDOR = 'sistema'
 
 type AgentFailurePayload = {
+  retry_at?: string
   horario_inicio?: string
   horario_fim?: string
   dias_uteis_only?: boolean
@@ -257,6 +258,7 @@ async function registerAgentAutoresponderFailure({
   const horarioInicio = String(result.payload?.horario_inicio || '').trim()
   const horarioFim = String(result.payload?.horario_fim || '').trim()
   const diasUteisOnly = Boolean(result.payload?.dias_uteis_only)
+  const retryAt = String(result.payload?.retry_at || '').trim()
 
   let noticeBody = ''
 
@@ -294,15 +296,31 @@ async function registerAgentAutoresponderFailure({
         await supabase
           .from('mensagens_inbound')
           .update({
-            respondido_por_agente: true,
-            respondido_manualmente: false,
-            resposta_agente: noticeBody,
+            agente_reprocessar_apos: retryAt || null,
             lido: true,
             lido_em: new Date().toISOString(),
           })
           .eq('id', mensagemId)
       }
+    } else if (mensagemId) {
+      await supabase
+        .from('mensagens_inbound')
+        .update({
+          agente_reprocessar_apos: retryAt || null,
+          lido: true,
+          lido_em: new Date().toISOString(),
+        })
+        .eq('id', mensagemId)
     }
+  } else if (outsideHours && mensagemId) {
+    await supabase
+      .from('mensagens_inbound')
+      .update({
+        agente_reprocessar_apos: retryAt || null,
+        lido: true,
+        lido_em: new Date().toISOString(),
+      })
+      .eq('id', mensagemId)
   }
 
   if (conversaId) {

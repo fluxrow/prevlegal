@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
 
   const { data: pendingMessages, error: pendingMessagesError } = await supabase
     .from('mensagens_inbound')
-    .select('id, conversa_id, lead_id, tenant_id, created_at')
+    .select('id, conversa_id, lead_id, tenant_id, created_at, agente_reprocessar_apos')
     .not('conversa_id', 'is', null)
     .eq('respondido_por_agente', false)
     .eq('respondido_manualmente', false)
@@ -56,16 +56,35 @@ export async function POST(request: NextRequest) {
 
   const { data: conversas, error: conversasError } = await supabase
     .from('conversas')
-    .select('id, status')
+    .select('id, status, ultima_mensagem_at')
     .in('id', conversaIds)
 
   if (conversasError) {
     return NextResponse.json({ error: conversasError.message }, { status: 500 })
   }
 
-  const statusMap = new Map((conversas || []).map((conversa) => [conversa.id, conversa.status]))
+  const conversationMap = new Map((conversas || []).map((conversa) => [conversa.id, conversa]))
+  const nowMs = Date.now()
   const messagesToProcess = Array.from(latestByConversation.values()).filter(
-    (row) => row.conversa_id && statusMap.get(row.conversa_id) === 'agente',
+    (row) => {
+      if (!row.conversa_id) return false
+
+      const conversation = conversationMap.get(row.conversa_id)
+      if (!conversation || conversation.status !== 'agente') return false
+
+      if (row.agente_reprocessar_apos) {
+        return new Date(row.agente_reprocessar_apos).getTime() <= nowMs
+      }
+
+      if (
+        conversation.ultima_mensagem_at &&
+        new Date(row.created_at).getTime() < new Date(conversation.ultima_mensagem_at).getTime()
+      ) {
+        return false
+      }
+
+      return true
+    },
   )
 
   const resultados: Array<{
