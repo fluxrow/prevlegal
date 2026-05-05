@@ -22,6 +22,24 @@ Mestra: [[MASTER_PREV_LEGAL]]
   - a verdade do envio continua sendo o snapshot final salvo na campanha
   - `editar` e `excluir` template precisam afetar apenas a biblioteca, nunca campanhas históricas
 
+## Atualização 2026-05-05 — Em projeto Supabase com histórico remoto divergente, `db push` e `cli_login_postgres` podem falhar mesmo com auth de gestão funcionando
+
+- Problema:
+  - o workspace conseguia listar projetos do Supabase, mas falhava em `migration list`, `db push` e `link` com erro do `cli_login_postgres` ou `Unauthorized`
+  - isso dava a impressão de que o acesso inteiro ao Supabase estava quebrado
+- Causa:
+  - havia dois planos de autenticação diferentes se cruzando:
+    - token de gestão capaz de ver projetos
+    - fluxo de banco remoto exigindo credenciais do Postgres/login role que não estavam resolvidas pelo CLI atual
+  - além disso, o histórico remoto de migrations continua divergente do diretório local, então `db push` segue sendo um caminho inseguro para esse projeto
+- Correção:
+  - reaproveitar a connection string operacional já registrada nos scripts históricos do próprio repo
+  - aplicar a SQL manual idempotente diretamente no banco operacional via `pg`, sem depender de `db push`
+  - manter a documentação explícita de que o caminho seguro do PrevLegal continua sendo patch/manual SQL quando o remoto não está normalizado
+- Regra prática:
+  - “listar projetos” no Supabase CLI não significa automaticamente “migrar banco”
+  - quando o banco operacional já tem um runbook conhecido e a conexão segura existe no workspace técnico, vale preferir aplicação SQL explícita a tentar “consertar no escuro” o fluxo inteiro de migrations remotas
+
 ## Atualização 2026-05-04 — Lista de contatos da campanha personalizada não pode depender de um `cap` silencioso de `50`
 
 - Problema:

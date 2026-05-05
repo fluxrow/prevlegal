@@ -25,6 +25,7 @@ Mestra: [[MASTER_PREV_LEGAL]]
   - o operador ganha velocidade sem perder controle fino da copy
   - editar ou excluir um template não altera campanhas já criadas
   - o padrão fica forte o bastante para reaproveitar em produtos futuros da Fluxrow
+  - a migration `campaign_message_templates` já foi aplicada no banco operacional `lrqvvxmgimjlghpwavdb`, então os templates do escritório ficaram liberados em produção sem novo deploy
 
 ## Atualizacao 2026-05-04 — Campanha por contatos específicos deixou de aparentar “sumir com parte da base”
 
