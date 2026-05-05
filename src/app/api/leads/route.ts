@@ -13,6 +13,7 @@ import { normalizeHumanText } from '@/lib/text-repair'
 
 const LISTA_MANUAL_NOME = 'Cadastro manual'
 const LISTA_MANUAL_FORNECEDOR = 'sistema'
+const ALLOWED_LEAD_STATUSES = new Set(['new', 'contacted', 'awaiting', 'scheduled', 'converted', 'lost'])
 
 function criarNbManual(body: Record<string, unknown>, operationProfile: string) {
   const telefone = normalizeDigits(body.telefone)
@@ -147,20 +148,29 @@ export async function GET(request: Request) {
   const tokens = buildSearchTokens(searchParams.get('q'))
   const q = tokens.text
   const qDigits = tokens.digits
-  const limit = Math.min(Number(searchParams.get('limit') || 20) || 20, 50)
-  const fetchLimit = q ? Math.max(limit * 4, 200) : limit
   const scope = normalizeText(searchParams.get('scope'))
+  const requestedStatus = normalizeText(searchParams.get('status'))
+  const includeCount = searchParams.get('include_count') === '1'
   const allowTenantWideSearch = scope === 'operational' || scope === 'scheduling'
+  const maxLimit = allowTenantWideSearch ? 200 : 50
+  const limit = Math.min(Number(searchParams.get('limit') || 20) || 20, maxLimit)
+  const offset = Math.max(Number(searchParams.get('offset') || 0) || 0, 0)
+  const fetchLimit = q ? Math.max(limit * 4, 200) : limit
+  const statusFilter = ALLOWED_LEAD_STATUSES.has(requestedStatus) ? requestedStatus : null
 
   let query = adminSupabase
     .from('leads')
     .select('id, nome, telefone, conjuge_celular, filho_celular, irmao_celular, status, banco, tenant_id, responsavel_id, lgpd_optout, updated_at')
     .eq('tenant_id', context.tenantId)
     .order('updated_at', { ascending: false })
-    .limit(fetchLimit)
+    .range(offset, offset + fetchLimit - 1)
 
   if (!context.isAdmin && !allowTenantWideSearch) {
     query = query.eq('responsavel_id', context.usuarioId)
+  }
+
+  if (statusFilter) {
+    query = query.eq('status', statusFilter)
   }
 
   if (q) {
@@ -193,6 +203,31 @@ export async function GET(request: Request) {
     })
     .slice(0, limit)
 
+  let totalCount: number | null = null
+
+  if (includeCount) {
+    if (!q) {
+      let countQuery = adminSupabase
+        .from('leads')
+        .select('id', { count: 'exact', head: true })
+        .eq('tenant_id', context.tenantId)
+        .neq('lgpd_optout', true)
+
+      if (!context.isAdmin && !allowTenantWideSearch) {
+        countQuery = countQuery.eq('responsavel_id', context.usuarioId)
+      }
+
+      if (statusFilter) {
+        countQuery = countQuery.eq('status', statusFilter)
+      }
+
+      const { count } = await countQuery
+      totalCount = count || 0
+    } else {
+      totalCount = leadsFiltrados.length
+    }
+  }
+
   return NextResponse.json({
     leads: leadsFiltrados.map((lead) => ({
       id: lead.id,
@@ -200,6 +235,12 @@ export async function GET(request: Request) {
       telefone: lead.telefone,
       status: lead.status,
     })),
+    count: totalCount,
+    pagination: {
+      limit,
+      offset,
+      has_more: (data || []).length >= fetchLimit,
+    },
   })
 }
 

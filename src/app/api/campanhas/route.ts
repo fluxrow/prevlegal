@@ -24,6 +24,7 @@ function createAdminClient() {
 const LISTA_SELECAO_PERSONALIZADA_NOME = 'Seleção personalizada'
 const LISTA_SELECAO_PERSONALIZADA_FORNECEDOR = 'sistema'
 const ALLOWED_CONTACT_TARGET_TYPES = new Set(['titular', 'conjuge', 'filho', 'irmao'])
+const ALLOWED_LEAD_STATUSES = new Set(['new', 'contacted', 'awaiting', 'scheduled', 'converted', 'lost'])
 
 async function getOrCreateSelectionList(adminClient: ReturnType<typeof createAdminClient>, tenantId: string, usuarioId: string) {
   const { data: existing, error: existingError } = await adminClient
@@ -61,6 +62,30 @@ async function getOrCreateSelectionList(adminClient: ReturnType<typeof createAdm
   }
 
   return created.id
+}
+
+async function insertCampaignLeadLinks(
+  adminClient: ReturnType<typeof createAdminClient>,
+  campaignId: string,
+  tenantId: string,
+  leadIds: string[],
+) {
+  const chunkSize = 500
+
+  for (let index = 0; index < leadIds.length; index += chunkSize) {
+    const chunk = leadIds.slice(index, index + chunkSize)
+    const { error } = await adminClient
+      .from('campanha_leads')
+      .insert(
+        chunk.map((leadId) => ({
+          campanha_id: campaignId,
+          lead_id: leadId,
+          tenant_id: tenantId,
+        })),
+      )
+
+    if (error) throw new Error(error.message)
+  }
 }
 
 export async function GET() {
@@ -221,6 +246,7 @@ export async function POST(request: NextRequest) {
       lista_id,
       target_mode,
       lead_ids,
+      lead_status,
       mensagem_template,
       delay_min_ms,
       delay_max_ms,
@@ -243,7 +269,16 @@ export async function POST(request: NextRequest) {
     const selectedLeadIds = Array.isArray(lead_ids)
       ? lead_ids.filter((value) => typeof value === 'string' && value.trim()).map((value) => value.trim())
       : []
-    const campaignTargetMode = target_mode === 'selecionados' ? 'selecionados' : 'lista'
+    const campaignTargetMode =
+      target_mode === 'selecionados'
+        ? 'selecionados'
+        : target_mode === 'status'
+          ? 'status'
+          : 'lista'
+    const normalizedLeadStatus =
+      typeof lead_status === 'string' && lead_status.trim()
+        ? lead_status.trim().toLowerCase()
+        : null
 
     if (!nome || !mensagem_template) {
       return NextResponse.json({ error: 'nome e mensagem_template são obrigatórios' }, { status: 400 })
@@ -264,6 +299,10 @@ export async function POST(request: NextRequest) {
 
     if (campaignTargetMode === 'selecionados' && selectedLeadIds.length === 0) {
       return NextResponse.json({ error: 'Selecione ao menos um contato para a campanha personalizada' }, { status: 400 })
+    }
+
+    if (campaignTargetMode === 'status' && (!normalizedLeadStatus || !ALLOWED_LEAD_STATUSES.has(normalizedLeadStatus))) {
+      return NextResponse.json({ error: 'Selecione um status válido para a campanha por status' }, { status: 400 })
     }
 
     if (!resolvedAgenteId) {
@@ -300,6 +339,7 @@ export async function POST(request: NextRequest) {
 
     let resolvedListaId = lista_id
     let totalLeads = 0
+    let resolvedLeadIdsForCampaign: string[] = selectedLeadIds
 
     if (campaignTargetMode === 'lista') {
       let listaQuery = adminClient
@@ -321,7 +361,7 @@ export async function POST(request: NextRequest) {
       countQuery = tenantId ? countQuery.eq('tenant_id', tenantId) : countQuery.is('tenant_id', null)
       const { count } = await countQuery
       totalLeads = count || 0
-    } else {
+    } else if (campaignTargetMode === 'selecionados') {
       resolvedListaId = await getOrCreateSelectionList(adminClient, tenantId, usuarioId)
       const { data: selectedLeads, error: selectedLeadsError } = await adminClient
         .from('leads')
@@ -341,6 +381,27 @@ export async function POST(request: NextRequest) {
       }
 
       totalLeads = validLeadIds.size
+      resolvedLeadIdsForCampaign = selectedLeadIds
+    } else {
+      resolvedListaId = await getOrCreateSelectionList(adminClient, tenantId, usuarioId)
+      const { data: statusLeads, error: statusLeadsError } = await adminClient
+        .from('leads')
+        .select('id')
+        .eq('tenant_id', tenantId)
+        .eq('status', normalizedLeadStatus as string)
+        .eq('lgpd_optout', false)
+
+      if (statusLeadsError) {
+        return NextResponse.json({ error: statusLeadsError.message }, { status: 500 })
+      }
+
+      resolvedLeadIdsForCampaign = (statusLeads || []).map((lead) => lead.id).filter(Boolean)
+
+      if (resolvedLeadIdsForCampaign.length === 0) {
+        return NextResponse.json({ error: 'Nenhum lead elegível foi encontrado para o status selecionado' }, { status: 400 })
+      }
+
+      totalLeads = resolvedLeadIdsForCampaign.length
     }
 
     let channel
@@ -416,20 +477,12 @@ export async function POST(request: NextRequest) {
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-    if (campaignTargetMode === 'selecionados' && selectedLeadIds.length > 0) {
-      const { error: selectedInsertError } = await adminClient
-        .from('campanha_leads')
-        .insert(
-          selectedLeadIds.map((leadId: string) => ({
-            campanha_id: data.id,
-            lead_id: leadId,
-            tenant_id: tenantId,
-          })),
-        )
-
-      if (selectedInsertError) {
+    if ((campaignTargetMode === 'selecionados' || campaignTargetMode === 'status') && resolvedLeadIdsForCampaign.length > 0) {
+      try {
+        await insertCampaignLeadLinks(adminClient, data.id, tenantId, resolvedLeadIdsForCampaign)
+      } catch (selectedInsertError) {
         await adminClient.from('campanhas').delete().eq('id', data.id)
-        return NextResponse.json({ error: selectedInsertError.message }, { status: 500 })
+        return NextResponse.json({ error: getErrorMessage(selectedInsertError) }, { status: 500 })
       }
     }
 

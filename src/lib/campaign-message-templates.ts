@@ -1,9 +1,50 @@
 import {
   DEFAULT_OPERATION_PROFILE,
+  type OperationProfile,
   normalizeOperationProfile,
 } from "@/lib/operation-profile";
 
-type TemplateMap = Record<string, string>;
+export type CampaignTemplateAgentType =
+  | "triagem"
+  | "reativacao"
+  | "followup_comercial"
+  | "documental"
+  | "confirmacao_agenda";
+
+export type CampaignTemplateOrigin = "sistema" | "custom";
+
+export type CampaignMessageTemplateLibraryItem = {
+  id: string;
+  nome: string;
+  mensagem: string;
+  perfil_operacao: OperationProfile | null;
+  agente_tipo: CampaignTemplateAgentType | null;
+  contato_alvo_tipo: string | null;
+  ativo: boolean;
+  origem: CampaignTemplateOrigin;
+  created_at?: string | null;
+  updated_at?: string | null;
+};
+
+type TemplateMap = Record<CampaignTemplateAgentType, string>;
+
+export const CAMPAIGN_AGENT_TEMPLATE_OPTIONS: Array<{
+  value: CampaignTemplateAgentType;
+  label: string;
+}> = [
+  { value: "triagem", label: "Triagem" },
+  { value: "reativacao", label: "Reativação" },
+  { value: "followup_comercial", label: "Follow-up comercial" },
+  { value: "documental", label: "Documental" },
+  { value: "confirmacao_agenda", label: "Confirmação de agenda" },
+];
+
+const ALLOWED_CONTACT_TARGET_TYPES = new Set([
+  "titular",
+  "conjuge",
+  "filho",
+  "irmao",
+]);
 
 const BENEFITS_TITULAR_TEMPLATES: TemplateMap = {
   triagem:
@@ -58,16 +99,50 @@ const PLANNING_FAMILY_TEMPLATES: TemplateMap = {
 };
 
 function resolveTemplate(
-  agentType: string,
+  agentType: CampaignTemplateAgentType,
   directTemplates: TemplateMap,
   familyTemplates: TemplateMap,
   target: string,
 ) {
-  const normalizedAgentType = agentType in directTemplates ? agentType : "triagem";
   const isFamilyTarget = ["conjuge", "filho", "irmao"].includes(target);
   return isFamilyTarget
-    ? familyTemplates[normalizedAgentType]
-    : directTemplates[normalizedAgentType];
+    ? familyTemplates[agentType]
+    : directTemplates[agentType];
+}
+
+export function normalizeCampaignTemplateAgentType(
+  value: string | null | undefined,
+): CampaignTemplateAgentType | null {
+  const normalized = String(value || "").trim().toLowerCase();
+  return CAMPAIGN_AGENT_TEMPLATE_OPTIONS.some(
+    (option) => option.value === normalized,
+  )
+    ? (normalized as CampaignTemplateAgentType)
+    : null;
+}
+
+export function normalizeCampaignTemplateOperationProfile(
+  value: string | null | undefined,
+): OperationProfile | null {
+  const normalized = String(value || "").trim();
+  return normalized ? normalizeOperationProfile(normalized) : null;
+}
+
+export function normalizeCampaignTemplateContactTarget(
+  value: string | null | undefined,
+): string | null {
+  const normalized = String(value || "").trim().toLowerCase();
+  return ALLOWED_CONTACT_TARGET_TYPES.has(normalized) ? normalized : null;
+}
+
+export function getCampaignTemplateAgentLabel(
+  value: string | null | undefined,
+) {
+  const normalized = normalizeCampaignTemplateAgentType(value);
+  return (
+    CAMPAIGN_AGENT_TEMPLATE_OPTIONS.find((option) => option.value === normalized)
+      ?.label || "Template livre"
+  );
 }
 
 export function buildCampaignMessageTemplate(
@@ -78,8 +153,9 @@ export function buildCampaignMessageTemplate(
   const profile = normalizeOperationProfile(
     operationProfile || DEFAULT_OPERATION_PROFILE,
   );
-  const normalizedAgentType = String(agentType || "triagem").trim().toLowerCase();
-  const target = String(contactTargetType || "").trim().toLowerCase();
+  const normalizedAgentType =
+    normalizeCampaignTemplateAgentType(agentType) || "triagem";
+  const target = normalizeCampaignTemplateContactTarget(contactTargetType) || "";
 
   if (profile === "planejamento_previdenciario") {
     return resolveTemplate(
@@ -96,4 +172,30 @@ export function buildCampaignMessageTemplate(
     BENEFITS_FAMILY_TEMPLATES,
     target,
   );
+}
+
+export function getCampaignSystemTemplates(
+  operationProfile?: string | null | undefined,
+  contactTargetType?: string | null | undefined,
+): CampaignMessageTemplateLibraryItem[] {
+  const normalizedOperationProfile =
+    normalizeCampaignTemplateOperationProfile(operationProfile) ||
+    DEFAULT_OPERATION_PROFILE;
+  const normalizedContactTarget =
+    normalizeCampaignTemplateContactTarget(contactTargetType);
+
+  return CAMPAIGN_AGENT_TEMPLATE_OPTIONS.map((option) => ({
+    id: `system:${normalizedOperationProfile}:${normalizedContactTarget || "geral"}:${option.value}`,
+    nome: option.label,
+    mensagem: buildCampaignMessageTemplate(
+      normalizedOperationProfile,
+      option.value,
+      normalizedContactTarget,
+    ),
+    perfil_operacao: normalizedOperationProfile,
+    agente_tipo: option.value,
+    contato_alvo_tipo: normalizedContactTarget,
+    ativo: true,
+    origem: "sistema",
+  }));
 }

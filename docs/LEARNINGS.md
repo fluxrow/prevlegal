@@ -5,6 +5,55 @@ Mestra: [[MASTER_PREV_LEGAL]]
 > Erros encontrados, causas e correções aplicadas.
 > Atualizado a cada sessão.
 
+## Atualização 2026-05-05 — Template de campanha precisa ser biblioteca de produtividade, não dependência do runtime de envio
+
+- Problema de produto:
+  - a operação precisava reaproveitar copies recorrentes para triagem, retomada, follow-up e agenda
+  - ao mesmo tempo, a mensagem final da campanha ainda precisava continuar livremente editável antes do disparo
+- Risco evitado:
+  - transformar template salvo em dependência dinâmica do dispatch ou do worker
+  - esse desenho faria a campanha “herdar” alterações posteriores de template e abriria drift entre o que o operador revisou e o que realmente foi enviado
+- Correção:
+  - criar biblioteca dedicada em `campaign_message_templates`
+  - expor `usar`, `criar`, `editar` e `excluir` na própria jornada de campanhas
+  - ao aplicar um template, copiar o texto para `mensagem_template` da campanha em vez de salvar só uma referência
+- Regra prática:
+  - em fluxos operacionais de disparo, template deve acelerar composição, não controlar execução
+  - a verdade do envio continua sendo o snapshot final salvo na campanha
+  - `editar` e `excluir` template precisam afetar apenas a biblioteca, nunca campanhas históricas
+
+## Atualização 2026-05-04 — Lista de contatos da campanha personalizada não pode depender de um `cap` silencioso de `50`
+
+- Problema:
+  - ao abrir `Contatos específicos`, só uma parte dos leads aparecia para seleção
+  - isso passava a sensação de que a base estava incompleta ou que alguns contatos não pertenciam mais ao tenant
+- Causa:
+  - a tela consumia `/api/leads?scope=operational&limit=50`
+  - a própria API ainda fazia `Math.min(..., 50)`, então mesmo que a UI pedisse mais, o backend continuaria cortando
+  - como não existia paginação, o operador via apenas o primeiro bloco ordenado por `updated_at`
+- Correção:
+  - permitir páginas operacionais maiores em `/api/leads`
+  - adicionar `offset` e `pagination.has_more` na resposta
+  - fazer a UI de campanhas acumular páginas com `Carregar mais contatos`
+- Regra prática:
+  - quando uma tela operacional trabalha com seleção de base real, um `cap` baixo e invisível vira bug de produto, não só detalhe técnico
+  - se o recorte inicial precisar existir por performance, a UI precisa deixar claro que há mais resultados e oferecer continuação
+
+## Atualização 2026-05-05 — Campanha por status é segura quando vira snapshot em `campanha_leads`, não filtro tardio no dispatch
+
+- Problema de produto:
+  - a operação precisava disparar ou retomar grupos inteiros como `contatados`, `aguardando` ou `perdidos` sem montar lista nova toda vez
+- Risco evitado:
+  - implementar isso como filtro “dinâmico” na hora do worker ler a campanha
+  - esse desenho faria a audiência mudar sozinha conforme leads mudassem de status, quebrando previsibilidade de `total_leads`, leitura comercial e conferência operacional
+- Correção:
+  - criar o modo `Por status` na UI
+  - resolver os leads elegíveis na criação da campanha
+  - gravar o snapshot em `campanha_leads`, exatamente como já acontece em `contatos específicos`
+- Regra prática:
+  - quando o público de campanha depende de atributo volátil como `status`, a verdade operacional precisa ser congelada no momento da criação
+  - o dispatch deve continuar simples: consumir snapshot quando existir, lista quando não existir
+
 ## Atualização 2026-04-30 — Se a campanha opera por Z-API, confiar só em `campanhas.total_respondidos` distorce a leitura da operação
 
 - Problema:

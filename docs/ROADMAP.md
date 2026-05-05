@@ -4,6 +4,64 @@ Contexto: [[SESSION_HISTORY_MASTER]]
 Mestra: [[MASTER_PREV_LEGAL]]
 > Última atualização: 10/04/2026
 
+## Atualizacao 2026-05-05 — Campanhas ganharam biblioteca segura de templates com `usar`, `criar`, `editar` e `excluir`
+
+- necessidade operacional:
+  - acelerar disparos recorrentes sem obrigar o operador a reescrever a copy toda vez
+  - preservar a liberdade de ajustar a mensagem final da campanha antes do disparo
+  - manter esse padrão reaproveitável tanto para `beneficios_previdenciarios` quanto para `planejamento_previdenciario`
+- desenho adotado:
+  - a campanha continua salvando uma `mensagem_template` final própria
+  - a biblioteca de templates entra só como camada de produtividade na UI
+  - o worker e o dispatch não consultam template “ao vivo” no momento do envio
+- correção aplicada:
+  - a tela de campanhas ganhou botão `Templates` junto ao campo de mensagem
+  - o popup agora lista:
+    - templates sugeridos do sistema, derivados do contexto atual
+    - templates do escritório, com `usar`, `editar` e `excluir`
+    - fluxo de `criar template` a partir da mensagem atual
+  - a persistência foi isolada em `campaign_message_templates`, com CRUD próprio por tenant
+- leitura prática:
+  - o operador ganha velocidade sem perder controle fino da copy
+  - editar ou excluir um template não altera campanhas já criadas
+  - o padrão fica forte o bastante para reaproveitar em produtos futuros da Fluxrow
+
+## Atualizacao 2026-05-04 — Campanha por contatos específicos deixou de aparentar “sumir com parte da base”
+
+- achado operacional:
+  - ao criar campanha em `Contatos específicos`, a tela mostrava só uma parte dos leads do escritório
+  - na prática, parecia que vários contatos “não existiam” para seleção
+- causa raiz:
+  - o frontend pedia apenas `50` leads por vez
+  - a API de `/api/leads` também impunha teto máximo de `50`
+  - como a UI não tinha paginação nem `carregar mais`, o operador ficava preso ao primeiro recorte ordenado por `updated_at`
+- correção aplicada:
+  - `scope=operational` passou a aceitar páginas maiores para uso operacional
+  - a tela de campanhas ganhou `offset` + botão `Carregar mais contatos`
+  - a busca continua filtrando por tenant e respeitando `lgpd_optout`, mas deixa de esconder silenciosamente o restante da base
+- leitura prática:
+  - seleção personalizada volta a refletir muito melhor a base real do escritório
+  - quando houver muitos leads, a operação pode continuar carregando mais contatos sem depender de uma busca exata por nome/telefone
+
+## Atualizacao 2026-05-05 — Campanha por `status` passou a usar snapshot seguro, sem mexer no motor de disparo
+
+- necessidade operacional:
+  - permitir retomadas e abordagens dirigidas por `status` do lead, sem depender de montar lista manual ou clicar contato por contato
+  - essa lógica vale para os dois perfis operacionais do produto (`beneficios_previdenciarios` e `planejamento_previdenciario`)
+- desenho adotado:
+  - o novo modo `Por status` não filtra audiência “ao vivo” no worker
+  - na criação da campanha, o sistema resolve todos os leads elegíveis daquele status e grava um snapshot em `campanha_leads`
+  - o dispatch continua reaproveitando exatamente a mesma trilha já estável de `contatos específicos`
+- correção aplicada:
+  - UI de campanhas ganhou o terceiro modo `Por status`
+  - `/api/leads` agora aceita filtro opcional por `status` e pode devolver `count` para preview operacional
+  - `/api/campanhas` passou a aceitar `target_mode = status` + `lead_status`
+  - inserção em `campanha_leads` foi endurecida com chunking para evitar fragilidade em campanhas maiores
+- leitura prática:
+  - a campanha fica previsível: o público é congelado no momento da criação
+  - isso evita drift de audiência se o lead mudar de status depois
+  - o motor de envio, métricas, pausa/retomada e resposta por histórico real permanecem intactos
+
 ## Atualizacao 2026-04-30 — Campanhas ganharam `Pausar/Retomar` na UI e leitura de respostas ficou resiliente ao histórico real da inbox
 
 - achado operacional:

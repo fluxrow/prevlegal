@@ -1,27 +1,39 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Megaphone, Plus, Zap, CheckCircle2, XCircle, X, Trash2 } from "lucide-react";
 import CampanhasOnboardingTour from "@/components/campanhas-onboarding-tour";
-import { buildCampaignMessageTemplate } from "@/lib/campaign-message-templates";
+import {
+  buildCampaignMessageTemplate,
+  CAMPAIGN_AGENT_TEMPLATE_OPTIONS,
+  getCampaignTemplateAgentLabel,
+  type CampaignMessageTemplateLibraryItem,
+  normalizeCampaignTemplateAgentType,
+} from "@/lib/campaign-message-templates";
 import { CONTACT_TARGET_OPTIONS } from "@/lib/contact-target";
-import { getOperationProfileLabel } from "@/lib/operation-profile";
+import {
+  getOperationProfileLabel,
+  OPERATION_PROFILE_OPTIONS,
+} from "@/lib/operation-profile";
 
 type Toast = { id: number; type: "success" | "error"; message: string };
 
 function useToast() {
   const [toasts, setToasts] = useState<Toast[]>([]);
-  let counter = 0;
-  function show(type: Toast["type"], message: string) {
-    const id = ++counter;
+  const counterRef = useRef(0);
+
+  const dismiss = useCallback((id: number) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  }, []);
+
+  const show = useCallback((type: Toast["type"], message: string) => {
+    const id = ++counterRef.current;
     setToasts((prev) => [...prev, { id, type, message }]);
     setTimeout(
       () => setToasts((prev) => prev.filter((t) => t.id !== id)),
       4500,
     );
-  }
-  function dismiss(id: number) {
-    setToasts((prev) => prev.filter((t) => t.id !== id));
-  }
+  }, []);
+
   return { toasts, show, dismiss };
 }
 
@@ -125,6 +137,17 @@ interface LeadOption {
   status: string;
 }
 
+type CampaignMessageTemplateItem = CampaignMessageTemplateLibraryItem;
+
+type TemplateEditorForm = {
+  nome: string;
+  mensagem: string;
+  perfil_operacao: string;
+  agente_tipo: string;
+  contato_alvo_tipo: string;
+  ativo: boolean;
+};
+
 interface Agente {
   id: string;
   nome_interno: string;
@@ -149,13 +172,15 @@ function defaultOnlyVerifiedForProfile(operationProfile?: string | null) {
   return operationProfile !== "planejamento_previdenciario";
 }
 
-type CampaignTargetMode = "lista" | "selecionados";
+type CampaignTargetMode = "lista" | "selecionados" | "status";
+type LeadStatusFilter = "new" | "contacted" | "awaiting" | "scheduled" | "converted" | "lost";
 
 type CampaignForm = {
   nome: string;
   target_mode: CampaignTargetMode;
   lista_id: string;
   lead_ids: string[];
+  lead_status: string;
   whatsapp_number_id: string;
   agente_id: string;
   contato_alvo_tipo: string;
@@ -175,6 +200,16 @@ type NumericCampaignFormKey =
   | "pausa_entre_lotes_s"
   | "limite_diario";
 
+const LEAD_OPTIONS_PAGE_SIZE = 100;
+const LEAD_STATUS_OPTIONS: Array<{ value: LeadStatusFilter; label: string }> = [
+  { value: "new", label: "Novos" },
+  { value: "contacted", label: "Contatados" },
+  { value: "awaiting", label: "Aguardando" },
+  { value: "scheduled", label: "Agendados" },
+  { value: "converted", label: "Convertidos" },
+  { value: "lost", label: "Perdidos" },
+];
+
 const STATUS_LABEL: Record<
   string,
   { label: string; color: string; bg: string }
@@ -186,6 +221,66 @@ const STATUS_LABEL: Record<
   concluida: { label: "Concluída", color: "#4f7aff", bg: "#4f7aff20" },
   cancelada: { label: "Cancelada", color: "#ef4444", bg: "#ef444420" },
 };
+
+function getTemplateContextBadges(template: CampaignMessageTemplateItem) {
+  const badges: string[] = [];
+
+  if (template.perfil_operacao) {
+    badges.push(getOperationProfileLabel(template.perfil_operacao));
+  } else {
+    badges.push("Todos os perfis");
+  }
+
+  if (template.agente_tipo) {
+    badges.push(getCampaignTemplateAgentLabel(template.agente_tipo));
+  } else {
+    badges.push("Qualquer etapa");
+  }
+
+  if (template.contato_alvo_tipo) {
+    const contactOption = CONTACT_TARGET_OPTIONS.find(
+      (option) => option.value === template.contato_alvo_tipo,
+    );
+    badges.push(contactOption?.label || template.contato_alvo_tipo);
+  } else {
+    badges.push("Qualquer contato");
+  }
+
+  if (!template.ativo) {
+    badges.push("Inativo");
+  }
+
+  return badges;
+}
+
+function getTemplateContextScore(
+  template: CampaignMessageTemplateItem,
+  operationProfile: string | null,
+  agentType: string | null,
+  contactTargetType: string,
+) {
+  let score = template.ativo ? 100 : 0;
+
+  if (!operationProfile || !template.perfil_operacao) {
+    score += 1;
+  } else if (template.perfil_operacao === operationProfile) {
+    score += 4;
+  }
+
+  if (!agentType || !template.agente_tipo) {
+    score += 1;
+  } else if (template.agente_tipo === agentType) {
+    score += 3;
+  }
+
+  if (!contactTargetType || !template.contato_alvo_tipo) {
+    score += 1;
+  } else if (template.contato_alvo_tipo === contactTargetType) {
+    score += 2;
+  }
+
+  return score;
+}
 
 export default function CampanhasPage() {
   const { toasts, show: showToast, dismiss: dismissToast } = useToast();
@@ -208,11 +303,34 @@ export default function CampanhasPage() {
   const [leadOptions, setLeadOptions] = useState<LeadOption[]>([]);
   const [selectedLeadMap, setSelectedLeadMap] = useState<Record<string, LeadOption>>({});
   const [loadingLeadOptions, setLoadingLeadOptions] = useState(false);
+  const [leadOptionsOffset, setLeadOptionsOffset] = useState(0);
+  const [hasMoreLeadOptions, setHasMoreLeadOptions] = useState(false);
+  const [statusLeadCount, setStatusLeadCount] = useState<number | null>(null);
+  const [loadingStatusLeadCount, setLoadingStatusLeadCount] = useState(false);
+  const [showTemplateLibrary, setShowTemplateLibrary] = useState(false);
+  const [loadingTemplateLibrary, setLoadingTemplateLibrary] = useState(false);
+  const [systemTemplates, setSystemTemplates] = useState<CampaignMessageTemplateItem[]>([]);
+  const [customTemplates, setCustomTemplates] = useState<CampaignMessageTemplateItem[]>([]);
+  const [templateEditorOpen, setTemplateEditorOpen] = useState(false);
+  const [editingTemplateId, setEditingTemplateId] = useState<string | null>(null);
+  const [savingTemplate, setSavingTemplate] = useState(false);
+  const [deletingTemplateId, setDeletingTemplateId] = useState<string | null>(null);
+  const [templateLibraryFoundationMissing, setTemplateLibraryFoundationMissing] = useState(false);
+  const [templateLibraryFoundationMessage, setTemplateLibraryFoundationMessage] = useState("");
+  const [templateForm, setTemplateForm] = useState<TemplateEditorForm>({
+    nome: "",
+    mensagem: "",
+    perfil_operacao: "",
+    agente_tipo: "",
+    contato_alvo_tipo: "",
+    ativo: true,
+  });
   const [form, setForm] = useState<CampaignForm>({
     nome: "",
     target_mode: "lista",
     lista_id: "",
     lead_ids: [] as string[],
+    lead_status: "",
     whatsapp_number_id: "",
     agente_id: "",
     contato_alvo_tipo: "",
@@ -240,6 +358,7 @@ export default function CampanhasPage() {
 
   useEffect(() => {
     if (!showForm) return;
+    if (form.target_mode !== "selecionados") return;
 
     let cancelled = false;
 
@@ -248,7 +367,8 @@ export default function CampanhasPage() {
       try {
         const params = new URLSearchParams({
           scope: "operational",
-          limit: "50",
+          limit: String(LEAD_OPTIONS_PAGE_SIZE),
+          offset: String(leadOptionsOffset),
         });
         if (leadSearch.trim()) {
           params.set("q", leadSearch.trim());
@@ -258,7 +378,13 @@ export default function CampanhasPage() {
         const data = await res.json();
         if (!cancelled) {
           const leads = data.leads || [];
-          setLeadOptions(leads);
+          setLeadOptions((prev) => {
+            if (leadOptionsOffset === 0) return leads;
+
+            const seen = new Set(prev.map((lead: LeadOption) => lead.id));
+            return [...prev, ...leads.filter((lead: LeadOption) => !seen.has(lead.id))];
+          });
+          setHasMoreLeadOptions(Boolean(data.pagination?.has_more));
           setSelectedLeadMap((prev) => {
             const next = { ...prev };
             for (const lead of leads) next[lead.id] = lead;
@@ -275,7 +401,54 @@ export default function CampanhasPage() {
     return () => {
       cancelled = true;
     };
-  }, [showForm, leadSearch]);
+  }, [showForm, leadSearch, leadOptionsOffset, form.target_mode]);
+
+  useEffect(() => {
+    if (!showForm) return;
+    if (form.target_mode !== "selecionados") return;
+    setLeadOptionsOffset(0);
+    setLeadOptions([]);
+    setHasMoreLeadOptions(false);
+  }, [showForm, leadSearch, form.target_mode]);
+
+  useEffect(() => {
+    if (!showForm || form.target_mode !== "status" || !form.lead_status) {
+      setStatusLeadCount(null);
+      setLoadingStatusLeadCount(false);
+      return;
+    }
+
+    let cancelled = false;
+
+    async function fetchStatusLeadCount() {
+      setLoadingStatusLeadCount(true);
+      try {
+        const params = new URLSearchParams({
+          scope: "operational",
+          status: form.lead_status,
+          limit: "1",
+          include_count: "1",
+        });
+
+        const res = await fetch(`/api/leads?${params.toString()}`);
+        const data = await res.json();
+
+        if (!cancelled) {
+          setStatusLeadCount(typeof data.count === "number" ? data.count : null);
+        }
+      } finally {
+        if (!cancelled) {
+          setLoadingStatusLeadCount(false);
+        }
+      }
+    }
+
+    void fetchStatusLeadCount();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [showForm, form.target_mode, form.lead_status]);
 
   useEffect(() => {
     async function fetchConfigDisparo() {
@@ -297,6 +470,18 @@ export default function CampanhasPage() {
     fetchConfigDisparo();
   }, []);
 
+  const channelPadrao = whatsAppNumbers.find((number) => number.is_default);
+  const agentePadraoEscritorio =
+    agentes.find((ag) => ag.is_default) || agentes[0] || null;
+  const agenteSelecionadoNoFormulario =
+    agentes.find((ag) => ag.id === form.agente_id) ||
+    agentePadraoEscritorio ||
+    null;
+  const currentTemplateOperationProfile =
+    agenteSelecionadoNoFormulario?.perfil_operacao || null;
+  const currentTemplateAgentType =
+    normalizeCampaignTemplateAgentType(agenteSelecionadoNoFormulario?.tipo) || null;
+
   async function fetchAll() {
     setLoading(true);
     const [c, l, a, w] = await Promise.all([
@@ -314,6 +499,165 @@ export default function CampanhasPage() {
     setLoading(false);
   }
 
+  function buildTemplateEditorState(
+    overrides: Partial<TemplateEditorForm> = {},
+  ): TemplateEditorForm {
+    return {
+      nome: "",
+      mensagem: form.mensagem_template || "",
+      perfil_operacao: currentTemplateOperationProfile || "",
+      agente_tipo: currentTemplateAgentType || "",
+      contato_alvo_tipo: form.contato_alvo_tipo || "",
+      ativo: true,
+      ...overrides,
+    };
+  }
+
+  const fetchTemplateLibrary = useCallback(async () => {
+    setLoadingTemplateLibrary(true);
+    try {
+      const params = new URLSearchParams();
+
+      if (currentTemplateOperationProfile) {
+        params.set("operation_profile", currentTemplateOperationProfile);
+      }
+
+      if (form.contato_alvo_tipo) {
+        params.set("contato_alvo_tipo", form.contato_alvo_tipo);
+      }
+
+      const res = await fetch(`/api/campaign-message-templates?${params.toString()}`);
+      const data = await res.json();
+
+      if (!res.ok) {
+        showToast("error", data.error || "Não foi possível carregar os templates");
+        return;
+      }
+
+      setSystemTemplates(data.systemTemplates || []);
+      setCustomTemplates(data.templates || []);
+      setTemplateLibraryFoundationMissing(Boolean(data.foundationMissing));
+      setTemplateLibraryFoundationMessage(data.foundationMessage || "");
+    } finally {
+      setLoadingTemplateLibrary(false);
+    }
+  }, [currentTemplateOperationProfile, form.contato_alvo_tipo, showToast]);
+
+  function openTemplateLibrary() {
+    setShowTemplateLibrary(true);
+    setTemplateEditorOpen(false);
+    setEditingTemplateId(null);
+  }
+
+  function closeTemplateLibrary() {
+    setShowTemplateLibrary(false);
+    setTemplateEditorOpen(false);
+    setEditingTemplateId(null);
+  }
+
+  function startCreateTemplate() {
+    setEditingTemplateId(null);
+    setTemplateForm(buildTemplateEditorState());
+    setTemplateEditorOpen(true);
+  }
+
+  function startEditTemplate(template: CampaignMessageTemplateItem) {
+    setEditingTemplateId(template.id);
+    setTemplateForm(
+      buildTemplateEditorState({
+        nome: template.nome,
+        mensagem: template.mensagem,
+        perfil_operacao: template.perfil_operacao || "",
+        agente_tipo: template.agente_tipo || "",
+        contato_alvo_tipo: template.contato_alvo_tipo || "",
+        ativo: template.ativo,
+      }),
+    );
+    setTemplateEditorOpen(true);
+  }
+
+  function applyTemplate(template: CampaignMessageTemplateItem) {
+    setTemplateFoiEditado(true);
+    setForm((prev) => ({
+      ...prev,
+      mensagem_template: template.mensagem,
+    }));
+    closeTemplateLibrary();
+    showToast("success", `Template "${template.nome}" aplicado na campanha`);
+  }
+
+  async function saveTemplate() {
+    if (!templateForm.nome.trim() || !templateForm.mensagem.trim()) {
+      showToast("error", "Preencha nome e mensagem do template");
+      return;
+    }
+
+    setSavingTemplate(true);
+    try {
+      const payload = {
+        ...templateForm,
+        nome: templateForm.nome.trim(),
+        mensagem: templateForm.mensagem.trim(),
+      };
+      const url = editingTemplateId
+        ? `/api/campaign-message-templates/${editingTemplateId}`
+        : "/api/campaign-message-templates";
+      const method = editingTemplateId ? "PATCH" : "POST";
+
+      const res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        showToast("error", data.error || "Não foi possível salvar o template");
+        return;
+      }
+
+      showToast(
+        "success",
+        editingTemplateId ? "Template atualizado com sucesso" : "Template criado com sucesso",
+      );
+      setTemplateEditorOpen(false);
+      setEditingTemplateId(null);
+      await fetchTemplateLibrary();
+    } finally {
+      setSavingTemplate(false);
+    }
+  }
+
+  async function deleteTemplate(templateId: string) {
+    if (!window.confirm("Excluir este template de campanha?")) {
+      return;
+    }
+
+    setDeletingTemplateId(templateId);
+    try {
+      const res = await fetch(`/api/campaign-message-templates/${templateId}`, {
+        method: "DELETE",
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        showToast("error", data.error || "Não foi possível excluir o template");
+        return;
+      }
+
+      showToast("success", "Template excluído com sucesso");
+
+      if (editingTemplateId === templateId) {
+        setTemplateEditorOpen(false);
+        setEditingTemplateId(null);
+      }
+
+      await fetchTemplateLibrary();
+    } finally {
+      setDeletingTemplateId(null);
+    }
+  }
+
   async function criarCampanha() {
     setSaving(true);
     const res = await fetch("/api/campanhas", {
@@ -323,14 +667,22 @@ export default function CampanhasPage() {
     });
     if (res.ok) {
       setShowForm(false);
+      setShowTemplateLibrary(false);
+      setTemplateEditorOpen(false);
+      setEditingTemplateId(null);
       setLeadSearch("");
       setLeadOptions([]);
       setSelectedLeadMap({});
+      setSystemTemplates([]);
+      setCustomTemplates([]);
+      setTemplateLibraryFoundationMissing(false);
+      setTemplateLibraryFoundationMessage("");
       setForm({
         nome: "",
         target_mode: "lista",
         lista_id: "",
         lead_ids: [],
+        lead_status: "",
         whatsapp_number_id: "",
         agente_id: "",
         contato_alvo_tipo: "",
@@ -346,6 +698,14 @@ export default function CampanhasPage() {
       });
       setTemplateFoiEditado(false);
       setApenasVerificadosFoiEditado(false);
+      setTemplateForm({
+        nome: "",
+        mensagem: "",
+        perfil_operacao: "",
+        agente_tipo: "",
+        contato_alvo_tipo: "",
+        ativo: true,
+      });
       await fetchAll();
     }
     setSaving(false);
@@ -401,14 +761,55 @@ export default function CampanhasPage() {
     apenasVerificadosFoiEditado,
   ]);
 
-  const channelPadrao = whatsAppNumbers.find((number) => number.is_default);
-  const agentePadraoEscritorio =
-    agentes.find((ag) => ag.is_default) || agentes[0] || null;
+  useEffect(() => {
+    if (!showForm) {
+      setShowTemplateLibrary(false);
+      setTemplateEditorOpen(false);
+      setEditingTemplateId(null);
+    }
+  }, [showForm]);
+
+  useEffect(() => {
+    if (!showTemplateLibrary || templateEditorOpen) return;
+    void fetchTemplateLibrary();
+  }, [
+    showTemplateLibrary,
+    templateEditorOpen,
+    fetchTemplateLibrary,
+  ]);
+
   const selectedLeads = form.lead_ids
     .map((leadId) => selectedLeadMap[leadId])
     .filter(Boolean);
   const selectedLeadCount = form.lead_ids.length;
   const selectedLeadCountWithWhatsApp = selectedLeads.filter((lead) => Boolean(lead.telefone?.trim())).length;
+  const sortedCustomTemplates = useMemo(() => {
+    return [...customTemplates].sort((a, b) => {
+      const scoreA = getTemplateContextScore(
+        a,
+        currentTemplateOperationProfile,
+        currentTemplateAgentType,
+        form.contato_alvo_tipo,
+      );
+      const scoreB = getTemplateContextScore(
+        b,
+        currentTemplateOperationProfile,
+        currentTemplateAgentType,
+        form.contato_alvo_tipo,
+      );
+
+      if (scoreA !== scoreB) return scoreB - scoreA;
+
+      return String(b.updated_at || b.created_at || "").localeCompare(
+        String(a.updated_at || a.created_at || ""),
+      );
+    });
+  }, [
+    customTemplates,
+    currentTemplateOperationProfile,
+    currentTemplateAgentType,
+    form.contato_alvo_tipo,
+  ]);
 
   async function disparar(id: string) {
     setConfirmDisparo(null);
@@ -590,6 +991,630 @@ export default function CampanhasPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {showTemplateLibrary && (
+        <>
+          <div
+            onClick={closeTemplateLibrary}
+            style={{
+              position: "fixed",
+              inset: 0,
+              background: "rgba(0,0,0,0.65)",
+              backdropFilter: "blur(3px)",
+              zIndex: 9998,
+            }}
+          />
+          <div
+            style={{
+              position: "fixed",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              width: "min(920px, calc(100vw - 32px))",
+              maxHeight: "calc(100vh - 40px)",
+              overflowY: "auto",
+              background: "var(--bg-surface)",
+              border: "1px solid var(--border)",
+              borderRadius: "18px",
+              zIndex: 9999,
+              boxShadow: "0 30px 90px rgba(0,0,0,0.45)",
+            }}
+          >
+            <div
+              style={{
+                padding: "22px 24px",
+                borderBottom: "1px solid var(--border)",
+                display: "flex",
+                alignItems: "flex-start",
+                justifyContent: "space-between",
+                gap: "16px",
+              }}
+            >
+              <div>
+                <h3
+                  style={{
+                    margin: 0,
+                    fontFamily: "Syne, sans-serif",
+                    fontSize: "18px",
+                    color: "var(--text-primary)",
+                  }}
+                >
+                  {templateEditorOpen
+                    ? editingTemplateId
+                      ? "Editar template"
+                      : "Criar template"
+                    : "Templates de campanha"}
+                </h3>
+                <p
+                  style={{
+                    margin: "6px 0 0",
+                    fontSize: "12px",
+                    color: "var(--text-muted)",
+                    lineHeight: 1.6,
+                  }}
+                >
+                  {templateEditorOpen
+                    ? "Salve um modelo reutilizável sem mexer no motor de disparo. A campanha continua usando o texto final editável da tela anterior."
+                    : "Escolha um template pronto, aplique na mensagem atual e edite livremente antes de disparar."}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={closeTemplateLibrary}
+                style={{
+                  background: "transparent",
+                  border: "1px solid var(--border)",
+                  borderRadius: "10px",
+                  color: "var(--text-secondary)",
+                  width: "36px",
+                  height: "36px",
+                  cursor: "pointer",
+                }}
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {templateEditorOpen ? (
+              <div style={{ padding: "24px", display: "grid", gap: "16px" }}>
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1.2fr 1fr 1fr",
+                    gap: "12px",
+                  }}
+                >
+                  <div>
+                    <label
+                      style={{
+                        display: "block",
+                        marginBottom: "6px",
+                        fontSize: "12px",
+                        color: "var(--text-secondary)",
+                      }}
+                    >
+                      Nome do template *
+                    </label>
+                    <input
+                      value={templateForm.nome}
+                      onChange={(e) =>
+                        setTemplateForm((prev) => ({ ...prev, nome: e.target.value }))
+                      }
+                      placeholder="Ex: Retomada quente - aguardando"
+                      style={{
+                        width: "100%",
+                        padding: "10px 12px",
+                        borderRadius: "10px",
+                        border: "1px solid var(--border)",
+                        background: "var(--bg-card)",
+                        color: "var(--text-primary)",
+                        fontSize: "13px",
+                        boxSizing: "border-box",
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <label
+                      style={{
+                        display: "block",
+                        marginBottom: "6px",
+                        fontSize: "12px",
+                        color: "var(--text-secondary)",
+                      }}
+                    >
+                      Perfil operacional
+                    </label>
+                    <select
+                      value={templateForm.perfil_operacao}
+                      onChange={(e) =>
+                        setTemplateForm((prev) => ({
+                          ...prev,
+                          perfil_operacao: e.target.value,
+                        }))
+                      }
+                      style={{
+                        width: "100%",
+                        padding: "10px 12px",
+                        borderRadius: "10px",
+                        border: "1px solid var(--border)",
+                        background: "var(--bg-card)",
+                        color: "var(--text-primary)",
+                        fontSize: "13px",
+                      }}
+                    >
+                      <option value="">Todos os perfis</option>
+                      {OPERATION_PROFILE_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.shortLabel}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label
+                      style={{
+                        display: "block",
+                        marginBottom: "6px",
+                        fontSize: "12px",
+                        color: "var(--text-secondary)",
+                      }}
+                    >
+                      Etapa sugerida
+                    </label>
+                    <select
+                      value={templateForm.agente_tipo}
+                      onChange={(e) =>
+                        setTemplateForm((prev) => ({
+                          ...prev,
+                          agente_tipo: e.target.value,
+                        }))
+                      }
+                      style={{
+                        width: "100%",
+                        padding: "10px 12px",
+                        borderRadius: "10px",
+                        border: "1px solid var(--border)",
+                        background: "var(--bg-card)",
+                        color: "var(--text-primary)",
+                        fontSize: "13px",
+                      }}
+                    >
+                      <option value="">Qualquer etapa</option>
+                      {CAMPAIGN_AGENT_TEMPLATE_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr auto",
+                    gap: "12px",
+                    alignItems: "end",
+                  }}
+                >
+                  <div>
+                    <label
+                      style={{
+                        display: "block",
+                        marginBottom: "6px",
+                        fontSize: "12px",
+                        color: "var(--text-secondary)",
+                      }}
+                    >
+                      Tipo de contato
+                    </label>
+                    <select
+                      value={templateForm.contato_alvo_tipo}
+                      onChange={(e) =>
+                        setTemplateForm((prev) => ({
+                          ...prev,
+                          contato_alvo_tipo: e.target.value,
+                        }))
+                      }
+                      style={{
+                        width: "100%",
+                        padding: "10px 12px",
+                        borderRadius: "10px",
+                        border: "1px solid var(--border)",
+                        background: "var(--bg-card)",
+                        color: "var(--text-primary)",
+                        fontSize: "13px",
+                      }}
+                    >
+                      <option value="">Qualquer contato</option>
+                      {CONTACT_TARGET_OPTIONS.filter((option) => option.value).map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <label
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      fontSize: "13px",
+                      color: "var(--text-secondary)",
+                      paddingBottom: "10px",
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={templateForm.ativo}
+                      onChange={(e) =>
+                        setTemplateForm((prev) => ({ ...prev, ativo: e.target.checked }))
+                      }
+                    />
+                    Template ativo
+                  </label>
+                </div>
+
+                <div>
+                  <label
+                    style={{
+                      display: "block",
+                      marginBottom: "6px",
+                      fontSize: "12px",
+                      color: "var(--text-secondary)",
+                    }}
+                  >
+                    Mensagem *
+                  </label>
+                  <textarea
+                    value={templateForm.mensagem}
+                    onChange={(e) =>
+                      setTemplateForm((prev) => ({
+                        ...prev,
+                        mensagem: e.target.value,
+                      }))
+                    }
+                    rows={8}
+                    style={{
+                      width: "100%",
+                      padding: "12px 14px",
+                      borderRadius: "12px",
+                      border: "1px solid var(--border)",
+                      background: "var(--bg-card)",
+                      color: "var(--text-primary)",
+                      fontSize: "13px",
+                      resize: "vertical",
+                      boxSizing: "border-box",
+                    }}
+                  />
+                </div>
+
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    gap: "12px",
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTemplateEditorOpen(false);
+                      setEditingTemplateId(null);
+                    }}
+                    style={{
+                      padding: "9px 16px",
+                      borderRadius: "10px",
+                      border: "1px solid var(--border)",
+                      background: "transparent",
+                      color: "var(--text-secondary)",
+                      cursor: "pointer",
+                    }}
+                  >
+                    Voltar para biblioteca
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void saveTemplate()}
+                    disabled={savingTemplate}
+                    style={{
+                      padding: "10px 18px",
+                      borderRadius: "10px",
+                      border: "none",
+                      background: "var(--accent)",
+                      color: "#fff",
+                      fontSize: "13px",
+                      fontWeight: "600",
+                      cursor: savingTemplate ? "not-allowed" : "pointer",
+                      opacity: savingTemplate ? 0.7 : 1,
+                    }}
+                  >
+                    {savingTemplate ? "Salvando..." : editingTemplateId ? "Salvar alterações" : "Criar template"}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div style={{ padding: "24px", display: "grid", gap: "22px" }}>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: "12px",
+                    padding: "14px 16px",
+                    borderRadius: "12px",
+                    background: "rgba(79,122,255,0.08)",
+                    border: "1px solid rgba(79,122,255,0.18)",
+                  }}
+                >
+                  <div style={{ fontSize: "12px", color: "var(--text-secondary)", lineHeight: 1.6 }}>
+                    Contexto atual da sugestão:{" "}
+                    <strong>
+                      {getOperationProfileLabel(currentTemplateOperationProfile)}
+                    </strong>
+                    {form.contato_alvo_tipo
+                      ? ` · ${CONTACT_TARGET_OPTIONS.find((option) => option.value === form.contato_alvo_tipo)?.label || form.contato_alvo_tipo}`
+                      : ""}
+                    {currentTemplateAgentType
+                      ? ` · ${getCampaignTemplateAgentLabel(currentTemplateAgentType)}`
+                      : ""}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={startCreateTemplate}
+                    style={{
+                      padding: "9px 14px",
+                      borderRadius: "10px",
+                      border: "1px solid var(--border)",
+                      background: "var(--bg-card)",
+                      color: "var(--text-primary)",
+                      fontSize: "12px",
+                      fontWeight: "600",
+                      cursor: "pointer",
+                      flexShrink: 0,
+                    }}
+                  >
+                    Criar template
+                  </button>
+                </div>
+
+                {templateLibraryFoundationMissing && (
+                  <div
+                    style={{
+                      padding: "12px 14px",
+                      borderRadius: "12px",
+                      background: "rgba(245, 200, 66, 0.08)",
+                      border: "1px solid rgba(245, 200, 66, 0.18)",
+                      fontSize: "12px",
+                      color: "var(--text-secondary)",
+                      lineHeight: 1.6,
+                    }}
+                  >
+                    {templateLibraryFoundationMessage || "A base de templates customizados ainda não foi aplicada neste banco. Você já pode usar os templates do sistema; os templates do escritório entram assim que a migration for aplicada."}
+                  </div>
+                )}
+
+                <div>
+                  <h4
+                    style={{
+                      margin: "0 0 10px",
+                      fontSize: "13px",
+                      color: "var(--text-primary)",
+                    }}
+                  >
+                    Templates sugeridos do sistema
+                  </h4>
+                  <div style={{ display: "grid", gap: "12px" }}>
+                    {loadingTemplateLibrary ? (
+                      <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>
+                        Carregando templates...
+                      </div>
+                    ) : (
+                      systemTemplates.map((template) => (
+                        <div
+                          key={template.id}
+                          style={{
+                            border: "1px solid var(--border)",
+                            borderRadius: "12px",
+                            background: "var(--bg-card)",
+                            padding: "14px 16px",
+                          }}
+                        >
+                          <div
+                            style={{
+                              display: "flex",
+                              alignItems: "flex-start",
+                              justifyContent: "space-between",
+                              gap: "12px",
+                              marginBottom: "10px",
+                            }}
+                          >
+                            <div>
+                              <div style={{ fontSize: "14px", fontWeight: "700", color: "var(--text-primary)" }}>
+                                {template.nome}
+                              </div>
+                              <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginTop: "6px" }}>
+                                {getTemplateContextBadges(template).map((badge) => (
+                                  <span
+                                    key={badge}
+                                    style={{
+                                      padding: "2px 8px",
+                                      borderRadius: "999px",
+                                      background: "var(--bg-hover)",
+                                      border: "1px solid var(--border)",
+                                      fontSize: "11px",
+                                      color: "var(--text-muted)",
+                                    }}
+                                  >
+                                    {badge}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => applyTemplate(template)}
+                              style={{
+                                padding: "8px 12px",
+                                borderRadius: "9px",
+                                border: "1px solid var(--border)",
+                                background: "var(--bg-surface)",
+                                color: "var(--text-primary)",
+                                fontSize: "12px",
+                                fontWeight: "600",
+                                cursor: "pointer",
+                                flexShrink: 0,
+                              }}
+                            >
+                              Usar template
+                            </button>
+                          </div>
+                          <div style={{ fontSize: "12px", color: "var(--text-secondary)", lineHeight: 1.7, whiteSpace: "pre-wrap" }}>
+                            {template.mensagem}
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+
+                <div>
+                  <h4
+                    style={{
+                      margin: "0 0 10px",
+                      fontSize: "13px",
+                      color: "var(--text-primary)",
+                    }}
+                  >
+                    Templates do escritório
+                  </h4>
+                  <div style={{ display: "grid", gap: "12px" }}>
+                    {loadingTemplateLibrary ? (
+                      <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>
+                        Carregando templates...
+                      </div>
+                    ) : sortedCustomTemplates.length === 0 ? (
+                      <div
+                        style={{
+                          border: "1px dashed var(--border)",
+                          borderRadius: "12px",
+                          padding: "18px",
+                          fontSize: "12px",
+                          color: "var(--text-muted)",
+                        }}
+                      >
+                        Nenhum template do escritório cadastrado ainda. Você pode criar o primeiro a partir da mensagem atual da campanha.
+                      </div>
+                    ) : (
+                      sortedCustomTemplates.map((template) => {
+                        const isDeletingTemplate = deletingTemplateId === template.id;
+                        return (
+                          <div
+                            key={template.id}
+                            style={{
+                              border: "1px solid var(--border)",
+                              borderRadius: "12px",
+                              background: "var(--bg-card)",
+                              padding: "14px 16px",
+                            }}
+                          >
+                            <div
+                              style={{
+                                display: "flex",
+                                alignItems: "flex-start",
+                                justifyContent: "space-between",
+                                gap: "12px",
+                                marginBottom: "10px",
+                              }}
+                            >
+                              <div>
+                                <div style={{ fontSize: "14px", fontWeight: "700", color: "var(--text-primary)" }}>
+                                  {template.nome}
+                                </div>
+                                <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginTop: "6px" }}>
+                                  {getTemplateContextBadges(template).map((badge) => (
+                                    <span
+                                      key={badge}
+                                      style={{
+                                        padding: "2px 8px",
+                                        borderRadius: "999px",
+                                        background: "var(--bg-hover)",
+                                        border: "1px solid var(--border)",
+                                        fontSize: "11px",
+                                        color: "var(--text-muted)",
+                                      }}
+                                    >
+                                      {badge}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                              <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", justifyContent: "flex-end" }}>
+                                <button
+                                  type="button"
+                                  onClick={() => applyTemplate(template)}
+                                  style={{
+                                    padding: "8px 12px",
+                                    borderRadius: "9px",
+                                    border: "1px solid var(--border)",
+                                    background: "var(--bg-surface)",
+                                    color: "var(--text-primary)",
+                                    fontSize: "12px",
+                                    fontWeight: "600",
+                                    cursor: "pointer",
+                                  }}
+                                >
+                                  Usar
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => startEditTemplate(template)}
+                                  style={{
+                                    padding: "8px 12px",
+                                    borderRadius: "9px",
+                                    border: "1px solid var(--border)",
+                                    background: "transparent",
+                                    color: "var(--text-secondary)",
+                                    fontSize: "12px",
+                                    cursor: "pointer",
+                                  }}
+                                >
+                                  Editar
+                                </button>
+                                <button
+                                  type="button"
+                                  disabled={isDeletingTemplate}
+                                  onClick={() => void deleteTemplate(template.id)}
+                                  style={{
+                                    padding: "8px 12px",
+                                    borderRadius: "9px",
+                                    border: "1px solid rgba(239,68,68,0.22)",
+                                    background: "rgba(239,68,68,0.08)",
+                                    color: "#ef4444",
+                                    fontSize: "12px",
+                                    cursor: isDeletingTemplate ? "not-allowed" : "pointer",
+                                    opacity: isDeletingTemplate ? 0.7 : 1,
+                                  }}
+                                >
+                                  {isDeletingTemplate ? "Excluindo..." : "Excluir"}
+                                </button>
+                              </div>
+                            </div>
+                            <div style={{ fontSize: "12px", color: "var(--text-secondary)", lineHeight: 1.7, whiteSpace: "pre-wrap" }}>
+                              {template.mensagem}
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </>
       )}
 
       {/* Header */}
@@ -850,6 +1875,7 @@ export default function CampanhasPage() {
                     {[
                       { id: "lista", label: "Lista inteira" },
                       { id: "selecionados", label: "Contatos específicos" },
+                      { id: "status", label: "Por status" },
                     ].map((mode) => {
                       const active = form.target_mode === mode.id;
                       return (
@@ -859,8 +1885,7 @@ export default function CampanhasPage() {
                           onClick={() =>
                             setForm((prev) => ({
                               ...prev,
-                              target_mode: mode.id as "lista" | "selecionados",
-                              ...(mode.id === "lista" ? { lead_ids: prev.lead_ids } : { lista_id: prev.lista_id }),
+                              target_mode: mode.id as CampaignTargetMode,
                             }))
                           }
                           style={{
@@ -902,7 +1927,7 @@ export default function CampanhasPage() {
                       </option>
                     ))}
                   </select>
-                  ) : (
+                  ) : form.target_mode === "selecionados" ? (
                     <div
                       style={{
                         border: "1px solid var(--border)",
@@ -939,6 +1964,16 @@ export default function CampanhasPage() {
                       >
                         <span>{selectedLeadCount} contato(s) selecionado(s)</span>
                         <span>{selectedLeadCountWithWhatsApp} com telefone</span>
+                      </div>
+                      <div
+                        style={{
+                          marginBottom: "8px",
+                          fontSize: "11px",
+                          color: "var(--text-muted)",
+                        }}
+                      >
+                        {leadOptions.length} contato(s) carregado(s)
+                        {hasMoreLeadOptions ? " nesta busca" : ""}
                       </div>
                       <div
                         style={{
@@ -985,6 +2020,72 @@ export default function CampanhasPage() {
                           })
                         )}
                       </div>
+                      {hasMoreLeadOptions && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setLeadOptionsOffset((prev) => prev + LEAD_OPTIONS_PAGE_SIZE)
+                          }
+                          disabled={loadingLeadOptions}
+                          style={{
+                            width: "100%",
+                            marginTop: "10px",
+                            padding: "8px 12px",
+                            borderRadius: "8px",
+                            border: "1px solid var(--border)",
+                            background: "var(--bg-hover)",
+                            color: "var(--text-secondary)",
+                            fontSize: "12px",
+                            cursor: loadingLeadOptions ? "not-allowed" : "pointer",
+                          }}
+                        >
+                          {loadingLeadOptions ? "Carregando..." : "Carregar mais contatos"}
+                        </button>
+                      )}
+                    </div>
+                  ) : (
+                    <div
+                      style={{
+                        border: "1px solid var(--border)",
+                        borderRadius: "12px",
+                        background: "var(--bg-card)",
+                        padding: "12px",
+                        display: "grid",
+                        gap: "10px",
+                      }}
+                    >
+                      <select
+                        value={form.lead_status}
+                        onChange={(e) =>
+                          setForm((prev) => ({ ...prev, lead_status: e.target.value }))
+                        }
+                        style={{
+                          width: "100%",
+                          padding: "8px 12px",
+                          borderRadius: "8px",
+                          border: "1px solid var(--border)",
+                          background: "var(--bg-hover)",
+                          color: "var(--text-primary)",
+                          fontSize: "13px",
+                        }}
+                      >
+                        <option value="">Selecionar status...</option>
+                        {LEAD_STATUS_OPTIONS.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                      <div style={{ fontSize: "12px", color: "var(--text-muted)", lineHeight: 1.6 }}>
+                        A campanha congela os leads com este status no momento da criação, usando a mesma base segura de snapshot da campanha personalizada.
+                      </div>
+                      {form.lead_status && (
+                        <div style={{ fontSize: "12px", color: "var(--text-secondary)" }}>
+                          {loadingStatusLeadCount
+                            ? "Contando leads elegíveis..."
+                            : `${statusLeadCount ?? 0} lead(s) elegível(is) neste status`}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -1116,17 +2217,43 @@ export default function CampanhasPage() {
               </div>
 
               <div style={{ marginBottom: "16px" }}>
-                <label
+                <div
                   style={{
-                    fontSize: "12px",
-                    color: "var(--text-secondary)",
-                    display: "block",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: "12px",
                     marginBottom: "6px",
                   }}
                 >
-                  Mensagem template * — use {"{nome}"}, {"{nb}"}, {"{banco}"},{" "}
-                  {"{valor}"}, {"{ganho}"}
-                </label>
+                  <label
+                    style={{
+                      fontSize: "12px",
+                      color: "var(--text-secondary)",
+                      display: "block",
+                    }}
+                  >
+                    Mensagem template * — use {"{nome}"}, {"{nb}"}, {"{banco}"},{" "}
+                    {"{valor}"}, {"{ganho}"}
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => void openTemplateLibrary()}
+                    style={{
+                      padding: "7px 12px",
+                      borderRadius: "999px",
+                      border: "1px solid var(--border)",
+                      background: "var(--bg-card)",
+                      color: "var(--text-primary)",
+                      fontSize: "12px",
+                      fontWeight: "600",
+                      cursor: "pointer",
+                      flexShrink: 0,
+                    }}
+                  >
+                    Templates
+                  </button>
+                </div>
                 <textarea
                   value={form.mensagem_template}
                   onChange={(e) => {
@@ -1158,6 +2285,15 @@ export default function CampanhasPage() {
                   }}
                 >
                   Quando você escolhe um agente, o sistema sugere uma mensagem inicial alinhada ao tipo de abordagem dele. Você pode editar livremente antes de salvar.
+                </div>
+                <div
+                  style={{
+                    marginTop: "6px",
+                    fontSize: "11px",
+                    color: "var(--text-muted)",
+                  }}
+                >
+                  A biblioteca de templates acelera o preenchimento, mas o texto final da campanha continua sendo este campo editável.
                 </div>
               </div>
 
@@ -1300,7 +2436,13 @@ export default function CampanhasPage() {
                   disabled={
                     saving ||
                     !form.nome ||
-                    (form.target_mode === "lista" ? !form.lista_id : form.lead_ids.length === 0) ||
+                    (
+                      form.target_mode === "lista"
+                        ? !form.lista_id
+                        : form.target_mode === "selecionados"
+                          ? form.lead_ids.length === 0
+                          : !form.lead_status || (!loadingStatusLeadCount && statusLeadCount === 0)
+                    ) ||
                     !form.mensagem_template
                   }
                   style={{
