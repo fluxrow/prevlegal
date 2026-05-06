@@ -117,6 +117,8 @@ interface Campanha {
   total_respondidos: number;
   mensagem_template: string;
   created_at: string;
+  agendado_para?: string | null;
+  iniciado_em?: string | null;
   listas?: { nome: string };
   agentes?: { id: string; nome_interno: string; nome_publico: string } | null;
   agente_id?: string | null;
@@ -181,6 +183,7 @@ type CampaignForm = {
   lista_id: string;
   lead_ids: string[];
   lead_status: string;
+  agendado_para: string;
   whatsapp_number_id: string;
   agente_id: string;
   contato_alvo_tipo: string;
@@ -201,6 +204,33 @@ type NumericCampaignFormKey =
   | "limite_diario";
 
 const LEAD_OPTIONS_PAGE_SIZE = 100;
+
+function toDateTimeLocalValue(value?: string | null) {
+  if (!value) return "";
+
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return "";
+
+  const timezoneOffsetMs = parsed.getTimezoneOffset() * 60_000;
+  return new Date(parsed.getTime() - timezoneOffsetMs).toISOString().slice(0, 16);
+}
+
+function toIsoDateTime(value: string) {
+  if (!value.trim()) return null;
+
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return null;
+
+  return parsed.toISOString();
+}
+
+function getMinScheduleInputValue() {
+  const now = new Date();
+  now.setSeconds(0, 0);
+  now.setMinutes(now.getMinutes() + 1);
+  return toDateTimeLocalValue(now.toISOString());
+}
+
 const LEAD_STATUS_OPTIONS: Array<{ value: LeadStatusFilter; label: string }> = [
   { value: "new", label: "Novos" },
   { value: "contacted", label: "Contatados" },
@@ -215,6 +245,7 @@ const STATUS_LABEL: Record<
   { label: string; color: string; bg: string }
 > = {
   rascunho: { label: "Rascunho", color: "#94a3b8", bg: "#94a3b820" },
+  agendada: { label: "Agendada", color: "#8b5cf6", bg: "#8b5cf620" },
   ativa: { label: "Ativa", color: "#22c55e", bg: "#22c55e20" },
   pausada: { label: "Pausada", color: "#f59e0b", bg: "#f59e0b20" },
   encerrada: { label: "Encerrada", color: "#4f7aff", bg: "#4f7aff20" },
@@ -331,6 +362,7 @@ export default function CampanhasPage() {
     lista_id: "",
     lead_ids: [] as string[],
     lead_status: "",
+    agendado_para: "",
     whatsapp_number_id: "",
     agente_id: "",
     contato_alvo_tipo: "",
@@ -471,6 +503,7 @@ export default function CampanhasPage() {
   }, []);
 
   const channelPadrao = whatsAppNumbers.find((number) => number.is_default);
+  const minScheduleInputValue = getMinScheduleInputValue();
   const agentePadraoEscritorio =
     agentes.find((ag) => ag.is_default) || agentes[0] || null;
   const agenteSelecionadoNoFormulario =
@@ -660,11 +693,24 @@ export default function CampanhasPage() {
 
   async function criarCampanha() {
     setSaving(true);
+    const payload = {
+      ...form,
+      agendado_para: form.agendado_para ? toIsoDateTime(form.agendado_para) : null,
+    };
+
     const res = await fetch("/api/campanhas", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
+      body: JSON.stringify(payload),
     });
+    const data = await res.json();
+
+    if (!res.ok) {
+      showToast("error", data.error || "Não foi possível criar a campanha");
+      setSaving(false);
+      return;
+    }
+
     if (res.ok) {
       setShowForm(false);
       setShowTemplateLibrary(false);
@@ -683,6 +729,7 @@ export default function CampanhasPage() {
         lista_id: "",
         lead_ids: [],
         lead_status: "",
+        agendado_para: "",
         whatsapp_number_id: "",
         agente_id: "",
         contato_alvo_tipo: "",
@@ -706,6 +753,12 @@ export default function CampanhasPage() {
         contato_alvo_tipo: "",
         ativo: true,
       });
+      showToast(
+        "success",
+        data.campanha?.status === "agendada"
+          ? "Campanha agendada com sucesso"
+          : "Campanha criada com sucesso",
+      );
       await fetchAll();
     }
     setSaving(false);
@@ -821,7 +874,7 @@ export default function CampanhasPage() {
     if (data.success)
       showToast(
         "success",
-        `Disparo concluído: ${data.enviados} enviados, ${data.falhos} falhos`,
+        data.message || "Campanha iniciada com sucesso",
       );
     else showToast("error", data.error || "Erro ao disparar campanha");
     setDisparando(null);
@@ -946,7 +999,7 @@ export default function CampanhasPage() {
                 marginBottom: "24px",
               }}
             >
-              O disparo iniciará imediatamente para todos os leads da lista.
+              O disparo iniciará imediatamente para os leads elegíveis desta campanha.
               Esta ação não pode ser desfeita.
             </p>
             <div
@@ -2216,6 +2269,116 @@ export default function CampanhasPage() {
                 </select>
               </div>
 
+              <div
+                style={{
+                  marginBottom: "16px",
+                  padding: "14px",
+                  borderRadius: "12px",
+                  border: "1px solid var(--border)",
+                  background: "var(--bg-card)",
+                }}
+              >
+                <label
+                  style={{
+                    fontSize: "12px",
+                    color: "var(--text-secondary)",
+                    display: "block",
+                    marginBottom: "8px",
+                  }}
+                >
+                  Início da campanha
+                </label>
+                <div
+                  style={{
+                    display: "flex",
+                    gap: "8px",
+                    marginBottom: form.agendado_para ? "10px" : 0,
+                    flexWrap: "wrap",
+                  }}
+                >
+                  {[
+                    { id: "agora", label: "Salvar e disparar depois" },
+                    { id: "agendar", label: "Agendar disparo" },
+                  ].map((mode) => {
+                    const active =
+                      mode.id === "agendar"
+                        ? Boolean(form.agendado_para)
+                        : !form.agendado_para;
+
+                    return (
+                      <button
+                        key={mode.id}
+                        type="button"
+                        onClick={() =>
+                          setForm((prev) => ({
+                            ...prev,
+                            agendado_para:
+                              mode.id === "agendar"
+                                ? prev.agendado_para || minScheduleInputValue
+                                : "",
+                          }))
+                        }
+                        style={{
+                          padding: "8px 12px",
+                          borderRadius: "999px",
+                          border: active ? "1px solid var(--accent)" : "1px solid var(--border)",
+                          background: active ? "var(--accent-glow)" : "var(--bg-hover)",
+                          color: active ? "var(--accent)" : "var(--text-secondary)",
+                          fontSize: "12px",
+                          fontWeight: "600",
+                          cursor: "pointer",
+                        }}
+                      >
+                        {mode.label}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {form.agendado_para ? (
+                  <>
+                    <input
+                      type="datetime-local"
+                      value={form.agendado_para}
+                      min={minScheduleInputValue}
+                      onChange={(e) =>
+                        setForm((prev) => ({ ...prev, agendado_para: e.target.value }))
+                      }
+                      style={{
+                        width: "100%",
+                        padding: "8px 12px",
+                        borderRadius: "8px",
+                        border: "1px solid var(--border)",
+                        background: "var(--bg-hover)",
+                        color: "var(--text-primary)",
+                        fontSize: "13px",
+                        boxSizing: "border-box",
+                      }}
+                    />
+                    <div
+                      style={{
+                        marginTop: "8px",
+                        fontSize: "12px",
+                        color: "var(--text-muted)",
+                        lineHeight: 1.6,
+                      }}
+                    >
+                      A campanha fica com status <strong style={{ color: "var(--text-primary)" }}>Agendada</strong> e o worker inicia o primeiro envio automaticamente quando chegar a hora.
+                    </div>
+                  </>
+                ) : (
+                  <div
+                    style={{
+                      fontSize: "12px",
+                      color: "var(--text-muted)",
+                      lineHeight: 1.6,
+                    }}
+                  >
+                    A campanha nasce em <strong style={{ color: "var(--text-primary)" }}>Rascunho</strong>. Você revisa e dispara manualmente quando quiser.
+                  </div>
+                )}
+              </div>
+
               <div style={{ marginBottom: "16px" }}>
                 <div
                   style={{
@@ -2443,6 +2606,7 @@ export default function CampanhasPage() {
                           ? form.lead_ids.length === 0
                           : !form.lead_status || (!loadingStatusLeadCount && statusLeadCount === 0)
                     ) ||
+                    (Boolean(form.agendado_para) && !toIsoDateTime(form.agendado_para)) ||
                     !form.mensagem_template
                   }
                   style={{
@@ -2457,7 +2621,11 @@ export default function CampanhasPage() {
                     opacity: saving ? 0.6 : 1,
                   }}
                 >
-                  {saving ? "Salvando..." : "Criar campanha"}
+                  {saving
+                    ? "Salvando..."
+                    : form.agendado_para
+                      ? "Agendar campanha"
+                      : "Criar campanha"}
                 </button>
                 <button
                   onClick={() => setShowForm(false)}
@@ -2569,6 +2737,9 @@ export default function CampanhasPage() {
                         {c.listas?.nome} ·{" "}
                         {c.total_leads.toLocaleString("pt-BR")} leads · criada
                         em {new Date(c.created_at).toLocaleDateString("pt-BR")}
+                        {c.agendado_para
+                          ? ` · ${c.status === "agendada" ? "agendada" : "próxima execução"} em ${new Date(c.agendado_para).toLocaleString("pt-BR")}`
+                          : ""}
                       </span>
                     </div>
                     <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
@@ -2597,7 +2768,7 @@ export default function CampanhasPage() {
                           {isAlterandoStatus ? "Pausando..." : "Pausar"}
                         </button>
                       )}
-                      {["rascunho", "pausada"].includes(c.status) && (
+                      {["rascunho", "pausada", "agendada"].includes(c.status) && (
                         <button
                           onClick={() =>
                             c.status === "pausada"
@@ -2636,6 +2807,10 @@ export default function CampanhasPage() {
                             ? isAlterandoStatus
                               ? "Retomando..."
                               : "Retomar"
+                            : c.status === "agendada"
+                              ? isDisparando
+                                ? "Iniciando..."
+                                : "Disparar agora"
                             : isDisparando
                               ? "Disparando..."
                               : "Disparar agora"}

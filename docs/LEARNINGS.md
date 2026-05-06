@@ -5,6 +5,22 @@ Mestra: [[MASTER_PREV_LEGAL]]
 > Erros encontrados, causas e correções aplicadas.
 > Atualizado a cada sessão.
 
+## Atualização 2026-05-06 — Agendamento seguro de campanha pede estado explícito `agendada`, não `ativa` antecipada
+
+- Problema de produto:
+  - o escritório queria preparar o disparo com antecedência, mas sem fazer a campanha parecer “rodando” antes do primeiro envio real
+- Risco evitado:
+  - reutilizar `status = ativa` com `agendado_para` futuro como única semântica de agendamento
+  - isso preservaria o worker, mas confundiria a leitura operacional e abriria margem para card “ativa” sem nenhum disparo ainda
+- Correção:
+  - adicionar `agendada` ao enum `campanha_status`
+  - criar a campanha futura já nesse estado
+  - deixar o worker promover `agendada -> ativa` apenas quando o horário chegar
+  - manter o dispatch exatamente como está, reaproveitando só a fundação de `agendado_para`
+- Regra prática:
+  - quando o motor já está estável, o jeito mais seguro de adicionar agendamento é mexer na semântica de início, não na lógica de envio
+  - `agendada` precisa ser um estado operacional visível; senão o usuário vê “ativa” e conclui que a campanha já começou quando ainda não começou
+
 ## Atualização 2026-05-05 — Template de campanha precisa ser biblioteca de produtividade, não dependência do runtime de envio
 
 - Problema de produto:

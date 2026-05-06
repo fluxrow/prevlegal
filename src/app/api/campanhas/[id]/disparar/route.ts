@@ -31,6 +31,7 @@ type CampaignRow = {
   total_enviados?: number | null
   total_falhos?: number | null
   total_contatados?: number | null
+  agendado_para?: string | null
 }
 
 function getErrorMessage(error: unknown) {
@@ -74,7 +75,7 @@ export async function POST(
       return NextResponse.json({ error: 'Campanha não encontrada' }, { status: 404 })
     }
 
-    if (!['rascunho', 'pausada', 'ativa'].includes(campanha.status)) {
+    if (!['rascunho', 'pausada', 'ativa', 'agendada'].includes(campanha.status)) {
       return NextResponse.json(
         { error: `Campanha já está ${campanha.status}` },
         { status: 400 },
@@ -91,7 +92,10 @@ export async function POST(
         .from('campanhas')
         .update({
           status: 'ativa',
-          iniciado_em: campaign.status === 'rascunho' ? now : campaign.iniciado_em || now,
+          iniciado_em:
+            campaign.status === 'rascunho' || campaign.status === 'agendada'
+              ? now
+              : campaign.iniciado_em || now,
           agendado_para: now,
           updated_at: now,
         })
@@ -102,6 +106,11 @@ export async function POST(
     const activeCampaign: CampaignRow = {
       ...campaign,
       status: 'ativa',
+      iniciado_em:
+        campaign.status === 'rascunho' || campaign.status === 'agendada'
+          ? now
+          : campaign.iniciado_em || now,
+      agendado_para: now,
     }
 
     const firstStep = await processCampaignDispatchStep(dispatchClient, activeCampaign)

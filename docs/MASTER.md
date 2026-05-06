@@ -87,6 +87,10 @@ Estado confirmado em 27/04/2026:
   - mais linguagem de estrutura de análise e variáveis
 - campanhas de `planejamento_previdenciario` agora nascem com `apenas_verificados = false` por padrão na UI e no fallback da API
 - campanhas de `beneficios_previdenciarios` continuam com `apenas_verificados = true` por padrão
+- campanhas agora podem ser criadas com início agendado:
+  - sem horário futuro, continuam em `rascunho`
+  - com horário futuro, nascem em `agendada`
+  - o worker promove para `ativa` só quando chega a hora do primeiro envio
 - a esteira de campanhas deixou de depender de uma única requisição longa para disparos médios/grandes
 - `POST /api/campanhas/[id]/disparar` agora só inicia a campanha, processa o primeiro passo e devolve diagnóstico operacional
 - o restante do envio segue por `POST/GET /api/campanhas/worker`, pensado para rodar por cron

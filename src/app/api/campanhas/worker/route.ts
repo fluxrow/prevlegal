@@ -24,6 +24,7 @@ type CampaignRow = {
   total_falhos?: number | null
   total_contatados?: number | null
   agendado_para?: string | null
+  iniciado_em?: string | null
 }
 
 function authorized(request: NextRequest) {
@@ -52,7 +53,7 @@ export async function POST(request: NextRequest) {
   const { data: campaigns, error } = await adminClient
     .from('campanhas')
     .select('*')
-    .eq('status', 'ativa')
+    .in('status', ['ativa', 'agendada'])
     .or(`agendado_para.is.null,agendado_para.lte.${now}`)
     .order('agendado_para', { ascending: true, nullsFirst: true })
     .limit(20)
@@ -65,9 +66,32 @@ export async function POST(request: NextRequest) {
 
   for (const campaign of (campaigns || []) as CampaignRow[]) {
     try {
-      const result = await processCampaignDispatchStep(dispatchClient, campaign)
+      let activeCampaign = campaign
+
+      if (campaign.status === 'agendada') {
+        const { data: activatedCampaign, error: activationError } = await adminClient
+          .from('campanhas')
+          .update({
+            status: 'ativa',
+            iniciado_em: campaign.iniciado_em || now,
+            agendado_para: now,
+            updated_at: now,
+          })
+          .eq('id', campaign.id)
+          .eq('tenant_id', campaign.tenant_id)
+          .select('*')
+          .single()
+
+        if (activationError || !activatedCampaign) {
+          throw new Error(activationError?.message || 'Não foi possível ativar a campanha agendada')
+        }
+
+        activeCampaign = activatedCampaign as CampaignRow
+      }
+
+      const result = await processCampaignDispatchStep(dispatchClient, activeCampaign)
       resultados.push({
-        campaign_id: campaign.id,
+        campaign_id: activeCampaign.id,
         status: result.status,
         lead_id: result.leadId || null,
         next_run_at: result.nextRunAt || null,

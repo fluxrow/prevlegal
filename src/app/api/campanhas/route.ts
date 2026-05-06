@@ -25,6 +25,28 @@ const LISTA_SELECAO_PERSONALIZADA_NOME = 'Seleção personalizada'
 const LISTA_SELECAO_PERSONALIZADA_FORNECEDOR = 'sistema'
 const ALLOWED_CONTACT_TARGET_TYPES = new Set(['titular', 'conjuge', 'filho', 'irmao'])
 const ALLOWED_LEAD_STATUSES = new Set(['new', 'contacted', 'awaiting', 'scheduled', 'converted', 'lost'])
+const MIN_SCHEDULE_LEAD_TIME_MS = 60_000
+
+function normalizeScheduledAt(value: unknown) {
+  if (typeof value !== 'string' || !value.trim()) {
+    return { iso: null, error: null as string | null }
+  }
+
+  const parsed = new Date(value.trim())
+
+  if (Number.isNaN(parsed.getTime())) {
+    return { iso: null, error: 'agendado_para inválido' }
+  }
+
+  if (parsed.getTime() <= Date.now() + MIN_SCHEDULE_LEAD_TIME_MS) {
+    return {
+      iso: null,
+      error: 'Escolha um horário futuro com pelo menos 1 minuto de antecedência para agendar a campanha',
+    }
+  }
+
+  return { iso: parsed.toISOString(), error: null as string | null }
+}
 
 async function getOrCreateSelectionList(adminClient: ReturnType<typeof createAdminClient>, tenantId: string, usuarioId: string) {
   const { data: existing, error: existingError } = await adminClient
@@ -259,6 +281,11 @@ export async function POST(request: NextRequest) {
       whatsapp_number_id,
       contato_alvo_tipo,
     } = body
+    const normalizedSchedule = normalizeScheduledAt(agendado_para)
+
+    if (normalizedSchedule.error) {
+      return NextResponse.json({ error: normalizedSchedule.error }, { status: 400 })
+    }
 
     let resolvedAgenteId =
       typeof agente_id === 'string' && agente_id.trim()
@@ -450,7 +477,7 @@ export async function POST(request: NextRequest) {
         nome,
         lista_id: resolvedListaId,
         mensagem_template,
-        status: 'rascunho',
+        status: normalizedSchedule.iso ? 'agendada' : 'rascunho',
         total_leads: totalLeads,
         total_contatados: 0,
         total_responderam: 0,
@@ -468,7 +495,7 @@ export async function POST(request: NextRequest) {
         pausa_entre_lotes_s: throttleSettings.pauseBetweenBatchesS,
         limite_diario: throttleSettings.limitDaily,
         apenas_verificados: apenas_verificados ?? defaultOnlyVerified,
-        agendado_para: agendado_para || null,
+        agendado_para: normalizedSchedule.iso,
         agente_id: resolvedAgenteId,
         contato_alvo_tipo: normalizedContatoAlvoTipo,
       })

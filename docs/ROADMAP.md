@@ -4,6 +4,24 @@ Contexto: [[SESSION_HISTORY_MASTER]]
 Mestra: [[MASTER_PREV_LEGAL]]
 > Última atualização: 10/04/2026
 
+## Atualizacao 2026-05-06 — Campanhas ganharam agendamento seguro sem trocar o motor de disparo
+
+- necessidade operacional:
+  - permitir que o escritório prepare a campanha agora e deixe o primeiro envio começar sozinho em um horário futuro
+  - manter o fluxo atual de lote, delay, worker, pause/resume e métricas sem reescrever o dispatch
+- desenho adotado:
+  - campanha criada sem horário continua em `rascunho`
+  - campanha criada com horário futuro nasce em `agendada`
+  - o worker promove `agendada -> ativa` quando `agendado_para` vence e só então processa o primeiro passo
+- correção aplicada:
+  - a UI de campanhas ganhou escolha entre `Salvar e disparar depois` e `Agendar disparo`
+  - o card da campanha agora exibe o horário agendado
+  - o endpoint `disparar` passou a aceitar campanha `agendada`, permitindo adiantar manualmente um disparo futuro
+  - o enum `campanha_status` foi expandido com `agendada`
+- leitura prática:
+  - o escritório passa a programar disparos sem virar a campanha em `ativa` cedo demais
+  - o núcleo do envio continua igual: a novidade entra só na semântica de início da campanha
+
 ## Atualizacao 2026-05-05 — Campanhas ganharam biblioteca segura de templates com `usar`, `criar`, `editar` e `excluir`
 
 - necessidade operacional:
