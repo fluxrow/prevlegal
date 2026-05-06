@@ -4,6 +4,19 @@ Contexto: [[SESSION_HISTORY_MASTER]]
 Mestra: [[MASTER_PREV_LEGAL]]
 > Última atualização: 10/04/2026
 
+## Atualizacao 2026-05-06 — Primeira resposta da Bianca após campanha ficou mais natural em saudações curtas
+
+- achado operacional:
+  - em respostas como `Bom dia`, a Bianca podia soar estranha ao devolver `Tudo bem por aqui, obrigada.` mesmo sem ter recebido uma pergunta social
+  - em alguns casos ainda sobrava um bloco solto como `obrigada.`, deixando a resposta com cara de artefato
+- correção aplicada:
+  - a suavização de saudação curta agora só injeta `Tudo bem por aqui, obrigada.` quando o lead realmente perguntou algo como `tudo bem?`
+  - blocos isolados de cortesia (`obrigada.`, `obrigado.`) passaram a ser limpos antes do envio
+  - o prompt do primeiro retorno após campanha foi endurecido para não presumir profissão ou contexto societário antes de o lead informar o próprio perfil
+- leitura prática:
+  - a primeira resposta fica mais humana e menos “esquisita”
+  - o escritório ganha uma abertura mais limpa para qualificar o perfil sem que a Bianca pareça adivinhar demais cedo demais
+
 ## Atualizacao 2026-05-06 — Campanhas ganharam agendamento seguro sem trocar o motor de disparo
 
 - necessidade operacional:

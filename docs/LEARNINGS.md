@@ -5,6 +5,23 @@ Mestra: [[MASTER_PREV_LEGAL]]
 > Erros encontrados, causas e correções aplicadas.
 > Atualizado a cada sessão.
 
+## Atualização 2026-05-06 — Saudação curta em planejamento não pode ser tratada como pergunta social completa
+
+- Problema:
+  - quando o lead respondia só `Bom dia`, a Bianca podia abrir com `Tudo bem por aqui, obrigada.` e ainda deixar um segundo parágrafo curto como `obrigada.`
+  - isso dava um ar artificial à primeira resposta depois da campanha
+- Causa:
+  - a heurística de suavização olhava apenas “começou com saudação”, sem separar `Bom dia` de `Bom dia, tudo bem?`
+  - além disso, não limpava sobras de cortesia mínima vindas do rascunho do modelo
+- Correção:
+  - distinguir `saudação` de `check-in social`
+  - só injetar a frase de cordialidade quando o lead realmente perguntar `tudo bem?`, `como vai?` ou similar
+  - remover blocos isolados como `obrigada.` / `obrigado.` quando eles virarem sobra sem função
+  - reforçar no prompt que a Bianca não deve presumir profissão ou contexto societário antes de o lead dizer isso
+- Regra prática:
+  - em WhatsApp, `Bom dia` é abertura, não necessariamente convite para uma mini conversa social
+  - quando a IA usa heurística de “humanização”, ela precisa ser específica o bastante para não produzir delicadezas mecânicas demais
+
 ## Atualização 2026-05-06 — Agendamento seguro de campanha pede estado explícito `agendada`, não `ativa` antecipada
 
 - Problema de produto:

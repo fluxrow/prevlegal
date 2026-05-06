@@ -81,6 +81,9 @@ Estado confirmado em 27/04/2026:
   - evitar subtítulos/listas com cara de parecer
   - reduzir números ilustrativos e recomendações prematuras
   - usar a knowledge como apoio, não como roteiro de laudo precoce
+  - tratar `Bom dia` e saudações curtas de forma mais natural no primeiro retorno após campanha, sem responder como se o lead tivesse perguntado `tudo bem?`
+  - evitar sobras de cortesia mecânica como `obrigada.` em parágrafo solto
+  - segurar presunções sobre profissão/contexto societário antes de o lead dizer o próprio perfil
 - a própria knowledge de `planejamento_previdenciario` também foi podada em pontos críticos:
   - menos “regra prática” absoluta em PGBL/VGBL/FUNPRESP/matching
   - menos exemplos com cifras e patrimônios hipotéticos

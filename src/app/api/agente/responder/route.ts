@@ -292,6 +292,11 @@ function startsWithGreeting(text: string) {
   return /^(oi|ola|olá|bom dia|boa tarde|boa noite|tudo bem|tudo certo)\b/u.test(normalized)
 }
 
+function includesSocialCheckIn(text: string) {
+  const normalized = normalizeComparableMessageText(text)
+  return /(tudo bem|tudo bom|como vai|como voce esta|como você esta|tudo certo)\b/u.test(normalized)
+}
+
 function stripLeadingGreeting(text: string) {
   return text
     .replace(/^(oi|olá|ola|bom dia|boa tarde|boa noite)[,\s!.-]*/iu, '')
@@ -313,6 +318,7 @@ function softenPlanningGreeting({
   if (!isFirstReplyAfterCampaign) return text
 
   const leadStartedWithGreeting = startsWithGreeting(latestLeadMessage)
+  const leadAskedSocialCheckIn = includesSocialCheckIn(latestLeadMessage)
   const assistantAlreadyGreeted = startsWithGreeting(previousAssistant)
 
   if (!leadStartedWithGreeting && !assistantAlreadyGreeted) {
@@ -334,7 +340,14 @@ function softenPlanningGreeting({
   }
 
   if (
-    leadStartedWithGreeting &&
+    nextParagraphs.length > 0 &&
+    /^(obrigada|obrigado|grata|agradeco|agradeço)[.!]?$/iu.test(nextParagraphs[0] || '')
+  ) {
+    nextParagraphs.shift()
+  }
+
+  if (
+    leadAskedSocialCheckIn &&
     nextParagraphs.length > 0 &&
     !/^(tudo bem|tudo certo|tudo ótimo|tudo otimo|por aqui tudo)/iu.test(nextParagraphs[0] || '')
   ) {
@@ -690,6 +703,7 @@ function buildImmediateResponseDirective({
             '- Não diga que o lead já tinha interesse anterior, que já demonstrou interesse antes, nem que o histórico mostra intenção antiga, a menos que isso esteja literalmente escrito em mensagens anteriores do próprio lead.',
             '- Se a resposta do lead for só uma saudação curta, primeiro retome com naturalidade o motivo do contato em no máximo 2 frases curtas e só depois faça 1 pergunta diagnóstica curta.',
             '- Se você já saudou o lead na mensagem de disparo, não repita "bom dia", "boa tarde" ou "boa noite" no primeiro retorno. Se quiser ser cordial, use algo como "Tudo bem por aqui, obrigada." e siga.',
+            '- No primeiro retorno após campanha, não presuma profissão, porte da empresa nem contexto societário antes de o lead dizer isso. Se ainda não souber o perfil, fale de forma neutra.',
             '- Nessa retomada inicial, fale do assunto antes de perguntar, mas sem textão: explique brevemente por que planejamento previdenciário pode ser relevante e convide o lead a dizer o perfil profissional dele.',
             '- No primeiro retorno após campanha, responda idealmente em 2 ou 3 blocos curtos de WhatsApp. Use 4 apenas se ficar realmente necessário.',
             '- No primeiro retorno após campanha, não use lista numerada, não enumere todas as etapas do serviço e não despeje detalhes técnicos demais de uma vez.',
