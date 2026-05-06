@@ -4,6 +4,22 @@ Contexto: [[SESSION_HISTORY_MASTER]]
 Mestra: [[MASTER_PREV_LEGAL]]
 > Última atualização: 10/04/2026
 
+## Atualizacao 2026-05-06 — Preparação de minuta passou a aproveitar também documentos já processados
+
+- necessidade operacional:
+  - a minuta/contrato não podia depender só do que apareceu na conversa
+  - em muitos casos, os dados mais confiáveis do cliente ficam no documento enviado, não no chat
+- desenho adotado:
+  - manter o fluxo atual de upload, parsing e geração de minuta
+  - melhorar apenas a camada de extração de dados do cliente
+  - quando existirem `document_parsed_contents` do lead, eles entram como evidência adicional para a extração
+- correção aplicada:
+  - `extractClientDataFromConversation` agora lê conversa + até 4 documentos processados do lead
+  - a degradação continua segura: sem foundation documental ou sem parsing pronto, a extração volta a operar só com a conversa
+- leitura prática:
+  - contratos e minutas ficam mais propensos a nascer com CPF/RG/endereço/profissão corretos quando o cliente já mandou documento
+  - Docling passa a gerar valor real no fluxo contratual sem virar dependência rígida do core
+
 ## Atualizacao 2026-05-06 — Primeira resposta da Bianca após campanha ficou mais natural em saudações curtas
 
 - achado operacional:

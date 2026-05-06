@@ -5,6 +5,22 @@ Mestra: [[MASTER_PREV_LEGAL]]
 > Erros encontrados, causas e correções aplicadas.
 > Atualizado a cada sessão.
 
+## Atualização 2026-05-06 — Minuta contratual não deve depender só da conversa se o lead já enviou documentos processados
+
+- Problema:
+  - a preparação de minuta já conseguia extrair dados do cliente da conversa, mas continuava cega ao conteúdo de documentos que o lead já tinha enviado
+  - isso deixava a melhor evidência fora da montagem de placeholders
+- Causa:
+  - `extractClientDataFromConversation` consultava apenas `mensagens_inbound`
+  - a foundation documental existia, mas o parsing ainda não alimentava a camada de contrato
+- Correção:
+  - passar a consultar também `document_parsed_contents` do lead
+  - enviar conversa + documentos processados como evidência para a extração estruturada
+  - manter fallback silencioso para “só conversa” quando a foundation documental não existir ou quando não houver parsing disponível
+- Regra prática:
+  - em fluxo contratual, documento processado vale mais do que memória de conversa para dado cadastral
+  - Docling gera mais ROI quando alimenta extração e conferência antes de tentar automatizar redação jurídica inteira
+
 ## Atualização 2026-05-06 — Saudação curta em planejamento não pode ser tratada como pergunta social completa
 
 - Problema:

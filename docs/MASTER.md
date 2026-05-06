@@ -94,6 +94,10 @@ Estado confirmado em 27/04/2026:
   - sem horário futuro, continuam em `rascunho`
   - com horário futuro, nascem em `agendada`
   - o worker promove para `ativa` só quando chega a hora do primeiro envio
+- a preparação de minuta/contrato agora pode aproveitar também documentos já processados do lead como evidência para preencher placeholders do cliente:
+  - conversa continua valendo
+  - documentos parseados passam a reforçar CPF/RG/endereço/profissão e outros campos cadastrais
+  - sem foundation documental, o fluxo degrada para “só conversa” sem quebrar geração
 - a esteira de campanhas deixou de depender de uma única requisição longa para disparos médios/grandes
 - `POST /api/campanhas/[id]/disparar` agora só inicia a campanha, processa o primeiro passo e devolve diagnóstico operacional
 - o restante do envio segue por `POST/GET /api/campanhas/worker`, pensado para rodar por cron
