@@ -13,6 +13,7 @@ interface MsgWpp {
   id: string
   mensagem: string
   telefone_remetente: string
+  telefone_destinatario?: string | null
   resposta_agente: string | null
   respondido_por_agente: boolean
   respondido_manualmente: boolean
@@ -142,6 +143,10 @@ export default function ModalMsgLead({ lead, onClose }: Props) {
     fontSize: '13px', fontFamily: 'DM Sans, sans-serif', outline: 'none',
   }
 
+  function isMensagemOutbound(msg: MsgWpp) {
+    return samePhone(msg.telefone_destinatario || '', lead.telefone)
+  }
+
   return (
     <>
       <div onClick={onClose} style={{
@@ -214,31 +219,53 @@ export default function ModalMsgLead({ lead, onClose }: Props) {
               ? <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '13px', marginTop: '40px' }}>
                   Nenhuma conversa WhatsApp encontrada para este lead.
                 </div>
-              : msgsWpp.map(m => {
-                  const isAgent = m.respondido_por_agente
-                  const isManual = !isAgent && m.respondido_manualmente
-                  const isResposta = isAgent || isManual
-                  const label = isAgent ? 'Agente IA' : isManual ? 'Você' : 'Lead'
-                  const body = isResposta ? (m.resposta_agente || m.mensagem) : m.mensagem
-                  return (
-                    <div key={m.id} style={{ display: 'flex', justifyContent: isResposta ? 'flex-end' : 'flex-start' }}>
-                      <div style={{
-                        maxWidth: '80%', background: isResposta ? 'rgba(79,122,255,0.15)' : 'var(--bg-card)',
-                        border: '1px solid var(--border)', borderRadius: '10px', padding: '8px 12px',
-                      }}>
-                        <div style={{ fontSize: '9px', fontWeight: '700', color: isResposta ? 'var(--accent)' : 'var(--green)', marginBottom: '3px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                          {label}
-                        </div>
-                        <div style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
-                          {body}
-                        </div>
-                        <div style={{ fontSize: '9px', color: 'var(--text-muted)', marginTop: '4px', textAlign: 'right' }}>
-                          {new Date(m.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+              : msgsWpp.map(m => (
+                  <div key={m.id}>
+                    {!isMensagemOutbound(m) && (
+                      <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: m.resposta_agente ? '6px' : '0' }}>
+                        <div style={{
+                          maxWidth: '80%',
+                          background: 'var(--bg-card)',
+                          border: '1px solid var(--border)',
+                          borderRadius: '10px',
+                          padding: '8px 12px',
+                        }}>
+                          <div style={{ fontSize: '9px', fontWeight: '700', color: 'var(--green)', marginBottom: '3px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                            Lead
+                          </div>
+                          <div style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
+                            {m.mensagem}
+                          </div>
+                          <div style={{ fontSize: '9px', color: 'var(--text-muted)', marginTop: '4px', textAlign: 'right' }}>
+                            {new Date(m.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  )
-                })
+                    )}
+
+                    {(m.resposta_agente || isMensagemOutbound(m)) && (
+                      <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                        <div style={{
+                          maxWidth: '80%',
+                          background: 'rgba(79,122,255,0.15)',
+                          border: '1px solid var(--border)',
+                          borderRadius: '10px',
+                          padding: '8px 12px',
+                        }}>
+                          <div style={{ fontSize: '9px', fontWeight: '700', color: 'var(--accent)', marginBottom: '3px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                            {m.respondido_manualmente ? 'Você' : 'Agente IA'}
+                          </div>
+                          <div style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
+                            {m.resposta_agente || m.mensagem}
+                          </div>
+                          <div style={{ fontSize: '9px', color: 'var(--text-muted)', marginTop: '4px', textAlign: 'right' }}>
+                            {new Date(m.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))
           )}
 
           {aba === 'portal' && (

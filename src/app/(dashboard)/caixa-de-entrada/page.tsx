@@ -105,6 +105,7 @@ interface UsuarioResumo {
   id: string
   nome: string | null
   email: string | null
+  role?: string | null
 }
 
 type UsuarioNomeLike = {
@@ -217,6 +218,11 @@ export default function CaixaDeEntradaPage() {
   const [documentoMensagem, setDocumentoMensagem] = useState('')
   const [enviandoDocumentoId, setEnviandoDocumentoId] = useState<string | null>(null)
   const [erroDocumento, setErroDocumento] = useState<string | null>(null)
+  const [transferPanelAberto, setTransferPanelAberto] = useState(false)
+  const [transferToUsuarioId, setTransferToUsuarioId] = useState('')
+  const [transferMotivo, setTransferMotivo] = useState('')
+  const [transferindoResponsavel, setTransferindoResponsavel] = useState(false)
+  const [erroTransferencia, setErroTransferencia] = useState<string | null>(null)
   const [panelInternoAberto, setPanelInternoAberto] = useState(false)
   const [notaTexto, setNotaTexto] = useState('')
   const [adicionandoNota, setAdicionandoNota] = useState(false)
@@ -527,6 +533,10 @@ export default function CaixaDeEntradaPage() {
         setDocumentosPanelAberto(false)
         setDocumentoMensagem('')
         setErroDocumento(null)
+        setTransferPanelAberto(false)
+        setTransferToUsuarioId('')
+        setTransferMotivo('')
+        setErroTransferencia(null)
         setPanelInternoAberto(false)
       }, 0)
       return () => window.clearTimeout(timer)
@@ -745,6 +755,65 @@ export default function CaixaDeEntradaPage() {
     setEnviandoDocumentoId(null)
   }
 
+  async function transferirResponsabilidade() {
+    const leadId = conversaSelecionada?.leads?.id
+    if (!leadId || !transferToUsuarioId) return
+
+    setTransferindoResponsavel(true)
+    setErroTransferencia(null)
+
+    const statusDestino = ['agente', 'humano', 'aguardando_cliente', 'resolvido'].includes(conversaSelecionada?.status || '')
+      ? conversaSelecionada?.status
+      : 'humano'
+
+    const res = await fetch(`/api/leads/${leadId}/interno/handoff`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        to_usuario_id: transferToUsuarioId,
+        motivo: transferMotivo,
+        status_destino: statusDestino,
+      }),
+    })
+
+    if (res.ok) {
+      const data = await res.json()
+      const currentOwner = data.current_owner || null
+
+      setTransferMotivo('')
+      setTransferPanelAberto(false)
+
+      if (currentOwner?.id) {
+        setTransferToUsuarioId(currentOwner.id)
+      }
+
+      setConversaSelecionada((prev) => {
+        if (!prev) return prev
+        return {
+          ...prev,
+          assumido_por: currentOwner?.id || prev.assumido_por || null,
+          leads: prev.leads
+            ? {
+                ...prev.leads,
+                responsavel_id: currentOwner?.id || prev.leads.responsavel_id || null,
+              }
+            : prev.leads,
+        }
+      })
+
+      await Promise.all([
+        fetchConversas(),
+        fetchInternoData(leadId),
+      ])
+      notifyPendenciasChanged()
+    } else {
+      const data = await res.json().catch(() => null)
+      setErroTransferencia(data?.error || 'Não foi possível transferir a responsabilidade')
+    }
+
+    setTransferindoResponsavel(false)
+  }
+
   async function enviarMsgPortal() {
     if (!textoPortal.trim() || !threadSelecionada) return
     setEnviandoPortal(true)
@@ -859,6 +928,9 @@ export default function CaixaDeEntradaPage() {
     const responsavelConversa = getResponsavelConversa(conversaSelecionada)
     const responsavelLabel = getUsuarioNome(internoData?.thread?.current_owner || responsavelConversa)
     const documentosPreview = documentosLead.slice(0, 3)
+    const usuariosTransferiveis = Object.values(usuariosMap)
+      .filter((usuario) => usuario.id !== (internoData?.thread?.current_owner?.id || conversaSelecionada.leads?.responsavel_id || null))
+      .sort((a, b) => (getUsuarioNome(a) || '').localeCompare(getUsuarioNome(b) || '', 'pt-BR'))
 
     return (
       <div data-tour="inbox-painel" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
@@ -881,9 +953,18 @@ export default function CaixaDeEntradaPage() {
                 Estado operacional: {OPERATIONAL_STATE_LABELS[estadoOperacionalSelecionado]}
               </span>
               {responsavelLabel ? (
-                <span style={{ fontSize: '11px', padding: '4px 10px', borderRadius: '999px', background: 'rgba(79,122,255,0.12)', color: '#7ea2ff', fontWeight: '700', fontFamily: 'DM Sans, sans-serif', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTransferPanelAberto((current) => !current)
+                    setTransferToUsuarioId('')
+                    setTransferMotivo('')
+                    setErroTransferencia(null)
+                  }}
+                  style={{ fontSize: '11px', padding: '4px 10px', borderRadius: '999px', background: 'rgba(79,122,255,0.12)', color: '#7ea2ff', fontWeight: '700', fontFamily: 'DM Sans, sans-serif', display: 'inline-flex', alignItems: 'center', gap: '5px', border: '1px solid rgba(79,122,255,0.2)', cursor: 'pointer' }}
+                >
                   <UserCheck size={11} /> Com {responsavelLabel}
-                </span>
+                </button>
               ) : null}
               {prazoOperacionalSelecionadoFormatado ? (
                 <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'DM Sans, sans-serif' }}>
@@ -891,6 +972,63 @@ export default function CaixaDeEntradaPage() {
                 </span>
               ) : null}
             </div>
+            {transferPanelAberto ? (
+              <div style={{ marginTop: '10px', padding: '12px', borderRadius: '10px', border: '1px solid rgba(79,122,255,0.18)', background: 'rgba(79,122,255,0.06)', display: 'grid', gap: '8px', maxWidth: '360px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                  <span style={{ fontSize: '11px', fontWeight: '700', color: '#7ea2ff', fontFamily: 'DM Sans, sans-serif' }}>
+                    Transferir responsabilidade aqui
+                  </span>
+                  {internoData?.thread?.current_owner?.nome ? (
+                    <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontFamily: 'DM Sans, sans-serif' }}>
+                      Atual: {internoData.thread.current_owner.nome}
+                    </span>
+                  ) : null}
+                </div>
+                <select
+                  value={transferToUsuarioId}
+                  onChange={(e) => setTransferToUsuarioId(e.target.value)}
+                  style={{ ...inputStyle, fontSize: '12px', padding: '9px 12px' }}
+                >
+                  <option value="">Escolha quem assume</option>
+                  {usuariosTransferiveis.map((usuario) => (
+                    <option key={usuario.id} value={usuario.id}>
+                      {getUsuarioNome(usuario) || usuario.id}
+                    </option>
+                  ))}
+                </select>
+                <input
+                  value={transferMotivo}
+                  onChange={(e) => setTransferMotivo(e.target.value)}
+                  placeholder="Motivo opcional da transferência"
+                  style={{ ...inputStyle, fontSize: '12px', padding: '9px 12px' }}
+                />
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTransferPanelAberto(false)
+                      setErroTransferencia(null)
+                    }}
+                    style={{ padding: '8px 12px', background: 'transparent', color: 'var(--text-muted)', border: '1px solid var(--border)', borderRadius: '8px', cursor: 'pointer', fontSize: '12px', fontWeight: '600', fontFamily: 'DM Sans, sans-serif' }}
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void transferirResponsabilidade()}
+                    disabled={!transferToUsuarioId || transferindoResponsavel}
+                    style={{ padding: '8px 12px', background: !transferToUsuarioId || transferindoResponsavel ? 'var(--bg-hover)' : 'var(--accent)', color: !transferToUsuarioId || transferindoResponsavel ? 'var(--text-muted)' : '#fff', border: 'none', borderRadius: '8px', cursor: !transferToUsuarioId || transferindoResponsavel ? 'not-allowed' : 'pointer', fontSize: '12px', fontWeight: '700', fontFamily: 'DM Sans, sans-serif' }}
+                  >
+                    {transferindoResponsavel ? 'Transferindo...' : 'Transferir'}
+                  </button>
+                </div>
+                {erroTransferencia ? (
+                  <p style={{ margin: 0, color: '#ff6b6b', fontSize: '12px', fontFamily: 'DM Sans, sans-serif' }}>
+                    {erroTransferencia}
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
           </div>
           <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', minWidth: '280px' }}>

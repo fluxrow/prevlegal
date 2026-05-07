@@ -36,6 +36,37 @@ Mestra: [[MASTER_PREV_LEGAL]]
   - quando a urgência é operacional e o provider ainda é `texto-first`, o melhor primeiro passo é “documento por link seguro”
   - anexo binário direto deve entrar só quando houver abstração de mídia coerente entre provedores e trilha de persistência correspondente
 
+## Atualização 2026-05-07 — Quando um modal de conversa simplifica demais a linha do tempo, ele pode apagar o inbound do lead sem apagar a linha do banco
+
+- Problema:
+  - na área do lead, a conversa WhatsApp podia parecer composta só por respostas da Bianca/humano
+  - isso acontecia mesmo com inbound real salvo corretamente
+- Causa:
+  - o modal tratava toda linha com `resposta_agente` como “mensagem de saída”
+  - com isso, o corpo renderizado passava a ser `resposta_agente || mensagem`, ocultando a fala original do lead
+- Correção:
+  - alinhar a renderização do modal à mesma lógica da inbox
+  - mostrar inbound quando a linha não é outbound
+  - mostrar outbound adicional quando existir `resposta_agente` ou espelho manual
+- Regra prática:
+  - `mensagens_inbound` pode carregar dois momentos da conversa no mesmo registro lógico: a fala do lead e a resposta da operação
+  - qualquer UI secundária precisa respeitar isso, senão parece bug de banco quando na verdade é bug de render
+
+## Atualização 2026-05-07 — Backoffice/admin precisa sobreviver ao handoff da conversa se o produto quer coordenação real
+
+- Problema de produto:
+  - ao transferir a responsabilidade do lead, o operador que atua como backoffice podia perder a visibilidade da conversa
+  - isso ia contra a meta de coordenação operacional centralizada
+- Causa:
+  - `canViewConversationForInbox` permitia ver a conversa apenas para `responsavel_id` ou `assumido_por`
+  - o admin não tinha exceção explícita
+- Correção:
+  - permitir visibilidade total de inbox para `context.isAdmin`
+  - manter a transferência rápida da inbox reutilizando o handoff formal já existente
+- Regra prática:
+  - se a meta do produto inclui coordenação/backoffice, o admin precisa ser observador privilegiado da fila
+  - sem isso, cada handoff vira perda de contexto para quem organiza a operação
+
 ## Atualização 2026-05-06 — Minuta contratual não deve depender só da conversa se o lead já enviou documentos processados
 
 - Problema:

@@ -40,6 +40,26 @@ Mestra: [[MASTER_PREV_LEGAL]]
   - a entrega entra sem reescrever `whatsapp-provider`
   - “anexo real” continua sendo etapa futura; por enquanto o produto entrega compartilhamento seguro por link
 
+## Atualizacao 2026-05-07 — Inbox ganhou transferência direta de responsável e o modal do lead voltou a mostrar inbound + outbound corretamente
+
+- necessidade operacional:
+  - transferir responsabilidade do contato direto na inbox era mais coerente do que obrigar o operador a abrir o lead completo
+  - na área do lead, o histórico do WhatsApp estava distorcido e podia parecer que só a Bianca tinha falado
+- desenho adotado:
+  - reaproveitar o mesmo endpoint oficial de handoff (`/api/leads/[id]/interno/handoff`) também a partir da inbox
+  - preservar a semântica de render da inbox no modal do lead, em vez de inventar uma leitura simplificada diferente
+- correção aplicada:
+  - o badge `Com <responsável>` da inbox agora abre uma transferência rápida inline
+  - admins passaram a enxergar a inbox como backoffice, mesmo após a troca de responsável
+  - o modal de conversa do lead voltou a desenhar:
+    - inbound do lead
+    - outbound da Bianca/humano
+    - sem esconder a fala do lead quando existe `resposta_agente` no mesmo registro
+- leitura prática:
+  - a inbox fica mais próxima do produto final operacional
+  - transferência de contato vira ação natural de fila humana
+  - o histórico do lead deixa de enganar a equipe com conversa “meia renderizada”
+
 ## Atualizacao 2026-05-06 — Preparação de minuta passou a aproveitar também documentos já processados
 
 - necessidade operacional:

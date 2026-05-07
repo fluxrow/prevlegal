@@ -15,6 +15,7 @@ export function canViewConversationForInbox(
   conversa: ConversaComResponsavel | null | undefined,
 ) {
   if (!conversa) return false
+  if (context.isAdmin) return true
 
   const leadRelation = Array.isArray(conversa.leads) ? (conversa.leads[0] || null) : (conversa.leads || null)
   const responsavelId = leadRelation?.responsavel_id || null
