@@ -213,6 +213,10 @@ export default function CaixaDeEntradaPage() {
   const [usuariosMap, setUsuariosMap] = useState<Record<string, UsuarioResumo>>({})
   const [documentosLead, setDocumentosLead] = useState<DocumentoInbox[]>([])
   const [loadingDocumentosLead, setLoadingDocumentosLead] = useState(false)
+  const [documentosPanelAberto, setDocumentosPanelAberto] = useState(false)
+  const [documentoMensagem, setDocumentoMensagem] = useState('')
+  const [enviandoDocumentoId, setEnviandoDocumentoId] = useState<string | null>(null)
+  const [erroDocumento, setErroDocumento] = useState<string | null>(null)
   const [panelInternoAberto, setPanelInternoAberto] = useState(false)
   const [notaTexto, setNotaTexto] = useState('')
   const [adicionandoNota, setAdicionandoNota] = useState(false)
@@ -520,6 +524,9 @@ export default function CaixaDeEntradaPage() {
         setInternoData(null)
         setDocumentosLead([])
         setLoadingDocumentosLead(false)
+        setDocumentosPanelAberto(false)
+        setDocumentoMensagem('')
+        setErroDocumento(null)
         setPanelInternoAberto(false)
       }, 0)
       return () => window.clearTimeout(timer)
@@ -705,6 +712,37 @@ export default function CaixaDeEntradaPage() {
       setErroEnvio(data?.error || 'Nao foi possivel enviar a mensagem')
     }
     setEnviando(false)
+  }
+
+  async function compartilharDocumento(documentoId: string) {
+    if (!conversaSelecionada) return
+
+    setEnviandoDocumentoId(documentoId)
+    setErroDocumento(null)
+
+    const res = await fetch(`/api/conversas/${conversaSelecionada.id}/documentos/compartilhar`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        documento_id: documentoId,
+        mensagem: documentoMensagem,
+      }),
+    })
+
+    if (res.ok) {
+      setDocumentoMensagem('')
+      setDocumentosPanelAberto(false)
+      await Promise.all([
+        fetchMensagens(conversaSelecionada.id),
+        fetchDocumentosConversa(conversaSelecionada.id),
+      ])
+      notifyPendenciasChanged()
+    } else {
+      const data = await res.json().catch(() => null)
+      setErroDocumento(data?.error || 'Não foi possível compartilhar o documento')
+    }
+
+    setEnviandoDocumentoId(null)
   }
 
   async function enviarMsgPortal() {
@@ -1127,6 +1165,83 @@ export default function CaixaDeEntradaPage() {
         {podeResponderManual && (
           <div style={{ padding: '16px 24px', borderTop: '1px solid var(--border)', background: 'var(--bg-surface)', display: 'flex', gap: '10px', alignItems: 'flex-end' }}>
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', flexWrap: 'wrap' }}>
+                <button
+                  onClick={() => {
+                    setDocumentosPanelAberto((current) => !current)
+                    setErroDocumento(null)
+                  }}
+                  type="button"
+                  style={{ padding: '8px 12px', background: documentosPanelAberto ? 'rgba(79,122,255,0.16)' : 'var(--bg-card)', color: documentosPanelAberto ? '#7ea2ff' : 'var(--text-secondary)', border: documentosPanelAberto ? '1px solid rgba(79,122,255,0.35)' : '1px solid var(--border)', borderRadius: '8px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: '600', fontFamily: 'DM Sans, sans-serif' }}
+                >
+                  <FileText size={14} /> {documentosPanelAberto ? 'Fechar documentos' : 'Documentos'}
+                </button>
+                <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'DM Sans, sans-serif' }}>
+                  V1 segura: envia o arquivo como link assinado no WhatsApp.
+                </span>
+              </div>
+
+              {documentosPanelAberto ? (
+                <div style={{ border: '1px solid var(--border)', borderRadius: '10px', background: 'var(--bg-card)', padding: '12px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text-primary)', fontFamily: 'DM Sans, sans-serif' }}>
+                      Compartilhar documento com o cliente
+                    </span>
+                    {conversaSelecionada.leads?.id ? (
+                      <a href={`/leads/${conversaSelecionada.leads.id}#documentos`} style={{ fontSize: '11px', color: 'var(--accent)', textDecoration: 'none', fontWeight: '500', fontFamily: 'DM Sans, sans-serif' }}>
+                        Ver lead para subir novo arquivo →
+                      </a>
+                    ) : null}
+                  </div>
+
+                  <input
+                    value={documentoMensagem}
+                    onChange={(e) => setDocumentoMensagem(e.target.value)}
+                    placeholder="Mensagem opcional antes do link do documento"
+                    style={{ ...inputStyle, fontSize: '12px', padding: '9px 12px' }}
+                  />
+
+                  {loadingDocumentosLead ? (
+                    <p style={{ margin: 0, fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'DM Sans, sans-serif' }}>
+                      Carregando documentos...
+                    </p>
+                  ) : documentosLead.length === 0 ? (
+                    <p style={{ margin: 0, fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'DM Sans, sans-serif' }}>
+                      Este lead ainda não tem documento disponível para compartilhar.
+                    </p>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '220px', overflowY: 'auto' }}>
+                      {documentosLead.map((doc) => (
+                        <div key={doc.id} style={{ border: '1px solid var(--border)', borderRadius: '9px', padding: '10px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px' }}>
+                          <div style={{ minWidth: 0 }}>
+                            <p style={{ margin: 0, fontSize: '12px', color: 'var(--text-primary)', fontWeight: '600', fontFamily: 'DM Sans, sans-serif', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {doc.nome || doc.arquivo_nome}
+                            </p>
+                            <p style={{ margin: '3px 0 0', fontSize: '10px', color: 'var(--text-muted)', fontFamily: 'DM Sans, sans-serif' }}>
+                              {doc.arquivo_nome}
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => void compartilharDocumento(doc.id)}
+                            disabled={enviandoDocumentoId === doc.id}
+                            style={{ padding: '8px 10px', background: 'rgba(79,122,255,0.16)', color: '#7ea2ff', border: '1px solid rgba(79,122,255,0.3)', borderRadius: '8px', cursor: enviandoDocumentoId === doc.id ? 'not-allowed' : 'pointer', fontSize: '11px', fontWeight: '700', fontFamily: 'DM Sans, sans-serif', flexShrink: 0, opacity: enviandoDocumentoId === doc.id ? 0.7 : 1 }}
+                          >
+                            {enviandoDocumentoId === doc.id ? 'Enviando...' : 'Enviar'}
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {erroDocumento ? (
+                    <p style={{ margin: 0, color: '#ff6b6b', fontSize: '12px', fontFamily: 'DM Sans, sans-serif' }}>
+                      {erroDocumento}
+                    </p>
+                  ) : null}
+                </div>
+              ) : null}
+
               <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-end' }}>
                 <textarea
                   value={textoResposta}

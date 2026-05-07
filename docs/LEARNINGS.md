@@ -20,6 +20,22 @@ Mestra: [[MASTER_PREV_LEGAL]]
   - quando uma feature nasce dentro da inbox, a autorização deve seguir a verdade operacional da conversa
   - reaproveitar endpoint “quase igual” do lead pode parecer mais rápido, mas vira bloqueio silencioso em handoffs e atendimento humano compartilhado
 
+## Atualização 2026-05-07 — Para liberar “anexo” rápido na inbox sem quebrar o provider, vale começar por link assinado renovado
+
+- Problema de produto:
+  - a operação precisava enviar documento ao cliente direto da inbox
+  - porém o runtime atual de WhatsApp só expõe envio de texto e não tinha abstração estável para mídia binária em `Twilio` e `Z-API`
+- Risco evitado:
+  - tentar introduzir `send-document` nos dois provedores no meio de uma operação já estável
+  - isso aumentaria o raio de regressão em campanha, resposta manual e trilha do agente
+- Correção:
+  - criar uma V1 de compartilhamento documental por link assinado
+  - renovar a signed URL no momento do envio
+  - registrar o compartilhamento como outbound manual normal na conversa
+- Regra prática:
+  - quando a urgência é operacional e o provider ainda é `texto-first`, o melhor primeiro passo é “documento por link seguro”
+  - anexo binário direto deve entrar só quando houver abstração de mídia coerente entre provedores e trilha de persistência correspondente
+
 ## Atualização 2026-05-06 — Minuta contratual não deve depender só da conversa se o lead já enviou documentos processados
 
 - Problema:

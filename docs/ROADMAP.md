@@ -21,6 +21,25 @@ Mestra: [[MASTER_PREV_LEGAL]]
   - a operação ganha contexto documental e dono do caso sem sair da caixa de entrada
   - anexos outbound e áudio continuam fora da V1; isso segue como evolução posterior, não parte desta entrega
 
+## Atualizacao 2026-05-07 — Inbox ganhou compartilhamento seguro de documento por WhatsApp sem reescrever o provider
+
+- necessidade operacional:
+  - o operador precisava enviar contrato, minuta ou documento já vinculado ao lead sem sair da caixa de entrada
+  - ao mesmo tempo, a camada de WhatsApp do produto ainda está estruturada para envio textual, não mídia binária
+- desenho adotado:
+  - manter o provider como está
+  - compartilhar o documento por mensagem manual com link assinado renovado no momento do envio
+  - reaproveitar a própria biblioteca `lead_documentos` do lead, sem criar trilha paralela
+- correção aplicada:
+  - a área manual da inbox ganhou botão `Documentos`
+  - o operador pode escolher um documento já existente e enviar com mensagem opcional
+  - o backend cria uma signed URL nova e dispara um WhatsApp textual com o link
+  - o envio fica espelhado no histórico da conversa como mensagem manual
+- leitura prática:
+  - o escritório ganha velocidade operacional já nesta V1
+  - a entrega entra sem reescrever `whatsapp-provider`
+  - “anexo real” continua sendo etapa futura; por enquanto o produto entrega compartilhamento seguro por link
+
 ## Atualizacao 2026-05-06 — Preparação de minuta passou a aproveitar também documentos já processados
 
 - necessidade operacional:

@@ -101,7 +101,8 @@ Estado confirmado em 27/04/2026:
 - a inbox humana agora mostra melhor o contexto operacional do lead sem alterar o runtime de conversa:
   - badge de responsável visível na lista e no cabeçalho da conversa
   - faixa rápida com os documentos já vinculados ao lead dentro da própria thread
-  - a leitura continua `texto-first`: anexos enviados pelo operador e resposta automática por áudio seguem fora do fluxo atual
+  - o operador agora também consegue compartilhar documento do lead pela própria inbox, em V1 segura por link assinado no WhatsApp
+  - a leitura continua `texto-first`: anexo binário direto e resposta automática por áudio seguem fora do fluxo atual
 - a esteira de campanhas deixou de depender de uma única requisição longa para disparos médios/grandes
 - `POST /api/campanhas/[id]/disparar` agora só inicia a campanha, processa o primeiro passo e devolve diagnóstico operacional
 - o restante do envio segue por `POST/GET /api/campanhas/worker`, pensado para rodar por cron
