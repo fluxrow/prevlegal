@@ -4,6 +4,19 @@ Contexto: [[SESSION_HISTORY_MASTER]]
 Mestra: [[MASTER_PREV_LEGAL]]
 > Última atualização: 10/04/2026
 
+## Atualizacao 2026-05-07 — Retomada pós-fora-do-horário agora respeita a ordem real da conversa
+
+- havia um desalinhamento entre sistema e WhatsApp em retomadas pós-`outside_hours`:
+  - o aviso de horário era salvo como mensagem outbound separada
+  - mas a resposta retomada no dia seguinte ficava gravada no campo `resposta_agente` do inbound antigo
+  - isso invertia visualmente a thread e também contaminava o histórico lido pelo agente
+- correção aplicada sem mexer no motor de envio:
+  - a thread da inbox e o histórico do lead agora expandem esses casos como eventos cronológicos próprios
+  - a retomada do agente passa a aparecer no horário em que realmente saiu, usando o carimbo já existente de processamento
+  - o mesmo critério foi reaproveitado para montar o transcript interno do agente e do resumo operacional
+- endurecimento adicional:
+  - se o lead responder algo como `já estou aposentada, obrigada` e o modelo tentar devolver só uma saudação curta, a Bianca cai para um fechamento cordial contextualizado
+
 ## Atualizacao 2026-05-07 — Inbox passou a expor responsável e documentos do lead sem mexer no motor de conversa
 
 - necessidade operacional:

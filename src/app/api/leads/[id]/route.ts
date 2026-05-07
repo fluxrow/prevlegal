@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { canAccessLeadId, getTenantContext } from '@/lib/tenant-context'
+import {
+  buildConversationTimelineRows,
+  dedupeConversationMessages,
+  type ConversationMessageRow,
+} from '@/lib/conversation-message-timeline'
 
 const ALLOWED_STATUS = new Set(['new', 'contacted', 'awaiting', 'scheduled', 'converted', 'lost'])
 
@@ -166,11 +171,16 @@ export async function GET(
     .order('created_at', { ascending: true })
     .limit(200)
 
+  const mensagensWhatsapp = buildConversationTimelineRows(
+    dedupeConversationMessages((mensagensWhatsappRes.data || []) as ConversationMessageRow[]),
+    String(lead.telefone || conversa.data?.telefone || ''),
+  )
+
   return NextResponse.json({
     lead,
     anotacoes: anotacoesRes.data || [],
     conversa: conversa.data || null,
-    mensagensWhatsapp: mensagensWhatsappRes.data || [],
+    mensagensWhatsapp,
   })
 }
 

@@ -474,6 +474,13 @@ Estratégia: entrar com R$ 1.997 para gerar cases, subir gradualmente.
 
 ## Atualização 2026-04-30 — Operação da Pagliuca refinada na camada de conversa e carteira
 
+- a timeline da inbox e do histórico do lead foi normalizada para conversas retomadas após `outside_hours`:
+  - quando uma mensagem do lead recebe aviso de horário e só depois a Bianca retoma, o sistema deixa de “colar” a retomada na bolha antiga do lead
+  - a resposta retomada passa a aparecer na ordem correta da linha do tempo, alinhada ao que saiu no WhatsApp real
+  - a mesma normalização foi reaproveitada no histórico que o próprio agente lê para continuar a conversa
+- a Bianca ganhou uma trava leve para retomadas em que o lead já sinaliza encerramento educado, como `já estou aposentada, obrigada`:
+  - isso reduz o risco de sair apenas uma saudação vazia como `Boa noite!`
+  - nesses casos, a preferência passa a ser um fechamento cordial e contextualizado
 - a frente de `planejamento` recebeu ajuste fino para a `Bianca` ficar mais natural na sequência do disparo:
   - saudação curta do lead deixa de gerar resposta que repete `bom dia` / `boa tarde`
   - o primeiro retorno pós-campanha passa a privilegiar uma aproximação social breve antes da ponte para o diagnóstico

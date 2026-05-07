@@ -7,6 +7,7 @@ import { sendWhatsAppMessage } from '@/lib/whatsapp-provider'
 import { getPlanningKnowledgeBlock } from '@/lib/agent-knowledge'
 import { logLlmUsage } from '@/lib/agent-llm-logger'
 import { repairCommonMojibake } from '@/lib/text-repair'
+import { buildConversationTimelineRows } from '@/lib/conversation-message-timeline'
 
 function createAdminSupabase() {
   return createClient(
@@ -43,6 +44,7 @@ type InboundMessageRow = {
   respondido_manualmente: boolean | null
   resposta_agente: string | null
   agente_reprocessar_apos?: string | null
+  lido_em?: string | null
   created_at: string
 }
 
@@ -302,6 +304,34 @@ function stripLeadingGreeting(text: string) {
     .replace(/^(oi|olá|ola|bom dia|boa tarde|boa noite)[,\s!.-]*/iu, '')
     .replace(/^(tudo bem( por aqui)?|tudo certo( por aqui)?|tudo ótimo por aqui|tudo otimo por aqui|por aqui tudo bem|por aqui tudo certo)[,\s!.-]*/iu, '')
     .trim()
+}
+
+function isBareGreetingReply(text: string) {
+  return /^(oi|olá|ola|bom dia|boa tarde|boa noite|tudo bem( por aqui)?|tudo certo( por aqui)?)[.!?]*$/iu.test(
+    String(text || '').trim(),
+  )
+}
+
+function looksLikeRetiredPoliteDecline(text: string) {
+  const normalized = normalizeComparableMessageText(text)
+  return (
+    normalized.includes('ja estou aposentad') ||
+    normalized.includes('ja sou aposentad') ||
+    normalized.includes('ja me aposentei') ||
+    normalized.includes('ja solicitei revisao') ||
+    normalized.includes('ja entrei com revisao') ||
+    normalized.includes('fica para outro momento') ||
+    normalized.includes('agradeco o contato') ||
+    normalized.includes('obrigada pelo contato')
+  )
+}
+
+function buildPoliteRetiredClosure(operationProfile: string) {
+  if (normalizeOperationProfile(operationProfile) === 'planejamento_previdenciario') {
+    return 'Entendo perfeitamente. Que bom que você já está com isso encaminhado. Se em algum momento surgir alguma dúvida sobre a sua revisão ou se quiser uma segunda opinião técnica, seguimos à disposição por aqui.'
+  }
+
+  return 'Entendo perfeitamente. Que bom que você já está com isso encaminhado. Se em algum momento surgir alguma dúvida sobre o benefício ou se quiser retomar a conversa, seguimos à disposição por aqui.'
 }
 
 function softenPlanningGreeting({
@@ -971,28 +1001,12 @@ function buildCurrentLeadTurn(historico: HistoricoEntry[]) {
 
 function buildConversationTranscript(rows: InboundMessageRow[], leadPhone: string) {
   const transcript: string[] = []
+  const timeline = buildConversationTimelineRows(rows, leadPhone)
 
-  for (const row of rows) {
-    const outboundToLead =
-      Boolean(leadPhone) &&
-      normalizeComparablePhone(row.telefone_destinatario) === leadPhone &&
-      normalizeComparablePhone(row.telefone_remetente) !== leadPhone
-
-    const inboundText = String(row.mensagem || '').trim()
-    const outboundText = String(row.resposta_agente || (outboundToLead ? row.mensagem || '' : '')).trim()
-
-    if (outboundToLead && outboundText) {
-      transcript.push(`AGENTE: ${outboundText}`)
-      continue
-    }
-
-    if (inboundText) {
-      transcript.push(`LEAD: ${inboundText}`)
-    }
-
-    if (row.respondido_por_agente && row.resposta_agente && !outboundToLead) {
-      transcript.push(`AGENTE: ${String(row.resposta_agente).trim()}`)
-    }
+  for (const row of timeline) {
+    const text = String(row.mensagem || '').trim()
+    if (!text) continue
+    transcript.push(`${row.timeline_role === 'assistant' ? 'AGENTE' : 'LEAD'}: ${text}`)
   }
 
   return transcript.join('\n')
@@ -1311,7 +1325,7 @@ export async function POST(request: NextRequest) {
     if (historyScopeValue) {
       const { data } = await supabase
         .from('mensagens_inbound')
-        .select('id, mensagem, telefone_remetente, telefone_destinatario, respondido_por_agente, respondido_manualmente, resposta_agente, agente_reprocessar_apos, created_at')
+        .select('id, mensagem, telefone_remetente, telefone_destinatario, respondido_por_agente, respondido_manualmente, resposta_agente, agente_reprocessar_apos, lido_em, created_at')
         .eq(historyScopeColumn, historyScopeValue)
         .order('created_at', { ascending: false })
         .limit(40)
@@ -1406,29 +1420,15 @@ export async function POST(request: NextRequest) {
     }
 
     const leadPhone = normalizeComparablePhone(mensagem.telefone_remetente)
+    const timeline = buildConversationTimelineRows([...inbounds].reverse(), leadPhone)
 
-    ;[...inbounds].reverse().forEach((msg) => {
-      const outboundToLead =
-        Boolean(leadPhone) &&
-        normalizeComparablePhone(msg.telefone_destinatario) === leadPhone &&
-        normalizeComparablePhone(msg.telefone_remetente) !== leadPhone
-
-      if (outboundToLead) {
-        const outboundText = String(msg.resposta_agente || msg.mensagem || '').trim()
-        if (outboundText) {
-          historico.push({ role: 'assistant', content: outboundText })
-        }
-        return
-      }
-
-      const inboundText = String(msg.mensagem || '').trim()
-      if (inboundText) {
-        historico.push({ role: 'user', content: inboundText })
-      }
-
-      if (msg.respondido_por_agente && msg.resposta_agente && !outboundToLead) {
-        historico.push({ role: 'assistant', content: String(msg.resposta_agente).trim() })
-      }
+    timeline.forEach((msg) => {
+      const text = String(msg.mensagem || '').trim()
+      if (!text) return
+      historico.push({
+        role: msg.timeline_role === 'assistant' ? 'assistant' : 'user',
+        content: text,
+      })
     })
 
     const latestLeadMessage = buildCurrentLeadTurn(historico) || String(mensagem.mensagem || '').trim()
@@ -1728,6 +1728,10 @@ export async function POST(request: NextRequest) {
         previousAssistant: previousAssistantMessage,
         isFirstReplyAfterCampaign,
       })
+    }
+
+    if (looksLikeRetiredPoliteDecline(latestLeadMessage) && isBareGreetingReply(respostaTexto)) {
+      respostaTexto = buildPoliteRetiredClosure(normalizedOperationProfile)
     }
 
     if (!respostaTexto) {

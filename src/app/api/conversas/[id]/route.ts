@@ -4,6 +4,11 @@ import { contextHasPermission, getTenantContext } from '@/lib/tenant-context'
 import { createAdminSupabase } from '@/lib/internal-collaboration'
 import { canViewConversationForInbox } from '@/lib/inbox-visibility'
 import {
+  buildConversationTimelineRows,
+  dedupeConversationMessages,
+  type ConversationMessageRow,
+} from '@/lib/conversation-message-timeline'
+import {
   isOperationalConversationState,
   normalizeOperationalConversationState,
   OPERATIONAL_STATE_META,
@@ -18,101 +23,6 @@ const CONVERSA_STATUS = new Set([
   'encerrado',
 ])
 
-type ConversationMessageRow = {
-  id: string
-  created_at: string
-  mensagem?: string | null
-  telefone_remetente?: string | null
-  telefone_destinatario?: string | null
-  respondido_manualmente?: boolean | null
-  twilio_message_sid?: string | null
-  twilio_sid?: string | null
-  resposta_agente?: string | null
-}
-
-function scoreConversationMessage(row: ConversationMessageRow) {
-  let score = 0
-
-  if (row.resposta_agente?.trim()) score += 4
-  if (row.twilio_sid && row.twilio_sid !== 'on-receive') score += 2
-  if (row.twilio_sid === 'on-receive') score -= 1
-
-  return score
-}
-
-function dedupeConversationMessages<T extends ConversationMessageRow>(rows: T[]) {
-  const result: T[] = []
-  const byExternalInboundId = new Map<string, number>()
-  const byRecentManualMirror = new Map<string, number>()
-
-  const pickPreferredRow = (existing: T, candidate: T) => {
-    const existingScore = scoreConversationMessage(existing)
-    const candidateScore = scoreConversationMessage(candidate)
-
-    if (candidateScore > existingScore) return candidate
-    if (candidateScore < existingScore) return existing
-
-    return new Date(candidate.created_at).getTime() > new Date(existing.created_at).getTime()
-      ? candidate
-      : existing
-  }
-
-  const rowsAsc = [...rows].sort(
-    (left, right) => new Date(left.created_at).getTime() - new Date(right.created_at).getTime(),
-  )
-
-  for (const row of rowsAsc) {
-    const externalInboundId = String(row.twilio_message_sid || '').trim()
-    const normalizedBody = String(row.mensagem || '').trim().toLowerCase()
-    const manualMirrorFingerprint =
-      row.respondido_manualmente &&
-      normalizedBody &&
-      row.telefone_remetente &&
-      row.telefone_destinatario
-        ? `${row.telefone_remetente}::${row.telefone_destinatario}::${normalizedBody}`
-        : ''
-
-    let duplicateIndex: number | null = null
-
-    if (externalInboundId) {
-      duplicateIndex = byExternalInboundId.get(externalInboundId) ?? null
-    }
-
-    if (duplicateIndex === null && manualMirrorFingerprint) {
-      const existingIndex = byRecentManualMirror.get(manualMirrorFingerprint)
-      if (existingIndex !== undefined) {
-        const existingRow = result[existingIndex]
-        const existingTs = new Date(existingRow.created_at).getTime()
-        const currentTs = new Date(row.created_at).getTime()
-
-        if (Math.abs(currentTs - existingTs) <= 180000) {
-          duplicateIndex = existingIndex
-        }
-      }
-    }
-
-    if (duplicateIndex !== null) {
-      const preferred = pickPreferredRow(result[duplicateIndex], row)
-      result[duplicateIndex] = preferred
-      continue
-    }
-
-    const nextIndex = result.push(row) - 1
-
-    if (externalInboundId) {
-      byExternalInboundId.set(externalInboundId, nextIndex)
-    }
-
-    if (manualMirrorFingerprint) {
-      byRecentManualMirror.set(manualMirrorFingerprint, nextIndex)
-    }
-  }
-
-  return result.sort(
-    (left, right) => new Date(left.created_at).getTime() - new Date(right.created_at).getTime(),
-  )
-}
-
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -124,7 +34,7 @@ export async function GET(
 
   const { data: conversa } = await supabase
     .from('conversas')
-    .select('id, assumido_por, leads(responsavel_id)')
+    .select('id, telefone, assumido_por, leads(responsavel_id)')
     .eq('id', id)
     .eq('tenant_id', context.tenantId)
     .maybeSingle()
@@ -137,7 +47,9 @@ export async function GET(
     .order('created_at', { ascending: true })
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  return NextResponse.json(dedupeConversationMessages((data || []) as ConversationMessageRow[]))
+  const rows = dedupeConversationMessages((data || []) as ConversationMessageRow[])
+  const leadPhone = typeof conversa?.telefone === 'string' ? conversa.telefone : null
+  return NextResponse.json(buildConversationTimelineRows(rows, leadPhone))
 }
 
 export async function PATCH(

@@ -5,6 +5,34 @@ Mestra: [[MASTER_PREV_LEGAL]]
 > Erros encontrados, causas e correções aplicadas.
 > Atualizado a cada sessão.
 
+## Atualização 2026-05-07 — `outside_hours` não deve reaparecer na timeline como se a Bianca tivesse respondido no passado
+
+- Problema:
+  - em retomadas pós-`outside_hours`, o WhatsApp real saía certo, mas a inbox mostrava a resposta do dia seguinte grudada na mensagem antiga do lead
+  - isso dava a impressão de ordem invertida e ainda poluía o histórico lido pelo agente
+- Causa:
+  - o aviso de horário já virava uma linha outbound própria
+  - porém a retomada posterior continuava sendo persistida no `resposta_agente` do inbound original
+  - como a UI ordenava por `created_at` da linha original, a resposta retomada “viajava no tempo”
+- Correção:
+  - deduplicar as linhas brutas e depois expandi-las em eventos cronológicos de timeline
+  - quando houver `resposta_agente` em inbound do lead, a timeline passa a emitir um evento outbound sintético no horário efetivo do processamento (`lido_em`)
+  - reaproveitar a mesma normalização na inbox, no histórico do lead e no transcript interno do agente
+- Regra prática:
+  - em sistemas que persistem inbound e outbound no mesmo registro lógico, a UI não pode assumir que `created_at` da linha equivale ao horário de todos os turnos derivados dela
+
+## Atualização 2026-05-07 — Resposta curta demais após objeção educada precisa fallback contextual, não só heurística de saudação
+
+- Problema:
+  - em um caso real, a lead respondeu `já estou aposentada obrigada` e a retomada da Bianca saiu apenas como `Boa noite!`
+- Causa:
+  - mesmo com as heurísticas recentes para saudações, ainda pode escapar uma resposta mínima quando o modelo cai numa cordialidade vazia diante de uma objeção/encerramento educado
+- Correção:
+  - detectar mensagens com sinal claro de encerramento contextual (`já estou aposentada`, `já solicitei revisão`, `fica para outro momento`, etc.)
+  - se a saída final do modelo vier só como saudação curta, substituir por fechamento cordial e contextualizado
+- Regra prática:
+  - guardrails de qualidade não devem olhar apenas para “saudação”; também precisam cobrir “objeção com fechamento educado”, principalmente em retomadas automáticas
+
 ## Atualização 2026-05-07 — Contexto documental da inbox deve respeitar a visibilidade da conversa, não a permissão bruta do lead
 
 - Problema:
