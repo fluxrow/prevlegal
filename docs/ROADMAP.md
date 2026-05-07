@@ -4,6 +4,23 @@ Contexto: [[SESSION_HISTORY_MASTER]]
 Mestra: [[MASTER_PREV_LEGAL]]
 > Última atualização: 10/04/2026
 
+## Atualizacao 2026-05-07 — Inbox passou a expor responsável e documentos do lead sem mexer no motor de conversa
+
+- necessidade operacional:
+  - o time precisava enxergar, dentro da própria caixa de entrada, com quem o lead está e quais documentos ele já enviou
+  - isso precisava acontecer sem reescrever webhook, agente ou dispatch de WhatsApp
+- desenho adotado:
+  - manter `mensagens_inbound` como trilha textual principal
+  - criar uma leitura lateral dos documentos do lead a partir da conversa
+  - reaproveitar o `responsavel_id` do lead e a thread interna já existente para exibir o responsável operacional
+- correção aplicada:
+  - inbox ganhou badge `Com <responsável>` na lista e no cabeçalho da conversa
+  - a conversa agora mostra uma faixa com os documentos vinculados ao lead, com link rápido para abrir arquivo e ir para o lead
+  - foi criada uma rota segura `/api/conversas/[id]/documentos`, respeitando a visibilidade da inbox sem afrouxar o endpoint geral de documentos do lead
+- leitura prática:
+  - a operação ganha contexto documental e dono do caso sem sair da caixa de entrada
+  - anexos outbound e áudio continuam fora da V1; isso segue como evolução posterior, não parte desta entrega
+
 ## Atualizacao 2026-05-06 — Preparação de minuta passou a aproveitar também documentos já processados
 
 - necessidade operacional:

@@ -5,6 +5,21 @@ Mestra: [[MASTER_PREV_LEGAL]]
 > Erros encontrados, causas e correções aplicadas.
 > Atualizado a cada sessão.
 
+## Atualização 2026-05-07 — Contexto documental da inbox deve respeitar a visibilidade da conversa, não a permissão bruta do lead
+
+- Problema:
+  - o operador podia estar legitimamente dentro da conversa humana, mas ainda assim não ter acesso direto ao endpoint geral de documentos do lead
+  - isso impediria mostrar documentos dentro da inbox quando a thread estivesse assumida por alguém que não era o `responsavel_id` original
+- Causa:
+  - `/api/leads/[id]/documentos` usa a regra mais ampla do lead (`canAccessLeadId`)
+  - a inbox opera por outra semântica: `responsavel_id` do lead ou `assumido_por` da conversa
+- Correção:
+  - criar `/api/conversas/[id]/documentos` com a mesma verificação de visibilidade da inbox (`canViewConversationForInbox`)
+  - carregar os documentos pela conversa e não pelo acesso direto ao lead
+- Regra prática:
+  - quando uma feature nasce dentro da inbox, a autorização deve seguir a verdade operacional da conversa
+  - reaproveitar endpoint “quase igual” do lead pode parecer mais rápido, mas vira bloqueio silencioso em handoffs e atendimento humano compartilhado
+
 ## Atualização 2026-05-06 — Minuta contratual não deve depender só da conversa se o lead já enviou documentos processados
 
 - Problema:

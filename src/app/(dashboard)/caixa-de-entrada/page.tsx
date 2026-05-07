@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
-import { MessageSquare, User, Bot, UserCheck, RotateCcw, Send, Users } from 'lucide-react'
+import { MessageSquare, User, Bot, UserCheck, RotateCcw, Send, Users, FileText, ExternalLink } from 'lucide-react'
 import { useOnboarding } from '@/hooks/useOnboarding'
 import OnboardingTooltip from '@/components/onboarding-tooltip'
 import { samePhone } from '@/lib/contact-shortcuts'
@@ -47,7 +47,7 @@ interface Conversa {
   nao_lidas: number
   assumido_por?: string | null
   assumido_em?: string | null
-  leads: { id?: string; nome: string; nb: string; status: string } | null
+  leads: { id?: string; nome: string; nb: string; status: string; responsavel_id?: string | null } | null
 }
 
 interface Mensagem {
@@ -101,6 +101,36 @@ interface PortalMensagem {
   created_at: string
 }
 
+interface UsuarioResumo {
+  id: string
+  nome: string | null
+  email: string | null
+}
+
+type UsuarioNomeLike = {
+  id?: string
+  nome: string | null
+  email?: string | null
+}
+
+interface DocumentoInbox {
+  id: string
+  nome: string
+  tipo: string
+  arquivo_url: string
+  arquivo_nome: string
+  arquivo_tamanho: number
+  arquivo_tipo: string
+  descricao: string
+  created_at: string
+  processing_status?: 'pending' | 'processing' | 'done' | 'failed' | null
+  processing_error?: string | null
+  processing_finished_at?: string | null
+  parsed_doc_type_guess?: string | null
+  parsed_excerpt?: string | null
+  parsed_updated_at?: string | null
+}
+
 const STATUS_CONVERSA = {
   agente: { label: 'Agente', color: '#4f7aff', bg: '#4f7aff20', icon: '🤖' },
   humano: { label: 'Em atendimento', color: '#2dd4a0', bg: '#2dd4a020', icon: '👤' },
@@ -112,6 +142,13 @@ const STATUS_CONVERSA = {
 const STATUS_HUMANOS = new Set(['humano', 'aguardando_cliente', 'resolvido'])
 const STATUS_CONHECIDOS = new Set(['agente', 'humano', 'aguardando_cliente', 'resolvido', 'encerrado'])
 type AbaInbox = 'todas' | 'agente' | 'humano' | 'aguardando_cliente' | 'resolvido' | 'portal'
+
+const PROCESSING_STATUS_LABEL = {
+  pending: { label: 'Na fila', bg: '#f59e0b15', color: '#f5b942' },
+  processing: { label: 'Processando', bg: '#4f7aff15', color: '#7ea2ff' },
+  done: { label: 'Processado', bg: '#22c55e15', color: '#86efac' },
+  failed: { label: 'Falhou', bg: '#ff6b6b15', color: '#ff8f8f' },
+} as const
 
 function normalizeInboxStatus(status?: string | null): Conversa['status'] {
   if (status && STATUS_CONHECIDOS.has(status)) {
@@ -173,6 +210,9 @@ export default function CaixaDeEntradaPage() {
   const [textoPortal, setTextoPortal] = useState('')
   const [enviandoPortal, setEnviandoPortal] = useState(false)
   const [internoData, setInternoData] = useState<InternoData | null>(null)
+  const [usuariosMap, setUsuariosMap] = useState<Record<string, UsuarioResumo>>({})
+  const [documentosLead, setDocumentosLead] = useState<DocumentoInbox[]>([])
+  const [loadingDocumentosLead, setLoadingDocumentosLead] = useState(false)
   const [panelInternoAberto, setPanelInternoAberto] = useState(false)
   const [notaTexto, setNotaTexto] = useState('')
   const [adicionandoNota, setAdicionandoNota] = useState(false)
@@ -302,6 +342,34 @@ export default function CaixaDeEntradaPage() {
     }
   }, [])
 
+  const fetchUsuarios = useCallback(async () => {
+    const res = await fetch('/api/usuarios')
+    if (!res.ok) return
+
+    const data = await res.json()
+    const nextMap = Object.fromEntries(
+      ((data.usuarios || []) as UsuarioResumo[]).map((usuario) => [usuario.id, usuario]),
+    )
+    setUsuariosMap(nextMap)
+  }, [])
+
+  const fetchDocumentosConversa = useCallback(async (conversaId: string) => {
+    setLoadingDocumentosLead(true)
+
+    try {
+      const res = await fetch(`/api/conversas/${conversaId}/documentos`)
+      if (!res.ok) {
+        setDocumentosLead([])
+        return
+      }
+
+      const data = await res.json()
+      setDocumentosLead(data || [])
+    } finally {
+      setLoadingDocumentosLead(false)
+    }
+  }, [])
+
   const selecionarThreadPortal = useCallback((
     thread: ThreadPortal,
     options?: { syncUrl?: boolean },
@@ -335,11 +403,11 @@ export default function CaixaDeEntradaPage() {
 
   useEffect(() => {
     const loadInbox = async () => {
-      await Promise.all([fetchConversas(), fetchThreadsPortal()])
+      await Promise.all([fetchConversas(), fetchThreadsPortal(), fetchUsuarios()])
     }
 
     void loadInbox()
-  }, [fetchConversas, fetchThreadsPortal])
+  }, [fetchConversas, fetchThreadsPortal, fetchUsuarios])
 
   function selecionarAba(aba: AbaInbox) {
     setAbaAtiva(aba)
@@ -450,17 +518,22 @@ export default function CaixaDeEntradaPage() {
     if (!leadId) {
       const timer = window.setTimeout(() => {
         setInternoData(null)
+        setDocumentosLead([])
+        setLoadingDocumentosLead(false)
         setPanelInternoAberto(false)
       }, 0)
       return () => window.clearTimeout(timer)
     }
 
     const loadInterno = async () => {
-      await fetchInternoData(leadId)
+      await Promise.all([
+        fetchInternoData(leadId),
+        fetchDocumentosConversa(conversaSelecionada.id),
+      ])
     }
 
     void loadInterno()
-  }, [conversaSelecionada, fetchInternoData])
+  }, [conversaSelecionada, fetchDocumentosConversa, fetchInternoData])
 
   useEffect(() => {
     const container = messagesContainerRef.current
@@ -724,8 +797,30 @@ export default function CaixaDeEntradaPage() {
     fontFamily: 'DM Sans, sans-serif',
   }
 
+  function getUsuarioNome(usuario?: UsuarioNomeLike | null) {
+    if (!usuario) return null
+    return usuario.nome || usuario.email || null
+  }
+
+  function getResponsavelConversa(conversa?: Conversa | null) {
+    const responsavelId = conversa?.leads?.responsavel_id || null
+    if (!responsavelId) return null
+    return usuariosMap[responsavelId] || null
+  }
+
+  function formatFileSize(size?: number | null) {
+    if (!size || size <= 0) return null
+    if (size >= 1024 * 1024) return `${(size / (1024 * 1024)).toFixed(1)} MB`
+    if (size >= 1024) return `${Math.round(size / 1024)} KB`
+    return `${size} B`
+  }
+
   function renderConversationPanel() {
     if (!conversaSelecionada) return null
+
+    const responsavelConversa = getResponsavelConversa(conversaSelecionada)
+    const responsavelLabel = getUsuarioNome(internoData?.thread?.current_owner || responsavelConversa)
+    const documentosPreview = documentosLead.slice(0, 3)
 
     return (
       <div data-tour="inbox-painel" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
@@ -747,6 +842,11 @@ export default function CaixaDeEntradaPage() {
               <span style={{ fontSize: '11px', padding: '4px 10px', borderRadius: '999px', background: estadoOperacionalSelecionadoMeta.bg, color: estadoOperacionalSelecionadoMeta.color, fontWeight: '700', fontFamily: 'DM Sans, sans-serif' }}>
                 Estado operacional: {OPERATIONAL_STATE_LABELS[estadoOperacionalSelecionado]}
               </span>
+              {responsavelLabel ? (
+                <span style={{ fontSize: '11px', padding: '4px 10px', borderRadius: '999px', background: 'rgba(79,122,255,0.12)', color: '#7ea2ff', fontWeight: '700', fontFamily: 'DM Sans, sans-serif', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                  <UserCheck size={11} /> Com {responsavelLabel}
+                </span>
+              ) : null}
               {prazoOperacionalSelecionadoFormatado ? (
                 <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'DM Sans, sans-serif' }}>
                   Prazo: {prazoOperacionalSelecionadoFormatado}
@@ -911,6 +1011,67 @@ export default function CaixaDeEntradaPage() {
             </button>
           )
         })()}
+
+        {conversaSelecionada.leads?.id && (
+          <div style={{ padding: '10px 24px', borderBottom: '1px solid var(--border)', background: 'rgba(255,255,255,0.01)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', marginBottom: documentosPreview.length > 0 || loadingDocumentosLead ? '10px' : '0' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
+                <FileText size={13} color="var(--accent)" />
+                <span style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text-primary)', fontFamily: 'DM Sans, sans-serif' }}>
+                  Documentos do lead
+                </span>
+                <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontFamily: 'DM Sans, sans-serif' }}>
+                  {loadingDocumentosLead ? 'carregando...' : `${documentosLead.length} arquivo(s)`}
+                </span>
+              </div>
+              <a href={`/leads/${conversaSelecionada.leads.id}#documentos`} style={{ fontSize: '11px', color: 'var(--accent)', textDecoration: 'none', fontWeight: '500', fontFamily: 'DM Sans, sans-serif' }}>
+                Ver lead →
+              </a>
+            </div>
+
+            {!loadingDocumentosLead && documentosLead.length === 0 ? (
+              <p style={{ margin: 0, fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'DM Sans, sans-serif' }}>
+                Nenhum documento vinculado a este lead ainda.
+              </p>
+            ) : null}
+
+            {documentosPreview.length > 0 ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {documentosPreview.map((doc) => {
+                  const processingMeta = doc.processing_status ? PROCESSING_STATUS_LABEL[doc.processing_status] : null
+                  const fileSize = formatFileSize(doc.arquivo_tamanho)
+
+                  return (
+                    <a
+                      key={doc.id}
+                      href={doc.arquivo_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      style={{ textDecoration: 'none', border: '1px solid var(--border)', borderRadius: '10px', padding: '10px 12px', background: 'var(--bg-card)', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' }}
+                    >
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '7px', marginBottom: '4px' }}>
+                          <span style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text-primary)', fontFamily: 'DM Sans, sans-serif', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {doc.nome || doc.arquivo_nome}
+                          </span>
+                          {processingMeta ? (
+                            <span style={{ fontSize: '9px', padding: '2px 6px', borderRadius: '999px', background: processingMeta.bg, color: processingMeta.color, fontWeight: '700', fontFamily: 'DM Sans, sans-serif' }}>
+                              {processingMeta.label}
+                            </span>
+                          ) : null}
+                        </div>
+                        <p style={{ margin: 0, fontSize: '10px', color: 'var(--text-muted)', fontFamily: 'DM Sans, sans-serif' }}>
+                          {[doc.arquivo_nome, fileSize].filter(Boolean).join(' • ')}
+                        </p>
+                      </div>
+                      <ExternalLink size={13} color="var(--text-muted)" style={{ flexShrink: 0, marginTop: '2px' }} />
+                    </a>
+                  )
+                })}
+              </div>
+            ) : null}
+          </div>
+        )}
 
         <div ref={messagesContainerRef} style={{ flex: 1, overflowY: 'auto', padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
           {conversaSelecionada.status === 'aguardando_cliente' && (
@@ -1131,6 +1292,7 @@ export default function CaixaDeEntradaPage() {
                 const st = STATUS_CONVERSA[conversa.status] || STATUS_CONVERSA.agente
                 const estadoOperacional = normalizeOperationalConversationState(conversa.estado_operacional, conversa.status)
                 const estadoOperacionalMeta = OPERATIONAL_STATE_META[estadoOperacional]
+                const responsavelLabel = getUsuarioNome(getResponsavelConversa(conversa))
                 const selecionada = conversaSelecionada?.id === conversa.id
                 return (
                   <div
@@ -1178,6 +1340,11 @@ export default function CaixaDeEntradaPage() {
                         NB {conversa.leads.nb}
                       </p>
                     )}
+                    {responsavelLabel ? (
+                      <p style={{ fontSize: '10px', color: '#7ea2ff', fontFamily: 'DM Sans, sans-serif', marginTop: '4px', marginBottom: 0, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <UserCheck size={10} /> Com {responsavelLabel}
+                      </p>
+                    ) : null}
                     {STATUS_HUMANOS.has(conversa.status) && conversa.assumido_em && (
                       <p style={{ fontSize: '10px', color: 'var(--text-muted)', fontFamily: 'DM Sans, sans-serif', marginTop: '4px', marginBottom: 0 }}>
                         Em fila humana desde {formatTime(conversa.assumido_em)}
