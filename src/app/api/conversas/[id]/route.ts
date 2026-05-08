@@ -67,7 +67,7 @@ export async function PATCH(
 
   const { data: conversa } = await supabase
     .from('conversas')
-    .select('id, status, assumido_por, assumido_em, leads(responsavel_id)')
+    .select('id, lead_id, telefone, status, assumido_por, assumido_em, estado_operacional, estado_operacional_prazo_at, leads(nome, status, responsavel_id)')
     .eq('id', id)
     .eq('tenant_id', context.tenantId)
     .maybeSingle()
@@ -175,7 +175,7 @@ export async function PATCH(
     .from('conversas')
     .update(payload)
     .eq('id', id)
-    .select()
+    .select('*, leads(nome, status, responsavel_id)')
     .single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
@@ -208,6 +208,47 @@ export async function PATCH(
         metadata: { assumido_por: context.usuarioId, conversa_id: id },
       })
     }
+  }
+
+  if (
+    body.action === 'set_operational_state' &&
+    context.tenantId &&
+    body.estado_operacional === 'agendado' &&
+    typeof body.estado_operacional_prazo_at === 'string' &&
+    body.estado_operacional_prazo_at.trim() &&
+    (
+      conversaAtual.estado_operacional !== 'agendado' ||
+      conversaAtual.estado_operacional_prazo_at !== body.estado_operacional_prazo_at
+    )
+  ) {
+    const admin = createAdminSupabase()
+    const leadRelation = Array.isArray(data.leads) ? (data.leads[0] || null) : (data.leads || null)
+    const leadName = typeof leadRelation?.nome === 'string' && leadRelation.nome.trim()
+      ? leadRelation.nome.trim()
+      : (data.telefone || 'Lead sem nome')
+    const prazoDate = new Date(body.estado_operacional_prazo_at)
+    const prazoFormatado = Number.isNaN(prazoDate.getTime())
+      ? String(body.estado_operacional_prazo_at)
+      : prazoDate.toLocaleString('pt-BR', {
+          day: '2-digit',
+          month: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+        })
+
+    await admin.from('notificacoes').insert({
+      tenant_id: context.tenantId,
+      tipo: 'agendamento',
+      titulo: `Lembrete operacional agendado — ${leadName}`,
+      descricao: `A conversa foi marcada para acompanhamento em ${prazoFormatado}.`,
+      link: `/caixa-de-entrada?conversaId=${id}&telefone=${encodeURIComponent(String(data.telefone || ''))}`,
+      metadata: {
+        conversa_id: id,
+        lead_id: data.lead_id || null,
+        estado_operacional: 'agendado',
+        estado_operacional_prazo_at: body.estado_operacional_prazo_at,
+      },
+    })
   }
 
   return NextResponse.json({

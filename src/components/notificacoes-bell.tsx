@@ -88,6 +88,7 @@ export default function NotificacoesBell() {
     if (tipo === 'escalada') return '#f59e0b'
     if (tipo === 'mensagem') return '#4f7aff'
     if (tipo === 'portal') return '#2dd4a0'
+    if (tipo === 'agendamento') return '#a78bfa'
     return '#a0aec0'
   }
 

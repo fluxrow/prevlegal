@@ -134,6 +134,7 @@ interface DocumentoInbox {
 
 type LeadKanbanStatus = 'new' | 'contacted' | 'awaiting' | 'scheduled' | 'converted' | 'lost'
 type LeadStatusFilter = 'todos' | LeadKanbanStatus
+type LeadStatusSyncChoice = 'manter' | LeadKanbanStatus
 
 const STATUS_CONVERSA = {
   agente: { label: 'Agente', color: '#4f7aff', bg: '#4f7aff20', icon: '🤖' },
@@ -166,6 +167,12 @@ const LEAD_STATUS_FILTER_OPTIONS: Array<{ id: LeadStatusFilter; label: string }>
   { id: 'lost', label: 'Perdidos' },
 ]
 
+const OPERATIONAL_TO_LEAD_STATUS_SUGGESTION: Partial<Record<OperationalConversationState, LeadKanbanStatus>> = {
+  aguardando_cliente: 'awaiting',
+  agendado: 'scheduled',
+  convertido: 'converted',
+}
+
 const PROCESSING_STATUS_LABEL = {
   pending: { label: 'Na fila', bg: '#f59e0b15', color: '#f5b942' },
   processing: { label: 'Processando', bg: '#4f7aff15', color: '#7ea2ff' },
@@ -183,6 +190,12 @@ function normalizeInboxStatus(status?: string | null): Conversa['status'] {
 function normalizeLeadKanbanStatus(status?: string | null): LeadKanbanStatus | null {
   if (!status) return null
   return status in LEAD_STATUS_META ? (status as LeadKanbanStatus) : null
+}
+
+function getSuggestedLeadStatusForOperationalState(
+  operationalState: OperationalConversationState,
+): LeadKanbanStatus | null {
+  return OPERATIONAL_TO_LEAD_STATUS_SUGGESTION[operationalState] || null
 }
 
 function formatTime(dt: string) {
@@ -259,6 +272,8 @@ export default function CaixaDeEntradaPage() {
   const [erroEnvio, setErroEnvio] = useState<string | null>(null)
   const [estadoOperacionalDraft, setEstadoOperacionalDraft] = useState<OperationalConversationState>('em_andamento')
   const [prazoOperacionalDraft, setPrazoOperacionalDraft] = useState('')
+  const [leadStatusSyncDraft, setLeadStatusSyncDraft] = useState<LeadStatusSyncChoice>('manter')
+  const [syncLeadStatusEnabled, setSyncLeadStatusEnabled] = useState(false)
   const [salvandoEstadoOperacional, setSalvandoEstadoOperacional] = useState(false)
   const [erroEstadoOperacional, setErroEstadoOperacional] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
@@ -276,6 +291,7 @@ export default function CaixaDeEntradaPage() {
   }
 
   function syncOperationalStateDraft(conversa: Conversa) {
+    const currentLeadStatus = normalizeLeadKanbanStatus(conversa.leads?.status)
     setEstadoOperacionalDraft(
       normalizeOperationalConversationState(
         conversa.estado_operacional,
@@ -283,6 +299,8 @@ export default function CaixaDeEntradaPage() {
       ),
     )
     setPrazoOperacionalDraft(toDateTimeLocalValue(conversa.estado_operacional_prazo_at))
+    setLeadStatusSyncDraft(currentLeadStatus || 'manter')
+    setSyncLeadStatusEnabled(false)
     setErroEstadoOperacional(null)
   }
 
@@ -311,6 +329,27 @@ export default function CaixaDeEntradaPage() {
   const aplicarConversaAtualizada = useCallback((atualizada: Conversa) => {
     setConversas((prev) => prev.map((conversa) => (conversa.id === atualizada.id ? { ...conversa, ...atualizada } : conversa)))
     setConversaSelecionada((prev) => (prev?.id === atualizada.id ? { ...prev, ...atualizada } : prev))
+  }, [])
+
+  const aplicarLeadStatusAtualizado = useCallback((leadId: string, nextStatus: LeadKanbanStatus) => {
+    setConversas((prev) =>
+      prev.map((conversa) =>
+        conversa.leads?.id === leadId
+          ? {
+              ...conversa,
+              leads: conversa.leads ? { ...conversa.leads, status: nextStatus } : conversa.leads,
+            }
+          : conversa,
+      ),
+    )
+    setConversaSelecionada((prev) =>
+      prev?.leads?.id === leadId
+        ? {
+            ...prev,
+            leads: prev.leads ? { ...prev.leads, status: nextStatus } : prev.leads,
+          }
+        : prev,
+    )
   }, [])
 
   const atualizarConversa = useCallback(async (
@@ -713,6 +752,12 @@ export default function CaixaDeEntradaPage() {
       estado_operacional_atualizado_em: new Date().toISOString(),
     }
 
+    const currentLeadStatus = normalizeLeadKanbanStatus(conversaSelecionada.leads?.status)
+    const desiredLeadStatus =
+      syncLeadStatusEnabled && leadStatusSyncDraft !== 'manter'
+        ? leadStatusSyncDraft
+        : null
+
     const atualizada = await atualizarConversa(
       conversaSelecionada.id,
       {
@@ -726,6 +771,24 @@ export default function CaixaDeEntradaPage() {
     if (!atualizada) {
       setErroEstadoOperacional('Não foi possível salvar o estado operacional')
     } else {
+      if (
+        desiredLeadStatus &&
+        conversaSelecionada.leads?.id &&
+        desiredLeadStatus !== currentLeadStatus
+      ) {
+        const leadStatusRes = await fetch(`/api/leads/${conversaSelecionada.leads.id}/status`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: desiredLeadStatus }),
+        })
+
+        if (leadStatusRes.ok) {
+          aplicarLeadStatusAtualizado(conversaSelecionada.leads.id, desiredLeadStatus)
+        } else {
+          setErroEstadoOperacional('Estado salvo, mas não foi possível atualizar o status do lead')
+        }
+      }
+
       syncOperationalStateDraft(atualizada)
     }
 
@@ -927,6 +990,9 @@ export default function CaixaDeEntradaPage() {
     conversaSelecionada?.estado_operacional_prazo_at,
   )
   const requiresDeadlineDraft = OPERATIONAL_STATE_META[estadoOperacionalDraft].requiresDeadline
+  const suggestedLeadStatus = getSuggestedLeadStatusForOperationalState(estadoOperacionalDraft)
+  const leadStatusSelecionado = normalizeLeadKanbanStatus(conversaSelecionada?.leads?.status)
+  const suggestedLeadStatusMeta = suggestedLeadStatus ? LEAD_STATUS_META[suggestedLeadStatus] : null
 
   function isMensagemOutbound(msg: Mensagem) {
     if (!conversaSelecionada) return false
@@ -1090,6 +1156,17 @@ export default function CaixaDeEntradaPage() {
                     if (!OPERATIONAL_STATE_META[nextValue].requiresDeadline) {
                       setPrazoOperacionalDraft('')
                     }
+                    const nextSuggestion = getSuggestedLeadStatusForOperationalState(nextValue)
+                    if (nextSuggestion) {
+                      setLeadStatusSyncDraft(nextSuggestion)
+                      setSyncLeadStatusEnabled(nextSuggestion !== normalizeLeadKanbanStatus(conversaSelecionada.leads?.status))
+                    } else if (nextValue === 'encerrado') {
+                      setLeadStatusSyncDraft('manter')
+                      setSyncLeadStatusEnabled(false)
+                    } else {
+                      setLeadStatusSyncDraft('manter')
+                      setSyncLeadStatusEnabled(false)
+                    }
                   }}
                   style={{
                     ...inputStyle,
@@ -1142,6 +1219,49 @@ export default function CaixaDeEntradaPage() {
               <p style={{ margin: 0, fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'DM Sans, sans-serif' }}>
                 {OPERATIONAL_STATE_META[estadoOperacionalDraft].hint}
               </p>
+              {suggestedLeadStatusMeta && suggestedLeadStatus ? (
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'DM Sans, sans-serif' }}>
+                  <input
+                    type="checkbox"
+                    checked={syncLeadStatusEnabled}
+                    onChange={(event) => setSyncLeadStatusEnabled(event.target.checked)}
+                  />
+                  Atualizar também o status do lead para
+                  <span style={{ padding: '3px 8px', borderRadius: '999px', background: suggestedLeadStatusMeta.bg, color: suggestedLeadStatusMeta.color, fontWeight: '700' }}>
+                    {suggestedLeadStatusMeta.label}
+                  </span>
+                </label>
+              ) : null}
+              {estadoOperacionalDraft === 'encerrado' ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                  <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'DM Sans, sans-serif' }}>
+                    Refletir no kanban:
+                  </span>
+                  <select
+                    value={leadStatusSyncDraft}
+                    onChange={(event) => {
+                      const nextValue = event.target.value as LeadStatusSyncChoice
+                      setLeadStatusSyncDraft(nextValue)
+                      setSyncLeadStatusEnabled(nextValue !== 'manter')
+                    }}
+                    style={{ ...inputStyle, fontSize: '12px', padding: '8px 10px', minWidth: '190px' }}
+                  >
+                    <option value="manter">Manter status atual</option>
+                    <option value="lost">Marcar como Perdido</option>
+                    <option value="converted">Marcar como Convertido</option>
+                  </select>
+                  {leadStatusSelecionado ? (
+                    <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontFamily: 'DM Sans, sans-serif' }}>
+                      Atual: {LEAD_STATUS_META[leadStatusSelecionado].label}
+                    </span>
+                  ) : null}
+                </div>
+              ) : null}
+              {estadoOperacionalDraft === 'agendado' ? (
+                <p style={{ margin: 0, fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'DM Sans, sans-serif' }}>
+                  Isso cria um lembrete operacional na inbox/notificações. Ainda não cria um agendamento real na agenda do responsável.
+                </p>
+              ) : null}
               {erroEstadoOperacional ? (
                 <p style={{ margin: 0, fontSize: '11px', color: '#ff6b6b', fontFamily: 'DM Sans, sans-serif' }}>
                   {erroEstadoOperacional}

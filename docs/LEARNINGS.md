@@ -36,6 +36,34 @@ Mestra: [[MASTER_PREV_LEGAL]]
 - Regra prática:
   - antes de tentar sincronizar automaticamente `estado_operacional` com kanban, a UI precisa tornar ambos visíveis e filtráveis na mesma superfície operacional
 
+## Atualização 2026-05-08 — `agendado` na inbox não é evento real; precisa lembrar isso no produto e no backend
+
+- Problema:
+  - ao marcar `agendado` com data/hora na inbox, o usuário pode assumir que aquilo já entrou na agenda do responsável
+- Causa:
+  - o campo `estado_operacional_prazo_at` vive em `conversas`
+  - o fluxo formal de agenda vive em `agendamentos` + `Google Calendar`
+  - sem pista explícita, o produto parece prometer mais do que faz
+- Correção:
+  - manter `agendado` da inbox como lembrete operacional
+  - gerar notificação interna quando houver data/hora
+  - explicitar na UI que isso ainda não cria agendamento real
+- Regra prática:
+  - se a interface deixa escolher data e hora, ela precisa deixar claro se aquilo é `prazo operacional` ou `evento de agenda`
+
+## Atualização 2026-05-08 — Sync entre inbox e kanban deve ser assistido por equivalência forte, e manual nos casos ambíguos
+
+- Problema:
+  - o produto já tinha dois eixos válidos (`estado_operacional` e `status do lead`), mas faltava reduzir o trabalho manual entre eles
+- Causa:
+  - equivalências como `agendado -> scheduled` e `convertido -> converted` são fortes
+  - já `encerrado` é ambíguo: pode ser `lost`, `converted` ou só encerramento operacional
+- Correção:
+  - sugerir sync automático apenas nas equivalências fortes
+  - exigir escolha explícita para `encerrado`
+- Regra prática:
+  - quando a equivalência semântica não é 1:1, o sistema não deve “adivinhar bonito”; deve pedir decisão curta e objetiva
+
 ## Atualização 2026-05-07 — Resposta curta demais após objeção educada precisa fallback contextual, não só heurística de saudação
 
 - Problema:

@@ -108,6 +108,13 @@ Estado confirmado em 27/04/2026:
     - badge na lista
     - badge no cabeçalho da conversa
     - filtro próprio por `status do kanban` dentro da inbox
+  - a troca de `estado operacional` ganhou sync assistido com o kanban:
+    - `agendado` pode refletir para `scheduled`
+    - `aguardando_cliente` pode refletir para `awaiting`
+    - `convertido` pode refletir para `converted`
+    - `encerrado` exige escolha manual, em vez de adivinhar `lost` ou `converted`
+  - quando a conversa é marcada como `agendado` com data/hora, o sistema agora gera alerta operacional interno
+  - isso ainda não cria `agendamento` real nem evento Google Calendar; continua sendo lembrete operacional da conversa
   - a leitura continua `texto-first`: anexo binário direto e resposta automática por áudio seguem fora do fluxo atual
 - a visualização de conversa na área do lead voltou a respeitar a mesma semântica da inbox:
   - mensagem do lead aparece como inbound

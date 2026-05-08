@@ -34,6 +34,25 @@ Mestra: [[MASTER_PREV_LEGAL]]
   - a operação consegue recortar a inbox por carteira comercial específica sem quebrar a camada de `estado_operacional`
   - o próximo passo certo continua sendo sync assistido entre esses dois eixos, e não fusão automática cega
 
+## Atualizacao 2026-05-08 — Inbox ganhou sync assistido com o kanban e lembrete operacional para `agendado`
+
+- necessidade operacional:
+  - depois de expor o `status do lead` na inbox, faltava reduzir o atrito entre marcar o andamento da conversa e manter o funil coerente
+  - ao mesmo tempo, `agendado` na inbox precisava alertar o responsável sem virar compromisso falso no Google
+- desenho adotado:
+  - sync assistido, não automático cego
+  - equivalências fortes podem ser aplicadas junto com o salvamento do estado operacional
+  - `encerrado` continua exigindo decisão humana sobre o kanban
+  - `agendado` da inbox vira lembrete/notificação operacional, não evento real
+- correção aplicada:
+  - a UI da inbox passou a sugerir atualização do `status do lead` em estados com equivalência clara
+  - `encerrado` passou a oferecer escolha explícita entre manter, `lost` ou `converted`
+  - salvar `agendado` com data/hora agora gera notificação interna vinculada à conversa/lead
+- leitura prática:
+  - a equipe mantém o kanban coerente sem navegação extra
+  - o responsável recebe alerta operacional
+  - a agenda real continua reservada ao fluxo formal de `/agendamentos` e Google Calendar
+
 ## Atualizacao 2026-05-07 — Inbox passou a expor responsável e documentos do lead sem mexer no motor de conversa
 
 - necessidade operacional:
