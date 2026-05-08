@@ -17,6 +17,23 @@ Mestra: [[MASTER_PREV_LEGAL]]
 - endurecimento adicional:
   - se o lead responder algo como `já estou aposentada, obrigada` e o modelo tentar devolver só uma saudação curta, a Bianca cai para um fechamento cordial contextualizado
 
+## Atualizacao 2026-05-08 — Inbox passou a enxergar também o status do kanban, sem misturar os dois eixos
+
+- necessidade operacional:
+  - a equipe usa `estado_operacional` para condução da conversa e `status do lead` para leitura do kanban
+  - sem o segundo eixo na inbox, o operador precisava alternar demais entre caixa de entrada e carteira de leads
+- desenho adotado:
+  - manter `estado_operacional` e `status do lead` como camadas distintas
+  - expor os dois sinais na própria inbox
+  - adicionar filtro por `status do kanban` sem alterar a semântica da fila humana
+- correção aplicada:
+  - a lista de conversas ganhou badge de `status do lead`
+  - o cabeçalho da conversa também passou a mostrar o `status do lead`
+  - a inbox ganhou filtro próprio por `new`, `contacted`, `awaiting`, `scheduled`, `converted` e `lost`
+- leitura prática:
+  - a operação consegue recortar a inbox por carteira comercial específica sem quebrar a camada de `estado_operacional`
+  - o próximo passo certo continua sendo sync assistido entre esses dois eixos, e não fusão automática cega
+
 ## Atualizacao 2026-05-07 — Inbox passou a expor responsável e documentos do lead sem mexer no motor de conversa
 
 - necessidade operacional:

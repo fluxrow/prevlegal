@@ -21,6 +21,21 @@ Mestra: [[MASTER_PREV_LEGAL]]
 - Regra prática:
   - em sistemas que persistem inbound e outbound no mesmo registro lógico, a UI não pode assumir que `created_at` da linha equivale ao horário de todos os turnos derivados dela
 
+## Atualização 2026-05-08 — `estado_operacional` e `status do lead` precisam conviver na inbox antes de qualquer automação de sync
+
+- Problema:
+  - o operador marcava um estado como `encerrado` ou `agendado` na inbox, mas não conseguia enxergar nem filtrar o `status do lead` do kanban na mesma tela
+  - isso gerava sensação de inconsistência, embora o sistema estivesse apenas trabalhando com dois eixos diferentes
+- Causa:
+  - a inbox já recebia `leads.status` da API de conversas, mas a UI ignorava essa informação
+  - o produto ainda não tem ponte assistida entre `estado_operacional` e `status do lead`
+- Correção:
+  - expor o `status do lead` na lista e no cabeçalho da conversa
+  - adicionar filtro por `status do kanban` dentro da inbox
+  - manter a separação semântica entre os dois eixos nesta fase
+- Regra prática:
+  - antes de tentar sincronizar automaticamente `estado_operacional` com kanban, a UI precisa tornar ambos visíveis e filtráveis na mesma superfície operacional
+
 ## Atualização 2026-05-07 — Resposta curta demais após objeção educada precisa fallback contextual, não só heurística de saudação
 
 - Problema:

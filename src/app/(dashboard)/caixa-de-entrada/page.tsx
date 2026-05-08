@@ -132,6 +132,9 @@ interface DocumentoInbox {
   parsed_updated_at?: string | null
 }
 
+type LeadKanbanStatus = 'new' | 'contacted' | 'awaiting' | 'scheduled' | 'converted' | 'lost'
+type LeadStatusFilter = 'todos' | LeadKanbanStatus
+
 const STATUS_CONVERSA = {
   agente: { label: 'Agente', color: '#4f7aff', bg: '#4f7aff20', icon: '🤖' },
   humano: { label: 'Em atendimento', color: '#2dd4a0', bg: '#2dd4a020', icon: '👤' },
@@ -143,6 +146,25 @@ const STATUS_CONVERSA = {
 const STATUS_HUMANOS = new Set(['humano', 'aguardando_cliente', 'resolvido'])
 const STATUS_CONHECIDOS = new Set(['agente', 'humano', 'aguardando_cliente', 'resolvido', 'encerrado'])
 type AbaInbox = 'todas' | 'agente' | 'humano' | 'aguardando_cliente' | 'resolvido' | 'portal'
+
+const LEAD_STATUS_META: Record<LeadKanbanStatus, { label: string; color: string; bg: string }> = {
+  new: { label: 'Novo', color: '#4f7aff', bg: '#4f7aff15' },
+  contacted: { label: 'Contatado', color: '#f5c842', bg: '#f5c84215' },
+  awaiting: { label: 'Aguardando', color: '#ff8c42', bg: '#ff8c4215' },
+  scheduled: { label: 'Agendado', color: '#a78bfa', bg: '#a78bfa15' },
+  converted: { label: 'Convertido', color: '#2dd4a0', bg: '#2dd4a015' },
+  lost: { label: 'Perdido', color: '#ff5757', bg: '#ff575715' },
+}
+
+const LEAD_STATUS_FILTER_OPTIONS: Array<{ id: LeadStatusFilter; label: string }> = [
+  { id: 'todos', label: 'Todos os status' },
+  { id: 'new', label: 'Novos' },
+  { id: 'contacted', label: 'Contatados' },
+  { id: 'awaiting', label: 'Aguardando' },
+  { id: 'scheduled', label: 'Agendados' },
+  { id: 'converted', label: 'Convertidos' },
+  { id: 'lost', label: 'Perdidos' },
+]
 
 const PROCESSING_STATUS_LABEL = {
   pending: { label: 'Na fila', bg: '#f59e0b15', color: '#f5b942' },
@@ -156,6 +178,11 @@ function normalizeInboxStatus(status?: string | null): Conversa['status'] {
     return status as Conversa['status']
   }
   return 'agente'
+}
+
+function normalizeLeadKanbanStatus(status?: string | null): LeadKanbanStatus | null {
+  if (!status) return null
+  return status in LEAD_STATUS_META ? (status as LeadKanbanStatus) : null
 }
 
 function formatTime(dt: string) {
@@ -205,6 +232,7 @@ export default function CaixaDeEntradaPage() {
   const [conversaSelecionada, setConversaSelecionada] = useState<Conversa | null>(null)
   const [mensagens, setMensagens] = useState<Mensagem[]>([])
   const [abaAtiva, setAbaAtiva] = useState<AbaInbox>('todas')
+  const [leadStatusFiltro, setLeadStatusFiltro] = useState<LeadStatusFilter>('todos')
   const [threadsPortal, setThreadsPortal] = useState<ThreadPortal[]>([])
   const [threadSelecionada, setThreadSelecionada] = useState<ThreadPortal | null>(null)
   const [msgsPortal, setMsgsPortal] = useState<PortalMensagem[]>([])
@@ -859,14 +887,25 @@ export default function CaixaDeEntradaPage() {
     await fetchInternoData(leadId)
   }
 
-  const conversasFiltradas = conversas.filter(c =>
-    abaAtiva === 'todas' ? true : abaAtiva === 'portal' ? false : normalizeInboxStatus(c.status) === abaAtiva
-  )
+  const conversasFiltradas = conversas.filter((conversa) => {
+    const passaAba =
+      abaAtiva === 'todas'
+        ? true
+        : abaAtiva === 'portal'
+          ? false
+          : normalizeInboxStatus(conversa.status) === abaAtiva
+
+    if (!passaAba) return false
+
+    if (leadStatusFiltro === 'todos') return true
+
+    return normalizeLeadKanbanStatus(conversa.leads?.status) === leadStatusFiltro
+  })
 
   useEffect(() => {
-    if (!conversaSelecionada || abaAtiva === 'portal' || abaAtiva === 'todas') return
-    const statusAtual = normalizeInboxStatus(conversaSelecionada.status)
-    if (statusAtual !== abaAtiva) {
+    if (!conversaSelecionada || abaAtiva === 'portal') return
+    const aindaVisivel = conversasFiltradas.some((conversa) => conversa.id === conversaSelecionada.id)
+    if (!aindaVisivel) {
       const timer = window.setTimeout(() => {
         setConversaSelecionada(null)
         setMensagens([])
@@ -875,7 +914,7 @@ export default function CaixaDeEntradaPage() {
     }
 
     return undefined
-  }, [abaAtiva, conversaSelecionada])
+  }, [abaAtiva, conversaSelecionada, conversasFiltradas])
 
   const badgePortal = threadsPortal.reduce((a, t) => a + t.nao_lidas, 0)
   const conversaGeridaPorHumano = conversaSelecionada ? STATUS_HUMANOS.has(conversaSelecionada.status) : false
@@ -927,6 +966,8 @@ export default function CaixaDeEntradaPage() {
 
     const responsavelConversa = getResponsavelConversa(conversaSelecionada)
     const responsavelLabel = getUsuarioNome(internoData?.thread?.current_owner || responsavelConversa)
+    const leadStatus = normalizeLeadKanbanStatus(conversaSelecionada.leads?.status)
+    const leadStatusMeta = leadStatus ? LEAD_STATUS_META[leadStatus] : null
     const documentosPreview = documentosLead.slice(0, 3)
     const usuariosTransferiveis = Object.values(usuariosMap)
       .filter((usuario) => usuario.id !== (internoData?.thread?.current_owner?.id || conversaSelecionada.leads?.responsavel_id || null))
@@ -952,6 +993,11 @@ export default function CaixaDeEntradaPage() {
               <span style={{ fontSize: '11px', padding: '4px 10px', borderRadius: '999px', background: estadoOperacionalSelecionadoMeta.bg, color: estadoOperacionalSelecionadoMeta.color, fontWeight: '700', fontFamily: 'DM Sans, sans-serif' }}>
                 Estado operacional: {OPERATIONAL_STATE_LABELS[estadoOperacionalSelecionado]}
               </span>
+              {leadStatusMeta ? (
+                <span style={{ fontSize: '11px', padding: '4px 10px', borderRadius: '999px', background: leadStatusMeta.bg, color: leadStatusMeta.color, fontWeight: '700', fontFamily: 'DM Sans, sans-serif' }}>
+                  Status do lead: {leadStatusMeta.label}
+                </span>
+              ) : null}
               {responsavelLabel ? (
                 <button
                   type="button"
@@ -1490,6 +1536,34 @@ export default function CaixaDeEntradaPage() {
               </button>
             ))}
           </div>
+          {abaAtiva !== 'portal' ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+              <span style={{ fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', fontFamily: 'DM Sans, sans-serif' }}>
+                Status do kanban:
+              </span>
+              {LEAD_STATUS_FILTER_OPTIONS.map((option) => (
+                <button
+                  key={option.id}
+                  type="button"
+                  onClick={() => setLeadStatusFiltro(option.id)}
+                  style={{
+                    padding: '5px 10px',
+                    fontSize: '11px',
+                    fontWeight: leadStatusFiltro === option.id ? '700' : '500',
+                    color: leadStatusFiltro === option.id ? '#fff' : 'var(--text-muted)',
+                    background: leadStatusFiltro === option.id ? 'var(--accent)' : 'var(--bg-card)',
+                    border: leadStatusFiltro === option.id ? '1px solid var(--accent)' : '1px solid var(--border)',
+                    borderRadius: '999px',
+                    cursor: 'pointer',
+                    fontFamily: 'DM Sans, sans-serif',
+                    lineHeight: 1.2,
+                  }}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          ) : null}
         </div>
 
         <div data-tour="inbox-lista" style={{ flex: 1, overflowY: 'auto' }}>
@@ -1545,6 +1619,8 @@ export default function CaixaDeEntradaPage() {
                 const st = STATUS_CONVERSA[conversa.status] || STATUS_CONVERSA.agente
                 const estadoOperacional = normalizeOperationalConversationState(conversa.estado_operacional, conversa.status)
                 const estadoOperacionalMeta = OPERATIONAL_STATE_META[estadoOperacional]
+                const leadStatus = normalizeLeadKanbanStatus(conversa.leads?.status)
+                const leadStatusMeta = leadStatus ? LEAD_STATUS_META[leadStatus] : null
                 const responsavelLabel = getUsuarioNome(getResponsavelConversa(conversa))
                 const selecionada = conversaSelecionada?.id === conversa.id
                 return (
@@ -1580,6 +1656,11 @@ export default function CaixaDeEntradaPage() {
                         {conversa.ultima_mensagem || '—'}
                       </p>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginLeft: '6px' }}>
+                        {leadStatusMeta ? (
+                          <span style={{ fontSize: '10px', padding: '2px 7px', borderRadius: '10px', background: leadStatusMeta.bg, color: leadStatusMeta.color, fontWeight: '600', whiteSpace: 'nowrap' }}>
+                            {leadStatusMeta.label}
+                          </span>
+                        ) : null}
                         <span style={{ fontSize: '10px', padding: '2px 7px', borderRadius: '10px', background: estadoOperacionalMeta.bg, color: estadoOperacionalMeta.color, fontWeight: '600', whiteSpace: 'nowrap' }}>
                           {OPERATIONAL_STATE_LABELS[estadoOperacional]}
                         </span>
