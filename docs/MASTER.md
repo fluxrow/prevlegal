@@ -84,6 +84,8 @@ Estado confirmado em 27/04/2026:
   - tratar `Bom dia` e saudações curtas de forma mais natural no primeiro retorno após campanha, sem responder como se o lead tivesse perguntado `tudo bem?`
   - evitar sobras de cortesia mecânica como `obrigada.` em parágrafo solto
   - segurar presunções sobre profissão/contexto societário antes de o lead dizer o próprio perfil
+  - reescrever automaticamente respostas longas demais, com perguntas demais ou com cara de textão, tanto em `planejamento_previdenciario` quanto em `beneficios_previdenciarios`
+  - operar com teto de tokens mais conservador no runtime para reduzir verbosidade sem trocar o motor do agente
 - a própria knowledge de `planejamento_previdenciario` também foi podada em pontos críticos:
   - menos “regra prática” absoluta em PGBL/VGBL/FUNPRESP/matching
   - menos exemplos com cifras e patrimônios hipotéticos

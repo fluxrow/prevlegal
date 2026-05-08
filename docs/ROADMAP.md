@@ -40,6 +40,27 @@ Mestra: [[MASTER_PREV_LEGAL]]
   - `agendado` deixou de ser só prazo operacional e virou atalho real para a agenda do advogado responsável
   - o próximo passo natural passa a ser a coleta de e-mail no fluxo da Bianca antes de automações de agenda para o próprio lead
 
+## Atualizacao 2026-05-08 — Bianca ganhou guardrail mais rígido contra respostas longas
+
+- necessidade operacional:
+  - a Ana trouxe feedback de que a Bianca ainda podia responder com blocos grandes demais, mesmo quando a qualidade do conteúdo estava melhor
+- desenho adotado:
+  - reduzir verbosidade no runtime sem trocar modelo nem alterar a lógica principal do agente
+  - usar reescrita curta como segunda camada quando a saída vier longa, repetitiva ou com perguntas demais
+- correção aplicada:
+  - o runtime passou a usar limites de `max_tokens` mais conservadores para os dois perfis
+  - a heurística de detecção agora marca como “longo demais” também respostas com:
+    - caracteres demais
+    - blocos demais
+    - frases demais
+    - mais de uma pergunta
+  - a reescrita curta foi generalizada:
+    - continua funcionando para `planejamento_previdenciario`
+    - agora também encurta `beneficios_previdenciarios` quando necessário
+- leitura prática:
+  - a Bianca tende a ficar mais objetiva no WhatsApp sem perder continuidade
+  - o próximo passo certo é observar algumas respostas reais e calibrar se ainda precisa podar mais o primeiro retorno pós-campanha
+
 ## Atualizacao 2026-05-08 — Inbox passou a enxergar também o status do kanban, sem misturar os dois eixos
 
 - necessidade operacional:

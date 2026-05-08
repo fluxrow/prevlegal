@@ -52,6 +52,24 @@ Mestra: [[MASTER_PREV_LEGAL]]
 - Regra prática:
   - quando o produto já guarda o e-mail canônico do lead, o fluxo operacional não deve depender de redigitação para transformar isso em convidado de agenda
 
+## Atualização 2026-05-08 — Para podar verbosidade da Bianca sem quebrar o core, o melhor primeiro passo é apertar runtime + rewrite
+
+- Problema:
+  - mesmo com prompts já melhores, a Bianca ainda podia gerar respostas grandes demais para o ritmo real do WhatsApp
+- Causa:
+  - o runtime ainda aceitava teto de tokens relativamente folgado
+  - a reescrita curta estava muito centrada em planejamento e reagia mais a markdown/repetição do que a verbosidade pura
+- Correção:
+  - reduzir `max_tokens` do runtime para os dois perfis
+  - detectar resposta longa também por:
+    - excesso de caracteres
+    - excesso de blocos
+    - excesso de frases
+    - mais de uma pergunta
+  - generalizar a etapa de rewrite curto para benefícios e planejamento
+- Regra prática:
+  - quando o problema é “fala bem, mas fala demais”, mexer primeiro em `max_tokens` e no `rewrite` é mais seguro do que trocar modelo ou reescrever toda a persona
+
 ## Atualização 2026-05-08 — `estado_operacional` e `status do lead` precisam conviver na inbox antes de qualquer automação de sync
 
 - Problema:

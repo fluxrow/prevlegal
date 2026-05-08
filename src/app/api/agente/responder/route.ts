@@ -406,6 +406,17 @@ function countParagraphs(text: string) {
   return text.split(/\n\s*\n/).filter((chunk) => chunk.trim()).length
 }
 
+function countQuestionMarks(text: string) {
+  return (text.match(/\?/g) || []).length
+}
+
+function countSentences(text: string) {
+  return text
+    .split(/[.!?]+/g)
+    .map((chunk) => chunk.trim())
+    .filter(Boolean).length
+}
+
 function tokenizeForOverlap(text: string) {
   return new Set(
     normalizeComparableMessageText(text)
@@ -439,26 +450,49 @@ function findPreviousAssistantMessage(historico: HistoricoEntry[]) {
   return ''
 }
 
-function needsPlanningRewrite({
+function needsWhatsAppRewrite({
   text,
   previousAssistant,
+  operationProfile,
   isFirstReplyAfterCampaign,
   wasCutByTokenLimit,
 }: {
   text: string
   previousAssistant: string
+  operationProfile: string
   isFirstReplyAfterCampaign: boolean
   wasCutByTokenLimit: boolean
 }) {
+  const normalizedProfile = normalizeOperationProfile(operationProfile || 'beneficios_previdenciarios')
   const hasMarkdownArtifacts = /[*•`_]/.test(text) || /\n\s*(?:[-•]|\d+[.)])\s/u.test(text)
-  const tooLong = text.length > (isFirstReplyAfterCampaign ? 520 : 700)
-  const tooManyParagraphs = countParagraphs(text) > (isFirstReplyAfterCampaign ? 3 : 4)
+  const tooLong =
+    text.length >
+    (
+      normalizedProfile === 'planejamento_previdenciario'
+        ? (isFirstReplyAfterCampaign ? 420 : 560)
+        : (isFirstReplyAfterCampaign ? 320 : 420)
+    )
+  const tooManyParagraphs =
+    countParagraphs(text) >
+    (
+      normalizedProfile === 'planejamento_previdenciario'
+        ? (isFirstReplyAfterCampaign ? 3 : 4)
+        : (isFirstReplyAfterCampaign ? 2 : 3)
+    )
+  const tooManySentences =
+    countSentences(text) >
+    (
+      normalizedProfile === 'planejamento_previdenciario'
+        ? (isFirstReplyAfterCampaign ? 5 : 7)
+        : (isFirstReplyAfterCampaign ? 4 : 6)
+    )
+  const tooManyQuestions = countQuestionMarks(text) > 1
   const repeated = previousAssistant
     ? hasHighContentOverlap(text, previousAssistant)
     : false
   const truncated = wasCutByTokenLimit || endsLikeIncompleteThought(text)
 
-  return hasMarkdownArtifacts || tooLong || tooManyParagraphs || repeated || truncated
+  return hasMarkdownArtifacts || tooLong || tooManyParagraphs || tooManySentences || tooManyQuestions || repeated || truncated
 }
 
 function findRecentDuplicateInboundMessage(
@@ -494,33 +528,50 @@ function findRecentDuplicateInboundMessage(
   return null
 }
 
-async function rewritePlanningReplyForWhatsApp({
+async function rewriteReplyForWhatsApp({
   anthropicClient,
   latestLeadMessage,
   previousAssistant,
   draft,
+  operationProfile,
   isFirstReplyAfterCampaign,
 }: {
   anthropicClient: Anthropic
   latestLeadMessage: string
   previousAssistant: string
   draft: string
+  operationProfile: string
   isFirstReplyAfterCampaign: boolean
 }) {
+  const normalizedProfile = normalizeOperationProfile(operationProfile || 'beneficios_previdenciarios')
+  const isPlanning = normalizedProfile === 'planejamento_previdenciario'
   const response = await anthropicClient.messages.create({
     model: 'claude-sonnet-4-20250514',
-    max_tokens: isFirstReplyAfterCampaign ? 220 : 280,
+    max_tokens: isPlanning
+      ? (isFirstReplyAfterCampaign ? 180 : 220)
+      : (isFirstReplyAfterCampaign ? 140 : 180),
     system: [
-      'Você reescreve respostas de WhatsApp de uma consultora de planejamento previdenciário.',
+      isPlanning
+        ? 'Você reescreve respostas de WhatsApp de uma consultora de planejamento previdenciário.'
+        : 'Você reescreve respostas de WhatsApp de uma consultora previdenciária focada em benefícios.',
       'Objetivo: soar humana, clara e natural.',
       'Escreva em português do Brasil.',
       'Sem markdown, sem asteriscos, sem bullets, sem listas numeradas, sem títulos, sem travessões.',
-      'Use no máximo 3 blocos curtos se for primeiro retorno após campanha, ou 4 blocos curtos nos demais casos.',
-      'Faça no máximo 1 pergunta principal.',
+      isPlanning
+        ? 'Use no máximo 2 ou 3 blocos curtos se for primeiro retorno após campanha, ou 3 blocos curtos nos demais casos.'
+        : 'Use no máximo 2 blocos curtos se for primeiro retorno após campanha, ou 3 blocos curtos nos demais casos.',
+      isPlanning
+        ? 'Faça no máximo 1 pergunta principal. Se der para avançar sem perguntar nada, prefira isso.'
+        : 'Faça no máximo 1 pergunta curta. Se a resposta já puder terminar em encaminhamento claro, não pergunte nada.',
       'Não repita o que a própria consultora acabou de dizer na mensagem anterior.',
-      'Não invente análise individual, não dê parecer fechado, não recomende estratégia definitiva e não cite valores específicos sem documento.',
+      isPlanning
+        ? 'Não invente análise individual, não dê parecer fechado, não recomende estratégia definitiva e não cite valores específicos sem documento.'
+        : 'Não invente parecer jurídico individual, não dê tese longa e não cite valores ou retroativos.',
       'Se o rascunho estiver cortado, complete a ideia de forma curta e natural, sem alongar.',
       'Mantenha só o essencial para avançar a conversa.',
+      isPlanning
+        ? 'Se estiver entre explicar demais e ser mais curta, escolha a versão mais curta.'
+        : 'Se estiver entre explicar demais e ser mais curta, escolha a versão mais curta e direta.',
     ].join('\n'),
     messages: [
       {
@@ -1540,14 +1591,16 @@ export async function POST(request: NextRequest) {
     const configuredMaxTokens =
       config.agente_max_tokens ||
       (normalizedOperationProfile === 'planejamento_previdenciario'
-        ? 460
-        : 500)
+        ? 360
+        : 320)
     const maxTokens =
       normalizedOperationProfile === 'planejamento_previdenciario'
         ? isFirstReplyAfterCampaign
-          ? Math.min(configuredMaxTokens, 260)
-          : Math.min(configuredMaxTokens, 380)
-        : configuredMaxTokens
+          ? Math.min(configuredMaxTokens, 220)
+          : Math.min(configuredMaxTokens, 320)
+        : isFirstReplyAfterCampaign
+          ? Math.min(configuredMaxTokens, 180)
+          : Math.min(configuredMaxTokens, 240)
     const llmStartedAt = Date.now()
 
     try {
@@ -1695,20 +1748,21 @@ export async function POST(request: NextRequest) {
     let respostaTexto = sanitizeWhatsAppResponseText(respostaTextoBruta)
 
     if (
-      normalizedOperationProfile === 'planejamento_previdenciario' &&
-      needsPlanningRewrite({
+      needsWhatsAppRewrite({
         text: respostaTexto,
         previousAssistant: previousAssistantMessage,
+        operationProfile: normalizedOperationProfile,
         isFirstReplyAfterCampaign,
         wasCutByTokenLimit,
       })
     ) {
       try {
-        const rewritten = await rewritePlanningReplyForWhatsApp({
+        const rewritten = await rewriteReplyForWhatsApp({
           anthropicClient: anthropic,
           latestLeadMessage,
           previousAssistant: previousAssistantMessage,
           draft: respostaTexto,
+          operationProfile: normalizedOperationProfile,
           isFirstReplyAfterCampaign,
         })
 
@@ -1716,7 +1770,7 @@ export async function POST(request: NextRequest) {
           respostaTexto = rewritten
         }
       } catch (rewriteError) {
-        console.warn('[agente] Falha ao reescrever resposta de planejamento:', rewriteError)
+        console.warn('[agente] Falha ao reescrever resposta curta de WhatsApp:', rewriteError)
       }
     }
 
