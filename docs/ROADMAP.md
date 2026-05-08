@@ -17,6 +17,29 @@ Mestra: [[MASTER_PREV_LEGAL]]
 - endurecimento adicional:
   - se o lead responder algo como `já estou aposentada, obrigada` e o modelo tentar devolver só uma saudação curta, a Bianca cai para um fechamento cordial contextualizado
 
+## Atualizacao 2026-05-08 — `Agendado` na inbox agora sobe automaticamente para o calendário real do responsável
+
+- necessidade operacional:
+  - marcar `agendado` com data/hora na inbox já sugeria um compromisso, mas ainda ficava só como lembrete operacional
+  - a operação precisava que essa ação virasse compromisso real sem exigir botão extra nem nova navegação
+- desenho adotado:
+  - manter `estado_operacional` como camada da conversa
+  - ao salvar `agendado`, criar ou atualizar automaticamente um registro real em `agendamentos`
+  - reaproveitar o `responsavel_id` do lead como dono preferencial do compromisso
+  - continuar degradando com segurança quando o Google Calendar não estiver conectado
+- correção aplicada:
+  - a rota da inbox passou a fazer upsert de `agendamentos` reais ao marcar `agendado`
+  - se já existir agendamento aberto do lead, ele é atualizado em vez de duplicado
+  - se houver Google Calendar, o evento entra na agenda do responsável
+  - o `lead.email` passou a ser aproveitado automaticamente como convidado do evento quando existir, mesmo sem `email_reuniao` explícito
+  - a própria inbox agora devolve feedback operacional sobre:
+    - criação/atualização do compromisso
+    - ausência de e-mail do lead
+    - falta de conexão com Google Calendar
+- leitura prática:
+  - `agendado` deixou de ser só prazo operacional e virou atalho real para a agenda do advogado responsável
+  - o próximo passo natural passa a ser a coleta de e-mail no fluxo da Bianca antes de automações de agenda para o próprio lead
+
 ## Atualizacao 2026-05-08 — Inbox passou a enxergar também o status do kanban, sem misturar os dois eixos
 
 - necessidade operacional:

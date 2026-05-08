@@ -74,7 +74,7 @@ export const OPERATIONAL_STATE_META: Record<
   agendado: {
     color: '#22c55e',
     bg: '#22c55e20',
-    hint: 'Próximo passo marcado em agenda.',
+    hint: 'Ao salvar, o compromisso entra na agenda real do responsável.',
     requiresDeadline: true,
   },
   em_atendimento_humano: {

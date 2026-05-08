@@ -113,8 +113,15 @@ Estado confirmado em 27/04/2026:
     - `aguardando_cliente` pode refletir para `awaiting`
     - `convertido` pode refletir para `converted`
     - `encerrado` exige escolha manual, em vez de adivinhar `lost` ou `converted`
-  - quando a conversa é marcada como `agendado` com data/hora, o sistema agora gera alerta operacional interno
-  - isso ainda não cria `agendamento` real nem evento Google Calendar; continua sendo lembrete operacional da conversa
+  - quando a conversa é marcada como `agendado` com data/hora, o sistema agora sobe automaticamente para `agendamento` real:
+    - cria ou atualiza o compromisso em `/agendamentos`
+    - tenta colocar o evento no Google Calendar do responsável do lead
+    - se o lead já tiver e-mail, esse e-mail passa a ser aproveitado como convidado também
+    - se o Google Calendar não estiver conectado, o compromisso ainda nasce no calendário interno do produto
+  - o feedback operacional passou a deixar explícito quando:
+    - o compromisso entrou na agenda do responsável
+    - o lead ficou fora do convite por falta de e-mail
+    - o Google Calendar não estava conectado
   - a leitura continua `texto-first`: anexo binário direto e resposta automática por áudio seguem fora do fluxo atual
 - a visualização de conversa na área do lead voltou a respeitar a mesma semântica da inbox:
   - mensagem do lead aparece como inbound

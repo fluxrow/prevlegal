@@ -21,6 +21,37 @@ Mestra: [[MASTER_PREV_LEGAL]]
 - Regra prática:
   - em sistemas que persistem inbound e outbound no mesmo registro lógico, a UI não pode assumir que `created_at` da linha equivale ao horário de todos os turnos derivados dela
 
+## Atualização 2026-05-08 — `agendado` na inbox só é confiável como ação principal quando sobe automaticamente para `agendamentos`
+
+- Problema:
+  - marcar `agendado` na inbox com data/hora parecia “agenda real”, mas até então podia parar num lembrete operacional sem compromisso formal
+- Causa:
+  - a conversa persistia `estado_operacional_prazo_at`
+  - o fluxo formal de agenda vivia separado em `agendamentos` + Google Calendar
+  - sem acoplamento automático, a mesma ação humana criava duas verdades diferentes
+- Correção:
+  - ao salvar `estado_operacional = agendado`, a API agora faz upsert de `agendamento` real do lead
+  - se já houver agendamento aberto, atualiza em vez de duplicar
+  - o compromisso tenta usar o `responsavel_id` do lead como dono preferencial da agenda
+  - se o lead já tiver e-mail, ele entra automaticamente como convidado do evento
+  - se o Google Calendar não estiver conectado, o compromisso ainda nasce no calendário interno do produto
+- Regra prática:
+  - quando a UI oferece data/hora como ação primária de operação, ela precisa subir isso para a camada formal do domínio
+  - prazo operacional puro pode existir, mas não deve parecer “consulta marcada” se não houver `agendamento` real por trás
+
+## Atualização 2026-05-08 — Fallback de `lead.email` reduz fricção na agenda sem exigir campo duplicado
+
+- Problema:
+  - a agenda só convidava o lead quando `email_reuniao` era passado manualmente
+  - isso desperdiçava e-mails já existentes no cadastro e atrapalhava futuras automações da Bianca
+- Causa:
+  - `POST /api/agendamentos` tratava `email_reuniao` como única fonte de convite do lead
+- Correção:
+  - `lead.email` agora entra como fallback automático para o convite do evento
+  - a atualização do evento também pode reaplicar attendees quando houver e-mail disponível
+- Regra prática:
+  - quando o produto já guarda o e-mail canônico do lead, o fluxo operacional não deve depender de redigitação para transformar isso em convidado de agenda
+
 ## Atualização 2026-05-08 — `estado_operacional` e `status do lead` precisam conviver na inbox antes de qualquer automação de sync
 
 - Problema:

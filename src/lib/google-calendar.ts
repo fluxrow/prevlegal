@@ -408,6 +408,8 @@ export async function atualizarEventoCalendar({
   duracaoMinutos,
   ownerScope,
   ownerUsuarioId,
+  emailLead,
+  emailAdvogado,
 }: {
   supabase: SupabaseLike
   tenantId: string | null
@@ -416,6 +418,8 @@ export async function atualizarEventoCalendar({
   duracaoMinutos: number
   ownerScope?: CalendarOwnerScope | null
   ownerUsuarioId?: string | null
+  emailLead?: string
+  emailAdvogado?: string
 }) {
   const { calendar } = await getCalendarClient({
     supabase,
@@ -427,6 +431,9 @@ export async function atualizarEventoCalendar({
 
   const inicio = new Date(dataHora)
   const fim = new Date(inicio.getTime() + duracaoMinutos * 60 * 1000)
+  const attendees: { email: string }[] = []
+  if (emailLead) attendees.push({ email: emailLead })
+  if (emailAdvogado) attendees.push({ email: emailAdvogado })
 
   await calendar.events.patch({
     calendarId: 'primary',
@@ -434,6 +441,7 @@ export async function atualizarEventoCalendar({
     requestBody: {
       start: { dateTime: inicio.toISOString(), timeZone: 'America/Sao_Paulo' },
       end: { dateTime: fim.toISOString(), timeZone: 'America/Sao_Paulo' },
+      attendees: attendees.length > 0 ? attendees : undefined,
     },
   })
 }

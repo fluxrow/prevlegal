@@ -14,6 +14,10 @@ import {
   OPERATIONAL_STATE_META,
   type OperationalConversationState,
 } from '@/lib/inbox-operational-state'
+import {
+  upsertOperationalAgendamentoForLead,
+  type OperationalAgendamentoResult,
+} from '@/lib/operational-agendamento'
 
 const CONVERSA_STATUS = new Set([
   'agente',
@@ -77,6 +81,7 @@ export async function PATCH(
 
   const now = new Date().toISOString()
   let payload: Record<string, unknown> | null = null
+  let operationalAgendamentoResult: OperationalAgendamentoResult | null = null
 
   switch (body.action) {
     case 'assume':
@@ -213,6 +218,7 @@ export async function PATCH(
   if (
     body.action === 'set_operational_state' &&
     context.tenantId &&
+    data.lead_id &&
     body.estado_operacional === 'agendado' &&
     typeof body.estado_operacional_prazo_at === 'string' &&
     body.estado_operacional_prazo_at.trim() &&
@@ -236,23 +242,82 @@ export async function PATCH(
           minute: '2-digit',
         })
 
-    await admin.from('notificacoes').insert({
-      tenant_id: context.tenantId,
-      tipo: 'agendamento',
-      titulo: `Lembrete operacional agendado — ${leadName}`,
-      descricao: `A conversa foi marcada para acompanhamento em ${prazoFormatado}.`,
-      link: `/caixa-de-entrada?conversaId=${id}&telefone=${encodeURIComponent(String(data.telefone || ''))}`,
-      metadata: {
-        conversa_id: id,
-        lead_id: data.lead_id || null,
-        estado_operacional: 'agendado',
-        estado_operacional_prazo_at: body.estado_operacional_prazo_at,
-      },
-    })
+    try {
+      operationalAgendamentoResult = await upsertOperationalAgendamentoForLead({
+        supabase: admin,
+        context,
+        leadId: data.lead_id,
+        dataHora: body.estado_operacional_prazo_at,
+        duracaoMinutos: 30,
+        observacoes: 'Agendamento criado automaticamente a partir da caixa de entrada.',
+        preferUsuarioId:
+          typeof leadRelation?.responsavel_id === 'string' && leadRelation.responsavel_id.trim()
+            ? leadRelation.responsavel_id
+            : context.usuarioId,
+      })
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Não foi possível criar o agendamento real'
+
+      operationalAgendamentoResult = {
+        mode: 'failed',
+        agendamentoId: '',
+        googleEventCreated: false,
+        leadEmail: null,
+        leadEmailMissing: true,
+        invitedLead: false,
+        calendarOwnerScope: null,
+        calendarOwnerUsuarioId: null,
+        calendarOwnerEmail: null,
+        error: message,
+      }
+
+      await admin.from('notificacoes').insert({
+        tenant_id: context.tenantId,
+        tipo: 'agendamento',
+        titulo: `Falha ao criar agendamento real — ${leadName}`,
+        descricao: `O prazo operacional foi salvo para ${prazoFormatado}, mas o compromisso formal não entrou na agenda automaticamente.`,
+        link: `/caixa-de-entrada?conversaId=${id}&telefone=${encodeURIComponent(String(data.telefone || ''))}`,
+        metadata: {
+          conversa_id: id,
+          lead_id: data.lead_id || null,
+          estado_operacional: 'agendado',
+          estado_operacional_prazo_at: body.estado_operacional_prazo_at,
+          agendamento_error: message,
+        },
+      })
+    }
+
+    if (operationalAgendamentoResult?.mode !== 'failed') {
+      await admin.from('notificacoes').insert({
+        tenant_id: context.tenantId,
+        tipo: 'agendamento',
+        titulo:
+          operationalAgendamentoResult?.mode === 'created'
+            ? `Agendamento criado — ${leadName}`
+            : `Agendamento atualizado — ${leadName}`,
+        descricao: operationalAgendamentoResult?.googleEventCreated
+          ? operationalAgendamentoResult.leadEmailMissing
+            ? `Compromisso salvo para ${prazoFormatado} na agenda do responsável. O lead ainda está sem e-mail para receber convite.`
+            : `Compromisso salvo para ${prazoFormatado} e enviado para a agenda do responsável.`
+          : `Compromisso salvo para ${prazoFormatado} no calendário interno. O Google Calendar do responsável/escritório não estava conectado.`,
+        link: '/agendamentos',
+        metadata: {
+          conversa_id: id,
+          lead_id: data.lead_id || null,
+          agendamento_id: operationalAgendamentoResult?.agendamentoId || null,
+          agendamento_mode: operationalAgendamentoResult?.mode || null,
+          google_event_created: operationalAgendamentoResult?.googleEventCreated || false,
+          lead_email_missing: operationalAgendamentoResult?.leadEmailMissing || false,
+          estado_operacional: 'agendado',
+          estado_operacional_prazo_at: body.estado_operacional_prazo_at,
+        },
+      })
+    }
   }
 
   return NextResponse.json({
     ...data,
     estado_operacional: normalizeOperationalConversationState(data.estado_operacional, data.status),
+    operational_agendamento_result: operationalAgendamentoResult,
   })
 }

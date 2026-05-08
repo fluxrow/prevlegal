@@ -48,6 +48,18 @@ interface Conversa {
   assumido_por?: string | null
   assumido_em?: string | null
   leads: { id?: string; nome: string; nb: string; status: string; responsavel_id?: string | null } | null
+  operational_agendamento_result?: {
+    mode: 'created' | 'updated' | 'failed'
+    agendamentoId: string
+    googleEventCreated: boolean
+    leadEmail: string | null
+    leadEmailMissing: boolean
+    invitedLead: boolean
+    calendarOwnerScope: 'tenant' | 'user' | null
+    calendarOwnerUsuarioId: string | null
+    calendarOwnerEmail: string | null
+    error?: string | null
+  } | null
 }
 
 interface Mensagem {
@@ -771,6 +783,30 @@ export default function CaixaDeEntradaPage() {
     if (!atualizada) {
       setErroEstadoOperacional('Não foi possível salvar o estado operacional')
     } else {
+      if (estadoOperacionalDraft === 'agendado') {
+        const agendamentoResult = atualizada.operational_agendamento_result
+
+        if (agendamentoResult?.mode === 'failed') {
+          setErroEstadoOperacional(
+            agendamentoResult.error
+              ? `Estado salvo, mas o agendamento real falhou: ${agendamentoResult.error}`
+              : 'Estado salvo, mas não foi possível criar o agendamento real.',
+          )
+        } else if (agendamentoResult && !agendamentoResult.googleEventCreated) {
+          setErroEstadoOperacional(
+            'Estado salvo e agendamento criado no sistema, mas o Google Calendar do responsável/escritório não estava conectado.',
+          )
+        } else if (agendamentoResult?.leadEmailMissing) {
+          setErroEstadoOperacional(
+            'Estado salvo e agendamento criado na agenda do responsável. O lead ainda está sem e-mail, então ele não entrou como convidado.',
+          )
+        } else {
+          setErroEstadoOperacional(null)
+        }
+      } else {
+        setErroEstadoOperacional(null)
+      }
+
       if (
         desiredLeadStatus &&
         conversaSelecionada.leads?.id &&

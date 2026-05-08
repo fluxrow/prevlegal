@@ -29,6 +29,7 @@ type ScopedLead = {
   nome: string | null
   tenant_id: string | null
   responsavel_id: string | null
+  email: string | null
 }
 
 type ScopedUsuario = {
@@ -60,7 +61,7 @@ async function getScopedLead(
 
   let query = supabase
     .from('leads')
-    .select('id, nome, tenant_id, responsavel_id')
+    .select('id, nome, tenant_id, responsavel_id, email')
     .eq('id', leadId)
     .eq('tenant_id', context.tenantId)
 
@@ -198,7 +199,7 @@ export async function POST(request: Request) {
       typeof email_reuniao === 'string' && email_reuniao.trim()
         ? email_reuniao.trim()
         : undefined
-    const emailLead = emailReuniao || undefined
+    const emailLead = emailReuniao || lead.email?.trim() || undefined
 
     try {
       const resultado = await criarEventoCalendar({
