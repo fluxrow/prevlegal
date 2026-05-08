@@ -61,6 +61,21 @@ Mestra: [[MASTER_PREV_LEGAL]]
   - a Bianca tende a ficar mais objetiva no WhatsApp sem perder continuidade
   - o próximo passo certo é observar algumas respostas reais e calibrar se ainda precisa podar mais o primeiro retorno pós-campanha
 
+## Atualizacao 2026-05-08 — Edição de lead voltou a persistir e-mail no cadastro
+
+- achado operacional:
+  - ao editar um lead e preencher `email`, a tela salvava sem erro, mas o dado não ficava gravado
+  - isso impedia, por exemplo, que o novo fluxo de agendamento convidasse o lead por e-mail mesmo após correção manual do cadastro
+- causa raiz:
+  - o modal enviava `email` corretamente
+  - a rota `PATCH /api/leads/[id]` não incluía `email` no payload persistido
+- correção aplicada:
+  - a API de edição do lead passou a normalizar e persistir `email`
+  - o valor agora também entra em lowercase para manter consistência com os fluxos de agenda e portal
+- leitura prática:
+  - editar lead volta a servir como correção operacional real de cadastro
+  - o convite de agenda por e-mail deixa de depender de importação nova quando o time completa o dado manualmente
+
 ## Atualizacao 2026-05-08 — Inbox passou a enxergar também o status do kanban, sem misturar os dois eixos
 
 - necessidade operacional:

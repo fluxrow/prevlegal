@@ -70,6 +70,20 @@ Mestra: [[MASTER_PREV_LEGAL]]
 - Regra prática:
   - quando o problema é “fala bem, mas fala demais”, mexer primeiro em `max_tokens` e no `rewrite` é mais seguro do que trocar modelo ou reescrever toda a persona
 
+## Atualização 2026-05-08 — Formulário que manda o campo certo não adianta se a rota de update esquecer de persisti-lo
+
+- Problema:
+  - o lead podia ser editado na UI com novo e-mail, mas o cadastro seguia sem esse dado no banco
+- Causa:
+  - `EditarLeadModal` já enviava `email`
+  - `PATCH /api/leads/[id]` montava o payload manualmente e simplesmente não incluía `email`
+- Correção:
+  - adicionar `payload.email = normalizeEmail(body.email)` na rota de edição
+  - padronizar o valor em lowercase
+- Regra prática:
+  - em formulários grandes com payload manual, sempre conferir a simetria `campo da UI -> body -> payload persistido`
+  - quando um dado “salva sem erro, mas some”, o primeiro suspeito deve ser campo esquecido no update, não a UI
+
 ## Atualização 2026-05-08 — `estado_operacional` e `status do lead` precisam conviver na inbox antes de qualquer automação de sync
 
 - Problema:

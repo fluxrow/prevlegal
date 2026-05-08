@@ -71,6 +71,11 @@ function normalizeTrimmed(value: unknown) {
   return trimmed.length > 0 ? trimmed : null
 }
 
+function normalizeEmail(value: unknown) {
+  const normalized = normalizeTrimmed(value)
+  return normalized ? normalized.toLowerCase() : null
+}
+
 function normalizeRequiredName(value: unknown) {
   if (typeof value !== 'string') return null
   const trimmed = value.trim()
@@ -229,6 +234,7 @@ export async function PATCH(
   payload.contato_abordagem_origem = normalizeTrimmed(body.contato_abordagem_origem)
   payload.contato_alternativo_tipo = normalizeTrimmed(body.contato_alternativo_tipo)
   payload.contato_alternativo_origem = normalizeTrimmed(body.contato_alternativo_origem)
+  payload.email = normalizeEmail(body.email)
   payload.nb = normalizeTrimmed(body.nb)
   payload.nit = normalizeTrimmed(body.nit)
   payload.banco = normalizeTrimmed(body.banco)
