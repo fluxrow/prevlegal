@@ -125,6 +125,10 @@ Estado confirmado em 27/04/2026:
     - o lead ficou fora do convite por falta de e-mail
     - o Google Calendar não estava conectado
   - a leitura continua `texto-first`: anexo binário direto e resposta automática por áudio seguem fora do fluxo atual
+ - campanhas agora também podem ser criadas por `estado operacional` da conversa:
+   - o público é resolvido a partir da conversa mais recente de cada lead
+   - o sistema congela os `lead_ids` no momento da criação, como já faz em `contatos específicos` e `por status`
+   - o worker e o dispatch não mudam; só a camada de seleção da audiência ganha esse novo recorte
 - a visualização de conversa na área do lead voltou a respeitar a mesma semântica da inbox:
   - mensagem do lead aparece como inbound
   - resposta da Bianca/humano aparece como outbound

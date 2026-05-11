@@ -14,6 +14,10 @@ import {
   getOperationProfileLabel,
   OPERATION_PROFILE_OPTIONS,
 } from "@/lib/operation-profile";
+import {
+  OPERATIONAL_CONVERSATION_STATES,
+  OPERATIONAL_STATE_LABELS,
+} from "@/lib/inbox-operational-state";
 
 type Toast = { id: number; type: "success" | "error"; message: string };
 
@@ -174,8 +178,9 @@ function defaultOnlyVerifiedForProfile(operationProfile?: string | null) {
   return operationProfile !== "planejamento_previdenciario";
 }
 
-type CampaignTargetMode = "lista" | "selecionados" | "status";
+type CampaignTargetMode = "lista" | "selecionados" | "status" | "operational_state";
 type LeadStatusFilter = "new" | "contacted" | "awaiting" | "scheduled" | "converted" | "lost";
+type OperationalStateFilter = (typeof OPERATIONAL_CONVERSATION_STATES)[number];
 
 type CampaignForm = {
   nome: string;
@@ -183,6 +188,7 @@ type CampaignForm = {
   lista_id: string;
   lead_ids: string[];
   lead_status: string;
+  conversation_operational_state: string;
   agendado_para: string;
   whatsapp_number_id: string;
   agente_id: string;
@@ -239,6 +245,14 @@ const LEAD_STATUS_OPTIONS: Array<{ value: LeadStatusFilter; label: string }> = [
   { value: "converted", label: "Convertidos" },
   { value: "lost", label: "Perdidos" },
 ];
+
+const OPERATIONAL_STATE_OPTIONS: Array<{
+  value: OperationalStateFilter;
+  label: string;
+}> = OPERATIONAL_CONVERSATION_STATES.map((value) => ({
+  value,
+  label: OPERATIONAL_STATE_LABELS[value],
+}));
 
 const STATUS_LABEL: Record<
   string,
@@ -338,6 +352,8 @@ export default function CampanhasPage() {
   const [hasMoreLeadOptions, setHasMoreLeadOptions] = useState(false);
   const [statusLeadCount, setStatusLeadCount] = useState<number | null>(null);
   const [loadingStatusLeadCount, setLoadingStatusLeadCount] = useState(false);
+  const [operationalStateLeadCount, setOperationalStateLeadCount] = useState<number | null>(null);
+  const [loadingOperationalStateLeadCount, setLoadingOperationalStateLeadCount] = useState(false);
   const [showTemplateLibrary, setShowTemplateLibrary] = useState(false);
   const [loadingTemplateLibrary, setLoadingTemplateLibrary] = useState(false);
   const [systemTemplates, setSystemTemplates] = useState<CampaignMessageTemplateItem[]>([]);
@@ -362,6 +378,7 @@ export default function CampanhasPage() {
     lista_id: "",
     lead_ids: [] as string[],
     lead_status: "",
+    conversation_operational_state: "",
     agendado_para: "",
     whatsapp_number_id: "",
     agente_id: "",
@@ -481,6 +498,47 @@ export default function CampanhasPage() {
       cancelled = true;
     };
   }, [showForm, form.target_mode, form.lead_status]);
+
+  useEffect(() => {
+    if (
+      !showForm ||
+      form.target_mode !== "operational_state" ||
+      !form.conversation_operational_state
+    ) {
+      setOperationalStateLeadCount(null);
+      setLoadingOperationalStateLeadCount(false);
+      return;
+    }
+
+    let cancelled = false;
+
+    async function fetchOperationalStateLeadCount() {
+      setLoadingOperationalStateLeadCount(true);
+      try {
+        const params = new URLSearchParams({
+          mode: "operational_state",
+          state: form.conversation_operational_state,
+        });
+
+        const res = await fetch(`/api/campanhas/audiencia?${params.toString()}`);
+        const data = await res.json();
+
+        if (!cancelled) {
+          setOperationalStateLeadCount(typeof data.count === "number" ? data.count : null);
+        }
+      } finally {
+        if (!cancelled) {
+          setLoadingOperationalStateLeadCount(false);
+        }
+      }
+    }
+
+    void fetchOperationalStateLeadCount();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [showForm, form.target_mode, form.conversation_operational_state]);
 
   useEffect(() => {
     async function fetchConfigDisparo() {
@@ -729,6 +787,7 @@ export default function CampanhasPage() {
         lista_id: "",
         lead_ids: [],
         lead_status: "",
+        conversation_operational_state: "",
         agendado_para: "",
         whatsapp_number_id: "",
         agente_id: "",
@@ -1929,6 +1988,7 @@ export default function CampanhasPage() {
                       { id: "lista", label: "Lista inteira" },
                       { id: "selecionados", label: "Contatos específicos" },
                       { id: "status", label: "Por status" },
+                      { id: "operational_state", label: "Por estado operacional" },
                     ].map((mode) => {
                       const active = form.target_mode === mode.id;
                       return (
@@ -2096,7 +2156,7 @@ export default function CampanhasPage() {
                         </button>
                       )}
                     </div>
-                  ) : (
+                  ) : form.target_mode === "status" ? (
                     <div
                       style={{
                         border: "1px solid var(--border)",
@@ -2137,6 +2197,53 @@ export default function CampanhasPage() {
                           {loadingStatusLeadCount
                             ? "Contando leads elegíveis..."
                             : `${statusLeadCount ?? 0} lead(s) elegível(is) neste status`}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div
+                      style={{
+                        border: "1px solid var(--border)",
+                        borderRadius: "12px",
+                        background: "var(--bg-card)",
+                        padding: "12px",
+                        display: "grid",
+                        gap: "10px",
+                      }}
+                    >
+                      <select
+                        value={form.conversation_operational_state}
+                        onChange={(e) =>
+                          setForm((prev) => ({
+                            ...prev,
+                            conversation_operational_state: e.target.value,
+                          }))
+                        }
+                        style={{
+                          width: "100%",
+                          padding: "8px 12px",
+                          borderRadius: "8px",
+                          border: "1px solid var(--border)",
+                          background: "var(--bg-hover)",
+                          color: "var(--text-primary)",
+                          fontSize: "13px",
+                        }}
+                      >
+                        <option value="">Selecionar estado operacional...</option>
+                        {OPERATIONAL_STATE_OPTIONS.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                      <div style={{ fontSize: "12px", color: "var(--text-muted)", lineHeight: 1.6 }}>
+                        A campanha congela os leads com base na conversa mais recente de cada lead e no estado operacional visível hoje na inbox, sem filtrar ao vivo durante o disparo.
+                      </div>
+                      {form.conversation_operational_state && (
+                        <div style={{ fontSize: "12px", color: "var(--text-secondary)" }}>
+                          {loadingOperationalStateLeadCount
+                            ? "Contando leads elegíveis..."
+                            : `${operationalStateLeadCount ?? 0} lead(s) elegível(is) neste estado operacional`}
                         </div>
                       )}
                     </div>
@@ -2604,7 +2711,11 @@ export default function CampanhasPage() {
                         ? !form.lista_id
                         : form.target_mode === "selecionados"
                           ? form.lead_ids.length === 0
-                          : !form.lead_status || (!loadingStatusLeadCount && statusLeadCount === 0)
+                          : form.target_mode === "status"
+                            ? !form.lead_status || (!loadingStatusLeadCount && statusLeadCount === 0)
+                            : !form.conversation_operational_state ||
+                              (!loadingOperationalStateLeadCount &&
+                                operationalStateLeadCount === 0)
                     ) ||
                     (Boolean(form.agendado_para) && !toIsoDateTime(form.agendado_para)) ||
                     !form.mensagem_template

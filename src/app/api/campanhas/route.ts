@@ -6,6 +6,10 @@ import { getTenantContext } from '@/lib/tenant-context'
 import { resolveWhatsAppChannel } from '@/lib/whatsapp-provider'
 import { normalizeOperationProfile } from '@/lib/operation-profile'
 import {
+  normalizeCampaignOperationalState,
+  resolveLeadIdsForOperationalConversationState,
+} from '@/lib/campaign-audience-by-operational-state'
+import {
   applyWarmupPolicyToThrottleSettings,
   getWhatsAppWarmupPolicy,
 } from '@/lib/whatsapp-warmup'
@@ -269,6 +273,7 @@ export async function POST(request: NextRequest) {
       target_mode,
       lead_ids,
       lead_status,
+      conversation_operational_state,
       mensagem_template,
       delay_min_ms,
       delay_max_ms,
@@ -301,11 +306,16 @@ export async function POST(request: NextRequest) {
         ? 'selecionados'
         : target_mode === 'status'
           ? 'status'
-          : 'lista'
+          : target_mode === 'operational_state'
+            ? 'operational_state'
+            : 'lista'
     const normalizedLeadStatus =
       typeof lead_status === 'string' && lead_status.trim()
         ? lead_status.trim().toLowerCase()
         : null
+    const normalizedOperationalState = normalizeCampaignOperationalState(
+      conversation_operational_state,
+    )
 
     if (!nome || !mensagem_template) {
       return NextResponse.json({ error: 'nome e mensagem_template são obrigatórios' }, { status: 400 })
@@ -330,6 +340,13 @@ export async function POST(request: NextRequest) {
 
     if (campaignTargetMode === 'status' && (!normalizedLeadStatus || !ALLOWED_LEAD_STATUSES.has(normalizedLeadStatus))) {
       return NextResponse.json({ error: 'Selecione um status válido para a campanha por status' }, { status: 400 })
+    }
+
+    if (campaignTargetMode === 'operational_state' && !normalizedOperationalState) {
+      return NextResponse.json(
+        { error: 'Selecione um estado operacional válido para a campanha por estado operacional' },
+        { status: 400 },
+      )
     }
 
     if (!resolvedAgenteId) {
@@ -409,7 +426,7 @@ export async function POST(request: NextRequest) {
 
       totalLeads = validLeadIds.size
       resolvedLeadIdsForCampaign = selectedLeadIds
-    } else {
+    } else if (campaignTargetMode === 'status') {
       resolvedListaId = await getOrCreateSelectionList(adminClient, tenantId, usuarioId)
       const { data: statusLeads, error: statusLeadsError } = await adminClient
         .from('leads')
@@ -426,6 +443,22 @@ export async function POST(request: NextRequest) {
 
       if (resolvedLeadIdsForCampaign.length === 0) {
         return NextResponse.json({ error: 'Nenhum lead elegível foi encontrado para o status selecionado' }, { status: 400 })
+      }
+
+      totalLeads = resolvedLeadIdsForCampaign.length
+    } else {
+      resolvedListaId = await getOrCreateSelectionList(adminClient, tenantId, usuarioId)
+      resolvedLeadIdsForCampaign = await resolveLeadIdsForOperationalConversationState(
+        adminClient,
+        tenantId,
+        normalizedOperationalState as NonNullable<typeof normalizedOperationalState>,
+      )
+
+      if (resolvedLeadIdsForCampaign.length === 0) {
+        return NextResponse.json(
+          { error: 'Nenhum lead elegível foi encontrado para o estado operacional selecionado' },
+          { status: 400 },
+        )
       }
 
       totalLeads = resolvedLeadIdsForCampaign.length
@@ -504,7 +537,12 @@ export async function POST(request: NextRequest) {
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-    if ((campaignTargetMode === 'selecionados' || campaignTargetMode === 'status') && resolvedLeadIdsForCampaign.length > 0) {
+    if (
+      (campaignTargetMode === 'selecionados' ||
+        campaignTargetMode === 'status' ||
+        campaignTargetMode === 'operational_state') &&
+      resolvedLeadIdsForCampaign.length > 0
+    ) {
       try {
         await insertCampaignLeadLinks(adminClient, data.id, tenantId, resolvedLeadIdsForCampaign)
       } catch (selectedInsertError) {

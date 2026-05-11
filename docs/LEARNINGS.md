@@ -5,6 +5,23 @@ Mestra: [[MASTER_PREV_LEGAL]]
 > Erros encontrados, causas e correções aplicadas.
 > Atualizado a cada sessão.
 
+## Atualização 2026-05-11 — Campanha por estado operacional precisa ler a conversa mais recente do lead, não qualquer conversa antiga
+
+- Problema:
+  - filtrar campanhas por `estado operacional` parece simples, mas o mesmo lead pode ter histórico de conversas antigas com estados diferentes
+  - se o produto olhasse “qualquer conversa com esse estado”, a audiência ficaria contaminada por contexto velho
+- Causa:
+  - `estado_operacional` vive em `conversas`, não em `leads`
+  - o critério correto para campanha operacional é o mesmo que a operação lê na inbox: a conversa mais recente daquele lead
+- Correção:
+  - resolver primeiro a última conversa de cada lead pelo `tenant`
+  - normalizar o estado operacional dessa conversa
+  - só depois congelar os `lead_ids` elegíveis em `campanha_leads`
+  - manter `lgpd_optout = false` na filtragem final
+- Regra prática:
+  - quando um recorte comercial depende de semântica de conversa, o snapshot precisa usar a verdade operacional mais recente do lead
+  - “qualquer linha histórica bateu o filtro” quase sempre vira audiência errada
+
 ## Atualização 2026-05-07 — `outside_hours` não deve reaparecer na timeline como se a Bianca tivesse respondido no passado
 
 - Problema:

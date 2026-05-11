@@ -4,6 +4,25 @@ Contexto: [[SESSION_HISTORY_MASTER]]
 Mestra: [[MASTER_PREV_LEGAL]]
 > Última atualização: 10/04/2026
 
+## Atualizacao 2026-05-11 — Campanhas ganharam público por estado operacional da conversa
+
+- necessidade operacional:
+  - depois de `lista`, `contatos específicos` e `por status`, faltava uma forma segura de retomar grupos olhando o que a equipe realmente enxerga na inbox
+  - só o `status do lead` não cobria bem filas como `aguardando_documentos`, `aguardando_contrato` ou `morno`
+- desenho adotado:
+  - manter o dispatch exatamente como está
+  - resolver o público no momento da criação da campanha
+  - congelar esse recorte em `campanha_leads`, sem filtro dinâmico no worker
+  - usar a conversa mais recente de cada lead como fonte do `estado operacional`
+- correção aplicada:
+  - a criação de campanha agora aceita o modo `Por estado operacional`
+  - a audiência é calculada a partir da conversa mais recente de cada lead, com normalização dos estados operacionais
+  - leads com `lgpd_optout` continuam fora da audiência
+  - a UI ganhou preview de contagem antes da criação
+- leitura prática:
+  - a operação agora consegue montar retomadas muito mais próximas da fila humana real
+  - o núcleo de disparo continua protegido, porque a novidade entra só na etapa de seleção/snapshot do público
+
 ## Atualizacao 2026-05-07 — Retomada pós-fora-do-horário agora respeita a ordem real da conversa
 
 - havia um desalinhamento entre sistema e WhatsApp em retomadas pós-`outside_hours`:
