@@ -22,6 +22,26 @@ Mestra: [[MASTER_PREV_LEGAL]]
   - quando um recorte comercial depende de semântica de conversa, o snapshot precisa usar a verdade operacional mais recente do lead
   - “qualquer linha histórica bateu o filtro” quase sempre vira audiência errada
 
+## Atualização 2026-05-11 — Não basta o worker filtrar `status = agente`; o runtime e o webhook também precisam respeitar o handoff humano
+
+- Problema:
+  - uma conversa assumida por humano continuou recebendo resposta da Bianca
+  - além disso, um contato com tom automatizado entrou num loop de despedidas educadas com a agente
+- Causa:
+  - o worker de agente já filtrava `conversas.status = agente`
+  - mas Twilio/Z-API ainda chamavam o autoresponder quando a conversa existente estava em `humano`
+  - e a rota `/api/agente/responder` também não revalidava o status da conversa antes de responder
+- Correção:
+  - webhooks passaram a disparar o agente só quando o status efetivo da conversa continua `agente`
+  - o runtime do agente agora aborta se a conversa já estiver fora de `agente`
+  - antes do envio final, o runtime confere novamente o status para cobrir tomada humana durante o processamento
+  - closures cordiais repetitivas podem ser consumidas sem resposta para evitar ping-pong entre automações
+- Regra prática:
+  - em fluxo assíncrono, a trava operacional precisa existir em três camadas:
+    - no gatilho
+    - no começo do processamento
+    - imediatamente antes do side effect final
+
 ## Atualização 2026-05-07 — `outside_hours` não deve reaparecer na timeline como se a Bianca tivesse respondido no passado
 
 - Problema:

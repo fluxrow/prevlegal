@@ -23,6 +23,26 @@ Mestra: [[MASTER_PREV_LEGAL]]
   - a operação agora consegue montar retomadas muito mais próximas da fila humana real
   - o núcleo de disparo continua protegido, porque a novidade entra só na etapa de seleção/snapshot do público
 
+## Atualizacao 2026-05-11 — Bianca parou de invadir conversa humana e de sustentar loop de despedida
+
+- achado operacional:
+  - uma conversa real mostrou dois problemas:
+    - a Bianca respondeu mesmo depois de a conversa já estar em `humano`
+    - em um contato com perfil fortemente automatizado, a conversa entrou em loop de agradecimentos e despedidas
+- causa raiz:
+  - os webhooks ainda tentavam acionar o agente sempre que o status não fosse `aguardando_cliente`/`resolvido`
+  - a rota `/api/agente/responder` não revalidava `conversas.status` antes de enviar a resposta final
+  - faltava um guardrail específico para `closure loop` sem pedido aberto
+- correção aplicada:
+  - Twilio e Z-API agora só disparam o autoresponder quando a conversa segue em `agente`
+  - a rota do agente aborta com segurança se a conversa já estiver fora de `agente`
+  - a rota também revalida o status de novo antes do envio final, cobrindo tomada humana no meio do processamento
+  - mensagens de encerramento cordial repetitivas agora podem ser marcadas como lidas sem resposta adicional
+- leitura prática:
+  - assumir conversa humana volta a ser uma trava real
+  - a Bianca deixa de “disputar” o caso com operador humano
+  - loops de agradecimento entre duas automações deixam de escalar sozinhos
+
 ## Atualizacao 2026-05-07 — Retomada pós-fora-do-horário agora respeita a ordem real da conversa
 
 - havia um desalinhamento entre sistema e WhatsApp em retomadas pós-`outside_hours`:

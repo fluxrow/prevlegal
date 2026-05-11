@@ -334,6 +334,68 @@ function buildPoliteRetiredClosure(operationProfile: string) {
   return 'Entendo perfeitamente. Que bom que você já está com isso encaminhado. Se em algum momento surgir alguma dúvida sobre o benefício ou se quiser retomar a conversa, seguimos à disposição por aqui.'
 }
 
+function messageContainsActionableFollowUp(text: string) {
+  const normalized = normalizeComparableMessageText(text)
+
+  return (
+    text.includes('?') ||
+    normalized.includes('agendar') ||
+    normalized.includes('agenda') ||
+    normalized.includes('horario') ||
+    normalized.includes('manha') ||
+    normalized.includes('tarde') ||
+    normalized.includes('posso') ||
+    normalized.includes('poderia') ||
+    normalized.includes('consegue') ||
+    normalized.includes('como faco') ||
+    normalized.includes('como funciona') ||
+    normalized.includes('quando') ||
+    normalized.includes('duvida') ||
+    normalized.includes('documento') ||
+    normalized.includes('contrato') ||
+    normalized.includes('proposta') ||
+    normalized.includes('email') ||
+    normalized.includes('e mail')
+  )
+}
+
+function looksLikePoliteClosureMessage(text: string) {
+  const normalized = normalizeComparableMessageText(text)
+  const hasGratitude =
+    normalized.includes('obrigad') ||
+    normalized.includes('agradeco') ||
+    normalized.includes('agradeco') ||
+    normalized.includes('grata') ||
+    normalized.includes('foi um prazer') ||
+    normalized.includes('prazer conhecer')
+  const hasFarewell =
+    normalized.includes('ate breve') ||
+    normalized.includes('otimo dia') ||
+    normalized.includes('boa tarde') ||
+    normalized.includes('boa noite') ||
+    normalized.includes('boa semana') ||
+    normalized.includes('sucesso') ||
+    normalized.includes('a disposicao') ||
+    normalized.includes('sempre que precisar') ||
+    normalized.includes('conte comigo') ||
+    normalized.includes('fico no aguardo do contato da equipe')
+
+  return (hasGratitude || hasFarewell) && !messageContainsActionableFollowUp(text)
+}
+
+function shouldSuppressPoliteClosureReply({
+  latestLeadMessage,
+  previousAssistant,
+}: {
+  latestLeadMessage: string
+  previousAssistant: string
+}) {
+  return (
+    looksLikePoliteClosureMessage(latestLeadMessage) &&
+    looksLikePoliteClosureMessage(previousAssistant)
+  )
+}
+
 function softenPlanningGreeting({
   text,
   latestLeadMessage,
@@ -448,6 +510,23 @@ function findPreviousAssistantMessage(historico: HistoricoEntry[]) {
   }
 
   return ''
+}
+
+async function releaseAgentClaimIfNeeded(params: {
+  supabase: ReturnType<typeof createAdminSupabase>
+  claimedMessageId: string | null
+  claimToken: string | null
+}) {
+  if (!params.claimedMessageId || !params.claimToken) return
+
+  await params.supabase
+    .from('mensagens_inbound')
+    .update({
+      resposta_agente: null,
+    })
+    .eq('id', params.claimedMessageId)
+    .eq('resposta_agente', params.claimToken)
+    .eq('respondido_por_agente', false)
 }
 
 function needsWhatsAppRewrite({
@@ -1337,6 +1416,17 @@ export async function POST(request: NextRequest) {
           .maybeSingle()
       : { data: null }
 
+    if (conversaAtual && conversaAtual.status !== 'agente') {
+      return NextResponse.json(
+        {
+          queued: false,
+          reason: 'conversation_not_in_agent_mode',
+          conversation_status: conversaAtual.status,
+        },
+        { status: 202 },
+      )
+    }
+
     // 3. Verificar janela de horário
     if (config.agente_horario_inicio && config.agente_horario_fim) {
       const { hourMinute, isWeekend } = getOperationalClock()
@@ -1490,6 +1580,7 @@ export async function POST(request: NextRequest) {
       Boolean(campanha_id) &&
       userTurns <= 1 &&
       assistantTurns <= 1
+    const previousAssistantMessage = findPreviousAssistantMessage(historico)
 
     claimToken = `__agent_processing__:${Date.now()}:${Math.random().toString(36).slice(2, 10)}`
     const { data: claimedMessage, error: claimError } = await supabase
@@ -1513,6 +1604,35 @@ export async function POST(request: NextRequest) {
         {
           queued: false,
           reason: 'already_processing_or_answered',
+        },
+        { status: 202 },
+      )
+    }
+
+    if (
+      shouldSuppressPoliteClosureReply({
+        latestLeadMessage,
+        previousAssistant: previousAssistantMessage,
+      })
+    ) {
+      await supabase
+        .from('mensagens_inbound')
+        .update({
+          respondido_por_agente: true,
+          respondido_manualmente: false,
+          resposta_agente: null,
+          agente_reprocessar_apos: null,
+          lido: true,
+          lido_em: new Date().toISOString(),
+          agente_respondente_id: agenteRow?.id ?? null,
+        })
+        .eq('id', mensagem_id)
+
+      return NextResponse.json(
+        {
+          queued: false,
+          handled: true,
+          reason: 'polite_closure_no_reply',
         },
         { status: 202 },
       )
@@ -1743,7 +1863,6 @@ export async function POST(request: NextRequest) {
         stop_reason: stopReason,
       })
     }
-    const previousAssistantMessage = findPreviousAssistantMessage(historico)
     const planningPromptHint = config.agente_prompt_sistema || promptBase
     let respostaTexto = sanitizeWhatsAppResponseText(respostaTextoBruta)
 
@@ -1790,6 +1909,31 @@ export async function POST(request: NextRequest) {
 
     if (!respostaTexto) {
       throw new Error('Resposta vazia do modelo')
+    }
+
+    if (mensagem.conversa_id) {
+      const { data: conversationBeforeReply } = await supabase
+        .from('conversas')
+        .select('id, status')
+        .eq('id', mensagem.conversa_id)
+        .maybeSingle()
+
+      if (conversationBeforeReply && conversationBeforeReply.status !== 'agente') {
+        await releaseAgentClaimIfNeeded({
+          supabase,
+          claimedMessageId,
+          claimToken,
+        })
+
+        return NextResponse.json(
+          {
+            queued: false,
+            reason: 'human_took_over_during_processing',
+            conversation_status: conversationBeforeReply.status,
+          },
+          { status: 202 },
+        )
+      }
     }
 
     const shouldMoveToAwaitingCustomer = shouldMoveBenefitsConversationToAwaitingCustomer({
@@ -1876,14 +2020,11 @@ export async function POST(request: NextRequest) {
     if (claimedMessageId && claimToken) {
       try {
         const supabase = createAdminSupabase()
-        await supabase
-          .from('mensagens_inbound')
-          .update({
-            resposta_agente: null,
-          })
-          .eq('id', claimedMessageId)
-          .eq('resposta_agente', claimToken)
-          .eq('respondido_por_agente', false)
+        await releaseAgentClaimIfNeeded({
+          supabase,
+          claimedMessageId,
+          claimToken,
+        })
       } catch (releaseError) {
         console.warn('[agente] Falha ao liberar claim de processamento:', releaseError)
       }

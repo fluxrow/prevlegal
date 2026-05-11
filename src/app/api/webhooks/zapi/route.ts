@@ -1106,24 +1106,29 @@ async function handleReceiveEvent(request: NextRequest, event: string) {
 
   let conversaId: string | null = null
   let shouldResumeHuman = false
+  let shouldTriggerAgent = false
 
   if (conversaExistente) {
     conversaId = conversaExistente.id
     shouldResumeHuman =
       conversaExistente.status === 'aguardando_cliente' ||
       conversaExistente.status === 'resolvido'
+    const nextConversationStatus = shouldResumeHuman
+      ? 'humano'
+      : (conversaExistente.status || 'agente')
 
     await supabase
       .from('conversas')
       .update({
         lead_id: lead?.id || null,
         whatsapp_number_id: conversaExistente.whatsapp_number_id || routing.channelId,
-        status: shouldResumeHuman ? 'humano' : (conversaExistente.status || 'agente'),
+        status: nextConversationStatus,
         ultima_mensagem: body,
         ultima_mensagem_at: new Date().toISOString(),
         nao_lidas: (conversaExistente.nao_lidas || 0) + 1,
       })
       .eq('id', conversaExistente.id)
+    shouldTriggerAgent = nextConversationStatus === 'agente'
   } else {
     const { data: novaConversa, error: conversaError } = await supabase
       .from('conversas')
@@ -1145,6 +1150,7 @@ async function handleReceiveEvent(request: NextRequest, event: string) {
     }
 
     conversaId = novaConversa?.id || null
+    shouldTriggerAgent = Boolean(novaConversa?.id)
   }
 
   if (conversaId) {
@@ -1246,7 +1252,7 @@ async function handleReceiveEvent(request: NextRequest, event: string) {
     }
   }
 
-  if (mensagemInserida?.id && conversaId && !shouldResumeHuman) {
+  if (mensagemInserida?.id && conversaId && shouldTriggerAgent) {
     after(async () => {
       const result = await triggerAgentAutoresponder(mensagemInserida.id)
       if (!result.ok) {

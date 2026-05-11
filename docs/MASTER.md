@@ -86,6 +86,8 @@ Estado confirmado em 27/04/2026:
   - segurar presunções sobre profissão/contexto societário antes de o lead dizer o próprio perfil
   - reescrever automaticamente respostas longas demais, com perguntas demais ou com cara de textão, tanto em `planejamento_previdenciario` quanto em `beneficios_previdenciarios`
   - operar com teto de tokens mais conservador no runtime para reduzir verbosidade sem trocar o motor do agente
+  - não continuar respondendo quando a conversa já saiu de `agente` para `humano`, inclusive se a tomada humana acontecer no meio do processamento
+  - suprimir loops de despedida cordial quando o lead e a Bianca entram num “muito obrigada / até breve” sem pedido aberto real
 - a própria knowledge de `planejamento_previdenciario` também foi podada em pontos críticos:
   - menos “regra prática” absoluta em PGBL/VGBL/FUNPRESP/matching
   - menos exemplos com cifras e patrimônios hipotéticos

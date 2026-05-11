@@ -330,6 +330,7 @@ export async function POST(request: NextRequest) {
   let conversaId: string | null = null
   let conversaStatus: string = 'agente'
   let shouldResumeHuman = false
+  let shouldTriggerAgent = false
 
   if (mensagemInserida) {
     let conversaQuery = supabase
@@ -344,13 +345,15 @@ export async function POST(request: NextRequest) {
       conversaStatus = conversaExistente.status || 'agente'
       shouldResumeHuman =
         conversaStatus === 'aguardando_cliente' || conversaStatus === 'resolvido'
+      const nextConversationStatus = shouldResumeHuman ? 'humano' : conversaStatus
 
       await supabase.from('conversas').update({
-        status: shouldResumeHuman ? 'humano' : conversaStatus,
+        status: nextConversationStatus,
         ultima_mensagem: body_msg,
         ultima_mensagem_at: new Date().toISOString(),
         nao_lidas: (conversaExistente.nao_lidas || 0) + 1,
       }).eq('id', conversaExistente.id)
+      shouldTriggerAgent = nextConversationStatus === 'agente'
 
       await supabase.from('mensagens_inbound')
         .update({ conversa_id: conversaExistente.id })
@@ -372,6 +375,7 @@ export async function POST(request: NextRequest) {
 
       if (novaConversa) {
         conversaId = novaConversa.id
+        shouldTriggerAgent = true
         await supabase.from('mensagens_inbound')
           .update({ conversa_id: novaConversa.id })
           .eq('id', mensagemInserida.id)
@@ -462,7 +466,7 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  if (mensagemInserida?.id && conversaId && !shouldResumeHuman) {
+  if (mensagemInserida?.id && conversaId && shouldTriggerAgent) {
     after(async () => {
       const result = await triggerAgentAutoresponder(mensagemInserida.id)
       if (!result.ok) {
