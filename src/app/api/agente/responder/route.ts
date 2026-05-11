@@ -1417,6 +1417,18 @@ export async function POST(request: NextRequest) {
       : { data: null }
 
     if (conversaAtual && conversaAtual.status !== 'agente') {
+      await insertStructuredAgentLog({
+        supabase,
+        entidadeId: mensagem.conversa_id || null,
+        acao: 'agent.skipped_non_agent_conversation',
+        dadosNovos: {
+          mensagem_id,
+          conversa_id: mensagem.conversa_id || null,
+          lead_id: mensagem.lead_id || null,
+          conversation_status: conversaAtual.status,
+        },
+      })
+
       return NextResponse.json(
         {
           queued: false,
@@ -1627,6 +1639,19 @@ export async function POST(request: NextRequest) {
           agente_respondente_id: agenteRow?.id ?? null,
         })
         .eq('id', mensagem_id)
+
+      await insertStructuredAgentLog({
+        supabase,
+        entidadeId: mensagem.conversa_id || null,
+        acao: 'agent.suppressed_polite_closure_loop',
+        dadosNovos: {
+          mensagem_id,
+          conversa_id: mensagem.conversa_id || null,
+          lead_id: mensagem.lead_id || null,
+          latest_lead_message: latestLeadMessage,
+          previous_assistant_message: previousAssistantMessage,
+        },
+      })
 
       return NextResponse.json(
         {
@@ -1923,6 +1948,18 @@ export async function POST(request: NextRequest) {
           supabase,
           claimedMessageId,
           claimToken,
+        })
+
+        await insertStructuredAgentLog({
+          supabase,
+          entidadeId: mensagem.conversa_id || null,
+          acao: 'agent.skipped_after_human_takeover',
+          dadosNovos: {
+            mensagem_id,
+            conversa_id: mensagem.conversa_id || null,
+            lead_id: mensagem.lead_id || null,
+            conversation_status: conversationBeforeReply.status,
+          },
         })
 
         return NextResponse.json(
