@@ -47,6 +47,7 @@ interface RelatorioData {
     totalMensagens: number
     respondidoAgente: number
     respondidoManual: number
+    pendentes: number
     taxaAutomacao: number
   }
   agenteOperacional: {
@@ -177,6 +178,7 @@ export default function RelatoriosPage() {
   const pieData = [
     { name: 'Agente IA', value: data.agente.respondidoAgente, fill: '#4f7aff' },
     { name: 'Manual', value: data.agente.respondidoManual, fill: '#2dd4a0' },
+    { name: 'Pendentes', value: data.agente.pendentes, fill: '#f5c842' },
   ]
 
   return (
@@ -363,6 +365,7 @@ export default function RelatoriosPage() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 <KpiCard label="Total Mensagens" value={data.agente.totalMensagens} />
                 <KpiCard label="Taxa de Automação" value={`${data.agente.taxaAutomacao}%`} color="#4f7aff" />
+                <KpiCard label="Pendentes" value={data.agente.pendentes.toLocaleString('pt-BR')} color="#f5c842" />
               </div>
             </div>
           </div>

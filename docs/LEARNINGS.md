@@ -78,6 +78,22 @@ Mestra: [[MASTER_PREV_LEGAL]]
   - antes de criar nova infra de analytics, vale extrair o máximo do que o produto já loga
   - para operação comercial, métricas úteis costumam nascer mais de `eventos operacionais` do que de dashboards sofisticados
 
+## Atualização 2026-05-12 — `manual = total - agente` é uma conta enganosa quando existe fila pendente
+
+- Problema:
+  - o relatório de atendimento mostrava `Manual` acima do real
+  - isso acontecia porque tudo que não tivesse `respondido_por_agente = true` caía automaticamente no balde manual
+- Causa:
+  - a query ignorava `respondido_manualmente`
+  - mensagens ainda sem resposta acabavam somadas como se já tivessem sido tratadas por humano
+- Correção:
+  - buscar também `respondido_manualmente`
+  - contar `manual` apenas por esse campo
+  - expor `pendentes` como terceira categoria
+- Regra prática:
+  - em relatórios operacionais, “não foi IA” não significa automaticamente “foi humano”
+  - sempre separar `manual`, `pendente` e `silenciado/suprimido` quando o fluxo tiver esses estados
+
 ## Atualização 2026-05-07 — `outside_hours` não deve reaparecer na timeline como se a Bianca tivesse respondido no passado
 
 - Problema:

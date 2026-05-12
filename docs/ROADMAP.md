@@ -84,6 +84,19 @@ Mestra: [[MASTER_PREV_LEGAL]]
   - a equipe passa a enxergar se a Bianca está ajudando, custando demais ou precisando de novo ajuste
   - os guardrails recentes deixam de ser invisíveis
 
+## Atualizacao 2026-05-12 — Relatórios corrigiram a leitura de manual vs. pendente
+
+- achado operacional:
+  - a aba de relatórios ainda inflava atendimento `Manual` porque calculava esse número por diferença contra o total de mensagens inbound
+  - isso misturava atendimento humano real com mensagem ainda pendente de resposta
+- correção aplicada:
+  - a API agora usa `respondido_manualmente = true` como fonte oficial de manual
+  - mensagens sem resposta entram numa terceira categoria explícita: `Pendentes`
+  - o bloco `Agente IA vs. Atendimento Manual` passou a refletir essa separação de forma honesta
+- leitura prática:
+  - a equipe deixa de interpretar backlog como se fosse trabalho humano já realizado
+  - a automação da Bianca fica mais legível e menos “maquiada” por conta de pendências operacionais
+
 ## Atualizacao 2026-05-07 — Retomada pós-fora-do-horário agora respeita a ordem real da conversa
 
 - havia um desalinhamento entre sistema e WhatsApp em retomadas pós-`outside_hours`:

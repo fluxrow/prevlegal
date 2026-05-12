@@ -119,15 +119,6 @@ Estado confirmado em 27/04/2026:
     - `convertido` pode refletir para `converted`
     - `encerrado` exige escolha manual, em vez de adivinhar `lost` ou `converted`
   - quando a conversa é marcada como `agendado` com data/hora, o sistema agora sobe automaticamente para `agendamento` real:
-  - a aba de relatórios agora ganhou uma leitura operacional própria da Bianca nos últimos 30 dias:
-  - volume recente de respostas IA
-  - custo LLM agregado em USD
-  - latência média
-  - takeovers humanos respeitados
-  - loops de despedida suprimidos
-  - encerramentos automáticos de colegas previdenciaristas
-  - floods contidos
-  - falhas recentes de LLM
     - cria ou atualiza o compromisso em `/agendamentos`
     - tenta colocar o evento no Google Calendar do responsável do lead
     - se o lead já tiver e-mail, esse e-mail passa a ser aproveitado como convidado também
@@ -135,6 +126,18 @@ Estado confirmado em 27/04/2026:
   - o feedback operacional passou a deixar explícito quando:
     - o compromisso entrou na agenda do responsável
     - o lead ficou fora do convite por falta de e-mail
+  - a aba de relatórios agora ganhou uma leitura operacional própria da Bianca nos últimos 30 dias:
+    - volume recente de respostas IA
+    - custo LLM agregado em USD
+    - latência média
+    - takeovers humanos respeitados
+    - loops de despedida suprimidos
+    - encerramentos automáticos de colegas previdenciaristas
+    - floods contidos
+    - falhas recentes de LLM
+    - o comparativo `Agente IA vs. Atendimento Manual` agora separa corretamente:
+      - atendimento humano real
+      - mensagens ainda pendentes
     - o Google Calendar não estava conectado
   - a leitura continua `texto-first`: anexo binário direto e resposta automática por áudio seguem fora do fluxo atual
  - campanhas agora também podem ser criadas por `estado operacional` da conversa:

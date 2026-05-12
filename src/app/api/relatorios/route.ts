@@ -54,6 +54,7 @@ export async function GET() {
           totalMensagens: 0,
           respondidoAgente: 0,
           respondidoManual: 0,
+          pendentes: 0,
           taxaAutomacao: 0,
         },
         agenteOperacional: {
@@ -118,7 +119,7 @@ export async function GET() {
     // 3. Agente IA
     let mensagensInboundQuery = supabase
       .from('mensagens_inbound')
-      .select('respondido_por_agente')
+      .select('respondido_por_agente, respondido_manualmente')
 
     mensagensInboundQuery = mensagensInboundQuery.in('lead_id', accessibleLeadIds)
 
@@ -126,7 +127,10 @@ export async function GET() {
 
     const totalMensagens = mensagensInbound?.length ?? 0
     const respondidoAgente = mensagensInbound?.filter(m => m.respondido_por_agente === true).length ?? 0
-    const respondidoManual = totalMensagens - respondidoAgente
+    const respondidoManual = mensagensInbound?.filter(m => m.respondido_manualmente === true).length ?? 0
+    const pendentesAgente = mensagensInbound?.filter(
+      (m) => m.respondido_por_agente !== true && m.respondido_manualmente !== true,
+    ).length ?? 0
 
     const [conversasRes, agendamentosRes, contratosRes] = await Promise.all([
       supabase
@@ -330,6 +334,7 @@ export async function GET() {
         totalMensagens,
         respondidoAgente,
         respondidoManual,
+        pendentes: pendentesAgente,
         taxaAutomacao: totalMensagens > 0 ? Math.round((respondidoAgente / totalMensagens) * 100) : 0,
       },
       agenteOperacional: {
