@@ -42,6 +42,21 @@ Mestra: [[MASTER_PREV_LEGAL]]
     - no começo do processamento
     - imediatamente antes do side effect final
 
+## Atualização 2026-05-12 — Quando o lead se identifica como colega da área, isso precisa virar guardrail de negócio, não só instrução de prompt
+
+- Problema:
+  - uma lead respondeu que também era advogada previdenciarista
+  - a Bianca tratou isso como gancho para continuar a conversa e seguiu qualificando
+- Causa:
+  - o prompt sozinho não garante recuo confiável em casos de reputação sensível
+  - faltava uma regra operacional explícita para mensagens em primeira pessoa indicando atuação direta na área previdenciária
+- Correção:
+  - detectar esses sinais no runtime antes da chamada ao modelo
+  - responder com um fechamento curto e cordial
+  - marcar a conversa como `resolvido` e `estado_operacional = encerrado`, tirando o caso da esteira do agente
+- Regra prática:
+  - quando um tipo de lead precisa sempre sair da automação do mesmo jeito, a regra deve viver no código como guardrail de negócio, não depender só de persona/prompt
+
 ## Atualização 2026-05-07 — `outside_hours` não deve reaparecer na timeline como se a Bianca tivesse respondido no passado
 
 - Problema:

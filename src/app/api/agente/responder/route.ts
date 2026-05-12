@@ -326,12 +326,38 @@ function looksLikeRetiredPoliteDecline(text: string) {
   )
 }
 
+function looksLikePrevidenciaryPeerMessage(text: string) {
+  const normalized = normalizeComparableMessageText(text)
+
+  return (
+    normalized.includes('sou advogada previdenciaria') ||
+    normalized.includes('sou advogado previdenciario') ||
+    normalized.includes('sou previdenciarista') ||
+    normalized.includes('tambem sou advogada previdenciaria') ||
+    normalized.includes('tambem sou advogado previdenciario') ||
+    normalized.includes('tambem atuo na area previdenciaria') ||
+    normalized.includes('tambem atuo na area previdenciario') ||
+    normalized.includes('tambem atuo com previdenciario') ||
+    normalized.includes('tambem atuo com previdenciaria') ||
+    normalized.includes('atuo na area previdenciaria') ||
+    normalized.includes('atuo na area de previdenciario') ||
+    normalized.includes('atuo com previdenciario') ||
+    normalized.includes('trabalho com previdenciario') ||
+    normalized.includes('trabalho na area previdenciaria') ||
+    normalized.includes('tambem trabalho com previdenciario')
+  )
+}
+
 function buildPoliteRetiredClosure(operationProfile: string) {
   if (normalizeOperationProfile(operationProfile) === 'planejamento_previdenciario') {
     return 'Entendo perfeitamente. Que bom que você já está com isso encaminhado. Se em algum momento surgir alguma dúvida sobre a sua revisão ou se quiser uma segunda opinião técnica, seguimos à disposição por aqui.'
   }
 
   return 'Entendo perfeitamente. Que bom que você já está com isso encaminhado. Se em algum momento surgir alguma dúvida sobre o benefício ou se quiser retomar a conversa, seguimos à disposição por aqui.'
+}
+
+function buildPrevidenciaryPeerClosure() {
+  return 'Entendi. Como você também atua diretamente na área previdenciária, não vou insistir por aqui. Obrigada pela gentileza e desejo um ótimo dia.'
 }
 
 function messageContainsActionableFollowUp(text: string) {
@@ -1658,6 +1684,80 @@ export async function POST(request: NextRequest) {
           queued: false,
           handled: true,
           reason: 'polite_closure_no_reply',
+        },
+        { status: 202 },
+      )
+    }
+
+    if (looksLikePrevidenciaryPeerMessage(latestLeadMessage)) {
+      const respostaEncerramento = buildPrevidenciaryPeerClosure()
+      const nowIso = new Date().toISOString()
+
+      await supabase
+        .from('mensagens_inbound')
+        .update({
+          respondido_por_agente: true,
+          respondido_manualmente: false,
+          resposta_agente: respostaEncerramento,
+          agente_reprocessar_apos: null,
+          lido: true,
+          lido_em: nowIso,
+          agente_respondente_id: agenteRow?.id ?? null,
+        })
+        .eq('id', mensagem_id)
+
+      if (mensagem.conversa_id) {
+        await supabase
+          .from('conversas')
+          .update({
+            status: 'resolvido',
+            estado_operacional: 'encerrado',
+            estado_operacional_atualizado_em: nowIso,
+            ultima_mensagem: respostaEncerramento,
+            ultima_mensagem_at: nowIso,
+            nao_lidas: 0,
+          })
+          .eq('id', mensagem.conversa_id)
+      }
+
+      if (config.agente_resposta_automatica && mensagem.telefone_remetente) {
+        const result = await sendWhatsAppMessage({
+          tenantId,
+          to: mensagem.telefone_remetente,
+          body: respostaEncerramento,
+        })
+
+        if (!result.success) {
+          console.error('Falha ao enviar fechamento para colega previdenciarista via WhatsApp:', result.error)
+        } else if (result.externalMessageId) {
+          await supabase
+            .from('mensagens_inbound')
+            .update({
+              twilio_sid: result.externalMessageId,
+            })
+            .eq('id', mensagem_id)
+        }
+      }
+
+      await insertStructuredAgentLog({
+        supabase,
+        entidadeId: mensagem.conversa_id || null,
+        acao: 'agent.closed_previdenciary_peer',
+        dadosNovos: {
+          mensagem_id,
+          conversa_id: mensagem.conversa_id || null,
+          lead_id: mensagem.lead_id || null,
+          latest_lead_message: latestLeadMessage,
+          resposta_agente: respostaEncerramento,
+        },
+      })
+
+      return NextResponse.json(
+        {
+          queued: false,
+          handled: true,
+          reason: 'previdenciary_peer_detected',
+          resposta: respostaEncerramento,
         },
         { status: 202 },
       )

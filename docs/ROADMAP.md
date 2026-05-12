@@ -43,6 +43,23 @@ Mestra: [[MASTER_PREV_LEGAL]]
   - a Bianca deixa de “disputar” o caso com operador humano
   - loops de agradecimento entre duas automações deixam de escalar sozinhos
 
+## Atualizacao 2026-05-12 — Bianca agora fecha imediatamente quando o lead se apresenta como colega previdenciarista
+
+- achado operacional:
+  - uma lead real respondeu `Sou Advogada previdenciária` e a Bianca continuou qualificando e insistindo na conversa
+  - para a operação de captação, esse perfil precisa ser encerrado com elegância, não aquecido como lead comercial comum
+- desenho adotado:
+  - tratar essa identificação como regra operacional dura no runtime do agente
+  - responder uma única vez de forma cordial
+  - tirar a conversa da esteira automática para evitar nova insistência depois
+- correção aplicada:
+  - o runtime agora detecta mensagens em primeira pessoa que indiquem atuação direta na área previdenciária
+  - nesses casos, a Bianca envia um fechamento curto e cordial sem passar pelo fluxo normal de qualificação
+  - a conversa é marcada como `resolvido` e com `estado_operacional = encerrado`
+- leitura prática:
+  - colegas previdenciaristas deixam de receber insistência comercial inadequada
+  - a operação preserva reputação e evita desgaste em bases com contatos mistos
+
 ## Atualizacao 2026-05-07 — Retomada pós-fora-do-horário agora respeita a ordem real da conversa
 
 - havia um desalinhamento entre sistema e WhatsApp em retomadas pós-`outside_hours`:
