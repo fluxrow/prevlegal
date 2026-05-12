@@ -49,6 +49,17 @@ interface RelatorioData {
     respondidoManual: number
     taxaAutomacao: number
   }
+  agenteOperacional: {
+    respostasIa30d: number
+    custoUsd30d: number
+    latenciaMediaMs30d: number
+    falhasLlm30d: number
+    takeoverHumano30d: number
+    loopsSuprimidos30d: number
+    closuresColega30d: number
+    floods30d: number
+    resumo: string
+  }
   pipelineOperacional: {
     leadsComConversa: number
     leadsEmFilaHumana: number
@@ -66,6 +77,15 @@ interface RelatorioData {
 
 function fmt(v: number) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(v)
+}
+
+function fmtUsd(v: number) {
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(v)
 }
 
 function KpiCard({ label, value, sub, color }: { label: string; value: string | number; sub?: string; color?: string }) {
@@ -344,6 +364,32 @@ export default function RelatoriosPage() {
                 <KpiCard label="Total Mensagens" value={data.agente.totalMensagens} />
                 <KpiCard label="Taxa de Automação" value={`${data.agente.taxaAutomacao}%`} color="#4f7aff" />
               </div>
+            </div>
+          </div>
+
+          <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: '12px', padding: '24px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px', marginBottom: '20px', flexWrap: 'wrap' }}>
+              <div>
+                <h3 style={{ fontFamily: 'Syne, sans-serif', fontSize: '15px', fontWeight: '600', color: 'var(--text-primary)', marginBottom: '8px' }}>
+                  Operação da Bianca — últimos 30 dias
+                </h3>
+                <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: 0 }}>
+                  {data.agenteOperacional.resumo}
+                </p>
+              </div>
+              <div style={{ background: 'rgba(79,122,255,0.08)', border: '1px solid rgba(79,122,255,0.18)', borderRadius: '999px', padding: '6px 10px', fontSize: '11px', fontWeight: '700', color: '#4f7aff' }}>
+                Custo IA {fmtUsd(data.agenteOperacional.custoUsd30d)}
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: '12px' }}>
+              <KpiCard label="Respostas IA" value={data.agenteOperacional.respostasIa30d.toLocaleString('pt-BR')} color="#4f7aff" />
+              <KpiCard label="Latência média" value={`${data.agenteOperacional.latenciaMediaMs30d} ms`} color="#2dd4a0" />
+              <KpiCard label="Takeovers respeitados" value={data.agenteOperacional.takeoverHumano30d.toLocaleString('pt-BR')} color="#f5c842" />
+              <KpiCard label="Loops suprimidos" value={data.agenteOperacional.loopsSuprimidos30d.toLocaleString('pt-BR')} color="#a78bfa" />
+              <KpiCard label="Colegas encerrados" value={data.agenteOperacional.closuresColega30d.toLocaleString('pt-BR')} color="#14b8a6" />
+              <KpiCard label="Floods contidos" value={data.agenteOperacional.floods30d.toLocaleString('pt-BR')} color="#fb7185" />
+              <KpiCard label="Falhas LLM" value={data.agenteOperacional.falhasLlm30d.toLocaleString('pt-BR')} color="#ef4444" />
             </div>
           </div>
         </div>

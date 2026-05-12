@@ -57,6 +57,27 @@ Mestra: [[MASTER_PREV_LEGAL]]
 - Regra prática:
   - quando um tipo de lead precisa sempre sair da automação do mesmo jeito, a regra deve viver no código como guardrail de negócio, não depender só de persona/prompt
 
+## Atualização 2026-05-12 — Observabilidade da Bianca rende mais quando usa logs já existentes antes de abrir frente nova de analytics
+
+- Problema:
+  - a operação queria entender melhor o comportamento real da Bianca, mas os dados já estavam espalhados entre `mensagens_inbound`, `agent_llm_usage` e `audit_logs`
+  - sem uma leitura unificada, cada ajuste novo do agente ficava difícil de acompanhar
+- Causa:
+  - havia logging suficiente
+  - faltava uma camada de produto consumindo esses eventos em linguagem operacional
+- Correção:
+  - agregar no `/api/relatorios` uma visão dos últimos 30 dias com:
+    - respostas IA
+    - custo
+    - latência
+    - falhas
+    - takeovers humanos
+    - guardrails acionados
+  - renderizar isso direto na aba de Funil
+- Regra prática:
+  - antes de criar nova infra de analytics, vale extrair o máximo do que o produto já loga
+  - para operação comercial, métricas úteis costumam nascer mais de `eventos operacionais` do que de dashboards sofisticados
+
 ## Atualização 2026-05-07 — `outside_hours` não deve reaparecer na timeline como se a Bianca tivesse respondido no passado
 
 - Problema:

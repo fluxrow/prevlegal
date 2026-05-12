@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 import { getAccessibleLeadIds, getTenantContext } from '@/lib/tenant-context'
+import { createAdminSupabase } from '@/lib/internal-collaboration'
 
 export async function GET() {
   const supabase = await createClient()
@@ -54,6 +55,17 @@ export async function GET() {
           respondidoAgente: 0,
           respondidoManual: 0,
           taxaAutomacao: 0,
+        },
+        agenteOperacional: {
+          respostasIa30d: 0,
+          custoUsd30d: 0,
+          latenciaMediaMs30d: 0,
+          falhasLlm30d: 0,
+          takeoverHumano30d: 0,
+          loopsSuprimidos30d: 0,
+          closuresColega30d: 0,
+          floods30d: 0,
+          resumo: 'Sem dados recentes da Bianca para este tenant.',
         },
         pipelineOperacional: {
           leadsComConversa: 0,
@@ -119,7 +131,7 @@ export async function GET() {
     const [conversasRes, agendamentosRes, contratosRes] = await Promise.all([
       supabase
         .from('conversas')
-        .select('lead_id, status')
+        .select('id, lead_id, status')
         .in('lead_id', accessibleLeadIds),
       supabase
         .from('agendamentos')
@@ -138,6 +150,53 @@ export async function GET() {
     const conversas = conversasRes.data || []
     const agendamentos = agendamentosRes.data || []
     const contratosPipeline = contratosRes.data || []
+    const accessibleConversationIds = conversas.map((conversa) => conversa.id).filter(Boolean)
+
+    const adminSupabase = createAdminSupabase()
+    const thirtyDaysAgoIso = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
+
+    let llmUsageRows: Array<{
+      sucesso: boolean | null
+      custo_usd: number | string | null
+      latencia_ms: number | null
+    }> = []
+
+    if (accessibleLeadIds.length > 0) {
+      const { data: llmData, error: llmError } = await adminSupabase
+        .from('agent_llm_usage')
+        .select('sucesso, custo_usd, latencia_ms')
+        .eq('tenant_id', context.tenantId)
+        .in('lead_id', accessibleLeadIds)
+        .gte('created_at', thirtyDaysAgoIso)
+
+      if (llmError) {
+        return NextResponse.json({ error: llmError.message }, { status: 500 })
+      }
+
+      llmUsageRows = llmData || []
+    }
+
+    let auditRows: Array<{ acao: string | null }> = []
+    if (accessibleConversationIds.length > 0) {
+      const { data: logsData, error: logsError } = await adminSupabase
+        .from('audit_logs')
+        .select('acao')
+        .eq('entidade', 'conversa')
+        .in('entidade_id', accessibleConversationIds)
+        .gte('created_at', thirtyDaysAgoIso)
+        .in('acao', [
+          'agent.skipped_after_human_takeover',
+          'agent.suppressed_polite_closure_loop',
+          'agent.closed_previdenciary_peer',
+          'agent.flood_detected',
+        ])
+
+      if (logsError) {
+        return NextResponse.json({ error: logsError.message }, { status: 500 })
+      }
+
+      auditRows = logsData || []
+    }
 
     const uniqLeadCount = (items: Array<{ lead_id: string | null | undefined }>) =>
       new Set(items.map((item) => item.lead_id).filter(Boolean)).size
@@ -163,6 +222,27 @@ export async function GET() {
     const leadsComContrato = uniqLeadCount(contratosAtivosOuQuitados)
     const valorEmContratos = contratosAtivosOuQuitados.reduce((acc, contrato) => acc + Number(contrato.valor_total || 0), 0)
     const ticketMedioLeadContratado = leadsComContrato > 0 ? valorEmContratos / leadsComContrato : 0
+
+    const respostasIa30d = llmUsageRows.filter((row) => row.sucesso !== false).length
+    const custoUsd30d = llmUsageRows.reduce((acc, row) => acc + Number(row.custo_usd || 0), 0)
+    const latenciasValidas = llmUsageRows
+      .map((row) => Number(row.latencia_ms || 0))
+      .filter((value) => Number.isFinite(value) && value > 0)
+    const latenciaMediaMs30d = latenciasValidas.length > 0
+      ? Math.round(latenciasValidas.reduce((acc, value) => acc + value, 0) / latenciasValidas.length)
+      : 0
+    const falhasLlm30d = llmUsageRows.filter((row) => row.sucesso === false).length
+
+    const countAuditAction = (acao: string) => auditRows.filter((row) => row.acao === acao).length
+    const takeoverHumano30d = countAuditAction('agent.skipped_after_human_takeover')
+    const loopsSuprimidos30d = countAuditAction('agent.suppressed_polite_closure_loop')
+    const closuresColega30d = countAuditAction('agent.closed_previdenciary_peer')
+    const floods30d = countAuditAction('agent.flood_detected')
+
+    const resumoAgenteOperacional =
+      respostasIa30d > 0
+        ? `Bianca respondeu ${respostasIa30d} vez(es) nos últimos 30 dias, com ${takeoverHumano30d} takeover(s) humano(s) respeitados e ${loopsSuprimidos30d + closuresColega30d} guardrail(s) acionado(s).`
+        : 'Sem respostas recentes da Bianca nos últimos 30 dias para este recorte.'
 
     const resumoPipeline =
       leadsComContrato > 0
@@ -251,6 +331,17 @@ export async function GET() {
         respondidoAgente,
         respondidoManual,
         taxaAutomacao: totalMensagens > 0 ? Math.round((respondidoAgente / totalMensagens) * 100) : 0,
+      },
+      agenteOperacional: {
+        respostasIa30d,
+        custoUsd30d,
+        latenciaMediaMs30d,
+        falhasLlm30d,
+        takeoverHumano30d,
+        loopsSuprimidos30d,
+        closuresColega30d,
+        floods30d,
+        resumo: resumoAgenteOperacional,
       },
       pipelineOperacional: {
         leadsComConversa,

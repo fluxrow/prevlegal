@@ -60,6 +60,30 @@ Mestra: [[MASTER_PREV_LEGAL]]
   - colegas previdenciaristas deixam de receber insistência comercial inadequada
   - a operação preserva reputação e evita desgaste em bases com contatos mistos
 
+## Atualizacao 2026-05-12 — Relatórios agora mostram a saúde operacional da Bianca
+
+- necessidade operacional:
+  - o produto já registrava `agent_llm_usage` e `audit_logs`, mas a equipe seguia sem visão simples do que a Bianca estava fazendo no campo
+  - isso dificultava perceber custo, latência, takeovers respeitados e quantas vezes os guardrails recentes estavam salvando a operação
+- desenho adotado:
+  - manter tudo dentro da aba já existente de `Relatórios`
+  - usar só tabelas já disponíveis, sem migration nova
+  - resumir os últimos 30 dias com foco em leitura operacional, não técnica
+- correção aplicada:
+  - `/api/relatorios` agora agrega:
+    - respostas IA recentes
+    - custo USD
+    - latência média
+    - falhas LLM
+    - takeovers humanos respeitados
+    - loops suprimidos
+    - encerramentos de colegas previdenciaristas
+    - floods contidos
+  - a aba `Funil` ganhou um bloco `Operação da Bianca — últimos 30 dias`
+- leitura prática:
+  - a equipe passa a enxergar se a Bianca está ajudando, custando demais ou precisando de novo ajuste
+  - os guardrails recentes deixam de ser invisíveis
+
 ## Atualizacao 2026-05-07 — Retomada pós-fora-do-horário agora respeita a ordem real da conversa
 
 - havia um desalinhamento entre sistema e WhatsApp em retomadas pós-`outside_hours`:
