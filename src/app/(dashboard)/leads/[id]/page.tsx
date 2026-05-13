@@ -303,6 +303,8 @@ export default function LeadDetailPage() {
           tipo: docForm.tipo,
           descricao: docForm.descricao,
           arquivo_url: upData.url,
+          storage_bucket: upData.storage_bucket,
+          storage_path: upData.storage_path,
           arquivo_nome: upData.nome,
           arquivo_tamanho: upData.tamanho,
           arquivo_tipo: upData.tipo,

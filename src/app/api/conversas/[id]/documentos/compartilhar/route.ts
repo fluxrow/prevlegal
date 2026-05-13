@@ -4,21 +4,13 @@ import { createClient as createServerClient } from '@/lib/supabase/server'
 import { contextHasPermission, getTenantContext } from '@/lib/tenant-context'
 import { canViewConversationForInbox } from '@/lib/inbox-visibility'
 import { sendWhatsAppMessage } from '@/lib/whatsapp-provider'
+import { resolveLeadDocumentStorageReference } from '@/lib/lead-document-storage'
 
 function createAdminSupabase() {
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
   )
-}
-
-function extractLeadDocumentStoragePath(url?: string | null) {
-  if (!url) return null
-  const marker = '/lead-documentos/'
-  const index = url.indexOf(marker)
-  if (index < 0) return null
-  const path = url.slice(index + marker.length).split('?')[0]?.trim()
-  return path || null
 }
 
 export async function POST(
@@ -59,7 +51,7 @@ export async function POST(
 
   const { data: documento, error: documentoError } = await supabase
     .from('lead_documentos')
-    .select('id, lead_id, nome, arquivo_nome, arquivo_url')
+    .select('id, lead_id, nome, arquivo_nome, arquivo_url, storage_bucket, storage_path')
     .eq('id', documentoId)
     .eq('lead_id', conversa.lead_id)
     .maybeSingle()
@@ -68,12 +60,12 @@ export async function POST(
   if (!documento) return NextResponse.json({ error: 'Documento não encontrado' }, { status: 404 })
 
   let shareUrl = documento.arquivo_url || ''
-  const storagePath = extractLeadDocumentStoragePath(documento.arquivo_url)
+  const storageRef = resolveLeadDocumentStorageReference(documento)
 
-  if (storagePath) {
+  if (storageRef.storageBucket && storageRef.storagePath) {
     const { data: signedData, error: signedError } = await supabase.storage
-      .from('lead-documentos')
-      .createSignedUrl(storagePath, 60 * 60 * 24 * 30)
+      .from(storageRef.storageBucket)
+      .createSignedUrl(storageRef.storagePath, 60 * 60 * 24 * 30)
 
     if (signedError) {
       return NextResponse.json({ error: signedError.message }, { status: 500 })

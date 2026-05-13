@@ -145,6 +145,8 @@ export async function POST(
       arquivo_nome: `${nomes[tipo]} — ${lead.nome}.txt`,
       arquivo_tamanho: Buffer.byteLength(conteudo, 'utf8'),
       arquivo_tipo: 'text/plain;charset=utf-8',
+      storage_bucket: 'lead-documentos',
+      storage_path: storagePath,
       descricao: 'Documento gerado por IA',
       conteudo_texto: conteudo,
       gerado_por_ia: true,

@@ -7,6 +7,7 @@ import {
   queueDocumentProcessingJob,
   shouldQueueDocumentProcessing,
 } from '@/lib/document-processing'
+import { resolveLeadDocumentStorageReference } from '@/lib/lead-document-storage'
 
 export async function GET(
   request: Request,
@@ -41,7 +42,23 @@ export async function POST(
   if (!allowed) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   const body = await request.json()
-  const { nome, tipo, arquivo_url, arquivo_nome, arquivo_tamanho, arquivo_tipo, descricao } = body
+  const {
+    nome,
+    tipo,
+    arquivo_url,
+    arquivo_nome,
+    arquivo_tamanho,
+    arquivo_tipo,
+    descricao,
+    storage_bucket,
+    storage_path,
+  } = body
+
+  const resolvedStorage = resolveLeadDocumentStorageReference({
+    storage_bucket,
+    storage_path,
+    arquivo_url,
+  })
 
   const { data, error } = await supabase
     .from('lead_documentos')
@@ -55,6 +72,8 @@ export async function POST(
       arquivo_tamanho,
       arquivo_tipo,
       descricao,
+      storage_bucket: resolvedStorage.storageBucket,
+      storage_path: resolvedStorage.storagePath,
       created_by: context.authUserId,
     })
     .select()
@@ -62,13 +81,10 @@ export async function POST(
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  const storagePath = typeof arquivo_url === 'string'
-    ? arquivo_url.split('/lead-documentos/')[1]?.split('?')[0] || null
-    : null
-
   if (
     data?.id &&
-    storagePath &&
+    resolvedStorage.storageBucket === 'lead-documentos' &&
+    resolvedStorage.storagePath &&
     shouldQueueDocumentProcessing(arquivo_tipo, arquivo_nome)
   ) {
     await queueDocumentProcessingJob(supabase, {
@@ -76,8 +92,8 @@ export async function POST(
       leadId: id,
       sourceType: 'lead_documento',
       sourceId: data.id,
-      storageBucket: 'lead-documentos',
-      storagePath,
+      storageBucket: resolvedStorage.storageBucket,
+      storagePath: resolvedStorage.storagePath,
       fileName: arquivo_nome,
       mimeType: arquivo_tipo,
     })
@@ -103,16 +119,14 @@ export async function DELETE(
 
   const { data: doc } = await supabase
     .from('lead_documentos')
-    .select('arquivo_url, arquivo_nome')
+    .select('arquivo_url, arquivo_nome, storage_bucket, storage_path')
     .eq('id', docId)
     .single()
 
   if (doc) {
-    const urlParts = doc.arquivo_url.split('/lead-documentos/')
-    if (urlParts[1]) {
-      // Strip query string (signed URL params) to get storage path
-      const storagePath = urlParts[1].split('?')[0]
-      await supabase.storage.from('lead-documentos').remove([storagePath])
+    const storageRef = resolveLeadDocumentStorageReference(doc)
+    if (storageRef.storageBucket && storageRef.storagePath) {
+      await supabase.storage.from(storageRef.storageBucket).remove([storageRef.storagePath])
     }
   }
 

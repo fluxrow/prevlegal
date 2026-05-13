@@ -113,6 +113,26 @@ Mestra: [[MASTER_PREV_LEGAL]]
   - em canais conectados, “mensagem manual do próprio número” é evidência operacional suficiente para takeover humano
   - não basta espelhar a mensagem; é preciso derrubar explicitamente a esteira do agente
 
+## Atualização 2026-05-13 — `storage_path` canônico em documento é mais seguro do que reconstruir path a partir de signed URL
+
+- Problema:
+  - o upload interno do lead subia o arquivo e depois persistia só `arquivo_url`
+  - na hora de processar, deletar ou compartilhar, o sistema tentava deduzir o caminho real do storage a partir dessa URL assinada
+- Causa:
+  - `lead_documentos` ainda não guardava `storage_bucket` e `storage_path`
+  - o portal já nascia mais perto do caminho certo porque tinha o `storagePath` em memória no momento do upload
+- Correção:
+  - adicionar `storage_bucket` e `storage_path` em `lead_documentos`
+  - salvar isso nos fluxos principais:
+    - upload interno
+    - upload do portal
+    - documentos IA
+    - minutas/contratos
+  - usar fallback por parsing de URL apenas para documentos legados
+- Regra prática:
+  - signed URL é artefato de distribuição, não identificador canônico de arquivo
+  - para qualquer domínio documental sério, bucket/path devem ser persistidos como referência primária
+
 ## Atualização 2026-05-07 — `outside_hours` não deve reaparecer na timeline como se a Bianca tivesse respondido no passado
 
 - Problema:

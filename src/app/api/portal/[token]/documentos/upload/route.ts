@@ -109,6 +109,8 @@ export async function POST(
       arquivo_nome: file.name,
       arquivo_tamanho: file.size,
       arquivo_tipo: file.type || null,
+      storage_bucket: 'lead-documentos',
+      storage_path: storagePath,
       descricao: `Enviado pelo portal${viewerResult.viewer ? ` por ${viewerLabel}` : ''}`,
       compartilhado_cliente: true,
     })

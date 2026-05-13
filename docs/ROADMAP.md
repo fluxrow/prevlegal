@@ -113,6 +113,26 @@ Mestra: [[MASTER_PREV_LEGAL]]
   - responder pelo celular do número oficial passa a valer como takeover humano real
   - a trava deixa de depender só da assunção feita pela UI do PrevLegal
 
+## Atualizacao 2026-05-13 — Documentos do lead passaram a guardar referência canônica de storage
+
+- achado operacional:
+  - o upload interno de documentos ainda dependia de `signed URL` para depois tentar reconstruir `storagePath`
+  - isso deixava delete, processamento e compartilhamento mais frágeis que o fluxo do portal
+- desenho adotado:
+  - adicionar em `lead_documentos` uma referência canônica:
+    - `storage_bucket`
+    - `storage_path`
+  - manter fallback pela URL assinada só para documentos antigos
+- correção aplicada:
+  - migration `061_lead_document_storage_reference.sql`
+  - upload interno agora devolve bucket/path
+  - persistência do documento interno passa a salvar essa referência
+  - portal upload, documentos gerados por IA e minutas/contratos também passaram a gravar bucket/path
+  - exclusão e compartilhamento agora priorizam a referência canônica antes de tentar reconstruir pela URL
+- leitura prática:
+  - o fluxo documental fica menos dependente de formato de URL assinada
+  - isso reduz risco operacional exatamente na frente mais sensível de documentos e contratos
+
 ## Atualizacao 2026-05-07 — Retomada pós-fora-do-horário agora respeita a ordem real da conversa
 
 - havia um desalinhamento entre sistema e WhatsApp em retomadas pós-`outside_hours`:

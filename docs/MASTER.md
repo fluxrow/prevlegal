@@ -103,6 +103,12 @@ Estado confirmado em 27/04/2026:
   - conversa continua valendo
   - documentos parseados passam a reforçar CPF/RG/endereço/profissão e outros campos cadastrais
   - sem foundation documental, o fluxo degrada para “só conversa” sem quebrar geração
+  - `lead_documentos` agora guarda referência canônica de storage (`storage_bucket` + `storage_path`) nos fluxos principais:
+    - upload interno
+    - portal
+    - documentos gerados por IA
+    - minutas/contratos
+  - delete, reprocesso e compartilhamento passam a preferir essa referência antes do fallback por signed URL
 - a inbox humana agora mostra melhor o contexto operacional do lead sem alterar o runtime de conversa:
   - badge de responsável visível na lista e no cabeçalho da conversa
   - faixa rápida com os documentos já vinculados ao lead dentro da própria thread

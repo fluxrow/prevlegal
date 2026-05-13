@@ -31,6 +31,8 @@ export async function POST(
     .createSignedUrl(fileName, 60 * 60 * 24 * 365) // 1 ano
 
   return NextResponse.json({
+    storage_bucket: 'lead-documentos',
+    storage_path: fileName,
     path: fileName,
     url: signedData?.signedUrl || '',
     nome: file.name,

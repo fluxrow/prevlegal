@@ -284,6 +284,8 @@ export async function POST(
         arquivo_nome: fileName,
         arquivo_tamanho: pdfBuffer.byteLength,
         arquivo_tipo: 'application/pdf',
+        storage_bucket: 'contratos-leads',
+        storage_path: storagePath,
         descricao: `Minuta preparada a partir do template ${template.nome}`,
         created_by: context.authUserId,
       })
