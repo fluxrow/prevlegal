@@ -134,6 +134,8 @@ Mestra: [[MASTER_PREV_LEGAL]]
     - preenchido automaticamente
     - faltando
     - sobrescrito manualmente
+  - a API de `contract_templates` passou a normalizar `placeholders_definidos` a partir do `corpo_html`, tanto no GET quanto no save
+  - o template ativo de planejamento no tenant real foi reidratado no banco para voltar a listar os 12 placeholders efetivamente usados no corpo
 - leitura prática:
   - o fluxo documental fica menos dependente de formato de URL assinada
   - isso reduz risco operacional exatamente na frente mais sensível de documentos e contratos

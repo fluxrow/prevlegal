@@ -108,6 +108,10 @@ Estado confirmado em 27/04/2026:
       - o que veio automático
       - o que está faltando
       - o que o operador decidiu sobrescrever manualmente
+    - a API de templates de contrato agora normaliza `placeholders_definidos` a partir do `corpo_html` do template:
+      - leitura e save passam a refletir o corpo real
+      - isso evita drift entre placeholder salvo e placeholder realmente usado na minuta
+      - o template ativo de planejamento do tenant real também foi realinhado no banco para refletir os placeholders efetivamente usados
   - `lead_documentos` agora guarda referência canônica de storage (`storage_bucket` + `storage_path`) nos fluxos principais:
     - upload interno
     - portal

@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { contextHasPermission, getTenantContext } from '@/lib/tenant-context'
+import {
+  resolveContractTemplatePlaceholders,
+  type ContractTemplatePlaceholderDefinition,
+} from '@/lib/contract-templates'
 
 function canManageContractTemplates(context: NonNullable<Awaited<ReturnType<typeof getTenantContext>>>) {
   return contextHasPermission(context, 'configuracoes_manage') || contextHasPermission(context, 'financeiro_manage')
@@ -23,7 +27,12 @@ export async function PATCH(
   const tipo = String(body.tipo || '').trim()
   const corpoHtml = String(body.corpo_html || '').trim()
   const ativo = body.ativo !== false
-  const placeholders = Array.isArray(body.placeholders_definidos) ? body.placeholders_definidos : []
+  const placeholders = resolveContractTemplatePlaceholders(
+    corpoHtml,
+    Array.isArray(body.placeholders_definidos)
+      ? body.placeholders_definidos as ContractTemplatePlaceholderDefinition[]
+      : [],
+  )
 
   if (!nome || !tipo || !corpoHtml) {
     return NextResponse.json({ error: 'nome, tipo e corpo_html são obrigatórios' }, { status: 400 })

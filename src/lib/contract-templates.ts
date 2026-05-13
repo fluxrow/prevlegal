@@ -158,6 +158,24 @@ export function getContractTemplatePlaceholders() {
   return CONTRACT_TEMPLATE_PLACEHOLDERS
 }
 
+export function resolveContractTemplatePlaceholders(
+  bodyHtml: string,
+  explicitDefinitions: ContractTemplatePlaceholderDefinition[] = [],
+) {
+  const placeholderKeys = extractPlaceholdersFromBody(bodyHtml)
+  if (placeholderKeys.length > 0) {
+    return placeholderKeys.map((key) => (
+      getContractPlaceholderDefinition(key) || {
+        key,
+        label: key,
+        description: 'Valor utilizado no template de contrato.',
+      }
+    ))
+  }
+
+  return explicitDefinitions
+}
+
 export function buildContractTemplateData(
   lead: ContractTemplatePreviewLead,
   tenant: ContractTemplatePreviewTenant,

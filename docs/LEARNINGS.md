@@ -131,11 +131,14 @@ Mestra: [[MASTER_PREV_LEGAL]]
   - usar fallback por parsing de URL apenas para documentos legados
   - na minuta, usar `lead.categoria_profissional` como fallback de `cliente_profissao` quando a conversa/documento ainda não preencher esse campo
   - a UI de `Preparar minuta` deve usar os placeholders realmente exigidos pelo template, não depender apenas do cadastro estático de `placeholders_definidos`
+  - a API de templates também precisa recalcular `placeholders_definidos` a partir do `corpo_html`, senão o banco pode continuar com metadado velho mesmo quando a UI nova já enxerga o corpo correto
+  - em tenant real, isso já apareceu na prática: o template ativo de planejamento usava 12 placeholders no corpo e tinha só 2 registrados no banco
 - Regra prática:
   - signed URL é artefato de distribuição, não identificador canônico de arquivo
   - para qualquer domínio documental sério, bucket/path devem ser persistidos como referência primária
   - quando o cadastro do lead já tem dado humano útil importado, vale reaproveitá-lo como fallback contratual antes de exigir preenchimento manual
   - em fluxo contratual, o operador precisa enxergar claramente o que veio automático, o que está faltando e o que foi sobrescrito por ele; sem isso, o PDF pode sair “tecnicamente gerado”, mas operacionalmente inseguro
+  - em domínio de templates, o corpo é a fonte da verdade; listas derivadas de placeholder devem ser recalculadas no servidor para não apodrecer com o tempo
 
 ## Atualização 2026-05-07 — `outside_hours` não deve reaparecer na timeline como se a Bianca tivesse respondido no passado
 
