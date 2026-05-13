@@ -37,7 +37,7 @@ async function loadLeadAndTenant(
   const [{ data: lead, error: leadError }, { data: tenant, error: tenantError }] = await Promise.all([
     supabase
       .from('leads')
-      .select('id, nome, cpf, telefone, email, nb, data_nascimento, idade')
+      .select('id, nome, cpf, telefone, email, nb, data_nascimento, idade, categoria_profissional')
       .eq('id', leadId)
       .eq('tenant_id', tenantId)
       .single(),

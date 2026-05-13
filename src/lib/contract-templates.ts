@@ -21,6 +21,7 @@ export interface ContractTemplatePreviewLead {
   nb?: string | null
   data_nascimento?: string | null
   idade?: number | null
+  categoria_profissional?: string | null
 }
 
 export interface ContractTemplatePreviewTenant {
@@ -200,7 +201,11 @@ export function buildContractTemplateData(
     cliente_nome: pickFirstNonEmpty(manualValues.cliente_nome, extractedClientData.cliente_nome, lead.nome),
     cliente_nacionalidade: pickFirstNonEmpty(manualValues.cliente_nacionalidade, extractedClientData.cliente_nacionalidade),
     cliente_estado_civil: pickFirstNonEmpty(manualValues.cliente_estado_civil, extractedClientData.cliente_estado_civil),
-    cliente_profissao: pickFirstNonEmpty(manualValues.cliente_profissao, extractedClientData.cliente_profissao),
+    cliente_profissao: pickFirstNonEmpty(
+      manualValues.cliente_profissao,
+      extractedClientData.cliente_profissao,
+      lead.categoria_profissional,
+    ),
     cliente_cpf: pickFirstNonEmpty(manualValues.cliente_cpf, extractedClientData.cliente_cpf, lead.cpf),
     cliente_rg: pickFirstNonEmpty(manualValues.cliente_rg, extractedClientData.cliente_rg),
     cliente_telefone: pickFirstNonEmpty(manualValues.cliente_telefone, lead.telefone),

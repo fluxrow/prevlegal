@@ -99,10 +99,11 @@ Estado confirmado em 27/04/2026:
   - sem horário futuro, continuam em `rascunho`
   - com horário futuro, nascem em `agendada`
   - o worker promove para `ativa` só quando chega a hora do primeiro envio
-- a preparação de minuta/contrato agora pode aproveitar também documentos já processados do lead como evidência para preencher placeholders do cliente:
-  - conversa continua valendo
-  - documentos parseados passam a reforçar CPF/RG/endereço/profissão e outros campos cadastrais
-  - sem foundation documental, o fluxo degrada para “só conversa” sem quebrar geração
+  - a preparação de minuta/contrato agora pode aproveitar também documentos já processados do lead como evidência para preencher placeholders do cliente:
+    - conversa continua valendo
+    - documentos parseados passam a reforçar CPF/RG/endereço/profissão e outros campos cadastrais
+    - `categoria_profissional` do lead também passa a servir como fallback seguro para `cliente_profissao` quando a conversa/documentos não trouxerem esse campo de forma explícita
+    - sem foundation documental, o fluxo degrada para “só conversa” sem quebrar geração
   - `lead_documentos` agora guarda referência canônica de storage (`storage_bucket` + `storage_path`) nos fluxos principais:
     - upload interno
     - portal

@@ -129,6 +129,7 @@ Mestra: [[MASTER_PREV_LEGAL]]
   - persistência do documento interno passa a salvar essa referência
   - portal upload, documentos gerados por IA e minutas/contratos também passaram a gravar bucket/path
   - exclusão e compartilhamento agora priorizam a referência canônica antes de tentar reconstruir pela URL
+  - a preparação de minuta também passou a usar `categoria_profissional` do lead como fallback seguro para `cliente_profissao`
 - leitura prática:
   - o fluxo documental fica menos dependente de formato de URL assinada
   - isso reduz risco operacional exatamente na frente mais sensível de documentos e contratos

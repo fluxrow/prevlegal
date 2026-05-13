@@ -129,9 +129,11 @@ Mestra: [[MASTER_PREV_LEGAL]]
     - documentos IA
     - minutas/contratos
   - usar fallback por parsing de URL apenas para documentos legados
+  - na minuta, usar `lead.categoria_profissional` como fallback de `cliente_profissao` quando a conversa/documento ainda não preencher esse campo
 - Regra prática:
   - signed URL é artefato de distribuição, não identificador canônico de arquivo
   - para qualquer domínio documental sério, bucket/path devem ser persistidos como referência primária
+  - quando o cadastro do lead já tem dado humano útil importado, vale reaproveitá-lo como fallback contratual antes de exigir preenchimento manual
 
 ## Atualização 2026-05-07 — `outside_hours` não deve reaparecer na timeline como se a Bianca tivesse respondido no passado
 
