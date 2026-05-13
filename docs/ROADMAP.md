@@ -97,6 +97,22 @@ Mestra: [[MASTER_PREV_LEGAL]]
   - a equipe deixa de interpretar backlog como se fosse trabalho humano já realizado
   - a automação da Bianca fica mais legível e menos “maquiada” por conta de pendências operacionais
 
+## Atualizacao 2026-05-13 — Resposta manual pelo celular do canal agora também derruba a Bianca
+
+- achado operacional:
+  - quando o operador respondia o lead direto pelo WhatsApp do número conectado, a mensagem era espelhada no sistema, mas a conversa podia continuar em `agente`
+  - com isso, a Bianca ainda podia responder depois como se não tivesse havido takeover manual
+- causa raiz:
+  - no webhook `fromMe` da Z-API, a mensagem já era marcada como `respondido_manualmente = true`
+  - porém, em conversa já existente, o webhook não forçava `status = humano`
+- correção aplicada:
+  - mensagem originada no próprio canal via Z-API agora promove a conversa para `humano`
+  - também normaliza `estado_operacional = em_atendimento_humano`
+  - e zera `nao_lidas` para não deixar a Bianca “competindo” com o atendimento manual
+- leitura prática:
+  - responder pelo celular do número oficial passa a valer como takeover humano real
+  - a trava deixa de depender só da assunção feita pela UI do PrevLegal
+
 ## Atualizacao 2026-05-07 — Retomada pós-fora-do-horário agora respeita a ordem real da conversa
 
 - havia um desalinhamento entre sistema e WhatsApp em retomadas pós-`outside_hours`:

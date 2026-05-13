@@ -504,6 +504,7 @@ type ConversationPhoneCandidate = {
   id: string
   nao_lidas: number | null
   status: string | null
+  assumido_em?: string | null
   telefone?: string | null
   whatsapp_number_id?: string | null
 }
@@ -563,7 +564,7 @@ async function findConversationByNormalizedPhone(
   for (const pattern of searchPatterns) {
     let query = supabase
       .from('conversas')
-      .select('id, nao_lidas, status, telefone, whatsapp_number_id')
+      .select('id, nao_lidas, status, assumido_em, telefone, whatsapp_number_id')
       .like('telefone', `%${pattern}%`)
       .limit(25)
 
@@ -827,6 +828,7 @@ async function handleChannelOriginatedMessage({
   )
 
   let conversaId: string | null = null
+  const nowIso = new Date().toISOString()
 
   if (conversaExistente) {
     conversaId = conversaExistente.id
@@ -835,8 +837,13 @@ async function handleChannelOriginatedMessage({
       .update({
         lead_id: lead?.id || null,
         whatsapp_number_id: conversaExistente.whatsapp_number_id || routing.channelId,
+        status: 'humano',
+        assumido_em: conversaExistente.assumido_em || nowIso,
+        estado_operacional: 'em_atendimento_humano',
+        estado_operacional_atualizado_em: nowIso,
         ultima_mensagem: body,
-        ultima_mensagem_at: new Date().toISOString(),
+        ultima_mensagem_at: nowIso,
+        nao_lidas: 0,
       })
       .eq('id', conversaExistente.id)
   } else {
@@ -848,9 +855,12 @@ async function handleChannelOriginatedMessage({
         telefone: parties.counterpartyPhone,
         status: 'humano',
         ultima_mensagem: body,
-        ultima_mensagem_at: new Date().toISOString(),
+        ultima_mensagem_at: nowIso,
         nao_lidas: 0,
         whatsapp_number_id: routing.channelId,
+        estado_operacional: 'em_atendimento_humano',
+        estado_operacional_atualizado_em: nowIso,
+        assumido_em: nowIso,
       })
       .select('id')
       .single()
@@ -878,7 +888,7 @@ async function handleChannelOriginatedMessage({
       twilio_message_sid: externalId || null,
       twilio_sid: event,
       lido: true,
-      lido_em: new Date().toISOString(),
+      lido_em: nowIso,
     })
     .select('id')
     .single()

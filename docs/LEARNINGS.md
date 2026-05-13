@@ -94,6 +94,25 @@ Mestra: [[MASTER_PREV_LEGAL]]
   - em relatórios operacionais, “não foi IA” não significa automaticamente “foi humano”
   - sempre separar `manual`, `pendente` e `silenciado/suprimido` quando o fluxo tiver esses estados
 
+## Atualização 2026-05-13 — Espelhar mensagem manual do canal sem trocar a conversa para `humano` não basta para parar o agente
+
+- Problema:
+  - operador respondeu um lead direto pelo WhatsApp do número do escritório
+  - o sistema registrou a mensagem, mas a Bianca continuou atuando na conversa
+- Causa:
+  - o webhook `fromMe` da Z-API espelhava a outbound como `respondido_manualmente = true`
+  - porém a conversa existente podia continuar com `status = agente`
+  - como os próximos inbound ainda viam a conversa como `agente`, a esteira automática seguia viva
+- Correção:
+  - ao receber outbound `fromMe`, o webhook agora força:
+    - `status = humano`
+    - `estado_operacional = em_atendimento_humano`
+    - `nao_lidas = 0`
+  - isso vale mesmo quando o takeover começou fora da UI
+- Regra prática:
+  - em canais conectados, “mensagem manual do próprio número” é evidência operacional suficiente para takeover humano
+  - não basta espelhar a mensagem; é preciso derrubar explicitamente a esteira do agente
+
 ## Atualização 2026-05-07 — `outside_hours` não deve reaparecer na timeline como se a Bianca tivesse respondido no passado
 
 - Problema:

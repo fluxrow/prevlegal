@@ -138,6 +138,9 @@ Estado confirmado em 27/04/2026:
     - o comparativo `Agente IA vs. Atendimento Manual` agora separa corretamente:
       - atendimento humano real
       - mensagens ainda pendentes
+  - resposta manual enviada diretamente pelo WhatsApp do número conectado agora também vale como takeover humano:
+    - o espelhamento `fromMe` da Z-API passa a trocar a conversa para `humano`
+    - o estado operacional vai para `em_atendimento_humano`
     - o Google Calendar não estava conectado
   - a leitura continua `texto-first`: anexo binário direto e resposta automática por áudio seguem fora do fluxo atual
  - campanhas agora também podem ser criadas por `estado operacional` da conversa:
