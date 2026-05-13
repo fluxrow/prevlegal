@@ -20,6 +20,12 @@ interface Template {
   placeholders_definidos: Array<{ key: string; label: string; description: string }>
 }
 
+interface PlaceholderDefinition {
+  key: string
+  label: string
+  description: string
+}
+
 interface Props {
   lead: LeadPreview
 }
@@ -34,6 +40,9 @@ export default function PrepararMinutaLead({ lead }: Props) {
   const [previewValues, setPreviewValues] = useState<Record<string, string>>({})
   const [missingFields, setMissingFields] = useState<string[]>([])
   const [manualValues, setManualValues] = useState<Record<string, string>>({})
+  const [editingKeys, setEditingKeys] = useState<Record<string, boolean>>({})
+  const [requiredPlaceholderKeys, setRequiredPlaceholderKeys] = useState<string[]>([])
+  const [availablePlaceholders, setAvailablePlaceholders] = useState<PlaceholderDefinition[]>([])
   const [generated, setGenerated] = useState<{ pdf_url: string } | null>(null)
   const [markingReady, setMarkingReady] = useState(false)
 
@@ -55,6 +64,7 @@ export default function PrepararMinutaLead({ lead }: Props) {
       }
       setCanUse(true)
       setTemplates((json.templates || []).filter((item: Template) => item.ativo))
+      setAvailablePlaceholders(json.availablePlaceholders || [])
     }
 
     void loadTemplates()
@@ -75,6 +85,7 @@ export default function PrepararMinutaLead({ lead }: Props) {
         }
         setPreviewValues(json.preview?.values || {})
         setMissingFields(json.preview?.missing_fields || [])
+        setRequiredPlaceholderKeys(json.preview?.required_placeholders || [])
       })
       .catch((error) => {
         toast.error(error instanceof Error ? error.message : 'Não foi possível montar o preview')
@@ -86,6 +97,46 @@ export default function PrepararMinutaLead({ lead }: Props) {
     () => templates.find((template) => template.id === templateId) || null,
     [templateId, templates],
   )
+
+  const placeholderDefinitionMap = useMemo(
+    () => new Map(availablePlaceholders.map((item) => [item.key, item])),
+    [availablePlaceholders],
+  )
+
+  const displayPlaceholders = useMemo(() => {
+    const keys = requiredPlaceholderKeys.length > 0
+      ? requiredPlaceholderKeys
+      : (selectedTemplate?.placeholders_definidos || []).map((item) => item.key)
+
+    return keys.map((key) => {
+      const known = placeholderDefinitionMap.get(key)
+      if (known) return known
+      const fallback = selectedTemplate?.placeholders_definidos?.find((item) => item.key === key)
+      return fallback || {
+        key,
+        label: key,
+        description: 'Valor utilizado para preencher o template.',
+      }
+    })
+  }, [placeholderDefinitionMap, requiredPlaceholderKeys, selectedTemplate])
+
+  const filledCount = useMemo(
+    () => displayPlaceholders.filter((placeholder) => {
+      const value = (manualValues[placeholder.key] ?? previewValues[placeholder.key] ?? '').trim()
+      return value.length > 0
+    }).length,
+    [displayPlaceholders, manualValues, previewValues],
+  )
+
+  function resetState() {
+    setGenerated(null)
+    setMissingFields([])
+    setPreviewValues({})
+    setManualValues({})
+    setEditingKeys({})
+    setRequiredPlaceholderKeys([])
+    setLoading(false)
+  }
 
   async function generatePdf() {
     if (!templateId) {
@@ -106,6 +157,14 @@ export default function PrepararMinutaLead({ lead }: Props) {
       if (res.status === 422) {
         setMissingFields(json?.missing_fields || [])
         setPreviewValues(json?.preview_values || previewValues)
+        setRequiredPlaceholderKeys(json?.required_placeholders || requiredPlaceholderKeys)
+        setEditingKeys((current) => {
+          const next = { ...current }
+          for (const key of json?.missing_fields || []) {
+            next[key] = true
+          }
+          return next
+        })
       }
       toast.error(json?.error || 'Não foi possível gerar a minuta')
       return
@@ -145,11 +204,7 @@ export default function PrepararMinutaLead({ lead }: Props) {
     <>
       <button
         onClick={() => {
-          setGenerated(null)
-          setMissingFields([])
-          setPreviewValues({})
-          setManualValues({})
-          setLoading(false)
+          resetState()
           setOpen(true)
         }}
         style={{
@@ -183,11 +238,7 @@ export default function PrepararMinutaLead({ lead }: Props) {
           }}
           onClick={() => {
             setOpen(false)
-            setGenerated(null)
-            setMissingFields([])
-            setPreviewValues({})
-            setManualValues({})
-            setLoading(false)
+            resetState()
           }}
         >
           <div
@@ -213,11 +264,7 @@ export default function PrepararMinutaLead({ lead }: Props) {
               </div>
               <button onClick={() => {
                 setOpen(false)
-                setGenerated(null)
-                setMissingFields([])
-                setPreviewValues({})
-                setManualValues({})
-                setLoading(false)
+                resetState()
               }} style={{ border: 'none', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '22px' }}>
                 ×
               </button>
@@ -236,6 +283,8 @@ export default function PrepararMinutaLead({ lead }: Props) {
                     setGenerated(null)
                     setManualValues({})
                     setMissingFields([])
+                    setEditingKeys({})
+                    setRequiredPlaceholderKeys([])
                   }}
                   style={{
                     width: '100%',
@@ -299,26 +348,81 @@ export default function PrepararMinutaLead({ lead }: Props) {
                   <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-muted)' }}>Montando preview...</p>
                 ) : (
                   <div style={{ display: 'grid', gap: '10px' }}>
-                    {(selectedTemplate?.placeholders_definidos || []).map((placeholder) => (
+                    <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '4px' }}>
+                      <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                        {displayPlaceholders.length} placeholder(s) exigido(s)
+                      </span>
+                      <span style={{ fontSize: '12px', color: '#22c55e' }}>
+                        {filledCount} preenchido(s)
+                      </span>
+                      {missingFields.length > 0 ? (
+                        <span style={{ fontSize: '12px', color: '#f59e0b' }}>
+                          {missingFields.length} pendente(s)
+                        </span>
+                      ) : null}
+                    </div>
+
+                    {displayPlaceholders.map((placeholder) => {
+                      const currentValue = manualValues[placeholder.key] ?? previewValues[placeholder.key] ?? ''
+                      const isMissing = missingFields.includes(placeholder.key)
+                      const isEditing = isMissing || editingKeys[placeholder.key]
+
+                      return (
                       <div
                         key={placeholder.key}
                         style={{
                           border: '1px solid var(--border)',
                           borderRadius: '10px',
                           padding: '10px 12px',
-                          background: missingFields.includes(placeholder.key) ? 'rgba(245, 158, 11, 0.08)' : 'var(--bg)',
+                          background: isMissing ? 'rgba(245, 158, 11, 0.08)' : 'var(--bg)',
                         }}
                       >
-                        <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-primary)', fontWeight: 700 }}>
-                          {placeholder.label}
-                        </p>
-                        {missingFields.includes(placeholder.key) ? (
-                          <>
-                            <p style={{ margin: '4px 0 8px', fontSize: '12px', color: '#f59e0b' }}>
-                              Campo faltante para gerar o documento. {placeholder.description}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}>
+                          <div>
+                            <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-primary)', fontWeight: 700 }}>
+                              {placeholder.label}
                             </p>
+                            <p style={{ margin: '4px 0 0', fontSize: '12px', color: isMissing ? '#f59e0b' : 'var(--text-muted)' }}>
+                              {isMissing
+                                ? `Campo faltante para gerar o documento. ${placeholder.description}`
+                                : placeholder.description}
+                            </p>
+                          </div>
+                          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                            {manualValues[placeholder.key]?.trim() ? (
+                              <span style={{ fontSize: '11px', color: '#4f7aff', fontWeight: 700 }}>Manual</span>
+                            ) : null}
+                            {!isMissing && !manualValues[placeholder.key]?.trim() ? (
+                              <span style={{ fontSize: '11px', color: '#22c55e', fontWeight: 700 }}>Automático</span>
+                            ) : null}
+                            {!isMissing ? (
+                              <button
+                                onClick={() =>
+                                  setEditingKeys((current) => ({
+                                    ...current,
+                                    [placeholder.key]: !current[placeholder.key],
+                                  }))
+                                }
+                                style={{
+                                  border: 'none',
+                                  background: 'transparent',
+                                  color: 'var(--accent)',
+                                  cursor: 'pointer',
+                                  fontSize: '12px',
+                                  fontWeight: 700,
+                                  padding: 0,
+                                }}
+                              >
+                                {isEditing ? 'Fechar ajuste' : 'Ajustar valor'}
+                              </button>
+                            ) : null}
+                          </div>
+                        </div>
+
+                        {isEditing ? (
+                          <>
                             <input
-                              value={manualValues[placeholder.key] ?? previewValues[placeholder.key] ?? ''}
+                              value={currentValue}
                               onChange={(event) =>
                                 setManualValues((current) => ({
                                   ...current,
@@ -337,14 +441,39 @@ export default function PrepararMinutaLead({ lead }: Props) {
                               }}
                               placeholder={placeholder.description}
                             />
+                            {!isMissing && manualValues[placeholder.key]?.trim() ? (
+                              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '8px' }}>
+                                <button
+                                  onClick={() =>
+                                    setManualValues((current) => {
+                                      const next = { ...current }
+                                      delete next[placeholder.key]
+                                      return next
+                                    })
+                                  }
+                                  style={{
+                                    border: 'none',
+                                    background: 'transparent',
+                                    color: 'var(--text-muted)',
+                                    cursor: 'pointer',
+                                    fontSize: '12px',
+                                    fontWeight: 700,
+                                    padding: 0,
+                                  }}
+                                >
+                                  Remover ajuste manual
+                                </button>
+                              </div>
+                            ) : null}
                           </>
                         ) : (
                           <p style={{ margin: '4px 0 0', fontSize: '12px', color: 'var(--text-muted)' }}>
-                            {manualValues[placeholder.key] || previewValues[placeholder.key] || 'Será preenchido automaticamente no momento da geração.'}
+                            {currentValue || 'Será preenchido automaticamente no momento da geração.'}
                           </p>
                         )}
                       </div>
-                    ))}
+                      )
+                    })}
                   </div>
                 )}
               </div>
@@ -353,11 +482,7 @@ export default function PrepararMinutaLead({ lead }: Props) {
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '18px' }}>
               <button onClick={() => {
                 setOpen(false)
-                setGenerated(null)
-                setMissingFields([])
-                setPreviewValues({})
-                setManualValues({})
-                setLoading(false)
+                resetState()
               }} style={{ border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)', borderRadius: '10px', padding: '10px 14px', cursor: 'pointer' }}>
                 Fechar
               </button>

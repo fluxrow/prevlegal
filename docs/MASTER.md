@@ -104,6 +104,10 @@ Estado confirmado em 27/04/2026:
     - documentos parseados passam a reforçar CPF/RG/endereço/profissão e outros campos cadastrais
     - `categoria_profissional` do lead também passa a servir como fallback seguro para `cliente_profissao` quando a conversa/documentos não trouxerem esse campo de forma explícita
     - sem foundation documental, o fluxo degrada para “só conversa” sem quebrar geração
+    - o modal `Preparar minuta` agora olha os placeholders realmente exigidos pelo template e separa melhor:
+      - o que veio automático
+      - o que está faltando
+      - o que o operador decidiu sobrescrever manualmente
   - `lead_documentos` agora guarda referência canônica de storage (`storage_bucket` + `storage_path`) nos fluxos principais:
     - upload interno
     - portal

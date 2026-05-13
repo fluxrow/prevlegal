@@ -249,6 +249,7 @@ export async function POST(
         error: 'Não foi possível extrair todos os dados da conversa. Preencha manualmente os campos faltantes antes de gerar o documento.',
         missing_fields: missingFields,
         preview_values: placeholderValues,
+        required_placeholders: requiredPlaceholders,
       }, { status: 422 })
     }
 
