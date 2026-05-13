@@ -43,8 +43,10 @@ export default function PrepararMinutaLead({ lead }: Props) {
   const [editingKeys, setEditingKeys] = useState<Record<string, boolean>>({})
   const [requiredPlaceholderKeys, setRequiredPlaceholderKeys] = useState<string[]>([])
   const [availablePlaceholders, setAvailablePlaceholders] = useState<PlaceholderDefinition[]>([])
-  const [generated, setGenerated] = useState<{ pdf_url: string } | null>(null)
+  const [generated, setGenerated] = useState<{ pdf_url: string; documento_id: string; documento_nome: string } | null>(null)
   const [markingReady, setMarkingReady] = useState(false)
+  const [sharingToPortal, setSharingToPortal] = useState(false)
+  const [sharedToPortal, setSharedToPortal] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -136,6 +138,8 @@ export default function PrepararMinutaLead({ lead }: Props) {
     setEditingKeys({})
     setRequiredPlaceholderKeys([])
     setLoading(false)
+    setSharingToPortal(false)
+    setSharedToPortal(false)
   }
 
   async function generatePdf() {
@@ -170,7 +174,11 @@ export default function PrepararMinutaLead({ lead }: Props) {
       return
     }
 
-    setGenerated({ pdf_url: json.pdf_url })
+    setGenerated({
+      pdf_url: json.pdf_url,
+      documento_id: json.documento?.id,
+      documento_nome: json.documento?.nome || 'Minuta',
+    })
     setMissingFields([])
     toast.success('Minuta gerada em PDF.')
   }
@@ -195,6 +203,53 @@ export default function PrepararMinutaLead({ lead }: Props) {
     }
 
     toast.success('Minuta marcada como pronta para envio.')
+  }
+
+  async function shareToPortal() {
+    if (!generated?.documento_id) {
+      toast.error('Documento ainda não disponível para compartilhar no portal.')
+      return
+    }
+
+    setSharingToPortal(true)
+
+    const [shareResponse, timelineResponse] = await Promise.all([
+      fetch('/api/portal/compartilhar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ documento_id: generated.documento_id, compartilhar: true }),
+      }),
+      fetch(`/api/leads/${lead.id}/portal-timeline-events`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          titulo: 'Documento disponível no portal',
+          descricao: `${generated.documento_nome} foi disponibilizado para visualização do cliente no portal.`,
+          visivel_cliente: true,
+        }),
+      }),
+    ])
+
+    const [shareJson, timelineJson] = await Promise.all([
+      shareResponse.json().catch(() => null),
+      timelineResponse.json().catch(() => null),
+    ])
+
+    setSharingToPortal(false)
+
+    if (!shareResponse.ok) {
+      toast.error(shareJson?.error || 'Não foi possível disponibilizar o documento no portal.')
+      return
+    }
+
+    if (!timelineResponse.ok) {
+      toast.error(timelineJson?.error || 'Documento disponibilizado, mas o evento do portal não foi registrado.')
+      setSharedToPortal(true)
+      return
+    }
+
+    setSharedToPortal(true)
+    toast.success('Documento disponibilizado no portal do cliente.')
   }
 
   if (canUse === false) return null
@@ -331,6 +386,21 @@ export default function PrepararMinutaLead({ lead }: Props) {
                           style={{ border: 'none', background: 'var(--accent)', color: '#fff', borderRadius: '10px', padding: '10px 14px', cursor: 'pointer', fontWeight: 700 }}
                         >
                           {markingReady ? 'Marcando...' : 'Marcar como pronto para envio'}
+                        </button>
+                        <button
+                          onClick={shareToPortal}
+                          disabled={sharingToPortal || sharedToPortal}
+                          style={{
+                            border: '1px solid var(--border)',
+                            background: sharedToPortal ? 'rgba(34,197,94,0.08)' : 'var(--bg)',
+                            color: sharedToPortal ? '#22c55e' : 'var(--text-primary)',
+                            borderRadius: '10px',
+                            padding: '10px 14px',
+                            cursor: sharingToPortal || sharedToPortal ? 'default' : 'pointer',
+                            fontWeight: 700,
+                          }}
+                        >
+                          {sharedToPortal ? 'Disponível no portal' : sharingToPortal ? 'Disponibilizando...' : 'Disponibilizar no portal'}
                         </button>
                       </div>
                     </div>

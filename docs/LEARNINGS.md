@@ -133,6 +133,7 @@ Mestra: [[MASTER_PREV_LEGAL]]
   - a UI de `Preparar minuta` deve usar os placeholders realmente exigidos pelo template, não depender apenas do cadastro estático de `placeholders_definidos`
   - a API de templates também precisa recalcular `placeholders_definidos` a partir do `corpo_html`, senão o banco pode continuar com metadado velho mesmo quando a UI nova já enxerga o corpo correto
   - em tenant real, isso já apareceu na prática: o template ativo de planejamento usava 12 placeholders no corpo e tinha só 2 registrados no banco
+  - a última milha do contrato rende mais quando o operador consegue publicar o PDF no portal no mesmo fluxo da geração, sem depender de navegar para outro módulo só para marcar compartilhamento
 - Regra prática:
   - signed URL é artefato de distribuição, não identificador canônico de arquivo
   - para qualquer domínio documental sério, bucket/path devem ser persistidos como referência primária

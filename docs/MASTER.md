@@ -112,6 +112,9 @@ Estado confirmado em 27/04/2026:
       - leitura e save passam a refletir o corpo real
       - isso evita drift entre placeholder salvo e placeholder realmente usado na minuta
       - o template ativo de planejamento do tenant real também foi realinhado no banco para refletir os placeholders efetivamente usados
+    - depois de gerar a minuta, o operador agora pode disponibilizar o documento no portal do cliente no mesmo modal:
+      - o documento é marcado como compartilhado no portal
+      - um evento visível ao cliente é registrado na timeline do portal
   - `lead_documentos` agora guarda referência canônica de storage (`storage_bucket` + `storage_path`) nos fluxos principais:
     - upload interno
     - portal
