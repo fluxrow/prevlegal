@@ -9,6 +9,12 @@ import {
   resolveCampaignIdForLeadReply,
 } from '@/lib/campaign-response-metrics'
 import { sendWhatsAppMessage } from '@/lib/whatsapp-provider'
+import {
+  buildInboundMediaPlaceholder,
+  extractTwilioInboundMedia,
+  persistInboundLeadDocument,
+  shouldPersistInboundMediaAsLeadDocument,
+} from '@/lib/whatsapp-inbound-media'
 
 type AgentFailurePayload = {
   retry_at?: string
@@ -210,9 +216,13 @@ export async function POST(request: NextRequest) {
   const params = Object.fromEntries(new URLSearchParams(body))
   const from = params.From        // ex: "whatsapp:+5541999999999"
   const to = params.To            // ex: "whatsapp:+14155238886"
-  const body_msg = params.Body    // texto da mensagem
+  const body_msg = String(params.Body || '').trim()
   const messageSid = params.MessageSid
   const routing = await getTwilioRoutingContextByWhatsAppNumber(to)
+  const inboundMedia = extractTwilioInboundMedia(params)
+  const hasTextBody = Boolean(body_msg)
+  const mediaPlaceholder = buildInboundMediaPlaceholder(inboundMedia)
+  const normalizedInboundMessage = body_msg || mediaPlaceholder
 
   if (!routing.tenantId) {
     return new NextResponse(
@@ -240,7 +250,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Assinatura inválida' }, { status: 403 })
   }
 
-  if (!from || !body_msg) {
+  if (!from || !normalizedInboundMessage) {
     return NextResponse.json({ error: 'Payload inválido' }, { status: 400 })
   }
 
@@ -294,7 +304,7 @@ export async function POST(request: NextRequest) {
     tenantId,
     from,
     to,
-    body: body_msg,
+    body: normalizedInboundMessage,
   })
 
   if (duplicateByBody) {
@@ -316,7 +326,7 @@ export async function POST(request: NextRequest) {
       campanha_id: resolvedCampaignId,
       telefone_remetente: from,
       telefone_destinatario: to,
-      mensagem: body_msg,
+      mensagem: normalizedInboundMessage,
       twilio_message_sid: messageSid,
     })
     .select('id')
@@ -349,11 +359,11 @@ export async function POST(request: NextRequest) {
 
       await supabase.from('conversas').update({
         status: nextConversationStatus,
-        ultima_mensagem: body_msg,
+        ultima_mensagem: normalizedInboundMessage,
         ultima_mensagem_at: new Date().toISOString(),
         nao_lidas: (conversaExistente.nao_lidas || 0) + 1,
       }).eq('id', conversaExistente.id)
-      shouldTriggerAgent = nextConversationStatus === 'agente'
+      shouldTriggerAgent = nextConversationStatus === 'agente' && hasTextBody
 
       await supabase.from('mensagens_inbound')
         .update({ conversa_id: conversaExistente.id })
@@ -366,7 +376,7 @@ export async function POST(request: NextRequest) {
           telefone: from,
           lead_id: lead?.id || null,
           status: 'agente',
-          ultima_mensagem: body_msg,
+          ultima_mensagem: normalizedInboundMessage,
           ultima_mensagem_at: new Date().toISOString(),
           nao_lidas: 1,
         })
@@ -375,7 +385,7 @@ export async function POST(request: NextRequest) {
 
       if (novaConversa) {
         conversaId = novaConversa.id
-        shouldTriggerAgent = true
+        shouldTriggerAgent = hasTextBody
         await supabase.from('mensagens_inbound')
           .update({ conversa_id: novaConversa.id })
           .eq('id', mensagemInserida.id)
@@ -390,7 +400,7 @@ export async function POST(request: NextRequest) {
       tenant_id: tenantId,
       tipo: 'mensagem',
       titulo: `Nova mensagem de ${nomeRemetente}`,
-      descricao: body_msg.slice(0, 100),
+      descricao: normalizedInboundMessage.slice(0, 100),
       link: `/caixa-de-entrada?conversaId=${conversaId}&telefone=${encodeURIComponent(from)}`,
       metadata: { conversa_id: conversaId, telefone: from },
     })
@@ -409,7 +419,7 @@ export async function POST(request: NextRequest) {
         .map((g: string) => g.trim().toLowerCase())
         .filter(Boolean)
 
-      const msgLower = body_msg.toLowerCase()
+      const msgLower = normalizedInboundMessage.toLowerCase()
       const gatilhoAtivado = gatilhos.find((g: string) => msgLower.includes(g))
 
       if (gatilhoAtivado) {
@@ -417,7 +427,7 @@ export async function POST(request: NextRequest) {
           tenant_id: tenantId,
           tipo: 'escalada',
           titulo: `⚠️ Escalada detectada — ${nomeRemetente}`,
-          descricao: `Gatilho: "${gatilhoAtivado}" — Mensagem: ${body_msg.slice(0, 80)}`,
+          descricao: `Gatilho: "${gatilhoAtivado}" — Mensagem: ${normalizedInboundMessage.slice(0, 80)}`,
           link: `/caixa-de-entrada?conversaId=${conversaId}&telefone=${encodeURIComponent(from)}`,
           metadata: { conversa_id: conversaId, telefone: from, gatilho: gatilhoAtivado },
         })
@@ -461,9 +471,40 @@ export async function POST(request: NextRequest) {
         lead_id: lead.id,
         tipo: 'stop_lead_respondeu',
         canal: 'whatsapp',
-        metadata: { mensagem: body_msg.slice(0, 200) },
+        metadata: { mensagem: normalizedInboundMessage.slice(0, 200) },
       })
     }
+  }
+
+  if (lead?.id && inboundMedia.some(shouldPersistInboundMediaAsLeadDocument)) {
+    after(async () => {
+      const auth = Buffer.from(
+        `${routing.credentials.accountSid}:${routing.credentials.authToken}`,
+      ).toString('base64')
+
+      for (const media of inboundMedia) {
+        if (!shouldPersistInboundMediaAsLeadDocument(media)) continue
+
+        const result = await persistInboundLeadDocument({
+          supabase,
+          tenantId,
+          leadId: lead.id,
+          media,
+          description: 'Recebido via WhatsApp (Twilio)',
+          headers: {
+            Authorization: `Basic ${auth}`,
+          },
+        })
+
+        if (!result.ok && result.reason !== 'ineligible') {
+          console.error('Falha ao persistir mídia inbound Twilio em lead_documentos:', {
+            leadId: lead.id,
+            reason: result.reason,
+            error: 'error' in result ? result.error : null,
+          })
+        }
+      }
+    })
   }
 
   if (mensagemInserida?.id && conversaId && shouldTriggerAgent) {

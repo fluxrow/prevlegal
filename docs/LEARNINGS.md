@@ -158,6 +158,23 @@ Mestra: [[MASTER_PREV_LEGAL]]
   - quando uma ação administrativa cria muitos registros operacionais, o dono inicial desses registros precisa ser decidido no ato
   - empurrar essa decisão para handoff manual depois quase sempre vira gargalo e retrabalho
 
+## Atualização 2026-05-15 — Webhook de WhatsApp não pode assumir que inbound válido sempre tem texto
+
+- Problema:
+  - cliente podia enviar documento, imagem ou áudio sem escrever nada
+  - o sistema tratava esse inbound como inválido e descartava o evento
+- Causa:
+  - Twilio e Z-API estavam centrados em `Body`/`message`
+  - mídia sem texto não ganhava placeholder operacional nem tentativa de persistência documental
+- Correção:
+  - extrair mídia inbound nos dois provedores
+  - construir mensagem placeholder na thread quando vier só anexo
+  - persistir documento/imagem em `lead_documentos` quando a URL da mídia estiver acessível
+  - bloquear autoresposta da Bianca em mídia pura sem texto/caption
+- Regra prática:
+  - em WhatsApp, “sem texto” não significa “sem mensagem”
+  - mídia pura deve entrar na operação como evento explícito, mas não deve acionar o agente como se o lead tivesse feito uma pergunta textual
+
 ## Atualização 2026-05-07 — `outside_hours` não deve reaparecer na timeline como se a Bianca tivesse respondido no passado
 
 - Problema:

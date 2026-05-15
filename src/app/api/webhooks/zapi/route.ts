@@ -9,6 +9,12 @@ import {
   resolveCampaignIdForLeadReply,
 } from '@/lib/campaign-response-metrics'
 import { sendWhatsAppMessage } from '@/lib/whatsapp-provider'
+import {
+  buildInboundMediaPlaceholder,
+  extractZApiInboundMedia,
+  persistInboundLeadDocument,
+  shouldPersistInboundMediaAsLeadDocument,
+} from '@/lib/whatsapp-inbound-media'
 
 const LISTA_MANUAL_NOME = 'Cadastro manual'
 const LISTA_MANUAL_FORNECEDOR = 'sistema'
@@ -999,7 +1005,9 @@ async function handleReceiveEvent(request: NextRequest, event: string) {
   const inbound = extractInboundPayload(payload)
   const from = normalizeStoredPhone(inbound.from)
   const to = normalizeStoredPhone(inbound.to || routing.from)
-  const body = inbound.message.trim()
+  const inboundMedia = extractZApiInboundMedia(payload)
+  const hasTextBody = Boolean(String(inbound.message || '').trim())
+  const body = String(inbound.message || '').trim() || buildInboundMediaPlaceholder(inboundMedia)
 
   if (inbound.fromMe) {
     return handleChannelOriginatedMessage({
@@ -1015,6 +1023,7 @@ async function handleReceiveEvent(request: NextRequest, event: string) {
     console.warn('Webhook inbound Z-API ignorado por payload incompleto', {
       instanceId,
       extracted: inbound,
+      mediaCount: inboundMedia.length,
       topLevelKeys:
         payload && typeof payload === 'object' ? Object.keys(payload as Record<string, unknown>) : [],
     })
@@ -1138,7 +1147,7 @@ async function handleReceiveEvent(request: NextRequest, event: string) {
         nao_lidas: (conversaExistente.nao_lidas || 0) + 1,
       })
       .eq('id', conversaExistente.id)
-    shouldTriggerAgent = nextConversationStatus === 'agente'
+    shouldTriggerAgent = nextConversationStatus === 'agente' && hasTextBody
   } else {
     const { data: novaConversa, error: conversaError } = await supabase
       .from('conversas')
@@ -1160,7 +1169,7 @@ async function handleReceiveEvent(request: NextRequest, event: string) {
     }
 
     conversaId = novaConversa?.id || null
-    shouldTriggerAgent = Boolean(novaConversa?.id)
+    shouldTriggerAgent = Boolean(novaConversa?.id) && hasTextBody
   }
 
   if (conversaId) {
@@ -1260,6 +1269,31 @@ async function handleReceiveEvent(request: NextRequest, event: string) {
         },
       })
     }
+  }
+
+  if (lead?.id && inboundMedia.some(shouldPersistInboundMediaAsLeadDocument)) {
+    after(async () => {
+      for (const media of inboundMedia) {
+        if (!shouldPersistInboundMediaAsLeadDocument(media)) continue
+
+        const result = await persistInboundLeadDocument({
+          supabase,
+          tenantId,
+          leadId: lead.id,
+          media,
+          description: 'Recebido via WhatsApp (Z-API)',
+        })
+
+        if (!result.ok && result.reason !== 'ineligible') {
+          console.error('Falha ao persistir mídia inbound Z-API em lead_documentos:', {
+            leadId: lead.id,
+            reason: result.reason,
+            error: 'error' in result ? result.error : null,
+            url: media.url,
+          })
+        }
+      }
+    })
   }
 
   if (mensagemInserida?.id && conversaId && shouldTriggerAgent) {

@@ -161,6 +161,11 @@ Estado confirmado em 27/04/2026:
     - o estado operacional vai para `em_atendimento_humano`
     - o Google Calendar não estava conectado
   - a leitura continua `texto-first`: anexo binário direto e resposta automática por áudio seguem fora do fluxo atual
+  - inbound via WhatsApp agora tolera mídia sem texto no atendimento real:
+    - Twilio e Z-API deixam de descartar automaticamente mensagens que venham só com anexo
+    - a thread ganha placeholder operacional explícito para documento/imagem/áudio/vídeo
+    - documento e imagem passam a tentar virar `lead_documentos` de forma assíncrona quando a mídia vier acessível pelo provedor
+    - mídia pura não aciona a Bianca sozinha; o agente só continua automaticamente quando houver texto/caption real do lead
 - o importador agora pode definir o `responsável inicial` da lista inteira no momento do upload:
   - leads novos deixam de nascer obrigatoriamente com quem importou
   - admin/backoffice continua com visibilidade operacional por já enxergar o tenant inteiro

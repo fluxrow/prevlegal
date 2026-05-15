@@ -158,6 +158,24 @@ Mestra: [[MASTER_PREV_LEGAL]]
   - o escritório deixa de depender de handoff manual em massa logo após importar
   - como admin/backoffice já enxerga o tenant inteiro, a visibilidade operacional continua preservada
 
+## Atualizacao 2026-05-15 — Webhooks WhatsApp passaram a tolerar mídia sem texto e a capturar documentos/imagens do lead
+
+- achado operacional:
+  - documento ou imagem enviada pelo cliente no WhatsApp ainda podia sumir do fluxo quando viesse sem texto junto
+  - nesses casos, o webhook tratava o inbound como inválido e a operação perdia contexto real
+- desenho adotado:
+  - manter o coração do agente intacto
+  - parar de descartar mídia sem texto
+  - criar placeholder explícito na thread para anexos
+  - tentar persistir documento/imagem em `lead_documentos` de forma assíncrona quando a mídia estiver acessível
+- correção aplicada:
+  - Twilio e Z-API agora constroem mensagem operacional para inbound com mídia mesmo sem texto
+  - documento/imagem passam a ser baixados e salvos no bucket `lead-documentos` quando possível
+  - mídia pura não dispara a Bianca automaticamente; o agente só segue quando houver texto/caption real
+- leitura prática:
+  - o atendimento deixa de perder documentos só porque o cliente mandou “arquivo puro”
+  - áudio e vídeo ainda não entram na trilha completa de resposta automática, mas deixam de parecer inexistentes na conversa
+
 ## Atualizacao 2026-05-07 — Retomada pós-fora-do-horário agora respeita a ordem real da conversa
 
 - havia um desalinhamento entre sistema e WhatsApp em retomadas pós-`outside_hours`:
