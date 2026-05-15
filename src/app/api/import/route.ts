@@ -454,8 +454,31 @@ export async function POST(request: NextRequest) {
     const file = formData.get('file') as File
     const listaNome = (formData.get('nome') as string || file.name).trim()
     const fornecedor = formData.get('fornecedor') as string || ''
+    const responsavelIdRaw = String(formData.get('responsavel_id') || '').trim()
+    const responsavelId = responsavelIdRaw || context.usuarioId
 
     if (!file) return NextResponse.json({ error: 'Arquivo não enviado' }, { status: 400 })
+
+    if (responsavelId !== context.usuarioId) {
+        const { data: responsavel, error: responsavelError } = await adminSupabase
+            .from('usuarios')
+            .select('id, ativo')
+            .eq('id', responsavelId)
+            .eq('tenant_id', context.tenantId)
+            .maybeSingle()
+
+        if (responsavelError) {
+            return NextResponse.json({ error: responsavelError.message }, { status: 500 })
+        }
+
+        if (!responsavel) {
+            return NextResponse.json({ error: 'Responsável inicial não encontrado neste escritório.' }, { status: 422 })
+        }
+
+        if (responsavel.ativo === false) {
+            return NextResponse.json({ error: 'O responsável inicial selecionado está inativo.' }, { status: 422 })
+        }
+    }
 
     const [
         { data: listasMesmoNome, error: listaMesmoNomeError },
@@ -653,7 +676,7 @@ export async function POST(request: NextRequest) {
         leads.push({
             tenant_id: context.tenantId,
             lista_id: lista.id,
-            responsavel_id: context.usuarioId,
+            responsavel_id: responsavelId,
             nb: truncate(effectiveNb, 20),
             nome: truncate(effectiveNome, 255),
             cpf: cpf ? cpf.slice(0, 14) : null,
@@ -800,6 +823,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
         success: true,
         lista_id: lista.id,
+        responsavel_id: responsavelId,
         stats: {
             total_registros: rowsToProcess.length,
             perfil_operacao_detectado: importOperationProfile,

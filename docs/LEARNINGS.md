@@ -141,6 +141,23 @@ Mestra: [[MASTER_PREV_LEGAL]]
   - em fluxo contratual, o operador precisa enxergar claramente o que veio automático, o que está faltando e o que foi sobrescrito por ele; sem isso, o PDF pode sair “tecnicamente gerado”, mas operacionalmente inseguro
   - em domínio de templates, o corpo é a fonte da verdade; listas derivadas de placeholder devem ser recalculadas no servidor para não apodrecer com o tempo
 
+## Atualização 2026-05-15 — Em operação multiusuário, importar sempre com o admin como responsável vira retrabalho em massa
+
+- Problema:
+  - a planilha era carregada pelo admin
+  - todos os leads nasciam com `responsavel_id = quem importou`
+  - depois disso a operação precisava transferir lead por lead manualmente
+- Causa:
+  - a UI do importador não expunha nenhuma escolha de responsável
+  - a API `/api/import` fixava `responsavel_id` no usuário da sessão
+- Correção:
+  - adicionar seleção de `responsável inicial` na tela de importação
+  - validar no backend se o usuário escolhido pertence ao tenant e está ativo
+  - persistir o `responsavel_id` selecionado diretamente na criação dos leads importados
+- Regra prática:
+  - quando uma ação administrativa cria muitos registros operacionais, o dono inicial desses registros precisa ser decidido no ato
+  - empurrar essa decisão para handoff manual depois quase sempre vira gargalo e retrabalho
+
 ## Atualização 2026-05-07 — `outside_hours` não deve reaparecer na timeline como se a Bianca tivesse respondido no passado
 
 - Problema:

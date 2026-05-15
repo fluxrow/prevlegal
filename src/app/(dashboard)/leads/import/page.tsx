@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useState, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { FileSpreadsheet, CheckCircle2, AlertCircle, Loader2, ArrowLeft } from 'lucide-react'
 
 type ImportStats = {
@@ -18,6 +18,13 @@ type ImportStats = {
   ganho_potencial_total: number
 }
 
+type UsuarioOption = {
+  id: string
+  nome: string | null
+  email: string | null
+  ativo?: boolean | null
+}
+
 export default function ImportPage() {
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<ImportStats | null>(null)
@@ -25,8 +32,33 @@ export default function ImportPage() {
   const [error, setError] = useState('')
   const [nomeLista, setNomeLista] = useState('')
   const [fornecedor, setFornecedor] = useState('')
+  const [responsavelId, setResponsavelId] = useState('')
+  const [usuarios, setUsuarios] = useState<UsuarioOption[]>([])
+  const [loadingUsuarios, setLoadingUsuarios] = useState(true)
   const [dragging, setDragging] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    let cancelled = false
+
+    const loadUsuarios = async () => {
+      const res = await fetch('/api/usuarios')
+      const json = await res.json().catch(() => null)
+      if (cancelled) return
+
+      if (res.ok) {
+        setUsuarios((json?.usuarios || []).filter((item: UsuarioOption) => item.ativo !== false))
+      }
+
+      setLoadingUsuarios(false)
+    }
+
+    void loadUsuarios()
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   function fmt(v: number) {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(v || 0)
@@ -38,6 +70,7 @@ export default function ImportPage() {
     formData.append('file', file)
     formData.append('nome', nomeLista || file.name.replace(/\.[^.]+$/, ''))
     formData.append('fornecedor', fornecedor)
+    if (responsavelId) formData.append('responsavel_id', responsavelId)
     try {
       const res = await fetch('/api/import', { method: 'POST', body: formData })
       const data = await res.json()
@@ -74,6 +107,30 @@ export default function ImportPage() {
               style={{ width: '100%', padding: '10px 14px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '8px', color: 'var(--text-primary)', fontSize: '14px', outline: 'none', fontFamily: 'DM Sans, sans-serif' }} />
           </div>
         ))}
+        <div style={{ gridColumn: '1 / -1' }}>
+          <label style={{ display: 'block', fontSize: '11px', color: 'var(--text-muted)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+            Responsável inicial dos leads
+          </label>
+          <select
+            value={responsavelId}
+            onChange={(e) => setResponsavelId(e.target.value)}
+            disabled={loadingUsuarios}
+            style={{ width: '100%', padding: '10px 14px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '8px', color: 'var(--text-primary)', fontSize: '14px', outline: 'none', fontFamily: 'DM Sans, sans-serif' }}
+          >
+            <option value="">
+              {loadingUsuarios ? 'Carregando usuários...' : 'Eu mesmo (quem está importando)'}
+            </option>
+            {usuarios.map((usuario) => (
+              <option key={usuario.id} value={usuario.id}>
+                {usuario.nome || usuario.email || 'Usuário sem nome'}
+                {usuario.email ? ` — ${usuario.email}` : ''}
+              </option>
+            ))}
+          </select>
+          <p style={{ margin: '8px 0 0', color: 'var(--text-muted)', fontSize: '12px', lineHeight: 1.5 }}>
+            Os leads da lista inteira já entram atribuídos ao responsável escolhido. Como admin/backoffice, você continua conseguindo enxergar a operação no sistema.
+          </p>
+        </div>
       </div>
 
       <div

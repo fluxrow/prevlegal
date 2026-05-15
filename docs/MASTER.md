@@ -161,6 +161,9 @@ Estado confirmado em 27/04/2026:
     - o estado operacional vai para `em_atendimento_humano`
     - o Google Calendar não estava conectado
   - a leitura continua `texto-first`: anexo binário direto e resposta automática por áudio seguem fora do fluxo atual
+- o importador agora pode definir o `responsável inicial` da lista inteira no momento do upload:
+  - leads novos deixam de nascer obrigatoriamente com quem importou
+  - admin/backoffice continua com visibilidade operacional por já enxergar o tenant inteiro
  - campanhas agora também podem ser criadas por `estado operacional` da conversa:
    - o público é resolvido a partir da conversa mais recente de cada lead
    - o sistema congela os `lead_ids` no momento da criação, como já faz em `contatos específicos` e `por status`

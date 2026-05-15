@@ -141,6 +141,23 @@ Mestra: [[MASTER_PREV_LEGAL]]
   - o fluxo documental fica menos dependente de formato de URL assinada
   - isso reduz risco operacional exatamente na frente mais sensível de documentos e contratos
 
+## Atualizacao 2026-05-15 — Importador passou a permitir responsável inicial da lista
+
+- necessidade operacional:
+  - o admin carregava uma planilha nova e os leads sempre nasciam com quem importou
+  - isso forçava transferência manual um a um depois do upload
+- desenho adotado:
+  - manter o importador simples
+  - adicionar um `responsável inicial` opcional para a lista inteira
+  - validar no backend se o usuário escolhido pertence ao tenant e está ativo
+- correção aplicada:
+  - a tela `/leads/import` agora lista os usuários ativos do escritório
+  - o operador pode escolher quem vai receber os leads já no upload
+  - a API `/api/import` passou a persistir `responsavel_id` com o usuário selecionado
+- leitura prática:
+  - o escritório deixa de depender de handoff manual em massa logo após importar
+  - como admin/backoffice já enxerga o tenant inteiro, a visibilidade operacional continua preservada
+
 ## Atualizacao 2026-05-07 — Retomada pós-fora-do-horário agora respeita a ordem real da conversa
 
 - havia um desalinhamento entre sistema e WhatsApp em retomadas pós-`outside_hours`:
